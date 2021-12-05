@@ -15,7 +15,7 @@
   <a href="https://top.gg/bot/751100444188737617">
       <img src="https://top.gg/api/widget/upvotes/860889936914677770.svg" alt="PizzaHat" />
   </a><br>
-  <img src="https://img.shields.io/badge/discord.py-2.0-blue?style=flat" />
+  <img src="https://img.shields.io/badge/discord.py-1.7.3-blue?style=flat" />
   <img src="https://img.shields.io/badge/Python-3.9-green?style=flat&logo=python" />
 </h1>
 	
