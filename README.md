@@ -6,13 +6,13 @@
 <h4 align="center"> A multi-purpose bot for your server! <h4/>
 
 <h1 align="center">
-  <a href="https://top.gg/bot/751100444188737617">
+  <a href="https://top.gg/bot/860889936914677770">
       <img src="https://top.gg/api/widget/status/860889936914677770.svg" alt="PizzaHat" />
   </a>
   <a href="https://top.gg/bot/860889936914677770">
       <img src="https://top.gg/api/widget/servers/860889936914677770.svg" alt="PizzaHat" />
   </a>
-  <a href="https://top.gg/bot/751100444188737617">
+  <a href="https://top.gg/bot/860889936914677770">
       <img src="https://top.gg/api/widget/upvotes/860889936914677770.svg" alt="PizzaHat" />
   </a><br>
   <img src="https://img.shields.io/badge/discord.py-1.7.3-blue?style=flat" />
