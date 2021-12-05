@@ -6,6 +6,7 @@ import time
 from TagScriptEngine import Interpreter, block
 from typing import Union
 from aiohttp import ClientSession
+import asyncio
 
 class Fun(commands.Cog):
     """🥳 Fun Commands."""
@@ -32,6 +33,19 @@ class Fun(commands.Cog):
                     await ctx.send(f'**{user.name}** has paid their respects.')
         except asyncio.TimeoutError:
             await ctx.send('Timed out.')
+            
+    @commands.command()
+    async def quote(self, ctx):
+        try:
+            res = requests.get('https://zenquotes.io/api/random/quote')
+            data = json.load(res.text)
+            quote = data[0]['q']
+            author = data[0]['a']
+            await ctx.reply(quote + " -" + author)
+            return
+        except:
+            await ctx.send('Sorry, Something went wrong while trying to execute this command.')
+            return 
         
     @commands.command()
     async def choose(self, ctx, *options):
