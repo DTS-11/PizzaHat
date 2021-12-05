@@ -9,10 +9,10 @@ PizzaHat Discord Bot <h1/>
       <img src="https://top.gg/api/widget/status/860889936914677770.svg" alt="status" />
   </a>
   <a href="https://top.gg/bot/860889936914677770">
-      <img src="https://top.gg/api/widget/servers/860889936914677770.svg" alt="servers" />
+      <img src="https://top.gg/api/widget/servers/860889936914677770.svg/" alt="servers" />
   </a>
   <a href="https://top.gg/bot/860889936914677770">
-      <img src="https://top.gg/api/widget/upvotes/860889936914677770.svg" alt="upvotes" />
+      <img src="https://top.gg/api/widget/upvotes/860889936914677770.svg/" alt="upvotes" />
   </a><br>
   <img src="https://img.shields.io/badge/discord.py-1.7.3-blue?style=flat" />
   <img src="https://img.shields.io/badge/Python-3.9-green?style=flat&logo=python" />
