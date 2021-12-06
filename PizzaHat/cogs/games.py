@@ -67,8 +67,6 @@ class Games(commands.Cog):
         imposter = random.choice(list(emojis.items()))
         imposter = imposter[0]
         
-        print(emojis[imposter])
-        
         
         for emoji in emojis.values():
             await msg.add_reaction(emoji)
