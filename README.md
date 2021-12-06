@@ -6,7 +6,7 @@ PizzaHat Discord Bot <h1/>
 
 <h1 align="center">
   <a href="https://top.gg/bot/860889936914677770">
-      <img src="https://top.gg/api/widget/status/860889936914677770.svg" alt="status" />
+      <img src="https://top.gg/api/widget/status/860889936914677770.png" alt="status" />
   </a>
   <a href="https://top.gg/bot/860889936914677770">
       <img src="https://top.gg/api/widget/servers/860889936914677770.svg/" alt="servers" />
