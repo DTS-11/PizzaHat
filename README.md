@@ -16,7 +16,7 @@ PizzaHat Discord Bot <h1/>
   </a><br>
   <img src="https://img.shields.io/badge/discord.py-1.7.3-blue?style=flat" />
   <img src="https://img.shields.io/badge/Python-3.9-green?style=flat&logo=python" />
-  <img src="https://github.com/DTS-11/PizzaHat/actions/workflows/codeql-analysis.yml/badge.svg"
+  <img src="https://github.com/DTS-11/PizzaHat/actions/workflows/codeql-analysis.yml/badge.svg" />
 </h1>
 	
 	
