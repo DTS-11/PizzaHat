@@ -184,22 +184,7 @@ class Fun(commands.Cog):
             async with session.get(url, headers=headers) as response:
                 r = await response.json()
                 r = r["body"][0]
-                await ctx.send(f"**{r['setup']}**\n||{r['punchline']}||")
-
-    @commands.command(usage='guess <number>')
-    async def guess(self, ctx, guess, range=None):
-
-        range = range or '1-10'
-        fr, to = range.split('-')
-
-        number = random.randint(int(fr),int(to))
-
-        if int(guess) == number:
-            await ctx.send(f'Congrats you picked the correct number, The number was {number}')
-        elif not int(guess) == number:
-            await ctx.send(f'The number was {number}, You lose')
-
-        
+                await ctx.send(f"**{r['setup']}**\n||{r['punchline']}||")        
 
 def setup(bot):
     bot.add_cog(Fun(bot))
