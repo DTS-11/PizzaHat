@@ -315,6 +315,20 @@ class Games(commands.Cog):
             if not cancel:
                 await headORtail.delete()
                 await ctx.send('The time ended, please try again')
+                
+                
+    @commands.command(usage='guess <number>')
+    async def guess(self, ctx, guess, range=None):
+
+        range = range or '1-10'
+        fr, to = range.split('-')
+
+        number = random.randint(int(fr),int(to))
+
+        if int(guess) == number:
+            await ctx.send(f'Congrats you picked the correct number, The number was {number}')
+        elif not int(guess) == number:
+            await ctx.send(f'The number was {number}, You lose')
 
 def setup(bot):
     bot.add_cog(Games(bot))
