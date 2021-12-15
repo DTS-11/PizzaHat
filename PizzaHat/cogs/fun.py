@@ -143,7 +143,7 @@ class Fun(commands.Cog):
         )
         await ctx.send(embed=em)
     
-    @commands.command(usage='hack <member>')
+    @commands.command()
     async def hack(self, ctx, member: discord.Member):
         """Hack someone and get their details."""
         used_words = ['Nerd','Sucker','Noob','Sup','Yo','Wassup','Nab','Nub','fool','stupid','b1tch','fvck','idiot']
