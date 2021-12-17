@@ -1,4 +1,4 @@
-﻿import discord
+import discord
 from discord.ext import commands
 import time
 import datetime
@@ -12,6 +12,11 @@ class Utility(commands.Cog):
     """🛠️ Utility Commands"""
     def __init__(self,bot):
         self.bot = bot
+
+    @commands.command(aliases=['latency'])
+    async def ping(self,ctx):
+        """Shows latency of bot."""
+        await ctx.send(f":ping_pong: Pong!\nBot latency: `{round(self.bot.latency*1000)}ms`")
 
     @commands.command(aliases=['whois','ui', 'user-info'])
     @commands.guild_only()
@@ -32,37 +37,12 @@ class Utility(commands.Cog):
                 return 'N/A'
             return f'<t:{int(dt.timestamp())}>'
 
-        # fl = member.public_flags
-        # fe = []
-
-        # f = {
-        #     fl.bug_hunter: '<:bug_hunter_lvl1:876079074693480508>',
-        #     fl.bug_hunter_level_2: '<:bug_hunter_lvl2:876079074647371796>',
-        #     fl.staff: '<:staff:876081519540715521>',
-        #     fl.early_supporter: '<:support:843936375941103646>',
-        #     fl.verified_bot_developer: '<:developer:833297795761831956>',
-        #     fl.partner: '<:partnerbadge:819942435550396448>',
-        #     fl.hypesquad_balance: '<:balance:876078067297173534>',
-        #     fl.hypesquad_bravery: '<:bravery:876078067548835850>',
-        #     fl.hypesquad_brilliance: '<:briliance:876078066848366662>',
-        #     fl.system: '<:system:876082667064537149>',
-        #     fl.verified_bot: '<:verified_bot:876082989812023357>',
-        # }
-
-        # for x, y in f.items():
-        #     if x in fl:
-        #         fe.append(y)
-
         em = discord.Embed(
             description=f"**User ID:** {member.id}\n**Display Name:** {member.display_name}\n\n**Account Creation:** {format_date(member.created_at)}\n**Joined Server:** {format_date(member.joined_at)}\n",
             color=self.bot.color,
             timestamp=ctx.message.created_at
         )
         em.set_author(name = f"Userinfo of {member}")
-        # if fl:
-        #     em.add_field(name="Discord Badges", value=' | '.join(fe), inline=False)
-        # else:
-        #     em.add_field(name="Discord Badges", value=f'{self.bot.no} None', inline=False)
         em.add_field(name=f'Roles [{len(rolelist)}]', value=roles or f'{self.bot.no} N/A', inline=False)
         if member.bot:
             em.add_field(name='Member Bot', value=f'{self.bot.yes} Yes', inline=False)
@@ -238,11 +218,6 @@ class Utility(commands.Cog):
         embed.set_thumbnail(url=emoji.url)
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['latency'])
-    async def ping(self,ctx):
-        """Shows latency of bot."""
-        await ctx.send(f":ping_pong: Pong!\nBot latency: `{round(self.bot.latency*1000)}ms`")
-
     @commands.command(name='invite')
     async def invite_cmd(self, ctx):
         """Gives invite of bot."""
@@ -252,7 +227,7 @@ class Utility(commands.Cog):
             color=self.bot.color
         )
         em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar_url)
-        em.set_footer(text='Thank you!')
+        em.set_footer(text='Invite me to get good luck!')
         await ctx.send(embed=em)
 
     @commands.command()
@@ -272,6 +247,13 @@ class Utility(commands.Cog):
         e = await channel.send(embed=em)
         await e.add_reaction('⬆️')
         await e.add_reaction('⬇️')
+
+    @commands.command(aliases=['team'])
+    async def credits(self,ctx):
+        """Shows users who have contributed to this bot."""
+        em = discord.Embed(title=f'{self.bot.user.name} Contributors', color=self.bot.color)
+        em.description=f"Drapes (<@583745403598405632>): [Github](https://github.com/drapespy)\nGDKID (<@596481615253733408>): [Github](https://github.com/GDKID69)\nCarl (<@106429844627169280>): [Github](https://github.com/CarlGroth)"
+        await ctx.send(embed=em)
 
     def get_bot_uptime(self, *, brief=False):
         now = datetime.datetime.utcnow()
@@ -338,7 +320,7 @@ class Utility(commands.Cog):
         member = ctx.message.guild.me
         await self.say_permissions(ctx, member, channel)
 
-    @commands.command(aliases=['av'])
+    @commands.command(aliases=['av','profile','pfp'])
     async def avatar(self, ctx, member: discord.Member=None):
         """
         Displays a user's avatar
