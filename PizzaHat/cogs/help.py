@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import contextlib
-from bot import bot
+from main import bot
 
 class MyHelp(commands.HelpCommand):
     def __init__(self):
@@ -33,9 +33,7 @@ class MyHelp(commands.HelpCommand):
                 if cog:
                     name = cog.qualified_name
                     description = cog.description or "No description"
-                else:
-                    pass
-                em.add_field(name=f"{name} [{amt_cmds}]", value=description, inline=False)
+                    em.add_field(name=f"{name} [{amt_cmds}]", value=description, inline=False)
         em.description = f"""{len(ctx.bot.commands)} commands | {usable} usable\n\nUse "help [command | module]" for more info.\nIf you can't see any module, it means that you don't have the permission to view them.\n\n`<>` required | `[]` optional"""
         await self.send(embed=em)
 
