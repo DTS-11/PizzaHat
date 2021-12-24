@@ -102,7 +102,7 @@ class Utility(commands.Cog):
             em.add_field(name='Server Features', value=', '.join(info), inline=False)
         else:
             em.add_field(name='Server Features', value=f'{self.bot.no} None', inline=False)
-        em.add_field(name='Verification level', value=ctx.guild.verification_level.capitalize(), inline=False)
+        em.add_field(name='Verification level', value=str(str(ctx.guild.verification_level).capitalize()), inline=False)
         em.set_thumbnail(url=f"{ctx.guild.icon_url}")
         em.set_footer(text=f'Created at: {formatted_date(ctx.guild.created_at)}')
         
