@@ -91,7 +91,6 @@ class Utility(commands.Cog):
         )
         em.add_field(name='<:owner:811749694744297502> Owner', value=ctx.guild.owner, inline=False)
         em.add_field(name='Description', value=ctx.guild.description, inline=False)
-        em.add_field(name='Region', value=f"{str(ctx.guild.region).replace('-', ' ').title()}", inline=False)
         em.add_field(name='Guild ID', value=ctx.guild.id, inline=False)
         em.add_field(name=f'Roles', value=len(ctx.guild.roles), inline=False)
         em.add_field(name=f'Members ({ctx.guild.member_count})', value=f'<:memberlist:811747305543434260> Humans: {len([m for m in ctx.guild.members if not m.bot])}\n<:botlist:811747723434786859> Bots: {sum(member.bot for member in ctx.guild.members)}', inline=False)
@@ -103,7 +102,7 @@ class Utility(commands.Cog):
             em.add_field(name='Server Features', value=', '.join(info), inline=False)
         else:
             em.add_field(name='Server Features', value=f'{self.bot.no} None', inline=False)
-        em.add_field(name='Verification level', value=ctx.guild.verification_level, inline=False)
+        em.add_field(name='Verification level', value=ctx.guild.verification_level.capitalize(), inline=False)
         em.set_thumbnail(url=f"{ctx.guild.icon_url}")
         em.set_footer(text=f'Created at: {formatted_date(ctx.guild.created_at)}')
         
