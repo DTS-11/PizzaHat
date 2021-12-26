@@ -1,5 +1,5 @@
 <h1 align="center">
-    <img src="https://github.com/DTS-11/PizzaHat/blob/main/assets/logo-christmas.png"/> <br>
+    <img src="https://github.com/DTS-11/PizzaHat/blob/main/assets/logo.png"/> <br>
 PizzaHat Discord Bot <h1/>
 	
 <h4 align="center"> A multi-purpose bot for your server! <h4/>
@@ -34,6 +34,7 @@ PizzaHat is a multi-purpose bot, made to satisfy your needs, as well as your ser
 - 🥳 Fun commands. </li>
 - ⚒️ Utility commands. </li>
 - 📷 Image manipulation commands. </li>
+- 🎮 Game commands. </li>
 - <img src="https://cdn.discordapp.com/emojis/809170074006192130.png?size=80" height="19px"> Regularly updated and maintained! </li>
 	
 ## <img src='https://cdn.discordapp.com/emojis/802615573556363284.png?size=80' height="30px"> • How to contribute?
