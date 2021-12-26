@@ -29,7 +29,7 @@ class Utility(commands.Cog):
         if member is None:
             member = ctx.author
 
-        rolelist = [r.mention for r in member.roles if r != ctx.guild.default_role]
+        rolelist = [role.mention for role in list(user.roles[::-1]) if not role is ctx.guild.default_role]
         roles = ", ".join(rolelist)
 
         def format_date(dt:datetime.datetime):
