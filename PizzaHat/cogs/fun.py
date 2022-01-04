@@ -170,22 +170,6 @@ class Fun(commands.Cog):
         await asyncio.sleep(1.55)
         await hacking.edit(content=f"{ctx.author.mention} successfully hacked {member.mention}")
         await ctx.send("The ultimate, totally real hacking has been completed!")
-    
-    @commands.command(aliases=['dj'])
-    async def dadjoke(self, ctx):
-        """Sends a dadjoke."""
-
-        url = "https://dad-jokes.p.rapidapi.com/random/jokes"
-        headers = {
-            'x-rapidapi-key': "81dd963d15mshf3e3a91dd6fe3cap1d971djsnbeb11a691831",
-            'x-rapidapi-host': "dad-jokes.p.rapidapi.com" 
-        }
-
-        async with ClientSession() as session:
-            async with session.get(url, headers=headers) as response:
-                r = await response.json()
-                r = r["body"][0]
-                await ctx.send(f"**{r['setup']}**\n||{r['punchline']}||")
 
 def setup(bot):
     bot.add_cog(Fun(bot))
