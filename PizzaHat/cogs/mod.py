@@ -55,6 +55,7 @@ class Mod(commands.Cog):
     @commands.command(aliases=['mn', 'mod-nick'])
     @commands.has_guild_permissions(manage_nicknames=True)
     @commands.bot_has_permissions(manage_nicknames=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def modnick(self, ctx, member: discord.Member):
         """
         Set a random moderated nickname.
@@ -66,6 +67,7 @@ class Mod(commands.Cog):
     @commands.command(aliases=['sn','set-nick'])
     @commands.has_guild_permissions(manage_nicknames=True)
     @commands.bot_has_permissions(manage_nicknames=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def setnick(self, ctx, member: discord.Member, *, nick):
         """
         Set a custom nick-name.
@@ -76,6 +78,7 @@ class Mod(commands.Cog):
     @commands.command(aliases=['sm','slow-mode'])
     @commands.has_guild_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def slowmode(self, ctx, seconds: int=None):
         """
         Change the slow-mode in the current channel. If no values are given,  returns slowmode of the current channel.
@@ -102,6 +105,7 @@ class Mod(commands.Cog):
     @lock.command(name='channel')
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def lock_channel(self, ctx, role:discord.Role=None, channel:discord.TextChannel=None):
         """
         Lock a channel with role requirement.
@@ -122,6 +126,7 @@ class Mod(commands.Cog):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def lock_server(self, ctx, role:discord.Role=None):
         """
         Lock whole server with role requirement.
@@ -152,6 +157,7 @@ class Mod(commands.Cog):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def unlock_channel(self, ctx, role:discord.Role=None, channel:discord.TextChannel=None):
         """
         Unlock channel with role requirement.
@@ -172,6 +178,7 @@ class Mod(commands.Cog):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def unlock_server(self, ctx, role:discord.Role=None):
         """
         Unlock the whole server with role requirement.
@@ -193,6 +200,7 @@ class Mod(commands.Cog):
     @commands.command(aliases=['purge'])
     @commands.has_guild_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def clear(self, ctx, amount:int=100):
         """
         Delete certain amount of messages in the current channel (max: 100).
@@ -208,6 +216,7 @@ class Mod(commands.Cog):
     @commands.guild_only()
     @commands.has_guild_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def kick(self, ctx, member:discord.Member, *, reason=None):
         """
         Kicks a member from the server.
@@ -221,6 +230,7 @@ class Mod(commands.Cog):
     @commands.command(aliases=['b'])
     @commands.has_guild_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def ban(self, ctx, member:typing.Union[discord.Member,int], *, reason=None):
         """
         Bans a member from the server.
@@ -242,6 +252,7 @@ class Mod(commands.Cog):
     @commands.guild_only()
     @commands.has_guild_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def massban(self, ctx, members:commands.Greedy[discord.Member], *, reason=None):
         """
         Mass bans multiple members from the server.
@@ -261,6 +272,7 @@ class Mod(commands.Cog):
     @commands.command(aliases=['ub'])
     @commands.has_guild_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def unban(self, ctx, id:int):
         """
         Unbans a member from the server.
@@ -273,29 +285,12 @@ class Mod(commands.Cog):
 
         except discord.NotFound:
             await ctx.send('Not a valid previously banned member or the member could not be found.')
-            
-        try:
-            conn = self.conn
-            cursor = conn.cursor()
-            cursor.execute(f'SELECT channel_id FROM mod_logs WHERE guild_id=?', (ctx.guild.id))
-            channel = cursor.fetchone()
-            ch = self.bot.get_channel(channel)
-
-            em = discord.Embed(
-                title = 'Member Unbanned',
-                color=self.bot.color
-                )
-            em.add_field(name='Moderator', value=ctx.author, inline=False)
-            em.add_field(name='Member', value=user, inline=False)
-            await ch.send(embed=em)
-
-        except Exception as e:
-            print(e)
 
     @commands.command()
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def mute(self, ctx, member: discord.Member, *, reason=None):
         """
         Mutes a member, must be unmuted manually.
@@ -310,6 +305,7 @@ class Mod(commands.Cog):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def tempmute(self, ctx, member: discord.Member,time,*,reason=None):
         """
         Mutes a member for some time, unmutes automatically.
@@ -329,6 +325,7 @@ class Mod(commands.Cog):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def unmute(self, ctx, member: discord.Member):
         """
         Unmutes a member.
@@ -344,6 +341,7 @@ class Mod(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def createrole(self, ctx, name, mentionable:bool=False, hoisted:bool=False, reason=None):
         """
         Creates a role in the server.
@@ -363,6 +361,7 @@ class Mod(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def deleterole(self, ctx, *, role: discord.Role):
         """
         Deletes a role in the server.
@@ -374,6 +373,7 @@ class Mod(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
+    @commands.Cooldown(1, 5, commands.BucketType.user)
     async def role(self, ctx, user: discord.Member, *, role: discord.Role):
         """
         Assign or remove role from a user just from one command.
