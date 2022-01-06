@@ -448,7 +448,7 @@ class Utility(commands.Cog):
             e.add_field(name="Deaths per one million", value=deathsPerOneMil, inline=True)
             e.add_field(name="Tests per one million", value=testsPerOneMil, inline=True)
             e.add_field(name="Total tests", value=totalTests, inline=True)
-            e.set_thumbnail(url="https://rabbits.life/wp-content/uploads/2020/07/health_coronavirus_cdc_ap-970.jpg")
+            e.set_thumbnail(url="https://www.osce.org/files/imagecache/10_large_gallery/f/images/hires/8/a/448717.jpg")
 
             await ctx.send(embed=e)
         except:
