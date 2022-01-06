@@ -3,6 +3,7 @@ from discord.ext import commands
 import time
 import datetime
 import shlex
+import requests
 
 start_time = time.time()
 def to_keycap(c):
@@ -408,6 +409,46 @@ class Utility(commands.Cog):
         no_thumb = "👎"
         await msg.add_reaction(yes_thumb)
         await msg.add_reaction(no_thumb)
-
+        
+    @commands.command()
+    async def covid(self, ctx, country):
+        """
+        Get Covid-19 stats from a country or the world.
+        """
+        url = f"https://coronavirus-19-api.herokuapp.com/countries/{country}"
+        stats = requests.get(url)
+        json_stats = stats.json()
+        country = json_stats["country"]
+        totalCases = json_stats["cases"]
+        todayCases = json_stats["todayCases"]
+        totalDeaths = json_stats["deaths"]
+        todayDeaths = json_stats["todayDeaths"]
+        recovered = json_stats["recovered"]
+        active = json_stats["active"]
+        critical = json_stats["critical"]
+        casesPerOneMil = json_stats["casesPerOneMillion"]
+        deathsPerOneMil = json_stats["deathsPerOneMillion"]
+        totalTests = json_stats["totalTests"]
+        testsPerOneMil = json_stats["testsPerOneMillion"]
+        
+        e = discord.Embed(
+            title=f"Covid-19 stats of {country}",
+            description="This is not live info. Therefore it might not be as accurate, but is approximate info.",
+            color=self.bot.color
+        )
+        e.add_field(name="Total Cases", value=totalCases, inline=True)
+        e.add_field(name="Today's Cases", value=todayCases, inline=True)
+        e.add_field(name="Total Deaths", value=totalDeaths, inline=True)
+        e.add_field(name="Today's Deaths", value=todayDeaths, inline=True)
+        e.add_field(name="Recovered", value=recovered, inline=True)
+        e.add_field(name="Active", value=active, inline=True)
+        e.add_field(name="Critical", value=critical, inline=True)
+        e.add_field(name="Cases per one million", value=casesPerOneMil, inline=True)
+        e.add_field(name="Deaths per one million", value=deathsPerOneMil, inline=True)
+        e.add_field(name="Tests per one million", value=testsPerOneMil, inline=True)
+        e.add_field(name="Total tests", value=totalTests, inline=True)
+        
+        await ctx.send(embed=e)
+        
 def setup(bot):
     bot.add_cog(Utility(bot))
