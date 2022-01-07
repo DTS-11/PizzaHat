@@ -1,0 +1,10 @@
+import os
+
+# NORMAL STUFF
+OWNERS = [710247495334232164]
+GUILD_ID = [764049436275114004]
+PREFIX = ["p!", "P!"]
+
+# SECRET STUFF
+TOKEN = os.getenv("TOKEN")
+DAGPI = os.getenv("DAGPI")
