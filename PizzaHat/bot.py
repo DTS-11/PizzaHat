@@ -2,10 +2,7 @@ import discord
 from discord.ext import commands
 import asyncpg
 import datetime
-from dotenv import load_dotenv
-import os
-
-load_dotenv('.env')
+from config import PREFIX, TOKEN
 
 INITIAL_EXTENSIONS = [
     'cogs.dev',
@@ -21,7 +18,7 @@ INITIAL_EXTENSIONS = [
 class PizzaHat(commands.Bot):
     def __init__(self):
         super().__init__(
-            command_prefix=commands.when_mentioned_or('p!','P!'),
+            command_prefix=commands.when_mentioned_or(PREFIX),
             intents=discord.Intents.all(),
             case_insensitive=True,
             strip_after_prefix=True,
@@ -33,7 +30,7 @@ class PizzaHat(commands.Bot):
         self.no = '<:no:829841023445631017>'
         self.color = discord.Color.blue()
         self.christmas = discord.Color.red()
-        self.token = os.getenv('TOKEN')
+        self.token = TOKEN
         self.loop.run_until_complete(self.create_db_pool())
 
         for extension in INITIAL_EXTENSIONS:
