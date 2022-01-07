@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import asyncpg
 import datetime
-from config import PREFIX, TOKEN
+from config import TOKEN
 
 INITIAL_EXTENSIONS = [
     'cogs.dev',
@@ -18,7 +18,7 @@ INITIAL_EXTENSIONS = [
 class PizzaHat(commands.Bot):
     def __init__(self):
         super().__init__(
-            command_prefix=commands.when_mentioned_or(PREFIX),
+            command_prefix=commands.when_mentioned_or("p!", "P!"),
             intents=discord.Intents.all(),
             case_insensitive=True,
             strip_after_prefix=True,
