@@ -27,7 +27,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         if len([m for m in guild.members if m.bot]) > len([m for m in guild.members if not m.bot]):
-            await guild.send('I have automatically left this server since it has a high bot to member ratio.')
+            await guild.text_channels[0].send('👋 I have automatically left this server since it has a high bot to member ratio.')
             await guild.leave()
         
     @commands.Cog.listener()
