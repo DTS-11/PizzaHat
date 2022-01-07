@@ -1,0 +1,10 @@
+discord.py
+asyncpg
+TagScriptEngine
+aiohttp
+asyncio
+pyparsing
+python-dotenv
+typing
+typing-extensions
+asyncdagpi
