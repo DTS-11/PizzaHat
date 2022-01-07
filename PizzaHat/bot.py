@@ -30,7 +30,6 @@ class PizzaHat(commands.Bot):
         self.no = '<:no:829841023445631017>'
         self.color = discord.Color.blue()
         self.christmas = discord.Color.red()
-        self.token = TOKEN
         self.loop.run_until_complete(self.create_db_pool())
 
         for extension in INITIAL_EXTENSIONS:
@@ -50,10 +49,7 @@ class PizzaHat(commands.Bot):
 
     async def close(self):
         await super().close()
-    
-    def run(self):
-        super().run(self.token, reconnect=True)
 
 bot = PizzaHat()
 if __name__ == '__main__':
-    bot.run()
+    bot.run(TOKEN)
