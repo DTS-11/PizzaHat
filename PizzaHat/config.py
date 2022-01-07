@@ -1,4 +1,6 @@
 import os
+from dotenv import load_env
+load_env('.env')
 
 # NORMAL STUFF
 OWNERS = [710247495334232164]
