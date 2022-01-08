@@ -1,5 +1,6 @@
 import discord
 import DiscordUtils
+import humanfriendly
 
 music_ = DiscordUtils.Music()
 
@@ -7,6 +8,19 @@ class Music(commands.Cog):
     """<:music:929100003178348634> Music commands"""
     def __init__(self, bot):
         self.bot = bot
+        
+    def now_playing_embed(self, ctx, song) -> discord.Embed:
+        return discord.Embed(
+            title=song.title,
+            url=song.url,
+            color=self.bot.color,
+            description=f"""
+            **Duration:** {humanfriendly.format_timespan(song.duration)}
+            **Channel:** [{song.channel}]({song.channel_url})
+            """
+            ).set_image(url=song.thumbnail
+            ).set_footer(text=f"Loop: {'✅' if song.is_looping else '❌'}", icon_url=ctx.guild.icon.url if ctx.guild.icon is not None else 'https://cdn.discordapp.com/embed/avatars/1.png'
+            ).set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar.url)
     
     @commands.command()
     async def join(self, ctx):
@@ -52,4 +66,4 @@ class Music(commands.Cog):
         if not ctx.voice_client.is_playing():
             return await ctx.send("No music playing rn ._.")
         song = player.now_playing()
-        await ctx.send(embed=self.now_playing_embed(ctx, song)) # to be completed
+        await ctx.send(embed=self.now_playing_embed(ctx, song))
