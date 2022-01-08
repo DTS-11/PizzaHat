@@ -67,3 +67,39 @@ class Music(commands.Cog):
             return await ctx.send("No music playing rn ._.")
         song = player.now_playing()
         await ctx.send(embed=self.now_playing_embed(ctx, song))
+        
+    @commands.command()
+    async def pause(self, ctx):
+        """Pause the song."""
+        if not ctx.author.voice:
+            return await ctx.send("You're not in a VC.")
+        if not ctx.guild.me.voice:
+            return await ctx.send("I am not playing any songs ._.")
+        if ctx.author.voice.channel != ctx.guild.me.voice.channel:
+            return await ctx.send("I'm not in the same VC as you.")
+        player = music_.get_player(guild_id=ctx.guild.id)
+        if not player:
+            return await ctx.send("I am not playing any songs ._.")
+        try:
+            await player.pause()
+        except DiscordUtils.NotPlaying:
+            return await ctx.send("I am not playing any songs ._.")
+        await ctx.message.add_reaction("⏸️")
+    
+    @commands.command()
+    async def resume(self, ctx):
+        """Resume the song."""
+        if not ctx.author.voice:
+            return await ctx.send("You're not in a VC.")
+        if not ctx.guild.me.voice:
+            return await ctx.send("I am not in a voice channel ._.")
+        if ctx.author.voice.channel != ctx.guild.me.voice.channel:
+            return await ctx.send("I'm not in the same VC as you.")
+        player = music_.get_player(guild_id=ctx.guild.id)
+        if not player:
+            return await ctx.send("I am not playing any songs ._.")
+        try:
+            await player.resume()
+        except DiscordUtils.NotPlaying:
+            return await ctx.send("I am not playing any songs ._.")
+        await ctx.message.add_reaction("▶️")
