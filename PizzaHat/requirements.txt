@@ -10,3 +10,4 @@ typing-extensions
 asyncdagpi
 requests
 humanfriendly
+DiscordUtils
