@@ -166,7 +166,7 @@ class Music(commands.Cog):
         else:
             await ctx.send(f"🔄 Disabled loop for {song.name}")
             
-    @commands.command
+    @commands.command(aliases=['vol'])
     async def volume(self, ctx, vol):
         """Change the volume of the music player."""
         player = music.get_player(guild_id=ctx.guild.id)
