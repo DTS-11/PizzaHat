@@ -58,11 +58,11 @@ class Events(commands.Cog):
         elif isinstance(error, commands.MissingRequiredArgument):
             em = discord.Embed(
                 title=f'{ctx.command.qualified_name} command',
-                description=f'```xml\n<Syntax: {ctx.prefix}{ctx.command.name} {ctx.command.signature}>\n```',
+                description=f'```{ctx.prefix}{ctx.command.name} {ctx.command.signature}```\n',
                 color=self.bot.color
             )
             em.add_field(name='Description', value=ctx.command.help, inline=False)
-            em.set_footer(text='`<>` Required | `[]` Optional')
+            em.set_footer(text="<> Required | [] Optional")
             await ctx.send(embed=em)
 
         else:
