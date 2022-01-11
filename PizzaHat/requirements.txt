@@ -11,3 +11,4 @@ asyncdagpi
 requests
 humanfriendly
 DiscordUtils
+DiscordUtils[voice]
