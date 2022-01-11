@@ -140,7 +140,7 @@ class Music(commands.Cog):
         else:
             e = discord.Embed(
                 title='Queued songs',
-                description=f"{'\n'.join([song.name for song in player.current_queue()])}",
+                description=f"{', '.join([song.name for song in player.current_queue()])}",
                 color=self.bot.color
             )
             await ctx.send(embed=e)
