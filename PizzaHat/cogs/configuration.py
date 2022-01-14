@@ -2,11 +2,24 @@ import discord
 from discord.ext import commands
 
 class Config(commands.Cog):
-  """⚙ Configuration commands for the bot."""
-  def __init__(self, bot):
-    self.bot = bot
+    """⚙ Configuration commands for the bot."""
+    def __init__(self, bot):
+        self.bot = bot
+        
+    @commands.command()
+    @commands.has_permissions(manage_guild=True)
+    @commands.bot_has_permissions(manage_guild=True)
+    async def disable(self, ctx, *, command):
+        """Disable a command."""
+        # to be done...
     
+    @commands.command()
+    @commands.has_permissions(manage_guild=True)
+    @commands.bot_has_permissions(manage_guild=True)
+    async def enable(self, ctx, *, command):
+        """Enable a disabled command."""
+        # to be done...
     
     
 def setup(bot):
-  bot.add_cog(Config(bot))
+    bot.add_cog(Config(bot))
