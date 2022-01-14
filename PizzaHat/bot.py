@@ -5,6 +5,7 @@ import datetime
 from config import TOKEN
 
 INITIAL_EXTENSIONS = [
+    'configuration.py',
     'cogs.dev',
     'cogs.events',
     'cogs.fun',
