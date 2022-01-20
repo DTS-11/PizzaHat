@@ -5,11 +5,6 @@ class Events(commands.Cog):
     """Events cog"""
     def __init__(self, bot):
         self.bot = bot
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        await self.bot.db.execute("""CREATE TABLE IF NOT EXISTS warnlogs 
-                    (guild_id BIGINT, user_id BIGINT, reason TEXT, warns TEXT[])""")
     
     @commands.Cog.listener()
     async def on_message(self, msg):
