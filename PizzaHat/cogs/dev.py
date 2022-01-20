@@ -134,6 +134,24 @@ class Dev(commands.Cog):
                             color=0x2e3135
                         )
                         await ctx.send(embed=embed)
+                        
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def load(self, ctx, cog):
+        try:
+            bot.load_extension(cog)
+            await ctx.send(f"{self.bot.yes} Cog loaded")
+        except Exception as e:
+            print(e)
+        
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def unload(self, ctx, cog):
+        try:
+            bot.unload_extension(cog)
+            await ctx.send(f"{self.bot.yes} Cog unloaded")
+        except Exception as e:
+            print(e)
 
 def setup(bot):
     bot.add_cog(Dev(bot))
