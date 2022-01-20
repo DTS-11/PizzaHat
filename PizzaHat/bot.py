@@ -1,8 +1,15 @@
 import discord
 from discord.ext import commands
-import asyncpg
 import datetime
-from config import TOKEN
+from ruamel.yaml import YAML
+from dotenv import load_env
+import os
+
+load_env('.env')
+yaml = YAML()
+
+with open("./config.yml", "r", encoding="utf-8") as file:
+    config = yaml.load(file)
 
 INITIAL_EXTENSIONS = [
     'configuration.py',
@@ -32,7 +39,6 @@ class PizzaHat(commands.Bot):
         self.no = '<:no:829841023445631017>'
         self.color = discord.Color.blue()
         self.christmas = discord.Color.red()
-        self.loop.run_until_complete(self.create_db_pool())
 
         for extension in INITIAL_EXTENSIONS:
             try:
@@ -46,12 +52,6 @@ class PizzaHat(commands.Bot):
             self.uptime = datetime.datetime.utcnow()
         print('Bot online')
 
-    async def create_db_pool(self):
-        self.db = await asyncpg.create_pool(database="PizzaHat", user="postgres", password=os.getenv('PG_PASS'))
-
-    async def close(self):
-        await super().close()
-
 bot = PizzaHat()
 if __name__ == '__main__':
-    bot.run(TOKEN)
+    bot.run(os.getenv("TOKEN"))
