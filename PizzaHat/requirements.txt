@@ -1,5 +1,5 @@
 discord.py
-asyncpg
+ruamel.yaml
 TagScriptEngine
 aiohttp
 asyncio
