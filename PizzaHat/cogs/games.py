@@ -5,7 +5,7 @@ import random
 import datetime
 
 class Games(commands.Cog):
-    """🎲 Fun Games to play when bored."""
+    """<:games:819957465160220734> Fun Games to play when bored."""
     def __init__(self,bot):
         self.bot = bot
 
