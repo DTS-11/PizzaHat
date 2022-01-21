@@ -1,18 +1,21 @@
-﻿import discord
+import discord
 from discord.ext import commands
 import asyncio
 import typing
 import uuid
+import sqlite3
 from datetime import datetime
 
 class Mod(commands.Cog):
     """<:moderation:847248846526087239> Moderation Commands"""
     def __init__(self,bot):
         self.bot = bot
+        self.conn = sqlite3.connect("data/warns.db")
+        self.cursor = self.conn.cursor()
     
 
     async def warn_log(self, guild_id, user_id):
-        data = await self.bot.db.fetchrow("SELECT * FROM warnlogs WHERE guild_id=$1 AND user_id=$2", guild_id, user_id)
+        data = await self.cursor("SELECT * FROM warnlogs WHERE guild_id=? AND user_id=?", guild_id, user_id)
         if not data:
             return []
         return data
@@ -20,7 +23,7 @@ class Mod(commands.Cog):
     async def warn_entry(self, guild_id, user_id, reason, time):
         data = await self.warn_log(guild_id, user_id)
         if data == []:
-            await self.bot.db.execute("INSERT INTO warnlogs (guild_id, user_id, warns, times) VALUES ($1, $2, $3, $4)", guild_id, user_id, [reason], [time])
+            await self.cursor("INSERT INTO warnlogs (guild_id, user_id, warns, times) VALUES (?, ?, ?, ?)", guild_id, user_id, [reason], [time])
             return
         warns = data[2]
         times = data[3]
@@ -32,24 +35,16 @@ class Mod(commands.Cog):
             warns.append(reason)
             times.append(time)
 
-        await self.bot.db.execute("UPDATE warnlogs SET times = $1, warns = $2 WHERE guild_id = $3 AND user_id = $4", times, warns, guild_id, user_id)
+        await self.cursor("UPDATE warnlogs SET times=?, warns=? WHERE guild_id=? AND user_id=?", times, warns, guild_id, user_id)
     
     async def delete_warn(self, guild_id, user_id, index):
         data = await self.warn_log(guild_id, user_id)
         if len(data[2])>=1:
             data[2].remove(data[2][index])
             data[3].remove(data[3][index])
-            return await self.bot.db.execute("UPDATE warnlogs SET warns = $1, times = $2 WHERE guild_id = $3 AND user_id = $4", data[2], data[3], guild_id, user_id)
+            return await self.cursor("UPDATE warnlogs SET warns=?, times=? WHERE guild_id=? AND user_id=?", data[2], data[3], guild_id, user_id)
         else:
-            await self.bot.db.execute("DELETE FROM warnlogs WHERE guild_id = $1 AND user_id = $2", guild_id, user_id)
-
-
-        # self.conn = sqlite3.connect("db's/moderation.db")
-        # self.c = self.conn.cursor()
-        # self.c.execute("""CREATE TABLE IF NOT EXISTS warns_data
-        #             (guild_id int, admin_id int, user_id int, reason text)""")
-        # self.c.execute("""CREATE TABLE IF NOT EXISTS mod_logs
-        #             (channel_id bigint, guild_id bigint)""")
+            await self.cursor("DELETE FROM warnlogs WHERE guild_id=? AND user_id=?", guild_id, user_id)
 
 
     @commands.command(aliases=['mn', 'mod-nick'])
@@ -505,7 +500,7 @@ class Mod(commands.Cog):
         if member == ctx.author or self.bot.user:
             return await ctx.send('You cant warn yourself or the bot.')
         
-        if not ctx.author.top_role.position>member.top_role.position:
+        if not ctx.author.top_role.position > member.top_role.position:
             return await ctx.send('You cant warn someone that has higher or same role heirarchy.')
 
         await self.warn_entry(ctx.guild.id, member.id, reason, ctx.message.created_at.timestamp)
@@ -551,7 +546,7 @@ class Mod(commands.Cog):
             )
         await ctx.send(embed=em)
     
-    @commands.command(aliases=['delete-warn','delwarn'])
+    @commands.command(aliases=['delwarn'])
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
