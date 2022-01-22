@@ -47,7 +47,7 @@ class Mod(commands.Cog):
             await self.cursor("DELETE FROM warnlogs WHERE guild_id=? AND user_id=?", guild_id, user_id)
 
 
-    @commands.command(aliases=['mn', 'mod-nick'])
+    @commands.command(aliases=['mn'])
     @commands.has_guild_permissions(manage_nicknames=True)
     @commands.bot_has_permissions(manage_nicknames=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -59,7 +59,7 @@ class Mod(commands.Cog):
         await member.edit(nick = nick)
         await ctx.send(f'{self.bot.yes} Nickname changed to `{nick}`')
 
-    @commands.command(aliases=['sn','set-nick'])
+    @commands.command(aliases=['sn'])
     @commands.has_guild_permissions(manage_nicknames=True)
     @commands.bot_has_permissions(manage_nicknames=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -70,7 +70,7 @@ class Mod(commands.Cog):
         await member.edit(nick=nick)
         await ctx.send(f'{self.bot.yes} Nickname for {member.name} was changed to {member.mention}')
 
-    @commands.command(aliases=['sm','slow-mode'])
+    @commands.command(aliases=['sm'])
     @commands.has_guild_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -243,7 +243,7 @@ class Mod(commands.Cog):
             await member.ban(reason=f"{reason}", delete_message_days=0)
             await ctx.send(f'{self.bot.yes} Banned `{member}`')
 
-    @commands.command(aliases=['mb','mass-ban'])
+    @commands.command(aliases=['mb'])
     @commands.guild_only()
     @commands.has_guild_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
@@ -332,7 +332,7 @@ class Mod(commands.Cog):
         await member.remove_roles(role)
         await ctx.send(f"{self.bot.yes} {member.mention} has been unmuted!")
     
-    @commands.command(aliases=['create-role'], usage='<name> [mentionable] [hoisted] [reason]')
+    @commands.command(usage='<name> [mentionable] [hoisted] [reason]')
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
@@ -352,7 +352,7 @@ class Mod(commands.Cog):
         )
         await ctx.send(embed=e)
 
-    @commands.command(aliases=['delrole','delete-role'])
+    @commands.command(aliases=['delrole'])
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
@@ -379,112 +379,7 @@ class Mod(commands.Cog):
         
         else:
             await user.add_roles(role)
-            await ctx.send(f'{self.bot.yes} Successfully added `{role.name}` to `{user}`')
-
-    # @commands.command()
-    # @commands.guild_only()
-    # @commands.has_guild_permissions(manage_messages=True)
-    # @commands.bot_has_permissions(manage_messages=True)
-    # async def warn(self, ctx, member:discord.Member, *, reason=None):
-    #     """
-    #     Warns a user.
-        
-    #     Works only if you and the bot has `Manage Messages` permissions.
-    #     """
-    #     warndb = self.conn
-    #     cursor = warndb.cursor()
-
-    #     if member == ctx.author:
-    #         emb = discord.Embed(title=f'{self.bot.no} Error',description = "You can't warn yourself!", color=discord.Color.red())
-    #         await ctx.send(embed = emb)
-    #         return
-
-    #     else:
-    #         cursor.execute('INSERT OR IGNORE INTO warns_data (guild_id, admin_id, user_id, reason) VALUES (?,?,?,?)', (ctx.guild.id, ctx.author.id, member.id, reason))
-    #         warndb.commit()
-
-    #         em = discord.Embed(
-    #             title=f"{self.bot.yes} Warned",
-    #             description=f'Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}',
-    #             color=self.bot.color
-    #         )
-    #         await ctx.send(embed=em)
-
-    #         try:
-    #             emb = discord.Embed(
-    #                 title="You have been warned",
-    #                 description=f'Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}\nGuild: {ctx.guild.name}',
-    #                 color=self.bot.color
-    #             )
-    #             await member.send(embed = emb)
-
-    #         except HTTPException:
-    #             await ctx.send("Coudn't warn that user thru DM's.")
-
-    # @commands.command(aliases=['clear-warns','remove-warns'])
-    # @commands.guild_only()
-    # @commands.has_guild_permissions(manage_messages=True)
-    # @commands.bot_has_permissions(manage_messages=True)
-    # async def clearwarn(self, ctx, member:discord.Member):
-    #     """
-    #     Clears every warns of the user.
-        
-    #     Works only if you and the bot has `Manage Messages` permissions.
-    #     """
-    #     warndb = self.conn
-    #     cursor = warndb.cursor()
-
-    #     if member == ctx.author:
-    #         emb = discord.Embed(title='Error',description = "You can't remove warns from yourself", color=discord.Color.red())
-    #         await ctx.send(embed = emb)
-    #         return
-
-    #     else:
-    #         cursor.execute("DELETE FROM warns_data WHERE guild_id = ? AND user_id = ?", (ctx.guild.id, member.id))
-    #         warndb.commit()
-    #         emb = discord.Embed(title=f"{self.bot.yes} Warning Removed",color=self.bot.color)
-    #         emb.add_field(name='Moderator:',value=ctx.message.author.mention,inline=False)
-    #         emb.add_field(name='Member:',value=member.mention,inline=False)
-    #         await ctx.send(embed = emb)
-
-    # @commands.command(aliases=['warns'])
-    # @commands.guild_only()
-    # @commands.has_guild_permissions(manage_messages=True)
-    # @commands.bot_has_permissions(manage_messages=True)
-    # async def warnings(self, ctx, member:discord.Member=None):
-    #     """
-    #     Displays the warnings of the user.
-    #     If no user is given, returns your warnings.
-        
-    #     Works only if you and the bot has `Manage Messages` permissions.
-    #     """
-    #     if member is None:
-    #         member = ctx.author
-
-    #     warndb = self.conn
-    #     cursor = warndb.cursor()
-    #     index = 0
-
-    #     embed=discord.Embed(title=f"{member.name}'s Warnings", description="", color=self.bot.color)
-    #     embed.set_thumbnail(url=member.avatar_url)
-    #     msg = await ctx.send(embed=embed)
-    #     db = cursor.execute('SELECT admin_id, reason FROM warns_data WHERE guild_id = ? AND user_id = ?', (ctx.guild.id, member.id,))
-    #     for entry in db:
-    #         index += 1
-    #         admin_id, reason = entry
-    #         admin_name = ctx.guild.get_member(admin_id)
-
-    #         embed=discord.Embed(
-    #             title=f"{member.name}'s Warnings",
-    #             description=f"__Warn {index}__\n\nModerator: {admin_name.mention}\n Reason: {reason}",
-    #             color=self.bot.color
-    #         )
-    #         embed.set_thumbnail(url=member.avatar_url)
-
-    #         if embed.description =='':
-    #             embed.description = f'{self.bot.yes} This user has no warnings!'
-
-    #         await msg.edit(embed=embed)
+            await ctx.send(f'{self.bot.yes} Successfully added `{role.name}` to `{user}`')      
 
     @commands.command()
     @commands.guild_only()
@@ -503,7 +398,7 @@ class Mod(commands.Cog):
         if not ctx.author.top_role.position > member.top_role.position:
             return await ctx.send('You cant warn someone that has higher or same role heirarchy.')
 
-        await self.warn_entry(ctx.guild.id, member.id, reason, ctx.message.created_at.timestamp)
+        await self.warn_entry(ctx.guild.id, member.id, reason, ctx.message.created_at.timestamp())
         em = discord.Embed(
                 title=f"{self.bot.yes} Warned User",
                 description=f'Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}\nTotal Warns: {count} warns',
