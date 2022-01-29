@@ -4,7 +4,8 @@ import asyncio
 import typing
 import uuid
 import sqlite3
-from datetime import datetime
+import datetime
+import humanfriendly
 
 class Mod(commands.Cog):
     """<:moderation:847248846526087239> Moderation Commands"""
@@ -281,56 +282,35 @@ class Mod(commands.Cog):
         except discord.NotFound:
             await ctx.send('Not a valid previously banned member or the member could not be found.')
 
-    @commands.command()
+    @commands.command(aliases=['mute'])
     @commands.guild_only()
-    @commands.has_guild_permissions(manage_messages=True)
-    @commands.bot_has_permissions(manage_messages=True)
+    @commands.has_guild_permissions(moderate_members=True)
+    @commands.bot_has_permissions(moderate_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def mute(self, ctx, member: discord.Member, *, reason=None):
+    async def timeout(self, ctx, member: discord.Member, time, *, reason=None):
         """
-        Mutes a member, must be unmuted manually.
+        Mute's/timeout's a member for specific time.
+        Use 5m for 5 mins, 1hr for 1 hour etc...
         """
         if reason is None:
             reason = 'No reason provided'
-        role = discord.utils.get(ctx.guild.roles, name="Muted")
-        await member.add_roles(role)
-        await ctx.send(f"{self.bot.yes} {member.mention} has been muted, reason: {reason}")
+        time = humanfriendly.parse_timespan(time)
+        await member.timeout(until=discord.utils.utcnow() + datetime.timedelta(seconds=time), reason=reason)
+        await ctx.send(f"{self.bot.yes} {member} has been muted for {time}.\nReason: {reason}")
 
     @commands.command()
     @commands.guild_only()
-    @commands.has_guild_permissions(manage_messages=True)
-    @commands.bot_has_permissions(manage_messages=True)
+    @commands.has_guild_permissions(moderate_members=True)
+    @commands.bot_has_permissions(moderate_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def tempmute(self, ctx, member: discord.Member,time,*,reason=None):
-        """
-        Mutes a member for some time, unmutes automatically.
-        """
-        if reason is None:
-            reason = 'No reason provided'
-        muted_role=discord.utils.get(ctx.guild.roles, name="Muted")
-        time_convert = {"s":1, "m":60, "h":3600,"d":86400}
-        tempmute= int(time[0]) * time_convert[time[-1]]
-        await member.add_roles(muted_role)
-        embed = discord.Embed(description= f"{self.bot.yes} {member.mention} has been temprarily muted. \n\nReason: {reason}", color=self.bot.color)
-        await ctx.send(embed=embed)
-        await asyncio.sleep(tempmute)
-        await member.remove_roles(muted_role)
-
-    @commands.command()
-    @commands.guild_only()
-    @commands.has_guild_permissions(manage_messages=True)
-    @commands.bot_has_permissions(manage_messages=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def unmute(self, ctx, member: discord.Member):
+    async def unmute(self, ctx, member: discord.Member, *, reason=None):
         """
         Unmutes a member.
         """
-        if not member:
-            await ctx.send("Please specify a member")
-            return
-        role = discord.utils.get(ctx.guild.roles, name="Muted")
-        await member.remove_roles(role)
-        await ctx.send(f"{self.bot.yes} {member.mention} has been unmuted!")
+        if reason is None:
+            reason = 'No reason provided'
+        await member.remove_timeout(reason=reason)
+        await ctx.send(f"{self.bot.yes} {member} has been unmuted!")
     
     @commands.command(usage='<name> [mentionable] [hoisted] [reason]')
     @commands.guild_only()
