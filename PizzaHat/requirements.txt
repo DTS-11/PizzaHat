@@ -1,4 +1,4 @@
-discord.py
+py-cord
 ruamel.yaml
 TagScriptEngine
 aiohttp
