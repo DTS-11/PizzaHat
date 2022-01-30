@@ -2,10 +2,10 @@ import discord
 from discord.ext import commands
 import datetime
 from ruamel.yaml import YAML
-from dotenv import load_env
+from dotenv import load_dotenv
 import os
 
-load_env('.env')
+load_env()
 yaml = YAML()
 
 with open("./config.yml", "r", encoding="utf-8") as file:
