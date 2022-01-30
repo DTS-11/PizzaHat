@@ -1,4 +1,4 @@
-py-cord
+py-cord==2.0.0b1
 ruamel.yaml
 TagScriptEngine
 aiohttp
