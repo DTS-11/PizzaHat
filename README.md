@@ -3,19 +3,9 @@
 PizzaHat Discord Bot <h1/>
 	
 <h4 align="center"> A multi-purpose bot for your server! <h4/>
-
-<h1 align="center">
-  <a href="https://top.gg/bot/860889936914677770">
-      <img src="https://top.gg/api/widget/status/860889936914677770.png" alt="status" />
-  </a>
-  <a href="https://top.gg/bot/860889936914677770">
-      <img src="https://top.gg/api/widget/servers/860889936914677770.svg/" alt="servers" />
-  </a>
-  <a href="https://top.gg/bot/860889936914677770">
-      <img src="https://top.gg/api/widget/upvotes/860889936914677770.svg/" alt="upvotes" />
   </a><br>
-  <img src="https://img.shields.io/badge/discord.py-1.7.3-blue?style=flat" />
-  <img src="https://img.shields.io/badge/Python-3.9-green?style=flat&logo=python" />
+  <img src="https://img.shields.io/badge/pycord-2.0-blue?style=flat" />
+  <img src="https://img.shields.io/badge/Python-3.8-green?style=flat&logo=python" />
   <img src="https://github.com/DTS-11/PizzaHat/actions/workflows/codeql-analysis.yml/badge.svg" />
 </h1>
 	
