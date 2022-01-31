@@ -4,6 +4,7 @@ import datetime
 from ruamel.yaml import YAML
 from dotenv import load_dotenv
 import os
+import traceback
 
 load_env()
 yaml = YAML()
@@ -44,8 +45,8 @@ class PizzaHat(commands.Bot):
             try:
                 self.load_extension(extension)
             except Exception as e:
-                print('Failed to load extension {}\n{}: {}'.format(
-                    extension, type(e).__name__, e))
+                print(f"Failed to load extension {extension}")
+                print("".join(traceback.format_exception(e, e, e.__traceback__)))
 
     async def on_ready(self):
         if not hasattr(self, 'uptime'):
