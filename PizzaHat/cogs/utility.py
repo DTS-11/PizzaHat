@@ -49,8 +49,8 @@ class Utility(commands.Cog):
             em.add_field(name='Member Bot', value=f'{self.bot.yes} Yes', inline=False)
         else:
             em.add_field(name='Member bot', value=f'{self.bot.no} No', inline=False)
-        em.set_footer(text=f"Requested by {ctx.author}", icon_url = ctx.author.avatar_url)
-        em.set_thumbnail(url = member.avatar_url)
+        em.set_footer(text=f"Requested by {ctx.author}", icon_url = ctx.author.avatar.url)
+        em.set_thumbnail(url = member.avatar.url)
         await ctx.send(embed=em)
         
     @commands.command(aliases=['si', 'server-info'])
@@ -172,10 +172,10 @@ class Utility(commands.Cog):
         dev = self.bot.get_user(710247495334232164)
 
         em = discord.Embed(color=self.bot.color)
-        em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar_url)
-        em.add_field(name='Bot Info', value=f"<:dev_badge:833297795761831956> Developer: <@710247495334232164> `[{dev}]`\n🗓️ Date created: {format_date(self.bot.user.created_at)}\n<:python:819942756314906655> Language: `Python 3`\n<:dpy:824585353221505025> Discord.py version: `{discord.__version__}`\n", inline=False)
+        em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar.url)
+        em.add_field(name='Bot Info', value=f"<:dev_badge:833297795761831956> Developer: <@710247495334232164> `[{dev}]`\n🗓️ Date created: {format_date(self.bot.user.created_at)}\n<:python:819942756314906655> Language: `Python 3`\n<:pycord:929100002440122428> Pycord version: `{discord.__version__}`\n", inline=False)
         em.add_field(name='Bot Stats', value=f"<:partnerbadge:819942435550396448> Servers: `{server_count} servers`\n<:memberlist:811747305543434260> Members: `{total_members} members`")
-        em.set_footer(text=f'Hosted by {dev}', icon_url=dev.avatar_url)
+        em.set_footer(text=f'Hosted by {dev}', icon_url=dev.avatar.url)
         await ctx.send(embed=em)
 
     @commands.command(aliases=['ei', 'emoji-info'])
@@ -226,7 +226,7 @@ class Utility(commands.Cog):
             description='Here are some useful links!\n[Invite me](https://dsc.gg/pizza-invite) | [Support](https://discord.gg/WhNVDTF) | [Vote](https://top.gg/bot/860889936914677770/vote)',
             color=self.bot.color
         )
-        em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar_url)
+        em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar.url)
         em.set_footer(text='Invite me to get good luck!')
         await ctx.send(embed=em)
 
@@ -241,7 +241,7 @@ class Utility(commands.Cog):
         await ctx.send(f'{self.bot.yes} {ctx.author.mention}, your suggestion has been recorded!')
         em = discord.Embed(color=self.bot.color)
         em.add_field(name='__New suggestion!__', value=suggestion, inline=False)
-        em.set_footer(text=f'Sent by {ctx.author} from {ctx.guild}', icon_url = ctx.author.avatar_url)
+        em.set_footer(text=f'Sent by {ctx.author} from {ctx.guild}', icon_url = ctx.author.avatar.url)
 
         channel = self.bot.get_channel(818927218884345866)
         e = await channel.send(embed=em)
@@ -280,7 +280,7 @@ class Utility(commands.Cog):
         em = discord.Embed(title="Local time", description=str(
             datetime.datetime.utcnow())[:-7], color=self.bot.color)
         em.set_author(name=self.bot.user.name,
-                      icon_url=self.bot.user.avatar_url)
+                      icon_url=self.bot.user.avatar.url)
         em.add_field(name="Current uptime",
                      value=self.get_bot_uptime(brief=True), inline=False)
         em.add_field(name="Start time", value=str(
@@ -330,7 +330,7 @@ class Utility(commands.Cog):
             member = ctx.author
         
         em = discord.Embed(title=f"Avatar of {member.name}", color=self.bot.color)
-        em.set_image(url=member.avatar_url)
+        em.set_image(url=member.avatar.url)
         em.set_footer(text=f"Requested by {ctx.author.name}")
         await ctx.send(embed=em)
     
@@ -343,7 +343,7 @@ class Utility(commands.Cog):
             )
         em.add_field(name='DBL',value='[`VOTE NOW`](https://discordbotlist.com/bots/zion/upvote/)',inline=False)
         em.add_field(name='Top.gg',value='[`VOTE NOW`](https://top.gg/bot/860889936914677770/vote)',inline=False)
-        em.set_thumbnail(url=self.bot.user.avatar_url)
+        em.set_thumbnail(url=self.bot.user.avatar.url)
         em.set_footer(text='Make sure to leave a nice review too!')
         await ctx.send(embed=em)
     
