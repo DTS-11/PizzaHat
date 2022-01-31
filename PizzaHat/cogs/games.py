@@ -136,7 +136,7 @@ class Games(commands.Cog):
                     choose_embed.set_author(
                         name='Tie', icon_url='https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/microsoft/209/anticlockwise-downwards-and-upwards-open-circle-arrows_1f504.png')
                     choose_embed.set_footer(
-                        text=ctx.author.name, icon_url=ctx.author.avatar_url)
+                        text=ctx.author.name, icon_url=ctx.author.avatar.url)
                     await ctx.send(embed=choose_embed)
                 
                 elif str(bot_select) == u'\U0001faa8':
@@ -148,7 +148,7 @@ class Games(commands.Cog):
                     choose_embed.set_author(
                         name='Tie', icon_url='https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/microsoft/209/anticlockwise-downwards-and-upwards-open-circle-arrows_1f504.png')
                     choose_embed.set_footer(
-                        text=ctx.author.name, icon_url=ctx.author.avatar_url)
+                        text=ctx.author.name, icon_url=ctx.author.avatar.url)
                     await ctx.send(embed=choose_embed)
                 
                 elif str(bot_select) == u'\U0001f4dc':
@@ -160,7 +160,7 @@ class Games(commands.Cog):
                     choose_embed.set_author(
                         name='Tie', icon_url='https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/microsoft/209/anticlockwise-downwards-and-upwards-open-circle-arrows_1f504.png')
                     choose_embed.set_footer(
-                        text=ctx.author.name, icon_url=ctx.author.avatar_url)
+                        text=ctx.author.name, icon_url=ctx.author.avatar.url)
                     await ctx.send(embed=choose_embed)
             
             elif str(user_select) == u'\U0001faa8':
@@ -174,7 +174,7 @@ class Games(commands.Cog):
                     choose_embed.set_author(
                         name='You Win', icon_url='https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/check-mark-button_2705.png')
                     choose_embed.set_footer(
-                        text=ctx.author.name, icon_url=ctx.author.avatar_url)
+                        text=ctx.author.name, icon_url=ctx.author.avatar.url)
                     await ctx.send(embed=choose_embed)
                 elif str(bot_select) == u'\U0001f4dc':
                     choose_embed = discord.Embed(color=0x2ecc71)
@@ -185,7 +185,7 @@ class Games(commands.Cog):
                     choose_embed.set_author(
                         name='You Lose', icon_url='https://images.emojiterra.com/mozilla/512px/274c.png')
                     choose_embed.set_footer(
-                        text=ctx.author.name, icon_url=ctx.author.avatar_url)
+                        text=ctx.author.name, icon_url=ctx.author.avatar.url)
                     await ctx.send(embed=choose_embed)
             elif str(user_select) == u'\U0001f4dc':
                 await question_choose.delete()
@@ -198,7 +198,7 @@ class Games(commands.Cog):
                     choose_embed.set_author(
                         name='You Win', icon_url='https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/check-mark-button_2705.png')
                     choose_embed.set_footer(
-                        text=ctx.author.name, icon_url=ctx.author.avatar_url)
+                        text=ctx.author.name, icon_url=ctx.author.avatar.url)
                     await ctx.send(embed=choose_embed)
                 elif str(bot_select) == u'\U00002702':
                     choose_embed = discord.Embed(color=0x2ecc71)
@@ -209,7 +209,7 @@ class Games(commands.Cog):
                     choose_embed.set_author(
                         name='You Lose', icon_url='https://images.emojiterra.com/mozilla/512px/274c.png')
                     choose_embed.set_footer(
-                        text=ctx.author.name, icon_url=ctx.author.avatar_url)
+                        text=ctx.author.name, icon_url=ctx.author.avatar.url)
                     await ctx.send(embed=choose_embed)
             elif str(user_select) == u'\U00002702':
                 await question_choose.delete()
@@ -222,7 +222,7 @@ class Games(commands.Cog):
                     choose_embed.set_author(
                         name='You Lose', icon_url='https://images.emojiterra.com/mozilla/512px/274c.png')
                     choose_embed.set_footer(
-                        text=ctx.author.name, icon_url=ctx.author.avatar_url)
+                        text=ctx.author.name, icon_url=ctx.author.avatar.url)
                     await ctx.send(embed=choose_embed)
                 elif str(bot_select) == u'\U0001f4dc':
                     choose_embed = discord.Embed(color=0x2ecc71)
@@ -233,7 +233,7 @@ class Games(commands.Cog):
                     choose_embed.set_author(
                         name='You Win', icon_url='https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/check-mark-button_2705.png')
                     choose_embed.set_footer(
-                        text=ctx.author.name, icon_url=ctx.author.avatar_url)
+                        text=ctx.author.name, icon_url=ctx.author.avatar.url)
                     await ctx.send(embed=choose_embed)
         except asyncio.TimeoutError:
             timeout = await ctx.send('The Time is end try again')
