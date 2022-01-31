@@ -98,7 +98,7 @@ class MyHelp(commands.HelpCommand):
         await channel.send(error)
 
 class Help(commands.Cog):
-    """:question: Gives help on he bot."""
+    """:question: Gives help on the bot."""
     def __init__(self, bot):
         self.bot = bot
         help_command = MyHelp()
