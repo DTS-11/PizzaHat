@@ -410,7 +410,7 @@ class Mod(commands.Cog):
                 color=self.bot.color,
                 timestamp=datetime.datetime.utcnow()
             )
-            em.set_thumbnail(url=member.avatar_url)
+            em.set_thumbnail(url=member.avatar.url)
             await ctx.send(embed=em)
         
         em = discord.Embed(
