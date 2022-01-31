@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 import contextlib
-from main import bot
 
 class MyHelp(commands.HelpCommand):
     def __init__(self):
@@ -21,9 +20,9 @@ class MyHelp(commands.HelpCommand):
         em = discord.Embed(
             title=f"{ctx.me.display_name} Help Menu",
             timestamp=ctx.message.created_at,
-            color=bot.color
+            color=discord.Color.blue()
         )
-        em.set_thumbnail(url=ctx.me.avatar_url)
+        em.set_thumbnail(url=ctx.me.avatar.url)
         usable = 0
 
         for cog, commands in mapping.items():
@@ -42,7 +41,7 @@ class MyHelp(commands.HelpCommand):
         embed = discord.Embed(
             title=signature,
             description=command.help or "No help found...",
-            color=bot.color
+            color=discord.Color.blue()
         )
 
         if cog := command.cog:
@@ -69,7 +68,7 @@ class MyHelp(commands.HelpCommand):
         embed = discord.Embed(
             title=title,
             description=description or "No help found...",
-            color=bot.color
+            color=discord.Color.blue()
         )
 
         if filtered_commands := await self.filter_commands(commands):
@@ -89,7 +88,7 @@ class MyHelp(commands.HelpCommand):
         em = discord.Embed(
             title=f'{title} Category',
             description=f"{cog.description}\n\n" + "\n".join([f"<:arrowright:842059363875291146> `{x.name}` • {x.help}" for x in cog.get_commands()]),
-            color=bot.color
+            color=discord.Color.blue()
         )
         em.set_footer(text='Use help [command] for more info')
         await self.send(embed=em)
