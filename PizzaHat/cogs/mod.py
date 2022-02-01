@@ -367,6 +367,7 @@ class Mod(commands.Cog):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def warn(self, ctx, member:discord.Member, *, reason="No reason provided"):
         """
         Warns a user.
@@ -393,6 +394,7 @@ class Mod(commands.Cog):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def warnings(self, ctx, member:discord.Member=None):
         """
         Displays the warnings of the user.
@@ -427,6 +429,7 @@ class Mod(commands.Cog):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def deletewarn(self, ctx, member:discord.Member, warn_id:float):
         """
         Deletes a warn of the user.
