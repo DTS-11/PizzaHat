@@ -248,13 +248,6 @@ class Utility(commands.Cog):
         await e.add_reaction('⬆️')
         await e.add_reaction('⬇️')
 
-    @commands.command(aliases=['team'])
-    async def credits(self,ctx):
-        """Shows users who have contributed to this bot."""
-        em = discord.Embed(title=f'{self.bot.user.name} Contributors', color=self.bot.color)
-        em.description=f"Drapes (<@583745403598405632>): [Github](https://github.com/drapespy)\nGDKID (<@596481615253733408>): [Github](https://github.com/GDKID69)\nCarl (<@106429844627169280>): [Github](https://github.com/CarlGroth)"
-        await ctx.send(embed=em)
-
     def get_bot_uptime(self, *, brief=False):
         now = datetime.datetime.utcnow()
         delta = now - self.bot.uptime
