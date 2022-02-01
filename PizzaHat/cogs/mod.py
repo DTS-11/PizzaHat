@@ -13,6 +13,8 @@ class Mod(commands.Cog):
         self.bot = bot
         self.conn = sqlite3.connect("data/warns.db")
         self.cursor = self.conn.cursor()
+        
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS warnlogs (guild_id BIGINT, user_id BIGINT, reason TEXT, warns TEXT[], time DECIMAL[])")
     
 
     async def warn_log(self, guild_id, user_id):
