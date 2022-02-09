@@ -11,14 +11,9 @@ class Mod(commands.Cog):
     """<:moderation:847248846526087239> Moderation Commands"""
     def __init__(self,bot):
         self.bot = bot
-        self.conn = sqlite3.connect("data/warns.db")
-        self.cursor = self.conn.cursor()
-        
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS warnlogs (guild_id BIGINT, user_id BIGINT, reason TEXT, warns TEXT[], time DECIMAL[])")
-    
 
     async def warn_log(self, guild_id, user_id):
-        data = await self.cursor("SELECT * FROM warnlogs WHERE guild_id=? AND user_id=?", guild_id, user_id)
+        data = await self.bot.db.fetchrow("SELECT * FROM warnlogs WHERE guild_id=$1 AND user_id=$2", guild_id, user_id)
         if not data:
             return []
         return data
@@ -26,7 +21,7 @@ class Mod(commands.Cog):
     async def warn_entry(self, guild_id, user_id, reason, time):
         data = await self.warn_log(guild_id, user_id)
         if data == []:
-            await self.cursor("INSERT INTO warnlogs (guild_id, user_id, warns, times) VALUES (?, ?, ?, ?)", guild_id, user_id, [reason], [time])
+            await self.bot.db.execute("INSERT INTO warnlogs (guild_id, user_id, warns, times) VALUES ($1, $2, $3, $4)", guild_id, user_id, [reason], [time])
             return
         warns = data[2]
         times = data[3]
@@ -38,16 +33,16 @@ class Mod(commands.Cog):
             warns.append(reason)
             times.append(time)
 
-        await self.cursor("UPDATE warnlogs SET times=?, warns=? WHERE guild_id=? AND user_id=?", times, warns, guild_id, user_id)
-    
+        await self.bot.db.execute("UPDATE warnlogs SET times = $1, warns = $2 WHERE guild_id = $3 AND user_id = $4", times, warns, guild_id, user_id)
+
     async def delete_warn(self, guild_id, user_id, index):
         data = await self.warn_log(guild_id, user_id)
         if len(data[2])>=1:
             data[2].remove(data[2][index])
             data[3].remove(data[3][index])
-            return await self.cursor("UPDATE warnlogs SET warns=?, times=? WHERE guild_id=? AND user_id=?", data[2], data[3], guild_id, user_id)
+            return await self.bot.db.execute("UPDATE warnlogs SET warns = $1, times = $2 WHERE guild_id = $3 AND user_id = $4", data[2], data[3], guild_id, user_id)
         else:
-            await self.cursor("DELETE FROM warnlogs WHERE guild_id=? AND user_id=?", guild_id, user_id)
+            await self.bot.db.execute("DELETE FROM warnlogs WHERE guild_id = $1 AND user_id = $2", guild_id, user_id)
 
 
     @commands.command(aliases=['mn'])
@@ -372,16 +367,16 @@ class Mod(commands.Cog):
         """
         Warns a user.
         """
-        data = await self.warn_log(ctx.guild.id, member.id)
+        data = self.warn_log(ctx.guild.id, member.id)
         count = len(data[3])
 
         if member == ctx.author or self.bot.user:
             return await ctx.send('You cant warn yourself or the bot.')
-        
-        if not ctx.author.top_role.position > member.top_role.position:
+
+        if not ctx.author.top_role.position>member.top_role.position:
             return await ctx.send('You cant warn someone that has higher or same role heirarchy.')
 
-        await self.warn_entry(ctx.guild.id, member.id, reason, ctx.message.created_at.timestamp())
+        await self.warn_entry(ctx.guild.id, member.id, reason, ctx.message.created_at.timestamp)
         em = discord.Embed(
                 title=f"{self.bot.yes} Warned User",
                 description=f'Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}\nTotal Warns: {count} warns',
@@ -389,7 +384,7 @@ class Mod(commands.Cog):
                 timestamp=datetime.datetime.utcnow()
             )
         await ctx.send(embed=em)
-    
+
     @commands.command(aliases=['warns'])
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
@@ -402,8 +397,8 @@ class Mod(commands.Cog):
         """
         if member is None:
             member = ctx.author
-        
-        data = await self.warn_log(ctx.guild.id, member.id)
+
+        data = self.warn_log(ctx.guild.id, member.id)
         for i in range(len(data[2])):
             reason = data[2][i]
 
@@ -414,9 +409,9 @@ class Mod(commands.Cog):
                 color=self.bot.color,
                 timestamp=datetime.datetime.utcnow()
             )
-            em.set_thumbnail(url=member.avatar.url)
+            em.set_thumbnail(url=member.avatar_url)
             await ctx.send(embed=em)
-        
+
         em = discord.Embed(
                 title=f'Warnings of {member.name} | {len(data[2])} warns',
                 description=f'Reason: {reason}\nWarn ID: `{data[3][i]}`',
@@ -424,8 +419,8 @@ class Mod(commands.Cog):
                 timestamp=datetime.datetime.utcnow()
             )
         await ctx.send(embed=em)
-    
-    @commands.command(aliases=['delwarn'])
+
+    @commands.command(aliases=['delete-warn','delwarn'])
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
