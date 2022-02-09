@@ -1,5 +1,6 @@
 py-cord==2.0.0b3
 ruamel.yaml
+asyncpg
 TagScriptEngine
 aiohttp
 asyncio
