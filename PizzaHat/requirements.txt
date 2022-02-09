@@ -10,5 +10,3 @@ typing-extensions
 asyncdagpi
 requests
 humanfriendly
-DiscordUtils
-DiscordUtils[voice]
