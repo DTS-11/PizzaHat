@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import os
 import traceback
 
-load_env()
+load_dotenv()
 yaml = YAML()
 
 with open("./config.yml", "r", encoding="utf-8") as file:
