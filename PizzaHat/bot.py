@@ -4,6 +4,7 @@ import datetime
 from ruamel.yaml import YAML
 from dotenv import load_dotenv
 import os
+import asyncpg
 import traceback
 
 load_dotenv()
@@ -40,6 +41,7 @@ class PizzaHat(commands.Bot):
         self.no = '<:no:829841023445631017>'
         self.color = discord.Color.blue()
         self.christmas = discord.Color.red()
+        self.loop.run_until_complete(self.create_db_pool())
 
         for extension in INITIAL_EXTENSIONS:
             try:
@@ -52,6 +54,9 @@ class PizzaHat(commands.Bot):
         if not hasattr(self, 'uptime'):
             self.uptime = datetime.datetime.utcnow()
         print('Bot online')
+        
+    async def create_db_pool(self):
+        self.db = await asyncpg.create_pool(database=os.getenv("PGDATABASE"), user=os.getenv("PGUSER"), password=os.getenv("PGPASSWORD"))
 
 bot = PizzaHat()
 if __name__ == '__main__':
