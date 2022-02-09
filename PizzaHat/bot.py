@@ -13,7 +13,7 @@ with open("./config.yml", "r", encoding="utf-8") as file:
     config = yaml.load(file)
 
 INITIAL_EXTENSIONS = [
-    'configuration.py',
+    #'configuration.py',
     'cogs.dev',
     'cogs.events',
     'cogs.fun',
@@ -21,7 +21,7 @@ INITIAL_EXTENSIONS = [
     'cogs.help',
     'cogs.image',
     'cogs.mod',
-    'cogs.music',
+    #'cogs.music',
     'cogs.utility'
 ]
 
