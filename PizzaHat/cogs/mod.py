@@ -370,8 +370,6 @@ class Mod(commands.Cog):
         """
         try:
             data = await self.warn_entry(ctx.guild.id, member.id, reason, datetime.datetime.utcnow())
-            data2 = await self.warn_log(ctx.guild.id, member.id)
-            count = len(data2[3])
 
             if member == ctx.author or self.bot.user:
                 return await ctx.send('You cant warn yourself or the bot.')
@@ -382,7 +380,7 @@ class Mod(commands.Cog):
             await self.warn_entry(ctx.guild.id, member.id, reason, ctx.message.created_at.timestamp)
             em = discord.Embed(
                     title=f"{self.bot.yes} Warned User",
-                    description=f'Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}\nTotal Warns: {count} warns',
+                    description=f'Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}',
                     color=self.bot.color,
                     timestamp=datetime.datetime.utcnow()
                 )
