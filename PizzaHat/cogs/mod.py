@@ -368,7 +368,7 @@ class Mod(commands.Cog):
         Warns a user.
         """
         try:
-            data = self.warn_log(ctx.guild.id, member.id)
+            data = await self.warn_log(ctx.guild.id, member.id)
             count = len(data[3])
 
             if member == ctx.author or self.bot.user:
@@ -401,7 +401,7 @@ class Mod(commands.Cog):
         if member is None:
             member = ctx.author
 
-        data = self.warn_log(ctx.guild.id, member.id)
+        data = await self.warn_log(ctx.guild.id, member.id)
         for i in range(len(data[2])):
             reason = data[2][i]
 
