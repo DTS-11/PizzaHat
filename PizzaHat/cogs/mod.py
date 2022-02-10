@@ -15,8 +15,9 @@ class Mod(commands.Cog):
     async def warn_log(self, guild_id, user_id):
         data = await self.bot.db.fetchrow("SELECT * FROM warnlogs WHERE guild_id=$1 AND user_id=$2", guild_id, user_id)
         if not data:
-            return []
-        return data
+            print("No data")
+        else:
+            return data
 
     async def warn_entry(self, guild_id, user_id, reason, time):
         data = await self.warn_log(guild_id, user_id)
