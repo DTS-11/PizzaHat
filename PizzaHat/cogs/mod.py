@@ -3,9 +3,9 @@ from discord.ext import commands
 import asyncio
 import typing
 import uuid
-import sqlite3
 import datetime
 import humanfriendly
+import traceback
 
 class Mod(commands.Cog):
     """<:moderation:847248846526087239> Moderation Commands"""
@@ -367,23 +367,26 @@ class Mod(commands.Cog):
         """
         Warns a user.
         """
-        data = self.warn_log(ctx.guild.id, member.id)
-        count = len(data[3])
+        try:
+            data = self.warn_log(ctx.guild.id, member.id)
+            count = len(data[3])
 
-        if member == ctx.author or self.bot.user:
-            return await ctx.send('You cant warn yourself or the bot.')
+            if member == ctx.author or self.bot.user:
+                return await ctx.send('You cant warn yourself or the bot.')
 
-        if not ctx.author.top_role.position>member.top_role.position:
-            return await ctx.send('You cant warn someone that has higher or same role heirarchy.')
+            if not ctx.author.top_role.position>member.top_role.position:
+                return await ctx.send('You cant warn someone that has higher or same role heirarchy.')
 
-        await self.warn_entry(ctx.guild.id, member.id, reason, ctx.message.created_at.timestamp)
-        em = discord.Embed(
-                title=f"{self.bot.yes} Warned User",
-                description=f'Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}\nTotal Warns: {count} warns',
-                color=self.bot.color,
-                timestamp=datetime.datetime.utcnow()
-            )
-        await ctx.send(embed=em)
+            await self.warn_entry(ctx.guild.id, member.id, reason, ctx.message.created_at.timestamp)
+            em = discord.Embed(
+                    title=f"{self.bot.yes} Warned User",
+                    description=f'Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}\nTotal Warns: {count} warns',
+                    color=self.bot.color,
+                    timestamp=datetime.datetime.utcnow()
+                )
+            await ctx.send(embed=em)
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))
 
     @commands.command(aliases=['warns'])
     @commands.guild_only()
@@ -429,15 +432,18 @@ class Mod(commands.Cog):
         """
         Deletes a warn of the user.
         """
-        data = await self.warn_log(ctx.guild.id, member.id)
-        if data == []:
-            return await ctx.send(f'{self.bot.no} This user has no warns!')
-        if data[2] and warn_id in data[3]:
-            index = data[3].index(warn_id)
-            await self.delete_warn(ctx.guild.id, member.id, index)
-            return await ctx.send(f'{self.bot.yes} Warn entry deleted!')
-        else:
-            return await ctx.send(f'{self.bot.no} No warn entry found for this user.')
+        try:
+            data = await self.warn_log(ctx.guild.id, member.id)
+            if data == []:
+                return await ctx.send(f'{self.bot.no} This user has no warns!')
+            if data[2] and warn_id in data[3]:
+                index = data[3].index(warn_id)
+                await self.delete_warn(ctx.guild.id, member.id, index)
+                return await ctx.send(f'{self.bot.yes} Warn entry deleted!')
+            else:
+                return await ctx.send(f'{self.bot.no} No warn entry found for this user.')
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))
 
 
 def setup(bot):
