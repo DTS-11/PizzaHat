@@ -31,7 +31,7 @@ class Images(commands.Cog):
         If no user is provided, returns yours avatar."""
         if member is None:
             member = ctx.author
-        url = str(member.avatar_url_as(static_format="png", size=1024))
+        url = str(member.display_avatar.with_format("png").with_size(1024))
         img = await dagpi.image_process(ImageFeatures.pixel(), url)
         file = discord.File(fp=img.image,filename=f"pixel.{img.format}")
         await ctx.send(file=file)
@@ -42,7 +42,7 @@ class Images(commands.Cog):
         If no user is provided, replaces with your pfp."""
         uname = user.name
         text = str(text)
-        pfp = str(user.avatar_url_as(format="png", size=1024))
+        pfp = str(user.display_avatar.with_format("png").with_size(1024))
         img = await dagpi.image_process(ImageFeatures.tweet(), url=pfp, username=uname, text=text)   
         file = discord.File(fp=img.image,filename=f"tweet.{img.format}")
         await ctx.send(file=file)
@@ -52,7 +52,7 @@ class Images(commands.Cog):
         """Triggers yours or someone's avatar."""
         if member is None:
             member = ctx.author
-        pfp = str(member.avatar_url_as(format="png", size=1024))
+        pfp = str(member.display_avatar.with_format("png").with_size(1024))
         img = await dagpi.image_process(ImageFeatures.triggered(), url=pfp)   
         file = discord.File(fp=img.image,filename=f"triggered.{img.format}")
         await ctx.send(file=file)
@@ -63,7 +63,7 @@ class Images(commands.Cog):
         If no user is given, returns yours."""
         if member is None:
             member = ctx.author
-        pfp = str(member.avatar_url_as(format="png", size=1024))
+        pfp = str(member.display_avatar.with_format("png").with_size(1024))
         img = await dagpi.image_process(ImageFeatures.wasted(), url=pfp)   
         file = discord.File(fp=img.image,filename=f"wasted.{img.format}")
         await ctx.send(file=file)
@@ -73,7 +73,7 @@ class Images(commands.Cog):
         """Angelify your pfp."""
         if member is None:
             member = ctx.author
-        pfp = str(member.avatar_url_as(format="png", size=1024))
+        pfp = str(member.display_avatar.with_format("png").with_size(1024))
         img = await dagpi.image_process(ImageFeatures.angel(), url=pfp)   
         file = discord.File(fp=img.image,filename=f"angel.{img.format}")
         await ctx.send(file=file)
@@ -83,7 +83,7 @@ class Images(commands.Cog):
         """Changes you or someone into hitler."""
         if member is None:
             member = ctx.author
-        pfp = str(member.avatar_url_as(format="png", size=1024))
+        pfp = str(member.display_avatar.with_format("png").with_size(1024))
         img = await dagpi.image_process(ImageFeatures.hitler(), url=pfp)   
         file = discord.File(fp=img.image,filename=f"hitler.{img.format}")
         await ctx.send(file=file)
@@ -93,7 +93,7 @@ class Images(commands.Cog):
         """Delete someone or yourself."""
         if member is None:
             member = ctx.author
-        pfp = str(member.avatar_url_as(format="png", size=1024))
+        pfp = str(member.display_avatar.with_format("png").with_size(1024))
         img = await dagpi.image_process(ImageFeatures.delete(), url=pfp)   
         file = discord.File(fp=img.image,filename=f"delete.{img.format}")
         await ctx.send(file=file)
@@ -104,7 +104,7 @@ class Images(commands.Cog):
         if member is None:
             member = ctx.author
 
-        pfp = str(member.avatar_url_as(format="png", size=1024))
+        pfp = str(member.display_avatar.with_format("png").with_size(1024))
         img = await dagpi.image_process(ImageFeatures.wanted(), url=pfp)   
         file = discord.File(fp=img.image,filename=f"wanted.{img.format}")
         await ctx.send(file=file)
@@ -114,7 +114,7 @@ class Images(commands.Cog):
         """Lock yourself or someone behind bars."""
         if member is None:
             member = ctx.author
-        pfp = str(member.avatar_url_as(format="png", size=1024))
+        pfp = str(member.display_avatar.with_format("png").with_size(1024))
         img = await dagpi.image_process(ImageFeatures.jail(), url=pfp)   
         file = discord.File(fp=img.image,filename=f"jail.{img.format}")
         await ctx.send(file=file)
@@ -124,7 +124,7 @@ class Images(commands.Cog):
         """Replace the trash with your face/avatar."""
         if member is None:
             member = ctx.author
-        pfp = str(member.avatar_url_as(format="png", size=1024))
+        pfp = str(member.display_avatar.with_format("png").with_size(1024))
         img = await dagpi.image_process(ImageFeatures.trash(), url=pfp)   
         file = discord.File(fp=img.image,filename=f"trash.{img.format}")
         await ctx.send(file=file)
@@ -134,7 +134,7 @@ class Images(commands.Cog):
         """Send a Discord message, simple."""
         uname = member.name
         text = str(text)
-        pfp = str(member.avatar_url_as(format="png", size=1024))
+        pfp = str(member.display_avatar.with_format("png").with_size(1024))
         img = await dagpi.image_process(ImageFeatures.discord(), url=pfp, username=uname, text=text)   
         file = discord.File(fp=img.image,filename=f"discord.{img.format}")
         await ctx.send(file=file)
