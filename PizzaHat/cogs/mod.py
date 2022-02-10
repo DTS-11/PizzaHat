@@ -369,8 +369,9 @@ class Mod(commands.Cog):
         Warns a user.
         """
         try:
-            data = await self.warn_log(ctx.guild.id, member.id)
-            count = len(data[3])
+            data = await self.warn_entry(ctx.guild.id, member.id, reason, datetime.datetime.utcnow())
+            data2 = await self.warn_log(ctx.guild.id, member.id)
+            count = len(data2[3])
 
             if member == ctx.author or self.bot.user:
                 return await ctx.send('You cant warn yourself or the bot.')
