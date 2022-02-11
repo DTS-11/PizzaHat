@@ -11,4 +11,3 @@ typing-extensions
 asyncdagpi
 requests
 humanfriendly
-youtube_dl
