@@ -11,3 +11,4 @@ typing-extensions
 asyncdagpi
 requests
 humanfriendly
+git+https://github.com/DTS-11/DisUtils
