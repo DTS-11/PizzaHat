@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.ui import Button, View
 import time
 import datetime
 import shlex
@@ -221,14 +222,18 @@ class Utility(commands.Cog):
     @commands.command(name='invite')
     async def invite_cmd(self, ctx):
         """Gives invite of bot."""
+        b1 = Button(label="Invite", emoji="✉️", url="https://dsc.gg/pizza-invite")
+        b2 = Button(label="Support", emoji="📨", url="https://discord.gg/WhNVDTF")
+        b3 = Button(label="Vote", emoji="🗳", url="https://top.gg/bot/860889936914677770/vote")
+        view = View(b1, b2, b3)
         em=discord.Embed(
             title=':link: Links',
-            description='Here are some useful links!\n[Invite me](https://dsc.gg/pizza-invite) | [Support](https://discord.gg/WhNVDTF) | [Vote](https://top.gg/bot/860889936914677770/vote)',
+            description='Click on the links below if you cant see the buttons for some reason.\n[Invite me](https://dsc.gg/pizza-invite) | [Support](https://discord.gg/WhNVDTF) | [Vote](https://top.gg/bot/860889936914677770/vote)',
             color=self.bot.color
         )
         em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar.url)
-        em.set_footer(text='Invite me to get good luck!')
-        await ctx.send(embed=em)
+        em.set_footer(text='Thank you for inviting me! <3')
+        await ctx.send(embed=em, view=view)
 
     @commands.command()
     async def support(self, ctx):
