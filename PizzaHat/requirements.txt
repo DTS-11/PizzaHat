@@ -11,4 +11,4 @@ typing-extensions
 asyncdagpi
 requests
 humanfriendly
-new-DisUtils
+new-DisUtils[voice]
