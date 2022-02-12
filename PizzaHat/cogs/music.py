@@ -1,9 +1,9 @@
 import discord
 from discord.ext import commands
-import DisUtils
+import DiscordUtils
 import humanfriendly
 
-music = DisUtils.Music()
+music = DiscordUtils.Music()
 
 class Music(commands.Cog):
     """<a:music:929100003178348634> Music commands"""
@@ -103,7 +103,7 @@ class Music(commands.Cog):
         player = music.get_player(guild_id=ctx.guild.id)
         try:
             await player.pause()
-        except DisUtils.NotPlaying:
+        except DiscordUtils.NotPlaying:
             return await ctx.send("I am not playing any songs ._.")
         await ctx.message.add_reaction("⏸️")
     
