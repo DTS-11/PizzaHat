@@ -11,4 +11,3 @@ typing-extensions
 asyncdagpi
 requests
 humanfriendly
-new-DisUtils[voice]==1.3.7
