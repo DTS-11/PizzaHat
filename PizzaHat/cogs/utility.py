@@ -63,7 +63,7 @@ class Utility(commands.Cog):
                 return 'N/A'
             return f'{date:%m-%d-%Y | %H:%M} UTC'
 
-        features = [f.lower().title() for f in ctx.guild.features]
+        features = [f.lower().title().replace("_", " ") for f in ctx.guild.features]
 
         em = discord.Embed(
             title=f'{ctx.guild.name}',
