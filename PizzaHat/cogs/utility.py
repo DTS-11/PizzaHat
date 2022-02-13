@@ -63,29 +63,7 @@ class Utility(commands.Cog):
                 return 'N/A'
             return f'{date:%m-%d-%Y | %H:%M} UTC'
 
-        info = []
-        features = set(ctx.guild.features)
-        all_features = {
-            'PARTNERED': 'Partnered',
-            'VERIFIED': 'Verified',
-            'DISCOVERABLE': 'Server Discovery',
-            'COMMUNITY': 'Community Server',
-            'FEATURABLE': 'Featured',
-            'WELCOME_SCREEN_ENABLED': 'Welcome Screen',
-            'INVITE_SPLASH': 'Invite Splash',
-            'VIP_REGIONS': 'VIP Voice Servers',
-            'VANITY_URL': 'Vanity Invite URL',
-            'COMMERCE': 'Commerce',
-            'LURKABLE': 'Lurkable',
-            'NEWS': 'News Channels',
-            'THREADS_ENABLED': 'Threads',
-            'ANIMATED_ICON': 'Animated Icon',
-            'BANNER': 'Banner',
-        }
-
-        for feature, label in all_features.items():
-            if feature in features:
-                info.append(f'{label}')
+        features = [f.lower().title().replace("_", " ") for f in ctx.guild.features]
 
         em = discord.Embed(
             title=f'{ctx.guild.name}',
@@ -101,7 +79,7 @@ class Utility(commands.Cog):
         em.add_field(name='Emojis', value=len(ctx.guild.emojis), inline=False)
         em.add_field(name='Boost Info', value=f'<:boosts:811749808133373996> Boosts: {ctx.guild.premium_subscription_count}\n<:boostlevel:811749895143948288> Server level: {ctx.guild.premium_tier}', inline=False)
         if info:
-            em.add_field(name='Server Features', value=', '.join(info), inline=False)
+            em.add_field(name='Server Features', value=', '.join(features), inline=False)
         else:
             em.add_field(name='Server Features', value=f'{self.bot.no} None', inline=False)
         em.add_field(name='Verification level', value=str(ctx.guild.verification_level).capitalize(), inline=False)
