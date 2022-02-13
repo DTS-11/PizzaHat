@@ -20,6 +20,12 @@ class Fun(commands.Cog):
         ]
         self.engine = Interpreter(blocks)
 
+
+ ​   ​@​commands​.​command​() 
+ ​   ​async​ ​def​ ​screenshot​(​self​, ​ctx, *, ​url​):
+        """Takes a screenshot of the given link."""
+ ​       ​await​ ​ctx​.​reply​(​f"https://image.thum.io/get/https://​{​url​}​"​)
+
     @commands.command()
     async def pressf(self, ctx, *, object):
         """Pay respect to something/someone by pressing the reaction."""
