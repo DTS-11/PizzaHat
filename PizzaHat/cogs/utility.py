@@ -83,7 +83,7 @@ class Utility(commands.Cog):
         else:
             em.add_field(name='Server Features', value=f'{self.bot.no} None', inline=False)
         em.add_field(name='Verification level', value=str(ctx.guild.verification_level).capitalize(), inline=False)
-        em.set_thumbnail(url=f"{ctx.guild.icon_url}")
+        em.set_thumbnail(url=f"{ctx.guild.icon.url}")
         em.set_footer(text=f'Created at: {formatted_date(ctx.guild.created_at)}')
         
         await ctx.send(embed=em)
