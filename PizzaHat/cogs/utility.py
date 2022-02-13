@@ -78,7 +78,7 @@ class Utility(commands.Cog):
         em.add_field(name='📁 Categories', value=len(ctx.guild.categories), inline=False)
         em.add_field(name='Emojis', value=len(ctx.guild.emojis), inline=False)
         em.add_field(name='Boost Info', value=f'<:boosts:811749808133373996> Boosts: {ctx.guild.premium_subscription_count}\n<:boostlevel:811749895143948288> Server level: {ctx.guild.premium_tier}', inline=False)
-        if info:
+        if features:
             em.add_field(name='Server Features', value=', '.join(features), inline=False)
         else:
             em.add_field(name='Server Features', value=f'{self.bot.no} None', inline=False)
