@@ -20,8 +20,7 @@ class Fun(commands.Cog):
         ]
         self.engine = Interpreter(blocks)
 
-
- ​   ​@​commands​.​command​(aliases=["ss"]) 
+    @​commands​.​command​(aliases=["ss"])
  ​   ​async​ ​def​ ​screenshot​(​self​, ​ctx, *, ​url​):
         """Takes a screenshot of the given link."""
  ​       ​await​ ​ctx​.​send​(​f"https://image.thum.io/get/https://​{​url​}​"​)
