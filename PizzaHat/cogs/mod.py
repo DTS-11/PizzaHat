@@ -211,36 +211,35 @@ class Mod(commands.Cog):
     @commands.has_guild_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def kick(self, ctx, member:discord.Member, *, reason=None):
+    async def kick(self, ctx, member:discord.Member, *, reason):
         """
-        Kicks a member from the server.
+        Kicks a member from the server. Reason is required.
         """
-        if reason is None:
-            reason = f'No reason provided.\n- Kicked by {ctx.author}'
-
-        await member.kick(reason=reason)
-        await ctx.send(f'{self.bot.yes} Kicked `{member}`')
+        if reason:
+            await member.kick(reason=reason)
+            await ctx.send(f'{self.bot.yes} Kicked `{member}`')
+        else:
+            await ctx.send(f"{self.bot.no} Provide a reason to kick this user.")
 
     @commands.command(aliases=['b'])
     @commands.has_guild_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def ban(self, ctx, member:typing.Union[discord.Member,int], *, reason=None):
+    async def ban(self, ctx, member:typing.Union[discord.Member,int], *, reason):
         """
-        Bans a member from the server.
+        Bans a member from the server. Reason is required
         You can also ban someone that is not in the server using their user ID.
         """
-        if reason is None:
-            reason = f'No reason provided.\n- Banned by {ctx.author}'
-        
-        if isinstance(member, int):
-            await ctx.guild.ban(discord.Object(id=member), reason=f"{reason}")
-            user = await self.bot.fetch_user(member)
-            await ctx.send(f'{self.bot.yes} Banned `{user}`')
-
+        if reason:
+            if isinstance(member, int):
+                await ctx.guild.ban(discord.Object(id=member), reason=f"{reason}")
+                user = await self.bot.fetch_user(member)
+                await ctx.send(f'{self.bot.yes} Banned `{user}`')
+            else:
+                await member.ban(reason=f"{reason}", delete_message_days=0)
+                await ctx.send(f'{self.bot.yes} Banned `{member}`')
         else:
-            await member.ban(reason=f"{reason}", delete_message_days=0)
-            await ctx.send(f'{self.bot.yes} Banned `{member}`')
+            await ctx.send(f"{self.bot.no} Provide a reason to ban this user.")
 
     @commands.command(aliases=['mb'])
     @commands.guild_only()
