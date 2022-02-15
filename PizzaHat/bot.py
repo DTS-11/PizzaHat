@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord_together import DiscordTogether
 import datetime
 from ruamel.yaml import YAML
 from dotenv import load_dotenv
@@ -14,7 +15,8 @@ with open("./config.yml", "r", encoding="utf-8") as file:
     config = yaml.load(file)
 
 INITIAL_EXTENSIONS = [
-    #'configuration.py',
+    'cogs.activities',
+    #'cogs.configuration',
     'cogs.dev',
     'cogs.events',
     'cogs.fun',
@@ -54,6 +56,7 @@ class PizzaHat(commands.Bot):
         if not hasattr(self, 'uptime'):
             self.uptime = datetime.datetime.utcnow()
         print('Bot online')
+        self.togetherControl = await DiscordTogether(os.getenv("TOKEN"), debug=True)
         
     async def create_db_pool(self):
         self.db = await asyncpg.create_pool(database=os.getenv("PGDATABASE"), user=os.getenv("PGUSER"), password=os.getenv("PGPASSWORD"))
