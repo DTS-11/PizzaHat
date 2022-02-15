@@ -11,3 +11,4 @@ typing-extensions
 asyncdagpi
 requests
 humanfriendly
+discord_together
