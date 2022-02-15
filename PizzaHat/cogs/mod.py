@@ -246,14 +246,11 @@ class Mod(commands.Cog):
     @commands.has_guild_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def massban(self, ctx, members:commands.Greedy[discord.Member], *, reason=None):
+    async def massban(self, ctx, members:commands.Greedy[discord.Member], *, reason):
         """
-        Mass bans multiple members from the server.
+        Mass bans multiple members from the server. Reason is required.
         You can only ban users who are in the server.
         """
-        if reason is None:
-            reason = f'No reason provided.\n- Banned by {ctx.author}'
-
         if not len(members):
             await ctx.send('One or more required arguments are missing.')
 
