@@ -13,7 +13,7 @@ class Activities(commands.Cog):
         Starts a YouTube Together activity in your server.
         Must join a VC.
         """
-        link = self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'youtube')
+        link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'youtube')
         await ctx.send(f"Click the link to start the activity\n{link}")
         
     @commands.command(aliases=["pokernight"])
@@ -22,7 +22,7 @@ class Activities(commands.Cog):
         Starts a Poker Night activity in your server.
         Must join a VC.
         """
-        link = self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'poker')
+        link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'poker')
         await ctx.send(f"Click the link to start the activity\n{link}")
         
     @commands.command()
@@ -31,7 +31,7 @@ class Activities(commands.Cog):
         Starts a Chess in the Park activity in your server.
         Must join a VC.
         """
-        link = self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'chess')
+        link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'chess')
         await ctx.send(f"Click the link to start the activity\n{link}")
         
     @commands.command()
@@ -40,7 +40,7 @@ class Activities(commands.Cog):
         Starts a Checkers in the Park activity in your server.
         Must join a VC.
         """
-        link = self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'checkers')
+        link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'checkers')
         await ctx.send(f"Click the link to start the activity\n{link}")
         
     @commands.command()
@@ -49,7 +49,7 @@ class Activities(commands.Cog):
         Starts a Spell Case activity in your server.
         Must join a VC.
         """
-        link = self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'spellcast')
+        link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'spellcast')
         await ctx.send(f"Click the link to start the activity\n{link}")
         
     @commands.command()
@@ -58,7 +58,7 @@ class Activities(commands.Cog):
         Starts a Betrayal IO activity in your server.
         Must join a VC.
         """
-        link = self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'betrayal')
+        link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'betrayal')
         await ctx.send(f"Click the link to start the activity\n{link}")
         
 def setup(bot):
