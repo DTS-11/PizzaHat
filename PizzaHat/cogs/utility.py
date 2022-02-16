@@ -13,7 +13,7 @@ def to_keycap(c):
 
 def get_bot_uptime(brief=False):
     now = datetime.datetime.utcnow()
-    delta = now - self.bot.uptime
+    delta = now - ctx.bot.uptime
     hours, remainder = divmod(int(delta.total_seconds()), 3600)
     minutes, seconds = divmod(remainder, 60)
     days, hours = divmod(hours, 24)
