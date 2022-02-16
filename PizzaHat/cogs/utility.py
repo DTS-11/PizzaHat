@@ -143,22 +143,22 @@ class Utility(commands.Cog):
     async def botinfo(self, ctx):
         """Shows info about bot."""
         def get_bot_uptime(self, *, brief=False):
-        now = datetime.datetime.utcnow()
-        delta = now - self.bot.uptime
-        hours, remainder = divmod(int(delta.total_seconds()), 3600)
-        minutes, seconds = divmod(remainder, 60)
-        days, hours = divmod(hours, 24)
+            now = datetime.datetime.utcnow()
+            delta = now - self.bot.uptime
+            hours, remainder = divmod(int(delta.total_seconds()), 3600)
+            minutes, seconds = divmod(remainder, 60)
+            days, hours = divmod(hours, 24)
 
-        if not brief:
-            if days:
-                fmt = '{d} days, {h} hours, {m} minutes, and {s} seconds'
+            if not brief:
+                if days:
+                    fmt = '{d} days, {h} hours, {m} minutes, and {s} seconds'
+                else:
+                    fmt = '{h} hours, {m} minutes, and {s} seconds'
             else:
-                fmt = '{h} hours, {m} minutes, and {s} seconds'
-        else:
-            fmt = '{h}h {m}m {s}s'
-            if days:
-                fmt = '{d}d ' + fmt
-        return fmt.format(d=days, h=hours, m=minutes, s=seconds)
+                fmt = '{h}h {m}m {s}s'
+                if days:
+                    fmt = '{d}d ' + fmt
+            return fmt.format(d=days, h=hours, m=minutes, s=seconds)
     
         server_count = len(self.bot.guilds)
         total_users = len(set(self.bot.get_all_members()))
