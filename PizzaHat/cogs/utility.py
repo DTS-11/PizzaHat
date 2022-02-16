@@ -7,8 +7,27 @@ import shlex
 import requests
 
 start_time = time.time()
+
 def to_keycap(c):
     return '\N{KEYCAP TEN}' if c == 10 else str(c) + '\u20e3'
+
+def get_bot_uptime(self, *, brief=False):
+        now = datetime.datetime.utcnow()
+        delta = now - self.bot.uptime
+        hours, remainder = divmod(int(delta.total_seconds()), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        days, hours = divmod(hours, 24)
+
+        if not brief:
+            if days:
+                fmt = '{d} days, {h} hours, {m} minutes, and {s} seconds'
+            else:
+                fmt = '{h} hours, {m} minutes, and {s} seconds'
+        else:
+            fmt = '{h}h {m}m {s}s'
+            if days:
+                fmt = '{d}d ' + fmt
+        return fmt.format(d=days, h=hours, m=minutes, s=seconds)
 
 class Utility(commands.Cog):
     """🛠️ Utility Commands"""
@@ -142,24 +161,6 @@ class Utility(commands.Cog):
     @commands.command(aliases=['stats'])
     async def botinfo(self, ctx):
         """Shows info about bot."""
-        def get_bot_uptime(self, *, brief=False):
-            now = datetime.datetime.utcnow()
-            delta = now - self.bot.uptime
-            hours, remainder = divmod(int(delta.total_seconds()), 3600)
-            minutes, seconds = divmod(remainder, 60)
-            days, hours = divmod(hours, 24)
-
-            if not brief:
-                if days:
-                    fmt = '{d} days, {h} hours, {m} minutes, and {s} seconds'
-                else:
-                    fmt = '{h} hours, {m} minutes, and {s} seconds'
-            else:
-                fmt = '{h}h {m}m {s}s'
-                if days:
-                    fmt = '{d}d ' + fmt
-            return fmt.format(d=days, h=hours, m=minutes, s=seconds)
-    
         server_count = len(self.bot.guilds)
         total_users = len(set(self.bot.get_all_members()))
         dev = self.bot.get_user(710247495334232164)
