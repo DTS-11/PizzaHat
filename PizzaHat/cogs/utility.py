@@ -172,7 +172,7 @@ class Utility(commands.Cog):
         em.add_field(name="<:partnerbadge:819942435550396448> Servers", value=f"<a:arrow:943468719630323742> `{server_count}`", inline=False)
         em.add_field(name="<:memberlist:811747305543434260> Users", value=f"<a:arrow:943468719630323742> `{total_users}`", inline=False)
         em.add_field(name="<:pycord:929100002440122428> Pycord version", value=f"<a:arrow:943468719630323742> `{discord.__version__}`", inline=False)
-        em.add_field(name="⌛ Uptime", value=f"<a:arrow:943468719630323742> `{self.get_bot_uptime(brief=True)}`", inline=False)
+        em.add_field(name="⌛ Uptime", value=f"<a:arrow:943468719630323742> `{get_bot_uptime(brief=True)}`", inline=False)
         em.set_thumbnail(url=self.bot.avatar.url)
         em.set_footer(text=f'Hosted by {dev}', icon_url=dev.avatar.url)
         await ctx.send(embed=em)
