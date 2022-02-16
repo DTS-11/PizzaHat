@@ -20,7 +20,7 @@ class Utility(commands.Cog):
         """Shows latency of bot."""
         await ctx.send(f":ping_pong: Pong!\nBot latency: `{round(self.bot.latency*1000)}ms`")
 
-    @commands.command(aliases=['whois','ui', 'user-info'])
+    @commands.command(aliases=['whois','ui'])
     @commands.guild_only()
     async def userinfo(self, ctx,  member:discord.Member=None):
         """
@@ -54,7 +54,7 @@ class Utility(commands.Cog):
         em.set_thumbnail(url = member.avatar.url)
         await ctx.send(embed=em)
         
-    @commands.command(aliases=['si', 'server-info'])
+    @commands.command(aliases=['si'])
     @commands.guild_only()
     async def serverinfo(self, ctx):
         """Shows various info about the server."""
@@ -88,7 +88,7 @@ class Utility(commands.Cog):
         
         await ctx.send(embed=em)
 
-    @commands.command(aliases=['channel-info','ci'])
+    @commands.command(aliases=['ci'])
     @commands.guild_only()
     async def channelinfo(self, ctx, channel:discord.TextChannel=None):
         """
@@ -116,7 +116,7 @@ class Utility(commands.Cog):
         
         await ctx.send(embed=e)
     
-    @commands.command(aliases=['role-info','ri'])
+    @commands.command(aliases=['ri'])
     @commands.guild_only()
     async def roleinfo(self, ctx, *, role: discord.Role):
         """Gives some info about the specified role.
@@ -142,22 +142,42 @@ class Utility(commands.Cog):
     @commands.command(aliases=['stats'])
     async def botinfo(self, ctx):
         """Shows info about bot."""
-        def format_date(dt:datetime.datetime):
-            if dt is None:
-                return 'N/A'
-            return f'<t:{int(dt.timestamp())}>'
+        def get_bot_uptime(self, *, brief=False):
+        now = datetime.datetime.utcnow()
+        delta = now - self.bot.uptime
+        hours, remainder = divmod(int(delta.total_seconds()), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        days, hours = divmod(hours, 24)
+
+        if not brief:
+            if days:
+                fmt = '{d} days, {h} hours, {m} minutes, and {s} seconds'
+            else:
+                fmt = '{h} hours, {m} minutes, and {s} seconds'
+        else:
+            fmt = '{h}h {m}m {s}s'
+            if days:
+                fmt = '{d}d ' + fmt
+        return fmt.format(d=days, h=hours, m=minutes, s=seconds)
+    
         server_count = len(self.bot.guilds)
-        total_members = len(set(self.bot.get_all_members()))
+        total_users = len(set(self.bot.get_all_members()))
         dev = self.bot.get_user(710247495334232164)
 
-        em = discord.Embed(color=self.bot.color)
-        em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar.url)
-        em.add_field(name='Bot Info', value=f"<:dev_badge:833297795761831956> Developer: <@710247495334232164> `[{dev}]`\n🗓️ Date created: {format_date(self.bot.user.created_at)}\n<:python:819942756314906655> Language: `Python 3`\n<:pycord:929100002440122428> Pycord version: `{discord.__version__}`\n", inline=False)
-        em.add_field(name='Bot Stats', value=f"<:partnerbadge:819942435550396448> Servers: `{server_count} servers`\n<:memberlist:811747305543434260> Members: `{total_members} members`")
+        em = discord.Embed(
+            title=f"Stats for {self.bot.user.name}",
+            color=self.bot.color
+        )
+        em.add_field(name="<:developer:833297795761831956> Developer", value=f"<a:arrow:943468719630323742> <@710247495334232164> `[{dev}]`", inline=False)
+        em.add_field(name="<:partnerbadge:819942435550396448> Servers", value=f"<a:arrow:943468719630323742> `{server_count}`", inline=False)
+        em.add_field(name="<:memberlist:811747305543434260> Users", value=f"<a:arrow:943468719630323742> `{total_users}`", inline=False)
+        em.add_field(name="<:pycord:929100002440122428> Pycord version", value=f"<a:arrow:943468719630323742> `{discord.__version__}`", inline=False)
+        em.add_field(name="⌛ Uptime", value=f"<a:arrow:943468719630323742> `{self.get_bot_uptime(brief=True)}`", inline=False)
+        em.set_thumbnail(url=self.bot.avatar.url)
         em.set_footer(text=f'Hosted by {dev}', icon_url=dev.avatar.url)
         await ctx.send(embed=em)
 
-    @commands.command(aliases=['ei', 'emoji-info'])
+    @commands.command(aliases=['ei'])
     async def emojiinfo(self, ctx, emoji:discord.Emoji):
         """Shows info about emoji."""
         try:
@@ -231,38 +251,6 @@ class Utility(commands.Cog):
         await e.add_reaction('⬆️')
         await e.add_reaction('⬇️')
 
-    def get_bot_uptime(self, *, brief=False):
-        now = datetime.datetime.utcnow()
-        delta = now - self.bot.uptime
-        hours, remainder = divmod(int(delta.total_seconds()), 3600)
-        minutes, seconds = divmod(remainder, 60)
-        days, hours = divmod(hours, 24)
-
-        if not brief:
-            if days:
-                fmt = '{d} days, {h} hours, {m} minutes, and {s} seconds'
-            else:
-                fmt = '{h} hours, {m} minutes, and {s} seconds'
-        else:
-            fmt = '{h}h {m}m {s}s'
-            if days:
-                fmt = '{d}d ' + fmt
-
-        return fmt.format(d=days, h=hours, m=minutes, s=seconds)
-
-    @commands.command()
-    async def uptime(self, ctx):
-        """Tells you how long the bot has been up for."""
-        em = discord.Embed(title="Local time", description=str(
-            datetime.datetime.utcnow())[:-7], color=self.bot.color)
-        em.set_author(name=self.bot.user.name,
-                      icon_url=self.bot.user.avatar.url)
-        em.add_field(name="Current uptime",
-                     value=self.get_bot_uptime(brief=True), inline=False)
-        em.add_field(name="Start time", value=str(
-            self.bot.uptime)[:-7], inline=False)
-        await ctx.send(embed=em)
-
     # show perms
     async def say_permissions(self, ctx, member, channel):
         permissions = channel.permissions_for(member)
@@ -286,7 +274,6 @@ class Utility(commands.Cog):
         channel = ctx.message.channel
         if member is None:
             member = ctx.author
-
         await self.say_permissions(ctx, member, channel)
 
     @commands.command(aliases=['botperms'])
@@ -314,14 +301,16 @@ class Utility(commands.Cog):
     async def vote(self,ctx):
         """Vote for the bot."""
         em = discord.Embed(
-            title=f'Vote for {self.bot.user.name}',
+            title='Vote for me',
+            description="Click the buttons below to vote!",
             color=self.bot.color
-            )
-        em.add_field(name='DBL',value='[`VOTE NOW`](https://discordbotlist.com/bots/zion/upvote/)',inline=False)
-        em.add_field(name='Top.gg',value='[`VOTE NOW`](https://top.gg/bot/860889936914677770/vote)',inline=False)
+        )
         em.set_thumbnail(url=self.bot.user.avatar.url)
         em.set_footer(text='Make sure to leave a nice review too!')
-        await ctx.send(embed=em)
+        b1 = Button(label="Top.gg", url="https://top.gg/bot/860889936914677770/vote")
+        b2 = Button(label="DBL", url="https://discordbotlist.com/bots/zion/upvote/")
+        view = View(b1, b2)
+        await ctx.send(embed=em, view=view)
     
     @commands.command()
     @commands.has_guild_permissions(manage_messages=True)
