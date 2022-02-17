@@ -53,9 +53,8 @@ class PizzaHat(commands.Bot):
                 print("".join(traceback.format_exception(e, e, e.__traceback__)))
 
     async def on_ready(self):
-        if not hasattr(self, 'uptime'):
-            self.uptime = datetime.datetime.utcnow()
-        print('Bot online')
+        print("Bot online")
+        self.uptime = datetime.datetime.utcnow()
         self.togetherControl = await DiscordTogether(os.getenv("TOKEN"), debug=True)
         
     async def create_db_pool(self):
