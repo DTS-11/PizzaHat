@@ -53,9 +53,10 @@ class PizzaHat(commands.Bot):
                 print("".join(traceback.format_exception(e, e, e.__traceback__)))
 
     async def on_ready(self):
-        print("Bot online")
-        self.uptime = datetime.datetime.utcnow()
+        if not hasattr(self, 'uptime'):
+            self.uptime = datetime.datetime.utcnow()
         self.togetherControl = await DiscordTogether(os.getenv("TOKEN"), debug=True)
+        print("Bot online.")
         
     async def create_db_pool(self):
         self.db = await asyncpg.create_pool(database=os.getenv("PGDATABASE"), user=os.getenv("PGUSER"), password=os.getenv("PGPASSWORD"))
