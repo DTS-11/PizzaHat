@@ -9,7 +9,7 @@ PizzaHat Discord Bot <h1/>
   <img src="https://github.com/DTS-11/PizzaHat/actions/workflows/codeql-analysis.yml/badge.svg" />
 </h1>
 	
-	
+
 ## ℹ️ • Info
 
 PizzaHat is a multi-purpose bot, made to satisfy your needs, as well as your server's needs too! This project is open source so that other developers could work on it and make it even better!
