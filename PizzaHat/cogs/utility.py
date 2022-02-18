@@ -146,20 +146,8 @@ class Utility(commands.Cog):
         server_count = len(self.bot.guilds)
         total_users = len(set(self.bot.get_all_members()))
         dev = self.bot.get_user(710247495334232164)
-
-        em = discord.Embed(
-            title=f"Stats for {self.bot.user.name}",
-            color=self.bot.color
-        )
-        em.add_field(name="<:developer:833297795761831956> Developer", value=f"<a:arrow:943468719630323742> <@710247495334232164> `[{dev}]`", inline=False)
-        em.add_field(name="<:partnerbadge:819942435550396448> Servers", value=f"<a:arrow:943468719630323742> `{server_count}`", inline=False)
-        em.add_field(name="<:memberlist:811747305543434260> Users", value=f"<a:arrow:943468719630323742> `{total_users}`", inline=False)
-        em.add_field(name="<:pycord:929100002440122428> Pycord version", value=f"<a:arrow:943468719630323742> `{discord.__version__}`", inline=False)
-        em.set_thumbnail(url=self.bot.avatar.url)
-        em.set_footer(text=f'Hosted by {dev}', icon_url=dev.avatar.url)
-        await ctx.send(embed=em)
         
-     def get_bot_uptime(self, *, brief=False):
+        def get_bot_uptime(self, *, brief=False):
          now = datetime.datetime.utcnow()
          delta = now - self.bot.uptime
          hours, remainder = divmod(int(delta.total_seconds()), 3600)
@@ -178,13 +166,45 @@ class Utility(commands.Cog):
 
          return fmt.format(d=days, h=hours, m=minutes, s=seconds)
 
-     @commands.command()
-     async def uptime(self, ctx):
-         """Tells you how long the bot has been up for."""
-         em = discord.Embed(color=self.bot.color)
-         em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar_url)
-         em.add_field(name="Current uptime", value=self.get_bot_uptime(brief=True), inline=False)
-         await ctx.send(embed=em)
+        em = discord.Embed(
+            title=f"Stats for {self.bot.user.name}",
+            color=self.bot.color
+        )
+        em.add_field(name="<:developer:833297795761831956> Developer", value=f"<a:arrow:943468719630323742> <@710247495334232164> `[{dev}]`", inline=False)
+        em.add_field(name="<:partnerbadge:819942435550396448> Servers", value=f"<a:arrow:943468719630323742> `{server_count}`", inline=False)
+        em.add_field(name="<:memberlist:811747305543434260> Users", value=f"<a:arrow:943468719630323742> `{total_users}`", inline=False)
+        em.add_field(name="<:pycord:929100002440122428> Pycord version", value=f"<a:arrow:943468719630323742> `{discord.__version__}`", inline=False)
+        em.add_field(name="⌛ Uptime", value=f"<a:arrow:943468719630323742> `{self.get_bot_uptime(brief=True)}`", inline=False)
+        em.set_thumbnail(url=self.bot.avatar.url)
+        em.set_footer(text=f'Hosted by {dev}', icon_url=dev.avatar.url)
+        await ctx.send(embed=em)
+        
+#      def get_bot_uptime(self, *, brief=False):
+#          now = datetime.datetime.utcnow()
+#          delta = now - self.bot.uptime
+#          hours, remainder = divmod(int(delta.total_seconds()), 3600)
+#          minutes, seconds = divmod(remainder, 60)
+#          days, hours = divmod(hours, 24)
+
+#          if not brief:
+#              if days:
+#                  fmt = '{d} days, {h} hours, {m} minutes, and {s} seconds'
+#              else:
+#                  fmt = '{h} hours, {m} minutes, and {s} seconds'
+#          else:
+#              fmt = '{h}h {m}m {s}s'
+#              if days:
+#                  fmt = '{d}d ' + fmt
+
+#          return fmt.format(d=days, h=hours, m=minutes, s=seconds)
+
+#      @commands.command()
+#      async def uptime(self, ctx):
+#          """Tells you how long the bot has been up for."""
+#          em = discord.Embed(color=self.bot.color)
+#          em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar_url)
+#          em.add_field(name="Current uptime", value=self.get_bot_uptime(brief=True), inline=False)
+#          await ctx.send(embed=em)
 
     @commands.command(aliases=['ei'])
     async def emojiinfo(self, ctx, emoji:discord.Emoji):
