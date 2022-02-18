@@ -140,14 +140,7 @@ class Utility(commands.Cog):
         
         await ctx.send(embed=e)
 
-    @commands.command(aliases=['stats'])
-    async def botinfo(self, ctx):
-        """Shows info about bot."""
-        server_count = len(self.bot.guilds)
-        total_users = len(set(self.bot.get_all_members()))
-        dev = self.bot.get_user(710247495334232164)
-        
-        def get_bot_uptime(self, *, brief=False):
+    def get_bot_uptime(self, *, brief=False):
          now = datetime.datetime.utcnow()
          delta = now - self.bot.uptime
          hours, remainder = divmod(int(delta.total_seconds()), 3600)
@@ -165,6 +158,13 @@ class Utility(commands.Cog):
                  fmt = '{d}d ' + fmt
 
          return fmt.format(d=days, h=hours, m=minutes, s=seconds)
+
+    @commands.command(aliases=['stats'])
+    async def botinfo(self, ctx):
+        """Shows info about bot."""
+        server_count = len(self.bot.guilds)
+        total_users = len(set(self.bot.get_all_members()))
+        dev = self.bot.get_user(710247495334232164)
 
         em = discord.Embed(
             title=f"Stats for {self.bot.user.name}",
