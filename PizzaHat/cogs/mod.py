@@ -16,6 +16,7 @@ class Mod(commands.Cog):
         data = await self.bot.db.fetchrow("SELECT * FROM warnlogs WHERE guild_id=$1 AND user_id=$2", guild_id, user_id)
         if not data:
             print("No data")
+            return []
         else:
             return data
 
@@ -44,7 +45,6 @@ class Mod(commands.Cog):
             return await self.bot.db.execute("UPDATE warnlogs SET warns = $1, times = $2 WHERE guild_id = $3 AND user_id = $4", data[2], data[3], guild_id, user_id)
         else:
             await self.bot.db.execute("DELETE FROM warnlogs WHERE guild_id = $1 AND user_id = $2", guild_id, user_id)
-
 
     @commands.command(aliases=['mn'])
     @commands.has_guild_permissions(manage_nicknames=True)
@@ -80,7 +80,7 @@ class Mod(commands.Cog):
         if seconds is None:
             seconds = ctx.channel.slowmode_delay
             await ctx.send(f'The slowmode in this channel is `{seconds}` seconds')
-        
+
         elif seconds == 0:
             await ctx.channel.edit(slowmode_delay=0)
             await ctx.send(f'{self.bot.yes} Slow-mode set to none in this channel. Chat goes brrrr....')
@@ -305,7 +305,7 @@ class Mod(commands.Cog):
             reason = 'No reason provided'
         await member.remove_timeout(reason=reason)
         await ctx.send(f"{self.bot.yes} {member} has been unmuted!")
-    
+
     @commands.command(usage='<name> [mentionable] [hoisted] [reason]')
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
@@ -317,7 +317,7 @@ class Mod(commands.Cog):
         """
         if reason is None:
             reason = f'Role created by {ctx.author}'
-    
+
         await ctx.guild.create_role(name=name, hoist=hoisted, mentionable=mentionable)
         e = discord.Embed(
             title=f'{self.bot.yes} Role created',
@@ -337,7 +337,7 @@ class Mod(commands.Cog):
         """
         await role.delete()
         await ctx.send(f'{self.bot.yes} Role has been deleted.')
-    
+
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
@@ -350,10 +350,10 @@ class Mod(commands.Cog):
         if role in user.roles:
             await user.remove_roles(role)
             await ctx.send(f'{self.bot.yes} Successfully removed `{role.name}` from `{user}`')
-        
+
         else:
             await user.add_roles(role)
-            await ctx.send(f'{self.bot.yes} Successfully added `{role.name}` to `{user}`')      
+            await ctx.send(f'{self.bot.yes} Successfully added `{role.name}` to `{user}`')
 
     @commands.command()
     @commands.guild_only()
@@ -365,15 +365,12 @@ class Mod(commands.Cog):
         Warns a user.
         """
         try:
-            data = await self.warn_entry(ctx.guild.id, member.id, reason, datetime.datetime.utcnow())
-
-            if member == ctx.author or self.bot.user:
+            if member == ctx.author or member == self.bot.user:
                 return await ctx.send('You cant warn yourself or the bot.')
-
-            if not ctx.author.top_role.position>member.top_role.position:
-                return await ctx.send('You cant warn someone that has higher or same role heirarchy.')
-
-            await self.warn_entry(ctx.guild.id, member.id, reason, ctx.message.created_at.timestamp)
+            if not ctx.author.top_role.position == member.top_role.position:
+                if not ctx.author.top_role.position > member.top_role.position:
+                    return await ctx.send('You cant warn someone that has higher or same role heirarchy.')
+            await self.warn_entry(ctx.guild.id, member.id, reason, float(ctx.message.created_at.timestamp()))
             em = discord.Embed(
                     title=f"{self.bot.yes} Warned User",
                     description=f'Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}',
@@ -398,19 +395,19 @@ class Mod(commands.Cog):
             member = ctx.author
 
         data = await self.warn_log(ctx.guild.id, member.id)
+        em = discord.Embed(
+            title=f'Warnings of {member.name}',
+            description=f'{self.bot.yes} This user has no warns!',
+            color=self.bot.color,
+            timestamp=datetime.datetime.utcnow()
+        )
+        em.set_thumbnail(url=member.avatar_url)
+        if not data:
+            return await ctx.send(embed=em)
+        if not len(data[2]):
+            return await ctx.send(embed=em)
         for i in range(len(data[2])):
             reason = data[2][i]
-
-        if not data:
-            em = discord.Embed(
-                title=f'Warnings of {member.name}',
-                description=f'{self.bot.yes} This user has no warns!',
-                color=self.bot.color,
-                timestamp=datetime.datetime.utcnow()
-            )
-            em.set_thumbnail(url=member.avatar_url)
-            await ctx.send(embed=em)
-
         em = discord.Embed(
                 title=f'Warnings of {member.name} | {len(data[2])} warns',
                 description=f'Reason: {reason}\nWarn ID: `{data[3][i]}`',
