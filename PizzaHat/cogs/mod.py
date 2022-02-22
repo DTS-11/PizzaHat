@@ -401,7 +401,7 @@ class Mod(commands.Cog):
             color=self.bot.color,
             timestamp=datetime.datetime.utcnow()
         )
-        em.set_thumbnail(url=member.avatar_url)
+        em.set_thumbnail(url=member.avatar.url)
         if not data:
             return await ctx.send(embed=em)
         if not len(data[2]):
