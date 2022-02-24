@@ -9,7 +9,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         await self.bot.db.execute("""CREATE TABLE IF NOT EXISTS warnlogs 
-                    (guild_id BIGINT, user_id BIGINT, reason TEXT, time DECIMAL[])""")
+                    (guild_id BIGINT, user_id BIGINT, warns TEXT[], time NUMERIC[])""")
     
     @commands.Cog.listener()
     async def on_message(self, msg):
