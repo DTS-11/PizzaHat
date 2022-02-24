@@ -35,14 +35,14 @@ class Mod(commands.Cog):
             warns.append(reason)
             times.append(time)
 
-        await self.bot.db.execute("UPDATE warnlogs SET times = $1, warns = $2 WHERE guild_id = $3 AND user_id = $4", times, warns, guild_id, user_id)
+        await self.bot.db.execute("UPDATE warnlogs SET time = $1, warns = $2 WHERE guild_id = $3 AND user_id = $4", times, warns, guild_id, user_id)
 
     async def delete_warn(self, guild_id, user_id, index):
         data = await self.warn_log(guild_id, user_id)
         if len(data[2])>=1:
             data[2].remove(data[2][index])
             data[3].remove(data[3][index])
-            return await self.bot.db.execute("UPDATE warnlogs SET warns = $1, times = $2 WHERE guild_id = $3 AND user_id = $4", data[2], data[3], guild_id, user_id)
+            return await self.bot.db.execute("UPDATE warnlogs SET warns = $1, time = $2 WHERE guild_id = $3 AND user_id = $4", data[2], data[3], guild_id, user_id)
         else:
             await self.bot.db.execute("DELETE FROM warnlogs WHERE guild_id = $1 AND user_id = $2", guild_id, user_id)
 
