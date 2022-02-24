@@ -383,8 +383,6 @@ class Mod(commands.Cog):
 
     @commands.command(aliases=['warns'])
     @commands.guild_only()
-    @commands.has_guild_permissions(manage_messages=True)
-    @commands.bot_has_permissions(manage_messages=True)
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def warnings(self, ctx, member:discord.Member=None):
         """
