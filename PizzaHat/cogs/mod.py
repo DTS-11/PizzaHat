@@ -23,7 +23,7 @@ class Mod(commands.Cog):
     async def warn_entry(self, guild_id, user_id, reason, time):
         data = await self.warn_log(guild_id, user_id)
         if data == []:
-            await self.bot.db.execute("INSERT INTO warnlogs (guild_id, user_id, warns, times) VALUES ($1, $2, $3, $4)", guild_id, user_id, [reason], [time])
+            await self.bot.db.execute("INSERT INTO warnlogs (guild_id, user_id, warns, time) VALUES ($1, $2, $3, $4)", guild_id, user_id, [reason], [time])
             return
         warns = data[2]
         times = data[3]
