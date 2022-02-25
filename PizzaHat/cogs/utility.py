@@ -41,7 +41,12 @@ class Utility(commands.Cog):
             return f'<t:{int(dt.timestamp())}>'
 
         em = discord.Embed(
-            description=f"**User ID:** {member.id}\n**Display Name:** {member.display_name}\n\n**Account Creation:** {format_date(member.created_at)}\n**Joined Server:** {format_date(member.joined_at)}\n",
+            description=(
+                f"**User ID:** {member.id}\n"
+                f"**Display Name:** {member.display_name}\n\n"
+                f"**Account Creation:** {format_date(member.created_at)}\n"
+                f"**Joined Server:** {format_date(member.joined_at)}\n"
+            ),
             color=self.bot.color,
             timestamp=ctx.message.created_at
         )
@@ -66,25 +71,41 @@ class Utility(commands.Cog):
 
         features = [f.lower().title().replace("_", " ") for f in ctx.guild.features]
 
-        em = discord.Embed(
-            title=f'{ctx.guild.name}',
-            color=self.bot.color
-        )
+        em = discord.Embed(title=f'{ctx.guild.name}', color=self.bot.color)
         em.add_field(name='<:owner:811749694744297502> Owner', value=ctx.guild.owner, inline=False)
         em.add_field(name='Description', value=ctx.guild.description, inline=False)
         em.add_field(name='Guild ID', value=ctx.guild.id, inline=False)
         em.add_field(name=f'Roles', value=len(ctx.guild.roles), inline=False)
-        em.add_field(name=f'Members ({ctx.guild.member_count})', value=f'<:memberlist:811747305543434260> Humans: {len([m for m in ctx.guild.members if not m.bot])}\n<:botlist:811747723434786859> Bots: {sum(member.bot for member in ctx.guild.members)}', inline=False)
-        em.add_field(name='Channels', value=f'<:textchannel:811747767763992586> Text: {len(ctx.guild.text_channels)}\n<:voicechannel:811748732906635295> Voice: {len(ctx.guild.voice_channels)}', inline=False)
+        em.add_field(
+            name=f'Members ({ctx.guild.member_count})',
+            value=(
+                f'<:memberlist:811747305543434260> Humans: {len([m for m in ctx.guild.members if not m.bot])}\n'
+                f'<:botlist:811747723434786859> Bots: {sum(member.bot for member in ctx.guild.members)}'
+            ),
+            inline=False
+        )
+        em.add_field(
+            name='Channels',
+            value=(
+                f'<:textchannel:811747767763992586> Text: {len(ctx.guild.text_channels)}\n'
+                f'<:voicechannel:811748732906635295> Voice: {len(ctx.guild.voice_channels)}'
+            ),
+            inline=False
+        )
         em.add_field(name='📁 Categories', value=len(ctx.guild.categories), inline=False)
         em.add_field(name='Emojis', value=len(ctx.guild.emojis), inline=False)
-        em.add_field(name='Boost Info', value=f'<:boosts:811749808133373996> Boosts: {ctx.guild.premium_subscription_count}\n<:boostlevel:811749895143948288> Server level: {ctx.guild.premium_tier}', inline=False)
-        if features:
-            em.add_field(name='Server Features', value=', '.join(features), inline=False)
-        else:
-            em.add_field(name='Server Features', value=f'{self.bot.no} None', inline=False)
+        em.add_field(
+            name='Boost Info',
+            value=(
+                f'<:boosts:811749808133373996> Boosts: {ctx.guild.premium_subscription_count}\n'
+                f'<:boostlevel:811749895143948288> Server level: {ctx.guild.premium_tier}'
+            ),
+            inline=False
+        )
+        em.add_field(name="Server Features", value=', '.join(features) if features else f'{self.bot.no} None', inline=False)
         em.add_field(name='Verification level', value=str(ctx.guild.verification_level).capitalize(), inline=False)
-        em.set_thumbnail(url=f"{ctx.guild.icon.url}")
+
+        em.set_thumbnail(url=ctx.guild.icon.url)
         em.set_footer(text=f'Created at: {formatted_date(ctx.guild.created_at)}')
         
         await ctx.send(embed=em)
@@ -110,10 +131,7 @@ class Utility(commands.Cog):
         e.add_field(name='Mention', value=f'`<#{channel.id}>`', inline=True)
         e.add_field(name='Category name', value=channel.category.name, inline=False)
         e.add_field(name='Channel Created', value=format_date(channel.created_at), inline=False)
-        if channel.nsfw:
-            e.add_field(name='NSFW', value=f'{self.bot.yes} Yes', inline=False)
-        else:
-            e.add_field(name='NSFW', value=f'{self.bot.no} No', inline=False)
+        e.add_field(name="NSFW", value=f'{self.bot.yes} Yes' if channel.nsfw else f'{self.bot.no} No', inline=False)
         
         await ctx.send(embed=e)
     
@@ -170,13 +188,35 @@ class Utility(commands.Cog):
             title=f"Stats for {self.bot.user.name}",
             color=self.bot.color
         )
-        em.add_field(name="<:developer:833297795761831956> Developer", value=f"<a:arrow:943468719630323742> <@710247495334232164> `[{dev}]`", inline=False)
-        em.add_field(name="<:partnerbadge:819942435550396448> Servers", value=f"<a:arrow:943468719630323742> `{server_count}`", inline=False)
-        em.add_field(name="<:memberlist:811747305543434260> Users", value=f"<a:arrow:943468719630323742> `{total_users}`", inline=False)
-        em.add_field(name="<:pycord:929100002440122428> Pycord version", value=f"<a:arrow:943468719630323742> `{discord.__version__}`", inline=False)
-        em.add_field(name="⌛ Uptime", value=f"<a:arrow:943468719630323742> `{self.get_bot_uptime(brief=True)}`", inline=False)
+        em.add_field(
+            name="<:developer:833297795761831956> Developer",
+            value=f"<a:arrow:943468719630323742> <@710247495334232164> `[{dev}]`",
+            inline=False
+        )
+        em.add_field(
+            name="<:partnerbadge:819942435550396448> Servers",
+            value=f"<a:arrow:943468719630323742> `{server_count}`",
+            inline=False
+        )
+        em.add_field(
+            name="<:memberlist:811747305543434260> Users",
+            value=f"<a:arrow:943468719630323742> `{total_users}`",
+            inline=False
+        )
+        em.add_field(
+            name="<:pycord:929100002440122428> Pycord version",
+            value=f"<a:arrow:943468719630323742> `{discord.__version__}`",
+            inline=False
+        )
+        em.add_field(
+            name="⌛ Uptime",
+            value=f"<a:arrow:943468719630323742> `{self.get_bot_uptime(brief=True)}`",
+            inline=False
+        )
+
         em.set_thumbnail(url=self.bot.user.avatar.url)
         em.set_footer(text=f'Hosted by {dev}', icon_url=dev.avatar.url)
+
         await ctx.send(embed=em)
         
 #      def get_bot_uptime(self, *, brief=False):
@@ -255,7 +295,12 @@ class Utility(commands.Cog):
         view = View(b1, b2, b3)
         em=discord.Embed(
             title=':link: Links',
-            description='Click on the links below if you cant see the buttons for some reason.\n[Invite me](https://dsc.gg/pizza-invite) | [Support](https://discord.gg/WhNVDTF) | [Vote](https://top.gg/bot/860889936914677770/vote)',
+            description=(
+                'Click on the links below if you cant see the buttons for some reason.\n'
+                '[Invite me](https://dsc.gg/pizza-invite) | '
+                '[Support](https://discord.gg/WhNVDTF) | '
+                '[Vote](https://top.gg/bot/860889936914677770/vote)'
+            ),
             color=self.bot.color
         )
         em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar.url)
