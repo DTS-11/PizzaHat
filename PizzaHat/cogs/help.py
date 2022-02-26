@@ -33,7 +33,12 @@ class MyHelp(commands.HelpCommand):
                     name = cog.qualified_name
                     description = cog.description or "No description"
                     em.add_field(name=f"{name} [{amt_cmds}]", value=description, inline=False)
-        em.description = f"""{len(ctx.bot.commands)} commands | {usable} usable\n\nUse "help [command | module]" for more info.\nIf you can't see any module, it means that you don't have the permission to view them.\n\n`<>` required | `[]` optional"""
+        em.description = (
+            f"""{len(ctx.bot.commands)} commands | {usable} usable\n\n"""
+            """Use "help [command | module]" for more info.\n"""
+            """If you can't see any module, it means that you don't have the permission to view them.\n\n"""
+            """`<>` required | `[]` optional"""
+        )
         await self.send(embed=em)
 
     async def send_command_help(self, command):
@@ -73,7 +78,10 @@ class MyHelp(commands.HelpCommand):
 
         if filtered_commands := await self.filter_commands(commands):
             for command in filtered_commands:
-                embed.add_field(name=self.get_command_signature(command), value=command.help or "No help found...", inline=False)
+                embed.add_field(
+                    name=self.get_command_signature(command),
+                    value=command.help or "No help found...",
+                    inline=False)
         if not filtered_commands:
             await self.send("You don't have the required permissions for viewing this.")
            
@@ -87,7 +95,13 @@ class MyHelp(commands.HelpCommand):
         title = cog.qualified_name or "No"
         em = discord.Embed(
             title=f'{title} Category',
-            description=f"{cog.description}\n\n" + "\n".join([f"<:arrowright:842059363875291146> `{x.name}` • {x.help}" for x in cog.get_commands()]),
+            description=(
+                f"{cog.description}\n\n" +
+                "\n".join([
+                    f"<:arrowright:842059363875291146> `{x.name}` • {x.help}"
+                    for x in cog.get_commands()
+                ])
+            ),
             color=discord.Color.blue()
         )
         em.set_footer(text='Use help [command] for more info')
