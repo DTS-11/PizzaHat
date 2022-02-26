@@ -19,9 +19,12 @@ class Music(commands.Cog):
             **Duration:** {humanfriendly.format_timespan(song.duration)}
             **Channel:** [{song.channel}]({song.channel_url})
             """
-            ).set_thumbnail(url=song.thumbnail
-            ).set_footer(text=f"Loop: {'✅' if song.is_looping else '❌'}", icon_url=ctx.guild.icon.url if ctx.guild.icon is not None else 'https://cdn.discordapp.com/embed/avatars/1.png'
-            ).set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar.url)
+        ).set_thumbnail(
+            url=song.thumbnail
+        ).set_footer(
+            text=f"Loop: {'✅' if song.is_looping else '❌'}",
+            icon_url=ctx.guild.icon.url if ctx.guild.icon is not None else 'https://cdn.discordapp.com/embed/avatars/1.png'
+        ).set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar.url)
     
     @commands.command()
     async def join(self, ctx):
@@ -36,7 +39,10 @@ class Music(commands.Cog):
             await ctx.author.voice.channel.connect()
             await ctx.message.add_reaction('👍')
         except Exception as e:
-            return await ctx.send(f"I wasn't able to connect to your voice channel.\nPlease make sure I have enough permissions.\nError: {e}")
+            return await ctx.send(
+                f"I wasn't able to connect to your voice channel.\n"
+                f"Please make sure I have enough permissions.\nError: {e}"
+            )
         
     @commands.command(aliases=['dc'])
     async def leave(self, ctx):
