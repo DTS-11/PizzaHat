@@ -185,7 +185,7 @@ class Utility(commands.Cog):
         dev = self.bot.get_user(710247495334232164)
 
         em = discord.Embed(
-            title=f"Stats for {self.bot.user.name}",
+            title="Bot stats",
             color=self.bot.color
         )
         em.add_field(
@@ -218,33 +218,6 @@ class Utility(commands.Cog):
         em.set_footer(text=f'Hosted by {dev}', icon_url=dev.avatar.url)
 
         await ctx.send(embed=em)
-        
-#      def get_bot_uptime(self, *, brief=False):
-#          now = datetime.datetime.utcnow()
-#          delta = now - self.bot.uptime
-#          hours, remainder = divmod(int(delta.total_seconds()), 3600)
-#          minutes, seconds = divmod(remainder, 60)
-#          days, hours = divmod(hours, 24)
-
-#          if not brief:
-#              if days:
-#                  fmt = '{d} days, {h} hours, {m} minutes, and {s} seconds'
-#              else:
-#                  fmt = '{h} hours, {m} minutes, and {s} seconds'
-#          else:
-#              fmt = '{h}h {m}m {s}s'
-#              if days:
-#                  fmt = '{d}d ' + fmt
-
-#          return fmt.format(d=days, h=hours, m=minutes, s=seconds)
-
-#      @commands.command()
-#      async def uptime(self, ctx):
-#          """Tells you how long the bot has been up for."""
-#          em = discord.Embed(color=self.bot.color)
-#          em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar_url)
-#          em.add_field(name="Current uptime", value=self.get_bot_uptime(brief=True), inline=False)
-#          await ctx.send(embed=em)
 
     @commands.command(aliases=['ei'])
     async def emojiinfo(self, ctx, emoji:discord.Emoji):
