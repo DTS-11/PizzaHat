@@ -159,23 +159,23 @@ class Utility(commands.Cog):
         await ctx.send(embed=e)
 
     def get_bot_uptime(self, *, brief=False):
-         now = datetime.datetime.utcnow()
-         delta = now - self.bot.uptime
-         hours, remainder = divmod(int(delta.total_seconds()), 3600)
-         minutes, seconds = divmod(remainder, 60)
-         days, hours = divmod(hours, 24)
+        now = datetime.datetime.utcnow()
+        delta = now - self.bot.uptime
+        hours, remainder = divmod(int(delta.total_seconds()), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        days, hours = divmod(hours, 24)
 
-         if not brief:
-             if days:
-                 fmt = '{d} days, {h} hours, {m} minutes, and {s} seconds'
-             else:
-                 fmt = '{h} hours, {m} minutes, and {s} seconds'
-         else:
-             fmt = '{h}h {m}m {s}s'
-             if days:
-                 fmt = '{d}d ' + fmt
+        if not brief:
+            if days:
+                fmt = '{d} days, {h} hours, {m} minutes, and {s} seconds'
+            else:
+                fmt = '{h} hours, {m} minutes, and {s} seconds'
+        else:
+            fmt = '{h}h {m}m {s}s'
+            if days:
+                fmt = '{d}d ' + fmt
 
-         return fmt.format(d=days, h=hours, m=minutes, s=seconds)
+        return fmt.format(d=days, h=hours, m=minutes, s=seconds)
 
     @commands.command(aliases=['stats'])
     async def botinfo(self, ctx):

@@ -21,15 +21,18 @@ class Events(commands.Cog):
         
         if msg.content in {"<@860889936914677770>", "<@!860889936914677770>"}:
             em = discord.Embed(color=self.bot.color)
-            em.add_field(name='<a:wave_animated:783393435242463324>  Hello!  <a:wave_animated:783393435242463324>',value=f'Im {self.bot.user.name}, to get started, my prefix is `p!` or `P!` or <@860889936914677770>')
+            em.add_field(
+                name='<a:wave_animated:783393435242463324>  Hello!  <a:wave_animated:783393435242463324>',
+                value=f'Im {self.bot.user.name}, to get started, my prefix is `p!` or `P!` or <@860889936914677770>')
             await msg.channel.send(embed=em)
     
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         if len([m for m in guild.members if m.bot]) > len([m for m in guild.members if not m.bot]):
             try:
-            	await guild.text_channels[0].send('👋 I have automatically left this server since it has a high bot to member ratio.')
-            	await guild.leave()
+                await guild.text_channels[0].send(
+                    '👋 I have automatically left this server since it has a high bot to member ratio.')
+                await guild.leave()
             except Exception as e:
                 print(e)
         
@@ -45,7 +48,12 @@ class Events(commands.Cog):
         elif isinstance(error, commands.BotMissingPermissions):
             await ctx.send(f'Im missing some required permissions:\n```diff\n- {error.missing_perms}```')
         elif isinstance(error, commands.CommandOnCooldown):
-            await ctx.send(f'The command you tried is on cooldown. Try again in {round(error.retry_after)} seconds.\n\n**Command name:**  {ctx.command}\n**Cooldown time:**  {round(error.cooldown.per)} seconds\n**Command uses:**  {error.cooldown.rate}')
+            await ctx.send(
+                f'The command you tried is on cooldown. Try again in {round(error.retry_after)} seconds.'
+                f'\n\n**Command name:**  {ctx.command}\n'
+                f'**Cooldown time:**  {round(error.cooldown.per)} seconds'
+                f'\n**Command uses:**  {error.cooldown.rate}'
+            )
         elif isinstance(error, commands.RoleNotFound):
             await ctx.send('Please provide a role or the role could not be found.')
         elif isinstance(error, commands.MemberNotFound):

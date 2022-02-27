@@ -210,45 +210,45 @@ class Games(commands.Cog):
             EmbedHead.set_thumbnail(url='https://media1.tenor.com/images/38bf85bcecdd6aa52300d53e6eea06a1/tenor.gif')
             EmbedHead.set_footer(text='You have 1 minute to choose!')
             headORtail = await ctx.send(embed=EmbedHead)
-            message = await self.bot.wait_for('message',check=lambda m: m.author == ctx.author and m.channel == ctx.channel , timeout=60)
-            if  str(message.content.lower()) == 'heads':
-                user_choose = message.content
-                fliping = await ctx.send('Flipping. ')
-                await asyncio.sleep(1)
-                await fliping.edit(content='Flipping.. ')
-                chooses = ['heads','tails']
-                random_select = random.choice(chooses)
-                if user_choose == random_select:
-                    choose_embed = discord.Embed(color=self.bot.color)
-                    choose_embed.add_field(name='User :bust_in_silhouette:', value=f'{user_choose}',inline=False)
-                    choose_embed.add_field(name='Bot :robot:',value=f'{random_select}',inline=False)
-                    choose_embed.set_author(name='You Win',icon_url='https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/check-mark-button_2705.png')
-                    await ctx.send(embed=choose_embed)
-                else:
-                    choose_embed = discord.Embed(color=self.bot.color)
-                    choose_embed.add_field(name='User :bust_in_silhouette:' ,value=f'{user_choose}',inline=False)
-                    choose_embed.add_field(name='Bot :robot:', value=f'{random_select}',inline=False)
-                    choose_embed.set_author(name='You Lose',icon_url='https://images.emojiterra.com/mozilla/512px/274c.png')
-                    await ctx.send(embed=choose_embed)
-            if str(message.content.lower()) == 'tails':
-                user_choose = message.content
-                fliping = await ctx.send('Flipping. ')
-                await asyncio.sleep(1)
-                await fliping.edit(content='Flipping.. ')
-                chooses = ['heads','tails']
-                random_select = random.choice(chooses)
-                if user_choose == random_select:
-                    choose_embed = discord.Embed(color=self.bot.color)
-                    choose_embed.add_field(name='User :bust_in_silhouette:', value=f'{user_choose}',inline=False)
-                    choose_embed.add_field(name='Bot :robot:',value=f'{random_select}',inline=False)
-                    choose_embed.set_author(name='You Win',icon_url='https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/check-mark-button_2705.png')
-                    await ctx.send(embed=choose_embed)
-                else:
-                    choose_embed = discord.Embed(color=self.bot.color)
-                    choose_embed.add_field(name='User :bust_in_silhouette:' ,value=f'{user_choose}',inline=False)
-                    choose_embed.add_field(name='Bot :robot:', value=f'{random_select}',inline=False)
-                    choose_embed.set_author(name='You Lose',icon_url='https://images.emojiterra.com/mozilla/512px/274c.png')
-                    await ctx.send(embed=choose_embed)
+            message = await self.bot.wait_for(
+                'message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel , timeout=60)
+            
+            heads = ('heads', 'h', 'head')
+            tails = ('tails', 't', 'tail')
+
+            lowered = message.content.lower()
+
+            if lowered not in heads and lowered not in tails:
+                await message.reply("Ur dumb, invalid option.")
+
+            user_choose = int(lowered in heads)  # heads is 1, tails is 0
+
+            fliping = await ctx.send('Flipping. ')
+            await asyncio.sleep(1)
+            await fliping.edit(content='Flipping.. ')
+
+            rand = random.randint(0, 1)
+
+            choose_embed = discord.Embed(color=self.bot.color)
+            choose_embed.add_field(
+                name='Your Choice :bust_in_silhouette:',
+                value=f'{(heads[0] if user_choose else tails[0]).capitalize()}',
+                inline=False
+            )
+            choose_embed.add_field(
+                name='You Got :coin:',
+                value=f'{(heads[0] if rand else tails[0]).capitalize()}',
+                inline=False
+            )
+            choose_embed.set_author(
+                name='You ' + ('Win' if user_choose == rand else 'Lose'),
+                icon_url=(
+                    'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/259/check-mark-button_2705.png'
+                    if user_choose == rand
+                    else 'https://images.emojiterra.com/mozilla/512px/274c.png'
+                )
+            )
+            await ctx.send(embed=choose_embed)
         except asyncio.TimeoutError:
             if not cancel:
                 await headORtail.delete()
