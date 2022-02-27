@@ -29,6 +29,7 @@ class Dev(commands.Cog):
             'ctx': ctx,
             'bot': self.bot,
             'client': self.bot,
+            'db': self.bot.db,
             'channel': ctx.channel,
             'author': ctx.author,
             'guild': ctx.guild,
