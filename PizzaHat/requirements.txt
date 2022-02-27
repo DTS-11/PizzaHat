@@ -12,3 +12,4 @@ asyncdagpi
 requests
 humanfriendly
 discord-together
+numpy
