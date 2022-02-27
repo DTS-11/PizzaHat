@@ -36,13 +36,14 @@ class PizzaHat(commands.Bot):
             case_insensitive=True,
             strip_after_prefix=True,
             activity=discord.Activity(type=discord.ActivityType.watching, name='dsc.gg/pizza-invite | discord.gg/WhNVDTF'),
-            mentions=discord.AllowedMentions(everyone=False, roles=False, users=True, replied_user=True)
+            mentions=discord.AllowedMentions(everyone=False, roles=False)
         )
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
         self.yes = '<:yes:813819712953647206>'
         self.no = '<:no:829841023445631017>'
         self.color = discord.Color.blue()
-        self.christmas = discord.Color.red()
+        self.success = discord.Color.green()
+        self.failed = discord.Color.red()
         self.loop.run_until_complete(self.create_db_pool())
 
         for extension in INITIAL_EXTENSIONS:
