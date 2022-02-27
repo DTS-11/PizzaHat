@@ -122,7 +122,7 @@ class Fun(commands.Cog):
     @commands.command(name='8ball', aliases=['8-ball'])
     async def _8ball(self, ctx, *, question):
         """Ask any question, and let the bot respond with the answers."""
-        responses =['As I see it, yes.',
+        responses = ['As I see it, yes.',
                 'Ask again later.',
                 'Better not tell you now.',
                 'Cannot predict now.',

@@ -10,16 +10,16 @@ import os
 
 class Dev(commands.Cog):
     """<:Developer:808407479687053403> Developer Only Commands"""
-    def __init__(self,bot):
+    def __init__(self, bot):
         self.bot = bot
 
     @commands.command(hidden=True, aliases=['logout'])
     @commands.is_owner()
     async def restart(self, ctx):
         """Restarts the bot."""
-        msg = await ctx.send('Restarting bot...')
+        await ctx.send('Restarting bot...')
         exe = sys.executable
-        os.execl(exe, exe, * sys.argv)
+        os.execl(exe, exe, *sys.argv)
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -64,14 +64,16 @@ class Dev(commands.Cog):
             if appd_index != len(text)-1:
                 pages.append(text[last:curr])
             return list(filter(lambda a: a != '', pages))
-                
+        
+        color = 0x2e3135
+
         try:
             exec(to_compile, env)
         except Exception as e:
             embed=discord.Embed(
                 title='Error',
                 description=f'```py\n{e.__class__.__name__}: {e}\n```',
-                color=0x2e3135
+                color=color
             )
             await ctx.send(embed=embed)
 
@@ -84,7 +86,7 @@ class Dev(commands.Cog):
             embed=discord.Embed(
                 title='Error',
                 description=f'```py\n{value}{traceback.format_exc()}\n```',
-                color=0x2e3135
+                color=color
             )
             await ctx.send(embed=embed)
         else:
@@ -92,10 +94,9 @@ class Dev(commands.Cog):
             if ret is None:
                 if value:
                     try:
-                                                
                         embed=discord.Embed(
                             description=f'```py\n{value}\n```',
-                                color=0x2e3135
+                                color=color
                             )
                         await ctx.send(embed=embed)
                     except:
@@ -104,20 +105,20 @@ class Dev(commands.Cog):
                             if page == paginated_text[-1]:
                                 embed=discord.Embed(
                                     description=f'```py\n{page}\n```',
-                                    color=0x2e3135
+                                    color=color
                                     )
                                 await ctx.send(embed=embed)
                                 break
                             embed=discord.Embed(
                                 description=f'```py\n{page}\n```',
-                                color=0x2e3135
+                                color=color
                                 )
                             await ctx.send(embed=embed)
             else:
                 try:
                     embed=discord.Embed(
                         description=f'```py\n{value}{ret}\n```',
-                        color=0x2e3135
+                        color=color
                         )
                     await ctx.send(embed=embed)
                 except:
@@ -126,13 +127,13 @@ class Dev(commands.Cog):
                         if page == paginated_text[-1]:
                             embed=discord.Embed(
                                 description=f'```py\n{page}\n```',
-                                color=0x2e3135
+                                color=color
                                 )
                             await ctx.send(embed=embed)
                             break
                         embed=discord.Embed(
                             description=f'```py\n{page}\n```',
-                            color=0x2e3135
+                            color=color
                         )
                         await ctx.send(embed=embed)
                         
@@ -140,7 +141,7 @@ class Dev(commands.Cog):
     @commands.is_owner()
     async def load(self, ctx, cog):
         try:
-            bot.load_extension(cog)
+            self.bot.load_extension(cog)
             await ctx.send(f"{self.bot.yes} Cog loaded")
         except Exception as e:
             print(e)
@@ -149,7 +150,7 @@ class Dev(commands.Cog):
     @commands.is_owner()
     async def unload(self, ctx, cog):
         try:
-            bot.unload_extension(cog)
+            self.bot.unload_extension(cog)
             await ctx.send(f"{self.bot.yes} Cog unloaded")
         except Exception as e:
             print(e)
