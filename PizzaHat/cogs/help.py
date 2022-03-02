@@ -41,18 +41,20 @@ def split_cog_description(bot: commands.Bot, desc: str):
 
 
 class HelpDropdown(discord.ui.Select):
-    def __init__(self, bot: commands.Bot, mapping: dict):
+    def __init__(self, bot: commands.Bot, mapping: dict, ctx: commands.Context):
         self.cog_mapping = mapping
+        self.ctx = ctx
 
-        options = [
-            discord.SelectOption(
-                label=cog.qualified_name,
-                description=
-                    (emoji_and_desc := split_cog_description(bot, cog.description))[1] or "No description",
-                emoji=emoji_and_desc[0])
-            for cog, _ in mapping.items()
-            if cog and cog.qualified_name != "Events"
-        ]
+        options = []
+        for cog, _ in mapping.items():
+            if cog and cog.qualified_name != "Events":
+                emoji, desc = split_cog_description(bot, cog.description)
+                options.append(discord.SelectOption(
+                    label=cog.qualified_name,
+                    description=desc,
+                    emoji=emoji
+                ))
+
         super().__init__(
             placeholder="Choose a catagory...",
             min_values=1,
@@ -61,6 +63,9 @@ class HelpDropdown(discord.ui.Select):
         )
     
     async def callback(self, interaction: discord.Interaction):
+        if interaction.user != self.ctx.author:
+            return await self.ctx.send()
+
         cog_name = self.values[0]
 
         cog = None
@@ -73,9 +78,9 @@ class HelpDropdown(discord.ui.Select):
 
 
 class HelpView(discord.ui.View):
-    def __init__(self, bot: commands.Bot, mapping: dict):
+    def __init__(self, bot: commands.Bot, mapping: dict, ctx: commands.Context):
         super().__init__()
-        self.add_item(HelpDropdown(bot, mapping))
+        self.add_item(HelpDropdown(bot, mapping, ctx))
 
 
 class MyHelp(commands.HelpCommand):
@@ -108,7 +113,7 @@ class MyHelp(commands.HelpCommand):
             "If you can't see any module, it means that you don't have the permission to view them.\n\n"
         )
 
-        await self.context.send(embed=em, view=HelpView(self.context.bot, mapping))
+        await self.context.send(embed=em, view=HelpView(self.context.bot, mapping, self.context))
 
     async def send_command_help(self, command):
         signature = self.get_command_signature(command)
@@ -153,7 +158,7 @@ class MyHelp(commands.HelpCommand):
                     inline=False)
         if not filtered_commands:
             await self.send("You don't have the required permissions for viewing this.")
-           
+
         await self.send(embed=embed)
 
     async def send_group_help(self, group):
@@ -169,7 +174,7 @@ class MyHelp(commands.HelpCommand):
 
 
 class Help(commands.Cog):
-    """:question: Gives help on the bot."""
+    """❓ Gives help on the bot."""
 
     def __init__(self, bot):
         self.bot = bot

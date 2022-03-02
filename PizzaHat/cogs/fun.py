@@ -5,7 +5,6 @@ import random
 import time
 from TagScriptEngine import Interpreter, block
 from typing import Union
-from aiohttp import ClientSession
 import requests
 import json
 
