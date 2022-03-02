@@ -9,7 +9,7 @@ import sys
 import os
 
 class Dev(commands.Cog):
-    """<:Developer:808407479687053403> Developer Only Commands"""
+    """808407479687053403 Developer Only Commands"""
     def __init__(self, bot):
         self.bot = bot
 

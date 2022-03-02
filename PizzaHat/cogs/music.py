@@ -6,7 +6,7 @@ import humanfriendly
 music = DiscordUtils.Music()
 
 class Music(commands.Cog):
-    """<a:music:929100003178348634> Music commands"""
+    """929100003178348634 Music commands"""
     def __init__(self, bot):
         self.bot = bot
         

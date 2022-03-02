@@ -5,7 +5,7 @@ class Events(commands.Cog):
     """Events cog"""
     def __init__(self, bot):
         self.bot = bot
-        
+
     @commands.Cog.listener()
     async def on_ready(self):
         await self.bot.db.execute("""CREATE TABLE IF NOT EXISTS warnlogs 
@@ -37,8 +37,7 @@ class Events(commands.Cog):
                 print(e)
         
     @commands.Cog.listener()
-    async def on_command_error(self,ctx,error):
-
+    async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):
             pass
         elif isinstance(error, commands.NotOwner):
@@ -77,6 +76,7 @@ class Events(commands.Cog):
             await ctx.send(embed=em)
 
         else:
+            raise error
             em = discord.Embed(
                 description=f'A weird error occured:\n```py\n{error}\n```',
                 color=self.bot.color
