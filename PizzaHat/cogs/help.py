@@ -36,7 +36,6 @@ def split_cog_description(bot: commands.Bot, desc: str):
     
     if e.isnumeric():
         e = bot.get_emoji(int(e))
-        print(e)
     
     return e, d
 
@@ -45,15 +44,15 @@ class HelpDropdown(discord.ui.Select):
     def __init__(self, bot: commands.Bot, mapping: dict):
         self.cog_mapping = mapping
 
-        options = [
-            discord.SelectOption(
-                label=cog.qualified_name,
-                description=
-                    (emoji_and_desc := split_cog_description(bot, cog.description))[1] or "No description",
-                emoji=emoji_and_desc[0])
-            for cog, _ in mapping.items()
-            if cog and cog.qualified_name != "Events"
-        ]
+        options = []
+        for cog, _ in mapping.items():
+            if cog and cog.qualified_name != "Events":
+                emoji, desc = split_cog_description(bot, cog.description)
+                options.append(discord.SelectOption(
+                    label=cog.qualified_name,
+                    description=desc,
+                    emoji=emoji
+                ))
         super().__init__(
             placeholder="Choose a catagory...",
             min_values=1,
