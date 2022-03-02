@@ -36,6 +36,7 @@ def split_cog_description(bot: commands.Bot, desc: str):
     
     if e.isnumeric():
         e = bot.get_emoji(int(e))
+        print(e)
     
     return e, d
 
