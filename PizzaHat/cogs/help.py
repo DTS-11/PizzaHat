@@ -2,6 +2,82 @@ import discord
 from discord.ext import commands
 import contextlib
 
+
+def cog_help_embed(cog):
+    title = cog.qualified_name or "No"
+    em = discord.Embed(
+        title=f'{title} Category',
+        description=(
+            f"{cog.description}\n\n"
+            "`<>` required | `[]` optional\n\n" +
+            ("\n".join([
+                f"<:arrowright:842059363875291146> `{x.name}` • {x.help}"
+                for x in cog.get_commands()
+            ]))
+        ),
+        color=discord.Color.blue()
+    )
+    em.set_footer(text='Use help [command] for more info')
+    return em
+
+
+def split_cog_description(bot: commands.Bot, desc: str):
+    """
+    Split a cog's description into an emoji (custom or builtin) and the rest
+    of the description by a space.
+    For example "842059363875291146 Example description text." will become
+    A custom emoji retrieved by the id and "Example description text."
+    Should only be used for getting the emoji for the help command dropdown selections.
+    """
+    
+    splited = desc.split()
+    e = splited[0]
+    d = " ".join(splited[1:])
+    
+    if e.isnumeric():
+        e = bot.get_emoji(int(e))
+    
+    return e, d
+
+
+class HelpDropdown(discord.ui.Select):
+    def __init__(self, bot: commands.Bot, mapping: dict):
+        self.cog_mapping = mapping
+
+        options = [
+            discord.SelectOption(
+                label=cog.qualified_name,
+                description=
+                    (emoji_and_desc := split_cog_description(bot, cog.description))[1] or "No description",
+                emoji=emoji_and_desc[0])
+            for cog, _ in mapping.items()
+            if cog and cog.qualified_name != "Events"
+        ]
+        super().__init__(
+            placeholder="Choose a catagory...",
+            min_values=1,
+            max_values=1,
+            options=options
+        )
+    
+    async def callback(self, interaction: discord.Interaction):
+        cog_name = self.values[0]
+
+        cog = None
+        for c, _ in self.cog_mapping.items():
+            if c and c.qualified_name == cog_name:
+                cog = c
+                break
+
+        await interaction.message.edit(embed=cog_help_embed(cog))
+
+
+class HelpView(discord.ui.View):
+    def __init__(self, bot: commands.Bot, mapping: dict):
+        super().__init__()
+        self.add_item(HelpDropdown(bot, mapping))
+
+
 class MyHelp(commands.HelpCommand):
     def __init__(self):
         super().__init__(
@@ -23,23 +99,16 @@ class MyHelp(commands.HelpCommand):
             color=discord.Color.blue()
         )
         em.set_thumbnail(url=ctx.me.avatar.url)
-        usable = 0
 
-        for cog, commands in mapping.items():
-            if filtered_commands := await self.filter_commands(commands):
-                amt_cmds = len(filtered_commands)
-                usable += amt_cmds
-                if cog:
-                    name = cog.qualified_name
-                    description = cog.description or "No description"
-                    em.add_field(name=f"{name} [{amt_cmds}]", value=description, inline=False)
+        usable = sum([len(await self.filter_commands(cmds)) for _, cmds in mapping.items()])
+
         em.description = (
-            f"""{len(ctx.bot.commands)} commands | {usable} usable\n\n"""
-            """Use "help [command | module]" for more info.\n"""
-            """If you can't see any module, it means that you don't have the permission to view them.\n\n"""
-            """`<>` required | `[]` optional"""
+            f"{len(ctx.bot.commands)} commands | {usable} usable\n\n"
+            "Use `help [command | module]` for more info.\n"
+            "If you can't see any module, it means that you don't have the permission to view them.\n\n"
         )
-        await self.send(embed=em)
+
+        await self.context.send(embed=em, view=HelpView(self.context.bot, mapping))
 
     async def send_command_help(self, command):
         signature = self.get_command_signature(command)
@@ -92,27 +161,16 @@ class MyHelp(commands.HelpCommand):
         await self.send_help_embed(title, group.help, group.commands)
 
     async def send_cog_help(self, cog):
-        title = cog.qualified_name or "No"
-        em = discord.Embed(
-            title=f'{title} Category',
-            description=(
-                f"{cog.description}\n\n" +
-                "\n".join([
-                    f"<:arrowright:842059363875291146> `{x.name}` • {x.help}"
-                    for x in cog.get_commands()
-                ])
-            ),
-            color=discord.Color.blue()
-        )
-        em.set_footer(text='Use help [command] for more info')
-        await self.send(embed=em)
+        await self.send(embed=cog_help_embed(cog))
 
     async def send_error_message(self, error):
         channel = self.get_destination()
         await channel.send(error)
 
+
 class Help(commands.Cog):
     """:question: Gives help on the bot."""
+
     def __init__(self, bot):
         self.bot = bot
         help_command = MyHelp()

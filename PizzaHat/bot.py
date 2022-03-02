@@ -35,7 +35,8 @@ class PizzaHat(commands.Bot):
             intents=discord.Intents.all(),
             case_insensitive=True,
             strip_after_prefix=True,
-            activity=discord.Activity(type=discord.ActivityType.watching, name='dsc.gg/pizza-invite | discord.gg/WhNVDTF'),
+            activity=discord.Activity(
+                type=discord.ActivityType.watching, name='dsc.gg/pizza-invite | discord.gg/WhNVDTF'),
             mentions=discord.AllowedMentions(everyone=False, roles=False)
         )
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
@@ -44,7 +45,11 @@ class PizzaHat(commands.Bot):
         self.color = discord.Color.blue()
         self.success = discord.Color.green()
         self.failed = discord.Color.red()
-        self.loop.run_until_complete(self.create_db_pool())
+
+        try:
+            self.loop.run_until_complete(self.create_db_pool())
+        except ConnectionRefusedError as e:
+            print("PizzaHat.db is not defined, some commands will not work.")
 
         for extension in INITIAL_EXTENSIONS:
             try:
@@ -60,7 +65,8 @@ class PizzaHat(commands.Bot):
         print("Bot online.")
         
     async def create_db_pool(self):
-        self.db = await asyncpg.create_pool(database=os.getenv("PGDATABASE"), user=os.getenv("PGUSER"), password=os.getenv("PGPASSWORD"))
+        self.db = await asyncpg.create_pool(
+            database=os.getenv("PGDATABASE"), user=os.getenv("PGUSER"), password=os.getenv("PGPASSWORD"))
 
 bot = PizzaHat()
 if __name__ == '__main__':

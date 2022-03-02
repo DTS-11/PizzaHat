@@ -8,7 +8,7 @@ import humanfriendly
 import traceback
 
 class Mod(commands.Cog):
-    """<:moderation:847248846526087239> Moderation Commands"""
+    """847248846526087239 Moderation Commands"""
     def __init__(self,bot):
         self.bot = bot
 
@@ -211,15 +211,16 @@ class Mod(commands.Cog):
     @commands.has_guild_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def kick(self, ctx, member:discord.Member, *, reason):
+    async def kick(self, ctx, member:discord.Member, *, reason=None):
         """
         Kicks a member from the server. Reason is required.
         """
-        if reason:
-            await member.kick(reason=reason)
-            await ctx.send(f'{self.bot.yes} Kicked `{member}`')
-        else:
-            await ctx.send(f"{self.bot.no} Provide a reason to kick this user.")
+        if not reason:
+            reason = "No reason provided."
+
+        await member.kick(reason=reason)
+        await ctx.send(f'{self.bot.yes} Kicked `{member}`')
+
 
     @commands.command(aliases=['b'])
     @commands.has_guild_permissions(ban_members=True)

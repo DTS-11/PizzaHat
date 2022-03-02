@@ -5,7 +5,7 @@ import random
 import datetime
 
 class Games(commands.Cog):
-    """<:games:819957465160220734> Fun Games to play when bored."""
+    """819957465160220734 Fun Games to play when bored."""
     def __init__(self,bot):
         self.bot = bot
 
@@ -200,9 +200,7 @@ class Games(commands.Cog):
 
     @commands.command()
     async def flip(self,ctx):
-        """
-        Heads or Tails?
-        Let's flip the coin and see!"""
+        """Heads or Tails? Let's flip the coin and see!"""
         try:
             cancel = False
             EmbedHead = discord.Embed(title='__Coin Flipping Challenge__',color=self.bot.color)
