@@ -27,6 +27,7 @@ def split_cog_description(bot: commands.Bot, desc: str):
     of the description by a space.
     For example "842059363875291146 Example description text." will become
     A custom emoji retrieved by the id and "Example description text."
+    Should only be used for getting the emoji for the help command dropdown selections.
     """
     
     splited = desc.split()
@@ -50,7 +51,7 @@ class HelpDropdown(discord.ui.Select):
                     (emoji_and_desc := split_cog_description(bot, cog.description))[1] or "No description",
                 emoji=emoji_and_desc[0])
             for cog, _ in mapping.items()
-            if cog
+            if cog and cog.qualified_name != "Events"
         ]
         super().__init__(
             placeholder="Choose a catagory...",

@@ -76,7 +76,6 @@ class Events(commands.Cog):
             await ctx.send(embed=em)
 
         else:
-            raise error
             em = discord.Embed(
                 description=f'A weird error occured:\n```py\n{error}\n```',
                 color=self.bot.color
