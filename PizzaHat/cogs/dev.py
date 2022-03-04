@@ -13,7 +13,7 @@ class Dev(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(hidden=True, aliases=['logout'])
+    @commands.command(aliases=['logout'])
     @commands.is_owner()
     async def restart(self, ctx):
         """Restarts the bot."""
@@ -21,7 +21,7 @@ class Dev(commands.Cog):
         exe = sys.executable
         os.execl(exe, exe, *sys.argv)
 
-    @commands.command(hidden=True)
+    @commands.command()
     @commands.is_owner()
     async def eval(self, ctx, *, body):
         """Eval command."""
@@ -137,7 +137,7 @@ class Dev(commands.Cog):
                         )
                         await ctx.send(embed=embed)
                         
-    @commands.command(hidden=True)
+    @commands.command()
     @commands.is_owner()
     async def load(self, ctx, cog):
         try:
@@ -146,7 +146,7 @@ class Dev(commands.Cog):
         except Exception as e:
             print(e)
         
-    @commands.command(hidden=True)
+    @commands.command()
     @commands.is_owner()
     async def unload(self, ctx, cog):
         try:

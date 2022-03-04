@@ -47,7 +47,7 @@ class HelpDropdown(discord.ui.Select):
 
         options = []
         for cog, _ in mapping.items():
-            if cog and cog.qualified_name != "Events":
+            if cog and cog.qualified_name not in ["Events", "Dev"]:
                 emoji, desc = split_cog_description(bot, cog.description)
                 options.append(discord.SelectOption(
                     label=cog.qualified_name,
