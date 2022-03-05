@@ -1,8 +1,10 @@
-import discord
 from discord.ext import commands
 
-class Config(commands.Cog):
-    """⚙ Configuration commands for the bot."""
+from cog import Cog
+
+
+class Config(Cog, emoji="⚙"):
+    """Configuration commands for the bot."""
     def __init__(self, bot):
         self.bot = bot
         

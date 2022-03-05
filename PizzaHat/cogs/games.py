@@ -4,14 +4,19 @@ import asyncio
 import random
 import datetime
 
-class Games(commands.Cog):
-    """819957465160220734 Fun Games to play when bored."""
+from cog import Cog
+
+
+class Games(Cog, emoji=819957465160220734):
+    """Fun Games to play when bored."""
+
     def __init__(self,bot):
         self.bot = bot
 
     @commands.command(aliases=['pie'])
     async def catch(self, ctx):
         """Catch the pie, by reacting. Dont't drop it!"""
+
         em = discord.Embed(color=self.bot.color)
         pie_title = '🥧  __Catch The Pie Game__  🥧'
         pie_desc = ('To catch the pie you must simply react with the emoji, when it appears.'
@@ -176,7 +181,9 @@ class Games(commands.Cog):
     @commands.command(aliases=['dice'])
     async def roll(self, ctx):
         """Rolls a dice... That's all."""
-        message = await ctx.send("Choose a number:\n**4**, **6**, **8**, **10**, **12**, **20** ")
+        choices = "4 6 8 10 12 20".split()
+
+        message = await ctx.send(f"Choose a number:\n**{'** **'.join(choices)}**")
         
         def check(m):
             return m.author == ctx.author
@@ -185,7 +192,7 @@ class Games(commands.Cog):
             message = await self.bot.wait_for("message", check = check, timeout = 30.0)
             m = message.content
 
-            if m != "4" and m != "6" and m != "8" and m != "10" and m != "12" and m != "20":
+            if m not in choices:
                 await ctx.send("Sorry, invalid choice.")
                 return
             

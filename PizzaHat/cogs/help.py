@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import contextlib
+from cog import Cog
 
 
 def cog_help_embed(cog):
@@ -8,7 +9,7 @@ def cog_help_embed(cog):
     em = discord.Embed(
         title=f'{title} Category',
         description=(
-            f"{cog.description}\n\n"
+            f"{cog.full_description}\n\n"
             "`<>` required | `[]` optional\n\n" +
             ("\n".join([
                 f"<:arrowright:842059363875291146> `{x.name}` • {x.help}"
@@ -21,38 +22,18 @@ def cog_help_embed(cog):
     return em
 
 
-def split_cog_description(bot: commands.Bot, desc: str):
-    """
-    Split a cog's description into an emoji (custom or builtin) and the rest
-    of the description by a space.
-    For example "842059363875291146 Example description text." will become
-    A custom emoji retrieved by the id and "Example description text."
-    Should only be used for getting the emoji for the help command dropdown selections.
-    """
-    
-    splited = desc.split()
-    e = splited[0]
-    d = " ".join(splited[1:])
-    
-    if e.isnumeric():
-        e = bot.get_emoji(int(e))
-    
-    return e, d
-
-
 class HelpDropdown(discord.ui.Select):
-    def __init__(self, bot: commands.Bot, mapping: dict, ctx: commands.Context):
+    def __init__(self, mapping: dict, ctx: commands.Context):
         self.cog_mapping = mapping
         self.ctx = ctx
 
         options = []
         for cog, _ in mapping.items():
             if cog and cog.qualified_name not in ["Events", "Dev"]:
-                emoji, desc = split_cog_description(bot, cog.description)
                 options.append(discord.SelectOption(
                     label=cog.qualified_name,
-                    description=desc,
-                    emoji=emoji
+                    description=cog.description,
+                    emoji=cog.emoji
                 ))
 
         super().__init__(
@@ -78,9 +59,9 @@ class HelpDropdown(discord.ui.Select):
 
 
 class HelpView(discord.ui.View):
-    def __init__(self, bot: commands.Bot, mapping: dict, ctx: commands.Context):
+    def __init__(self, mapping: dict, ctx: commands.Context):
         super().__init__()
-        self.add_item(HelpDropdown(bot, mapping, ctx))
+        self.add_item(HelpDropdown(mapping, ctx))
 
 
 class MyHelp(commands.HelpCommand):
@@ -113,7 +94,7 @@ class MyHelp(commands.HelpCommand):
             "If you can't see any module, it means that you don't have the permission to view them.\n\n"
         )
 
-        await self.context.send(embed=em, view=HelpView(self.context.bot, mapping, self.context))
+        await self.context.send(embed=em, view=HelpView(mapping, self.context))
 
     async def send_command_help(self, command):
         signature = self.get_command_signature(command)
@@ -173,8 +154,8 @@ class MyHelp(commands.HelpCommand):
         await channel.send(error)
 
 
-class Help(commands.Cog):
-    """❓ Gives help on the bot."""
+class Help(Cog, emoji="❓"):
+    """Gives help on the bot."""
 
     def __init__(self, bot):
         self.bot = bot

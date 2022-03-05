@@ -8,8 +8,12 @@ from contextlib import redirect_stdout
 import sys
 import os
 
-class Dev(commands.Cog):
-    """808407479687053403 Developer Only Commands"""
+from cog import Cog
+
+
+class Dev(Cog, emoji=808407479687053403):
+    """Developer Only Commands"""
+
     def __init__(self, bot):
         self.bot = bot
 

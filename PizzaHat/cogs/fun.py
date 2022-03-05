@@ -8,8 +8,12 @@ from typing import Union
 import requests
 import json
 
-class Fun(commands.Cog):
-    """🥳 Fun Commands."""
+from cog import Cog
+
+
+class Fun(Cog, emoji="🥳"):
+    """Fun Commands."""
+
     def __init__(self, bot):
         self.bot = bot
         blocks = [

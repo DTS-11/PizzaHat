@@ -6,13 +6,18 @@ import datetime
 import shlex
 import requests
 
+from cog import Cog
+
 start_time = time.time()
+
 
 def to_keycap(c):
     return '\N{KEYCAP TEN}' if c == 10 else str(c) + '\u20e3'
 
-class Utility(commands.Cog):
-    """🛠️ Utility Commands"""
+
+class Utility(Cog, emoji="🛠️"):
+    """Utility Commands"""
+    
     def __init__(self,bot):
         self.bot = bot
 

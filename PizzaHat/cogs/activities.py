@@ -1,12 +1,13 @@
-import discord
 from discord.ext import commands
-from discord_together import DiscordTogether
 
-class Activities(commands.Cog):
-    """🚀 Discord Activity (beta)"""
+from cog import Cog
+
+
+class Activities(Cog, emoji="🚀"):
+    """Discord Activity (beta)"""
     def __init__(self, bot):
         self.bot=bot
-        
+
     @commands.command(aliases=["ytt"])
     async def yttogether(self, ctx):
         """
