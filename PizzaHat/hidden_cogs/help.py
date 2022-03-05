@@ -1,3 +1,4 @@
+from typing import Mapping
 import discord
 from discord.ext import commands
 import contextlib
@@ -29,12 +30,11 @@ class HelpDropdown(discord.ui.Select):
 
         options = []
         for cog, _ in mapping.items():
-            if cog and cog.qualified_name not in ["Events", "Dev"]:
-                options.append(discord.SelectOption(
-                    label=cog.qualified_name,
-                    description=cog.description,
-                    emoji=cog.emoji
-                ))
+            options.append(discord.SelectOption(
+                label=cog.qualified_name,
+                description=cog.description,
+                emoji=cog.emoji
+            ))
 
         super().__init__(
             placeholder="Choose a catagory...",
@@ -79,6 +79,8 @@ class MyHelp(commands.HelpCommand):
 
     async def send_bot_help(self, mapping):
         ctx = self.context
+        mapping = dict(filter(lambda x: x[0] and ctx.bot.cog_is_public(x[0]), mapping.items()))
+
         em = discord.Embed(
             title=f"{ctx.me.display_name} Help Menu",
             timestamp=ctx.message.created_at,
@@ -97,6 +99,9 @@ class MyHelp(commands.HelpCommand):
         await self.context.send(embed=em, view=HelpView(mapping, self.context))
 
     async def send_command_help(self, command):
+        if command.cog is None or not self.context.bot.cog_is_public(command.cog):
+            return await self.send(content=f'No command called "{command}" found.')
+
         signature = self.get_command_signature(command)
         embed = discord.Embed(
             title=signature,
@@ -147,6 +152,11 @@ class MyHelp(commands.HelpCommand):
         await self.send_help_embed(title, group.help, group.commands)
 
     async def send_cog_help(self, cog):
+        if not self.context.bot.cog_is_public(cog):
+            # pretend this hidden cog doesn't exist, send the same message the bot
+            # would send if user uses p!help with an invalid cog name
+            return await self.send(content=f'No command called "{cog.qualified_name}" found.')
+
         await self.send(embed=cog_help_embed(cog))
 
     async def send_error_message(self, error):

@@ -6,7 +6,6 @@ from ruamel.yaml import YAML
 from dotenv import load_dotenv
 import os
 import asyncpg
-import traceback
 
 load_dotenv()
 yaml = YAML()
@@ -14,19 +13,6 @@ yaml = YAML()
 with open("./config.yml", "r", encoding="utf-8") as file:
     config = yaml.load(file)
 
-INITIAL_EXTENSIONS = [
-    'cogs.activities',
-    #'cogs.configuration',
-    'cogs.dev',
-    'cogs.events',
-    'cogs.fun',
-    'cogs.games',
-    'cogs.help',
-    'cogs.image',
-    'cogs.mod',
-    #'cogs.music',
-    'cogs.utility'
-]
 
 class PizzaHat(commands.Bot):
     def __init__(self):
@@ -48,15 +34,11 @@ class PizzaHat(commands.Bot):
 
         try:
             self.loop.run_until_complete(self.create_db_pool())
-        except ConnectionRefusedError as e:
+        except ConnectionRefusedError:
             print("PizzaHat.db is not defined, some commands will not work.")
 
-        for extension in INITIAL_EXTENSIONS:
-            try:
-                self.load_extension(extension)
-            except Exception as e:
-                print(f"Failed to load extension {extension}")
-                print("".join(traceback.format_exception(e, e, e.__traceback__)))
+        self.public_extensions = self.loop.run_until_complete(self.load_extensions("cogs"))
+        self.hidden_extensions = self.loop.run_until_complete(self.load_extensions("hidden_cogs"))
 
     async def on_ready(self):
         if not hasattr(self, 'uptime'):
@@ -67,6 +49,44 @@ class PizzaHat(commands.Bot):
     async def create_db_pool(self):
         self.db = await asyncpg.create_pool(
             database=os.getenv("PGDATABASE"), user=os.getenv("PGUSER"), password=os.getenv("PGPASSWORD"))
+
+    async def load_extensions(self, dir_name: str):
+        extensions = []
+
+        success = fail = 0
+        fails = {}
+
+        list_dir = [file_name for file_name in os.listdir(dir_name) if file_name.endswith(".py")]
+        total = len(list_dir)
+
+        for file_name in list_dir:
+            ext_name = f"{dir_name}.{file_name.split('.')[0]}"
+
+            try:
+                self.load_extension(ext_name)
+                extensions.append(ext_name)
+                success += 1
+            except Exception as e:
+                fails[ext_name] = e
+                fail += 1
+            
+            print(  # fancy loading
+                (f"Loading extension {ext_name} "
+                f"(Success {success}, Fail {fail}, Done {success + fail}/{total})")
+                + " " * 20,  # whitespace padding
+                end="\r" if success + fail < total else "\n"
+            )
+        
+        if fail:
+            print(f"Failed to load {fail} extention(s):")
+            for ext_name, e in fails.items():
+                print(f"  {ext_name}: {e}")
+        
+        return extensions
+    
+    def cog_is_public(self, cog: commands.Cog):
+        return cog.__module__ in self.public_extensions
+
 
 bot = PizzaHat()
 if __name__ == '__main__':
