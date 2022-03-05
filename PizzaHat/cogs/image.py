@@ -6,10 +6,13 @@ import os
 import aiohttp
 import random
 
+from cog import Cog
+
 dagpi = Client(os.getenv('DAGPI'))
 
-class Images(commands.Cog):
-    """📷 Image Commands"""
+
+class Images(Cog, emoji="📷"):
+    """Image Commands"""
     def __init__(self, client):
         self.client = client
     

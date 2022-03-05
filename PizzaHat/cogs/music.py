@@ -3,10 +3,14 @@ from discord.ext import commands
 import DiscordUtils
 import humanfriendly
 
+from cog import Cog
+
 music = DiscordUtils.Music()
 
-class Music(commands.Cog):
-    """929100003178348634 Music commands"""
+
+class Music(Cog, emoji=929100003178348634):
+    """Music commands"""
+    
     def __init__(self, bot):
         self.bot = bot
         
@@ -121,7 +125,7 @@ class Music(commands.Cog):
             return await ctx.send("I am not playing any songs ._.")
         try:
             await player.resume()
-        except DisUtils.NotPlaying:
+        except DiscordUtils.NotPlaying:
             return await ctx.send("I am not playing any songs ._.")
         await ctx.message.add_reaction("▶️")
         

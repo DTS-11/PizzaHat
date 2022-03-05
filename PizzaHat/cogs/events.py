@@ -1,8 +1,10 @@
 import discord
 from discord.ext import commands
 
+
 class Events(commands.Cog):
     """Events cog"""
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -28,7 +30,8 @@ class Events(commands.Cog):
     
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
-        if len([m for m in guild.members if m.bot]) > len([m for m in guild.members if not m.bot]):
+        # if more than half of the members are bots
+        if len([m for m in guild.members if m.bot]) > len(guild.members) / 2:
             try:
                 await guild.text_channels[0].send(
                     '👋 I have automatically left this server since it has a high bot to member ratio.')
@@ -45,7 +48,7 @@ class Events(commands.Cog):
         elif isinstance(error, commands.MissingPermissions):
             await ctx.send(f'You are missing some required permissions: ```diff\n- {error.missing_perms}```')
         elif isinstance(error, commands.BotMissingPermissions):
-            await ctx.send(f'Im missing some required permissions:\n```diff\n- {error.missing_perms}```')
+            await ctx.send(f"I'm missing some required permissions:\n```diff\n- {error.missing_perms}```")
         elif isinstance(error, commands.CommandOnCooldown):
             await ctx.send(
                 f'The command you tried is on cooldown. Try again in {round(error.retry_after)} seconds.'
@@ -76,6 +79,7 @@ class Events(commands.Cog):
             await ctx.send(embed=em)
 
         else:
+            raise error
             em = discord.Embed(
                 description=f'A weird error occured:\n```py\n{error}\n```',
                 color=self.bot.color
