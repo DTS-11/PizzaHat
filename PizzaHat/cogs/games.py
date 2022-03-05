@@ -72,7 +72,6 @@ class Games(commands.Cog):
         msg = await ctx.send(embed=embed1)
         
         imposter = random.choice(list(emojis.keys()))
-        print(emojis[imposter])
         
         for emoji in emojis.values():
             await msg.add_reaction(emoji)
@@ -142,10 +141,7 @@ class Games(commands.Cog):
             selects = [rock_emoji, paper_emoji, scissors_emoji]
             
             bot_select = random.choice(selects)
-            print(str(bot_select))
-            
             user_select = str(reaction.emoji)
-            print(str(user_select))
 
             await question_choose.delete()
 
