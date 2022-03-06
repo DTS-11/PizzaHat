@@ -3,7 +3,7 @@ from discord.ext import commands
 import DiscordUtils
 import humanfriendly
 
-from cog import Cog
+from core.cog import Cog
 
 music = DiscordUtils.Music()
 

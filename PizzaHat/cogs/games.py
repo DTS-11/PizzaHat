@@ -4,7 +4,7 @@ import asyncio
 import random
 import datetime
 
-from cog import Cog
+from core.cog import Cog
 
 
 class Games(Cog, emoji=819957465160220734):

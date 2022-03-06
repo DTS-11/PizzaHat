@@ -1,6 +1,6 @@
 from discord.ext import commands
 
-from cog import Cog
+from core.cog import Cog
 
 
 class Activities(Cog, emoji="🚀"):
