@@ -1,4 +1,4 @@
-py-cord==2.0.0b4
+py-cord==2.0.0b5
 ruamel.yaml
 asyncpg
 TagScriptEngine
