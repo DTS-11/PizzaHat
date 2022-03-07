@@ -6,7 +6,7 @@ import datetime
 import humanfriendly
 import traceback
 
-from cog import Cog
+from core.cog import Cog
 
 
 class Mod(Cog, emoji=847248846526087239):

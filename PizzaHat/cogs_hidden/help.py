@@ -2,7 +2,8 @@ from typing import Mapping
 import discord
 from discord.ext import commands
 import contextlib
-from cog import Cog
+
+from core.cog import Cog
 
 
 def cog_help_embed(cog):

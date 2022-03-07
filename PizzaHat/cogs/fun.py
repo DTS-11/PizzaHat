@@ -8,7 +8,7 @@ from typing import Union
 import requests
 import json
 
-from cog import Cog
+from core.cog import Cog
 
 
 class Fun(Cog, emoji="🥳"):

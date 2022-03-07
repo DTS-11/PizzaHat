@@ -6,7 +6,7 @@ import datetime
 import shlex
 import requests
 
-from cog import Cog
+from core.cog import Cog
 
 start_time = time.time()
 

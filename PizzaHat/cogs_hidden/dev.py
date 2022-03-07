@@ -8,7 +8,7 @@ from contextlib import redirect_stdout
 import sys
 import os
 
-from cog import Cog
+from core.cog import Cog
 
 
 class Dev(Cog, emoji=808407479687053403):

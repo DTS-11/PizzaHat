@@ -6,7 +6,7 @@ import os
 import aiohttp
 import random
 
-from cog import Cog
+from core.cog import Cog
 
 dagpi = Client(os.getenv('DAGPI'))
 
