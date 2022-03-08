@@ -77,7 +77,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def slowmode(self, ctx, seconds: int=None):
         """
-        Change the slow-mode in the current channel. If no values are given,  returns slowmode of the current channel.
+        Change the slow-mode in the current channel. If no values are given, returns slowmode of the current channel.
         """
         if seconds is None:
             seconds = ctx.channel.slowmode_delay
@@ -197,16 +197,32 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_guild_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def clear(self, ctx, amount:int=100):
+    async def clear(self, ctx, amount: int = 100):
         """
         Delete certain amount of messages in the current channel (max: 100).
         """
         if amount > 100:
-            await ctx.send(f'{self.bot.no} I can only purge 100 messages (max) at a time.')
-            return
+            return await ctx.send(f'{self.bot.no} I can only purge 100 msgs (max) at a time.')
         else:
             await ctx.channel.purge(limit=amount)
             await ctx.send(f'{self.bot.yes} {amount} messages cleared by {ctx.author}', delete_after=2.5)
+
+    @commands.command()
+    @commands.has_guild_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def cleanup(self, ctx, amount: int = 100):
+        """
+        Cleans up bot's messages in the current channel.
+        """
+        def is_bot(m):
+            return m.author == self.bot.user
+
+        if amount > 100:
+            return await ctx.send(f"{self.bot.no} I can only clear upto 100 msgs at a time.")
+        else:
+            await ctx.channel.purge(limit=amount, check=is_bot)
+            await ctx.send(f"{self.bot.yes} {amount} messages cleared", delete_after=2.5)
 
     @commands.command()
     @commands.guild_only()
@@ -417,7 +433,7 @@ class Mod(Cog, emoji=847248846526087239):
             )
         await ctx.send(embed=em)
 
-    @commands.command(aliases=['delete-warn','delwarn'])
+    @commands.command(aliases=['delwarn'])
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)

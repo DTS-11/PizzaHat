@@ -413,7 +413,7 @@ class Utility(Cog, emoji="🛠️"):
     async def quickpoll(self, ctx, *, question: str):
         """
         Quick and easy yes/no poll
-        For advanced poll, see `quickpoll`
+        For advanced poll, see `poll`
         """
         msg = await ctx.send("**{}** asks: {}".format(ctx.message.author, question.replace("@", "@\u200b")))
         try:
@@ -424,50 +424,36 @@ class Utility(Cog, emoji="🛠️"):
         no_thumb = "👎"
         await msg.add_reaction(yes_thumb)
         await msg.add_reaction(no_thumb)
-        
+
     @commands.command()
-    async def covid(self, ctx, country):
+    @commands.has_guild_permissions(manage_messages=True)
+    async def strawpoll(self, ctx, question_and_choices: str = None):
         """
-        Get Covid-19 stats from a country or the world.
+        Usage: !strawpoll my question | answer a | answer b | answer c\nAt least two answers required.
         """
-        try:
-            url = f"https://coronavirus-19-api.herokuapp.com/countries/{country}"
-            stats = requests.get(url)
-            json_stats = stats.json()
-            country = json_stats["country"]
-            totalCases = json_stats["cases"]
-            todayCases = json_stats["todayCases"]
-            totalDeaths = json_stats["deaths"]
-            todayDeaths = json_stats["todayDeaths"]
-            recovered = json_stats["recovered"]
-            active = json_stats["active"]
-            critical = json_stats["critical"]
-            casesPerOneMil = json_stats["casesPerOneMillion"]
-            deathsPerOneMil = json_stats["deathsPerOneMillion"]
-            totalTests = json_stats["totalTests"]
-            testsPerOneMil = json_stats["testsPerOneMillion"]
-
-            e = discord.Embed(
-                title=f"Covid-19 stats of {country}",
-                description="This is not live info. Therefore it might not be as accurate, but is approximate info.",
-                color=self.bot.color
-            )
-            e.add_field(name="Total Cases", value=totalCases, inline=True)
-            e.add_field(name="Today's Cases", value=todayCases, inline=True)
-            e.add_field(name="Total Deaths", value=totalDeaths, inline=True)
-            e.add_field(name="Today's Deaths", value=todayDeaths, inline=True)
-            e.add_field(name="Recovered", value=recovered, inline=True)
-            e.add_field(name="Active", value=active, inline=True)
-            e.add_field(name="Critical", value=critical, inline=True)
-            e.add_field(name="Cases per one million", value=casesPerOneMil, inline=True)
-            e.add_field(name="Deaths per one million", value=deathsPerOneMil, inline=True)
-            e.add_field(name="Tests per one million", value=testsPerOneMil, inline=True)
-            e.add_field(name="Total tests", value=totalTests, inline=True)
-            e.set_thumbnail(url="https://www.osce.org/files/imagecache/10_large_gallery/f/images/hires/8/a/448717.jpg")
-
-            await ctx.send(embed=e)
-        except:
-            await ctx.send(f"{self.bot.no} Invalid country name or API error! Try again later.")
+        if question_and_choices is None:
+            return await ctx.send("Usage: !strawpoll my question | answer a | answer b | answer c\nAt least two answers required.")
+        if "|" in question_and_choices:
+            delimiter = "|"
+        else:
+            delimiter = ","
+        question_and_choices = question_and_choices.split(delimiter)
+        if len(question_and_choices) == 1:
+            return await ctx.send("Not enough choices supplied")
+        elif len(question_and_choices) >= 31:
+            return await ctx.send("Too many choices")
+        question, *choices = question_and_choices
+        choices = [x.lstrip() for x in choices]
+        header = {"Content-Type": "application/json"}
+        payload = {
+            "title": question,
+            "options": choices,
+            "multi": False
+        }
+        async with self.bot.session.post("https://www.strawpoll.me/api/v2/polls", headers=header, json=payload) as r:
+            data = await r.json()
+        id = data["id"]
+        await ctx.send(f"http://www.strawpoll.me/{id}")
         
 def setup(bot):
     bot.add_cog(Utility(bot))

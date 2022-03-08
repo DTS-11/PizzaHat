@@ -5,10 +5,15 @@ import random
 import time
 from TagScriptEngine import Interpreter, block
 from typing import Union
-import requests
-import json
+import unicodedata
+import re
 
 from core.cog import Cog
+
+def clean_string(string):
+    string = re.sub('@', '@\u200b', string)
+    string = re.sub('#', '#\u200b', string)
+    return string
 
 
 class Fun(Cog, emoji="🥳"):
@@ -21,6 +26,37 @@ class Fun(Cog, emoji="🥳"):
             block.RangeBlock(),
         ]
         self.engine = Interpreter(blocks)
+
+    @commands.command()
+    async def charinfo(self, ctx, *, characters: str):
+        """Shows you information about a number of characters.
+        Only up to 15 characters at a time.
+        """
+
+        if len(characters) > 15:
+            await ctx.send('Too many characters ({}/15)'.format(len(characters)))
+            return
+
+        fmt = '`\\U{0:>08}`: {1} - {2} \N{EM DASH} <http://www.fileformat.info/info/unicode/char/{0}>'
+
+        def to_string(c):
+            digit = format(ord(c), 'x')
+            name = unicodedata.name(c, 'Name not found.')
+            return fmt.format(digit, name, c)
+
+        await ctx.send('\n'.join(map(to_string, characters)))
+
+    @commands.command()
+    async def echo(self, ctx, channel: discord.TextChannel, *, msg: str):
+        """
+        Makes the bot say something in the specified channel
+        """
+        if not channel.permissions_for(ctx.author).send_messages:
+            return await ctx.message.add_reaction("⚠")
+        msg = clean_string(msg)
+        destination = ctx.message.channel if destination is None else destination
+        await destination.send(msg)
+        return await ctx.message.add_reaction("✅")
 
     @commands.command(aliases=["ss"])
     async def screenshot(self, ctx, *, url):
@@ -41,19 +77,6 @@ class Fun(Cog, emoji="🥳"):
                     await ctx.send(f'**{user.name}** has paid their respects.')
         except asyncio.TimeoutError:
             await ctx.send('Timed out.')
-            
-    @commands.command()
-    async def quote(self, ctx):
-        try:
-            res = requests.get('https://zenquotes.io/api/random/quote')
-            data = json.load(res.text)
-            quote = data[0]['q']
-            author = data[0]['a']
-            await ctx.reply(quote + " -" + author)
-            return
-        except:
-            await ctx.send('Sorry, Something went wrong while trying to execute this command.')
-            return 
         
     @commands.command()
     async def choose(self, ctx, *options):
@@ -121,7 +144,7 @@ class Fun(Cog, emoji="🥳"):
         embed.add_field(name='Amount to calculate',value=f'```\n⏣ {to_calculate_with_commas}```\nAmount expected to pay```css\n+ ⏣ {number_with_commas}```\nAmount lost by tax (5%)```diff\n- ⏣ {number_with_commas_amt_lost}```\nUser gets```fix\n⏣ {user_gets_with_commas}```',inline=False)
         await ctx.send(embed=embed)
 
-    @commands.command(name='8ball', aliases=['8-ball'])
+    @commands.command(name='8ball')
     async def _8ball(self, ctx, *, question):
         """Ask any question, and let the bot respond with the answers."""
         responses = ['As I see it, yes.',
@@ -129,7 +152,7 @@ class Fun(Cog, emoji="🥳"):
                 'Better not tell you now.',
                 'Cannot predict now.',
                 'Concentrate and ask again.',
-                'Don’t count on it.',
+                'Dont count on it.',
                 'It is certain.',
                 'It is decidedly so.',
                 'Most likely.',
@@ -142,7 +165,7 @@ class Fun(Cog, emoji="🥳"):
                 'Very doubtful.',
                 'Without a doubt.',
                 'Yes.',
-                'Yes – definitely.',
+                'Yes - definitely.',
                 'You may rely on it.']
         em = discord.Embed(
             title = 'Magic 8ball',

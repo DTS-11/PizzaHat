@@ -12,3 +12,4 @@ requests
 humanfriendly
 discord-together
 numpy
+unicodedata

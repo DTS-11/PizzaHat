@@ -1,6 +1,4 @@
-from sys import displayhook
 import discord
-from discord.ext import commands
 
 from core.cog import Cog
 
