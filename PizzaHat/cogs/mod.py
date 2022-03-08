@@ -139,7 +139,7 @@ class Mod(Cog, emoji=847248846526087239):
         em = discord.Embed(
             title=f'{self.bot.yes} Server Locked',
             description=f'The server has been locked by a staff member. You are **not muted**.',
-            color=self.bot.color
+            color=self.bot.success
         )
         await ctx.send(embed=em)
 
@@ -190,7 +190,7 @@ class Mod(Cog, emoji=847248846526087239):
         em = discord.Embed(
             title=f'{self.bot.yes} Server Unlocked',
             description=f'The server has been unlocked.',
-            color=self.bot.color
+            color=self.bot.success
         )
         await ctx.send(embed=em)
 
@@ -207,7 +207,7 @@ class Mod(Cog, emoji=847248846526087239):
             return
         else:
             await ctx.channel.purge(limit=amount)
-            await ctx.send(f'{self.bot.yes} {amount} messages cleared by {ctx.author}', delete_after=2.0)
+            await ctx.send(f'{self.bot.yes} {amount} messages cleared by {ctx.author}', delete_after=2.5)
 
     @commands.command()
     @commands.guild_only()
@@ -326,7 +326,7 @@ class Mod(Cog, emoji=847248846526087239):
         e = discord.Embed(
             title=f'{self.bot.yes} Role created',
             description=f'Name: {name}\nMentionable: {mentionable}\nHoisted: {hoisted}',
-            color=self.bot.color
+            color=self.bot.success
         )
         await ctx.send(embed=e)
 
@@ -378,7 +378,7 @@ class Mod(Cog, emoji=847248846526087239):
             em = discord.Embed(
                     title=f"{self.bot.yes} Warned User",
                     description=f'Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}',
-                    color=self.bot.color,
+                    color=self.bot.success,
                     timestamp=datetime.datetime.utcnow()
                 )
             await ctx.send(embed=em)
@@ -400,7 +400,7 @@ class Mod(Cog, emoji=847248846526087239):
         em = discord.Embed(
             title=f'Warnings of {member.name}',
             description=f'{self.bot.yes} This user has no warns!',
-            color=self.bot.color,
+            color=self.bot.success,
             timestamp=datetime.datetime.utcnow()
         )
         em.set_thumbnail(url=member.avatar.url)
