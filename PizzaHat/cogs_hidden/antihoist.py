@@ -15,7 +15,7 @@ class AntiHoist(Cog):
 
         if after.display_name[0] in characters and not after.display_name.startswith("[AFK] "):
             try:
-                after.edit(
+                await after.edit(
                     nick = before.display_name if before.display_name[0] not in characters else "Moderated Nickname",
                     reason = "PizzaHat anti-hoist"
                 )
@@ -29,7 +29,7 @@ class AntiHoist(Cog):
         
         if member.display_name[0] in characters:
             try:
-                member.edit(
+                await member.edit(
                     nick = "Moderated Nickname",
                     resaon = "PizzaHat anti-hoist"
                 )
