@@ -13,7 +13,6 @@ from core.cog import Cog
 
 class Fun(Cog, emoji="🥳"):
     """Fun Commands."""
-
     def __init__(self, bot):
         self.bot = bot
         blocks = [

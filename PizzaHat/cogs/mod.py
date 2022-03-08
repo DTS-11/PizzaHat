@@ -11,7 +11,6 @@ from core.cog import Cog
 
 class Mod(Cog, emoji=847248846526087239):
     """Moderation Commands"""
-    
     def __init__(self,bot):
         self.bot = bot
 

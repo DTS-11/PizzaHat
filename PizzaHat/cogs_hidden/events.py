@@ -1,14 +1,15 @@
 import discord
 from discord.ext import commands
 
+from core.cog import Cog
 
-class Events(commands.Cog):
+
+class Events(Cog):
     """Events cog"""
-
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.Cog.listener()
+    @Cog.listener()
     async def on_ready(self):
         await self.bot.db.execute("""CREATE TABLE IF NOT EXISTS warnlogs 
                     (guild_id BIGINT, user_id BIGINT, warns TEXT[], time NUMERIC[])""")
