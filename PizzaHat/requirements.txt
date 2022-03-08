@@ -1,5 +1,4 @@
 py-cord==2.0.0b5
-ruamel.yaml
 asyncpg
 TagScriptEngine
 aiohttp
@@ -12,5 +11,4 @@ asyncdagpi
 requests
 humanfriendly
 discord-together
-DiscordUtils
 numpy

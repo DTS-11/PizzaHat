@@ -1,2 +1,2 @@
-__pycache__
-.env
+PizzaHat/cogs/*__pycache__
+*.env
