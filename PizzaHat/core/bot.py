@@ -10,13 +10,15 @@ import aiohttp
 class PizzaHat(commands.Bot):
     def __init__(self):
         super().__init__(
-            command_prefix=commands.when_mentioned_or("p!", "P!"),
-            intents=discord.Intents.all(),
-            case_insensitive=True,
-            strip_after_prefix=True,
-            activity=discord.Activity(
-                type=discord.ActivityType.watching, name='dsc.gg/pizza-invite | discord.gg/WhNVDTF'),
-            mentions=discord.AllowedMentions(everyone=False, roles=False)
+            command_prefix = commands.when_mentioned_or("p!", "P!"),
+            intents = discord.Intents.all(),
+            case_insensitive = True,
+            strip_after_prefix = True,
+            status = discord.Status.online,
+            activity = discord.Activity(
+                type=discord.ActivityType.watching, name='dsc.gg/pizza-invite | discord.gg/WhNVDTF'
+            ),
+            mentions = discord.AllowedMentions(everyone=False, roles=False)
         )
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
         self.yes = '<:yes:813819712953647206>'
@@ -29,7 +31,7 @@ class PizzaHat(commands.Bot):
         try:
             self.loop.run_until_complete(self.create_db_pool())
         except ConnectionRefusedError:
-            print("PizzaHat.db is not defined, some commands will not work.")
+            print("Database is not defined, some commands will not work.")
 
         self.public_extensions = self.loop.run_until_complete(self.load_extensions("cogs"))
         self.hidden_extensions = self.loop.run_until_complete(self.load_extensions("cogs_hidden"))
@@ -42,7 +44,8 @@ class PizzaHat(commands.Bot):
         
     async def create_db_pool(self):
         self.db = await asyncpg.create_pool(
-            database=os.getenv("PGDATABASE"), user=os.getenv("PGUSER"), password=os.getenv("PGPASSWORD"))
+            database = os.getenv("PGDATABASE"), user = os.getenv("PGUSER"), password = os.getenv("PGPASSWORD")
+        )
 
     async def load_extensions(self, dir_name: str):
         extensions = []

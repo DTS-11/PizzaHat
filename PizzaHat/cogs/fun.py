@@ -32,7 +32,6 @@ class Fun(Cog, emoji="🥳"):
         """Shows you information about a number of characters.
         Only up to 15 characters at a time.
         """
-
         if len(characters) > 15:
             await ctx.send('Too many characters ({}/15)'.format(len(characters)))
             return
