@@ -54,7 +54,7 @@ class Games(Cog, emoji=819957465160220734):
         em.add_field(name=pie_title, value=pie_desc + f'You caught it in **{round(time_taken, 3)} seconds**', inline=False)
         await pie1.edit(embed=em)
     
-    @commands.command(aliases = ['imposter','among-us'])
+    @commands.command(aliases = ['imposter','amongus'])
     async def impostor(self, ctx):
         """Classic among us game. Find the impostor **among us**"""
         embed1 = discord.Embed(
@@ -92,7 +92,7 @@ class Games(Cog, emoji=819957465160220734):
             embed = discord.Embed(
                 title="Defeat",
                 description=f"Reactor Meltdown. {imposter.capitalize()} was the imposter...",
-                color = discord.Color.red()
+                color = self.bot.failed
             )
             embed.set_image(url=defeat_img)
             await ctx.send(embed=embed)
@@ -101,7 +101,7 @@ class Games(Cog, emoji=819957465160220734):
                 embed = discord.Embed(
                     title="Victory",
                     description=f"**{imposter.capitalize()}** was the imposter, GG!",
-                    color=discord.Color.green())
+                    color=self.bot.success)
                 embed.set_image(url='https://i.redd.it/xop0vuu00fr51.png')
                 await ctx.send(embed=embed)
             else:
@@ -110,7 +110,7 @@ class Games(Cog, emoji=819957465160220734):
                         embed = discord.Embed(
                             title="Defeat",
                             description=f"Your choice was wrong, **{key}** was the imposter...",
-                            color = discord.Color.red()
+                            color = self.bot.failed
                         )
                         embed.set_image(url=defeat_img)
                         await ctx.send(embed=embed)

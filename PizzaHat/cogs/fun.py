@@ -37,7 +37,7 @@ class Fun(Cog, emoji="🥳"):
             await ctx.send('Too many characters ({}/15)'.format(len(characters)))
             return
 
-        fmt = '`\\U{0:>08}`: {1} - {2} \N{EM DASH} <http://www.fileformat.info/info/unicode/char/{0}>'
+        fmt = '`\\U{0:>08}`: {1} - {2} \N{EM DASH}'
 
         def to_string(c):
             digit = format(ord(c), 'x')
@@ -47,11 +47,11 @@ class Fun(Cog, emoji="🥳"):
         await ctx.send('\n'.join(map(to_string, characters)))
 
     @commands.command()
-    async def echo(self, ctx, channel: discord.TextChannel, *, msg: str):
+    async def echo(self, ctx, destination: discord.TextChannel, *, msg: str):
         """
         Makes the bot say something in the specified channel
         """
-        if not channel.permissions_for(ctx.author).send_messages:
+        if not destination.permissions_for(ctx.author).send_messages:
             return await ctx.message.add_reaction("⚠")
         msg = clean_string(msg)
         destination = ctx.message.channel if destination is None else destination
@@ -62,21 +62,6 @@ class Fun(Cog, emoji="🥳"):
     async def screenshot(self, ctx, *, url):
         """Takes a screenshot from a given URL."""
         await ctx.send(f"https://image.thum.io/get/https://{url}")
-
-    @commands.command()
-    async def pressf(self, ctx, *, object):
-        """Pay respect to something/someone by pressing the reaction."""
-        try:
-            message = await ctx.send(f'Press F to pay respect to `{object}`')
-            await message.add_reaction('<:f_key:802611136361005097>')
-            while True:
-                def check(r, u):
-                    return str(r.emoji) == '<:f_key:802611136361005097>' and r.message == message and u.id != self.bot.user.id
-                reaction, user = await self.bot.wait_for('reaction_add', check=check, timeout=15.0)
-                if reaction:
-                    await ctx.send(f'**{user.name}** has paid their respects.')
-        except asyncio.TimeoutError:
-            await ctx.send('Timed out.')
         
     @commands.command()
     async def choose(self, ctx, *options):

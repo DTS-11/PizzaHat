@@ -4,6 +4,7 @@ from discord_together import DiscordTogether
 import datetime
 import os
 import asyncpg
+import aiohttp
 
 
 class PizzaHat(commands.Bot):
@@ -23,6 +24,7 @@ class PizzaHat(commands.Bot):
         self.color = discord.Color.blue()
         self.success = discord.Color.green()
         self.failed = discord.Color.red()
+        self.session = aiohttp.ClientSession()
 
         try:
             self.loop.run_until_complete(self.create_db_pool())
