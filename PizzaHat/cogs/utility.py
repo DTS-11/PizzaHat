@@ -50,10 +50,10 @@ class Utility(Cog, emoji="🛠️"):
                 f"**Account Creation:** {format_date(member.created_at)}\n"
                 f"**Joined Server:** {format_date(member.joined_at)}\n"
             ),
-            color=self.bot.color,
+            color=member.color,
             timestamp=ctx.message.created_at
         )
-        em.set_author(name = f"Userinfo of {member}")
+        em.set_author(name=member, icon_url=member.avatar.url)
         em.add_field(name=f'Roles [{len(rolelist)}]', value=roles or f'{self.bot.no} N/A', inline=False)
         if member.bot:
             em.add_field(name='Member Bot', value=f'{self.bot.yes} Yes', inline=False)
