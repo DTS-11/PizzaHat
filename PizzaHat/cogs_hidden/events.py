@@ -47,9 +47,9 @@ class Events(Cog):
         elif isinstance(error, commands.NotOwner):
             pass
         elif isinstance(error, commands.MissingPermissions):
-            await ctx.send(f'You are missing some required permissions: ```diff\n- {error.missing_perms}```')
+            await ctx.send(f'You are missing some required permissions: **{error.missing_perms}**')
         elif isinstance(error, commands.BotMissingPermissions):
-            await ctx.send(f"I'm missing some required permissions:\n```diff\n- {error.missing_perms}```")
+            await ctx.send(f"I'm missing some required permissions: **{error.missing_perms}**")
         elif isinstance(error, commands.CommandOnCooldown):
             await ctx.send(
                 f'The command you tried is on cooldown. Try again in {round(error.retry_after)} seconds.'
@@ -71,21 +71,17 @@ class Events(Cog):
             await ctx.send('Please provide an emoji or the emoji could not be found.')
         elif isinstance(error, commands.MissingRequiredArgument):
             em = discord.Embed(
-                title=f'{ctx.command.qualified_name} command',
-                description=f'```{ctx.prefix}{ctx.command.name} {ctx.command.signature}```\n',
-                color=self.bot.color
+                title = f'{ctx.command.name} {ctx.command.signature}',
+                description = ctx.command.help,
+                color = discord.Color.og_blurple()
             )
-            em.add_field(name='Description', value=ctx.command.help, inline=False)
-            em.set_footer(text="<> Required | [] Optional")
             await ctx.send(embed=em)
 
         else:
-            # raise error  # for debugging
-            em = discord.Embed(
-                description=f'A weird error occured:\n```py\n{error}\n```',
-                color=self.bot.color
-            )
-            await ctx.send(embed=em)
+            # raise error for debugging
+            await ctx.send(f"{self.bot.no} An error occured. My developer has been notfied!")
+            channel = self.bot.get_channel(764729444237180949)
+            await channel.send("```py\n{error}\n```")
 
 def setup(bot):
     bot.add_cog(Events(bot))

@@ -427,12 +427,10 @@ class Utility(Cog, emoji="🛠️"):
 
     @commands.command()
     @commands.has_guild_permissions(manage_messages=True)
-    async def strawpoll(self, ctx, question_and_choices: str = None):
+    async def strawpoll(self, ctx, *, question_and_choices: str = None):
         """
-        Usage: !strawpoll my question | answer a | answer b | answer c\nAt least two answers required.
+        Separate questions and answers by `|` or `,`\nAt least two answers required.
         """
-        if question_and_choices is None:
-            return await ctx.send("Usage: !strawpoll my question | answer a | answer b | answer c\nAt least two answers required.")
         if "|" in question_and_choices:
             delimiter = "|"
         else:

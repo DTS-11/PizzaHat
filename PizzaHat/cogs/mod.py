@@ -241,35 +241,38 @@ class Mod(Cog, emoji=847248846526087239):
 
 
     @commands.command(aliases=['b'])
+    @commands.guild_only()
     @commands.has_guild_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def ban(self, ctx, member:typing.Union[discord.Member,int], *, reason):
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    async def ban(self, ctx, member:typing.Union[discord.Member,int], *, reason=None):
         """
-        Bans a member from the server. Reason is required
-        You can also ban someone that is not in the server using their user ID.
+        Bans a member whether or not the member is in the server.
         """
-        if reason:
-            if isinstance(member, int):
-                await ctx.guild.ban(discord.Object(id=member), reason=f"{reason}")
-                user = await self.bot.fetch_user(member)
-                await ctx.send(f'{self.bot.yes} Banned `{user}`')
-            else:
-                await member.ban(reason=f"{reason}", delete_message_days=0)
-                await ctx.send(f'{self.bot.yes} Banned `{member}`')
+        if reason is None:
+            reason = f'No reason provided\nBanned by {ctx.author}'
+
+        if isinstance(member, int):
+            await ctx.guild.ban(discord.Object(id=member), reason=f"{reason}")
+            user = await self.bot.fetch_user(member)
+            await ctx.send(f'{self.bot.yes} Banned `{user}`')
         else:
-            await ctx.send(f"{self.bot.no} Provide a reason to ban this user.")
+            await member.ban(reason=f"{reason}", delete_message_days=0)
+            await ctx.send(f'{self.bot.yes} Banned `{member}`')
 
     @commands.command(aliases=['mb'])
     @commands.guild_only()
     @commands.has_guild_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def massban(self, ctx, members:commands.Greedy[discord.Member], *, reason):
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    async def massban(self, ctx, members:commands.Greedy[discord.Member], *, reason=None):
         """
         Mass bans multiple members from the server. Reason is required.
         You can only ban users who are in the server.
         """
+        if reason is None:
+            reason = f'No reason provided\nBanned by {ctx.author}'
+
         if not len(members):
             await ctx.send('One or more required arguments are missing.')
 
@@ -282,10 +285,9 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_guild_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def unban(self, ctx, id:int):
+    async def unban(self, ctx, id: int):
         """
         Unbans a member from the server.
-        You can unban using their user ID.
         """
         try:
             user = self.bot.get_user(id)
@@ -302,7 +304,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def timeout(self, ctx, member: discord.Member, time, *, reason=None):
         """
-        Mute's/timeout's a member for specific time.
+        Mute/timeout a member for specific time.
         Use 5m for 5 mins, 1hr for 1 hour etc...
         """
         if reason is None:
@@ -324,38 +326,6 @@ class Mod(Cog, emoji=847248846526087239):
             reason = 'No reason provided'
         await member.remove_timeout(reason=reason)
         await ctx.send(f"{self.bot.yes} {member} has been unmuted!")
-
-    @commands.command(usage='<name> [mentionable] [hoisted] [reason]')
-    @commands.guild_only()
-    @commands.has_permissions(manage_roles=True)
-    @commands.bot_has_permissions(manage_roles=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def createrole(self, ctx, name, mentionable:bool=False, hoisted:bool=False, reason=None):
-        """
-        Creates a role in the server.
-        """
-        if reason is None:
-            reason = f'Role created by {ctx.author}'
-
-        await ctx.guild.create_role(name=name, hoist=hoisted, mentionable=mentionable)
-        e = discord.Embed(
-            title=f'{self.bot.yes} Role created',
-            description=f'Name: {name}\nMentionable: {mentionable}\nHoisted: {hoisted}',
-            color=self.bot.success
-        )
-        await ctx.send(embed=e)
-
-    @commands.command(aliases=['delrole'])
-    @commands.guild_only()
-    @commands.has_permissions(manage_roles=True)
-    @commands.bot_has_permissions(manage_roles=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def deleterole(self, ctx, *, role: discord.Role):
-        """
-        Deletes a role in the server.
-        """
-        await role.delete()
-        await ctx.send(f'{self.bot.yes} Role has been deleted.')
 
     @commands.command()
     @commands.guild_only()
