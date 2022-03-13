@@ -44,16 +44,15 @@ class Utility(Cog, emoji="🛠️"):
             return f'<t:{int(dt.timestamp())}>'
 
         em = discord.Embed(
-            description=(
-                f"**User ID:** {member.id}\n"
-                f"**Display Name:** {member.display_name}\n\n"
-                f"**Account Creation:** {format_date(member.created_at)}\n"
-                f"**Joined Server:** {format_date(member.joined_at)}\n"
-            ),
             color=member.color,
             timestamp=ctx.message.created_at
         )
         em.set_author(name=member, icon_url=member.avatar.url)
+        em.add_field(name="User ID", value=member.id, inline=False)
+        em.add_field(name="Display Name", value=member.display_name, inline=False)
+        em.add_field(name="Account Creation", value=format_date(member.created_at), inline=False)
+        em.add_field(name="Joined Server", value=format_date(member.joined_at), inline=False)
+        em.add_field(name="", value=, inline=False)
         em.add_field(name=f'Roles [{len(rolelist)}]', value=roles or f'{self.bot.no} N/A', inline=False)
         if member.bot:
             em.add_field(name='Member Bot', value=f'{self.bot.yes} Yes', inline=False)
@@ -105,7 +104,11 @@ class Utility(Cog, emoji="🛠️"):
             ),
             inline=False
         )
-        em.add_field(name="Server Features", value=', '.join(features) if features else f'{self.bot.no} None', inline=False)
+        em.add_field(
+            name="Server Features",
+            value=f'{self.bot.yes}' + f'\n{self.bot.yes}'.join(features) if features else f'{self.bot.no} None',
+            inline=False
+        )
         em.add_field(name='Verification level', value=str(ctx.guild.verification_level).capitalize(), inline=False)
 
         em.set_thumbnail(url=ctx.guild.icon.url)
