@@ -52,7 +52,6 @@ class Utility(Cog, emoji="🛠️"):
         em.add_field(name="Display Name", value=member.display_name, inline=False)
         em.add_field(name="Account Creation", value=format_date(member.created_at), inline=False)
         em.add_field(name="Joined Server", value=format_date(member.joined_at), inline=False)
-        em.add_field(name="", value=, inline=False)
         em.add_field(name=f'Roles [{len(rolelist)}]', value=roles or f'{self.bot.no} N/A', inline=False)
         if member.bot:
             em.add_field(name='Member Bot', value=f'{self.bot.yes} Yes', inline=False)
