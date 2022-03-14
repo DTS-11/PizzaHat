@@ -81,7 +81,7 @@ class Events(Cog):
             # raise error for debugging
             await ctx.send(f"{self.bot.no} An error occured. My developer has been notfied!")
             channel = self.bot.get_channel(764729444237180949)
-            await channel.send("```py\n{error}\n```")
+            await channel.send(f"```py\n{error}\n```")
 
 def setup(bot):
     bot.add_cog(Events(bot))
