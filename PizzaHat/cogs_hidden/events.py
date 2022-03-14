@@ -81,7 +81,13 @@ class Events(Cog):
             # raise error for debugging
             await ctx.send(f"{self.bot.no} An error occured. My developer has been notfied!")
             channel = self.bot.get_channel(764729444237180949)
-            await channel.send("```py\n{error}\n```")
+            e = discord.Embed(
+                title = "Error",
+                description = f"```py\n{error}\n```",
+                color = self.bot.failed
+            )
+            e.set_footer(text = f"From {ctx.guild}", icon_url = ctx.guild.icon.url)
+            await channel.send(embed=e)
 
 def setup(bot):
     bot.add_cog(Events(bot))
