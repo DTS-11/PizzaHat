@@ -13,6 +13,8 @@ class Events(Cog):
     async def on_ready(self):
         await self.bot.db.execute("""CREATE TABLE IF NOT EXISTS warnlogs 
                     (guild_id BIGINT, user_id BIGINT, warns TEXT[], time NUMERIC[])""")
+        await self.bot.db.execute("""CREATE TABLE IF NOT EXISTS modlogs 
+                    (guild_id BIGINT, channel_id BIGINT)""")
     
     @commands.Cog.listener()
     async def on_message(self, msg):
@@ -79,7 +81,7 @@ class Events(Cog):
 
         else:
             # raise error for debugging
-            await ctx.send(f"{self.bot.no} An error occured. My developer has been notfied!")
+            await ctx.send(f"{self.bot.no} An error occured. My developer has been notified!")
             channel = self.bot.get_channel(764729444237180949)
             e = discord.Embed(
                 title = "Error",

@@ -4,7 +4,6 @@ from discord.ui import Button, View
 import time
 import datetime
 import shlex
-import requests
 
 from core.cog import Cog
 

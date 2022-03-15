@@ -46,7 +46,7 @@ class HelpDropdown(discord.ui.Select):
     
     async def callback(self, interaction: discord.Interaction):
         if interaction.user != self.ctx.author:
-            return await self.ctx.send()
+            return await self.ctx.send("Not your help command.", ephemeral=True)
 
         cog_name = self.values[0]
 

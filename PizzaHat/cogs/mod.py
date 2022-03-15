@@ -231,10 +231,10 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def kick(self, ctx, member:discord.Member, *, reason=None):
         """
-        Kicks a member from the server. Reason is required.
+        Kicks a member from the server.
         """
-        if not reason:
-            reason = "No reason provided."
+        if reason is None:
+            reason = f"No reason provided.\nKicked by {ctx.author}"
 
         await member.kick(reason=reason)
         await ctx.send(f'{self.bot.yes} Kicked `{member}`')
@@ -267,7 +267,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def massban(self, ctx, members:commands.Greedy[discord.Member], *, reason=None):
         """
-        Mass bans multiple members from the server. Reason is required.
+        Mass bans multiple members from the server.
         You can only ban users who are in the server.
         """
         if reason is None:
