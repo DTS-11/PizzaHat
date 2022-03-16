@@ -33,7 +33,7 @@ class PizzaHat(commands.Bot):
         except ConnectionRefusedError:
             print("Database is not defined, some commands will not work.")
 
-        self.loop.run_until_complete(self.load_extension("jishaku"))
+        self.load_extension("jishaku")
         self.public_extensions = self.loop.run_until_complete(self.load_extensions("cogs"))
         self.hidden_extensions = ["jishaku"] + self.loop.run_until_complete(self.load_extensions("cogs_hidden"))
 
