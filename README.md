@@ -26,7 +26,7 @@ PizzaHat is a multi-purpose bot, made to satisfy your needs, as well as your ser
 - ⚒️ Utility commands. </li>
 - 📷 Image manipulation commands. </li>
 - 🎮 Game commands. </li>
-- 🎵 Music commands. (coming soon) </li>
+- 📔 Logging system. </li>
 - <img src="https://cdn.discordapp.com/emojis/809170074006192130.png?size=80" height="19px"> Regularly updated and maintained! </li>
 	
 ## <img src='https://cdn.discordapp.com/emojis/802615573556363284.png?size=80' height="30px"> • How to contribute?

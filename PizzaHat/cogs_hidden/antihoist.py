@@ -31,7 +31,7 @@ class AntiHoist(Cog):
             try:
                 await member.edit(
                     nick = "Moderated Nickname",
-                    resaon = "PizzaHat anti-hoist"
+                    reason = "PizzaHat anti-hoist"
                 )
             except Exception:
                 pass

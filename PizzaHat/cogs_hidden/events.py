@@ -14,9 +14,17 @@ class Events(Cog):
         await self.bot.db.execute("""CREATE TABLE IF NOT EXISTS warnlogs 
                     (guild_id BIGINT, user_id BIGINT, warns TEXT[], time NUMERIC[])""")
         await self.bot.db.execute("""CREATE TABLE IF NOT EXISTS modlogs 
-                    (guild_id BIGINT, channel_id BIGINT)""")
-    
-    @commands.Cog.listener()
+                    (guild_id BIGINT PRIMARY KEY, channel_id BIGINT)""")
+
+
+    async def get_logs_channel(self, guild_id):
+        data = await self.bot.db.execute("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)
+        id = data[0]
+        channel = self.bot.get_channel(id)
+        return channel
+
+
+    @Cog.listener()
     async def on_message(self, msg):
         if msg.author.bot:
             return
@@ -27,22 +35,75 @@ class Events(Cog):
         if msg.content in {"<@860889936914677770>", "<@!860889936914677770>"}:
             em = discord.Embed(color=self.bot.color)
             em.add_field(
-                name='<a:wave_animated:783393435242463324>  Hello!  <a:wave_animated:783393435242463324>',
+                name='<a:wave_animated:783393435242463324> Hello! <a:wave_animated:783393435242463324>',
                 value=f'Im {self.bot.user.name}, to get started, my prefix is `p!` or `P!` or <@860889936914677770>')
             await msg.channel.send(embed=em)
+
+    @Cog.listener()
+    async def on_message_edit(self, before, after):
+        em = discord.Embed(
+            title=f"Message edited in {before.message.channel}",
+            color=self.bot.success,
+            timestamp=before.created_at
+        )
+        em.add_field(name="-Before", value=before.content, inline=False)
+        em.add_field(name="+After", value=after.content, inline=False)
+        em.set_author(name=before.author, icon_url=before.author.avatar.url)
+        em.set_footer(text=before.author.id)
+
+        channel = await self.get_logs_channel(before.guild.id)
+        await channel.send(embed=em)
+
+    @Cog.listener()
+    async def on_message_delete(self, msg):
+        em = discord.Embed(
+            title=f"Message deleted in {msg.channel}",
+            description=msg.content,
+            color=self.bot.failed,
+            timestamp=msg.created_at
+        )
+        em.set_author(name=msg.author, icon_url=msg.author.avatar.url)
+        em.set_footer(text=msg.author.id)
+
+        channel = await self.get_logs_channel(msg.guild.id)
+        await channel.send(embed=em)
     
-    @commands.Cog.listener()
+    @Cog.listener()
+    async def on_member_ban(self, guild, user):
+        em = discord.Embed(
+            title="Member banned",
+            color=self.bot.failed,
+        )
+        em.set_author(name=user, icon_url=user.avatar.url)
+        em.set_footer(text=user.id)
+
+        channel = await self.get_logs_channel(guild.id)
+        await channel.send(embed=em)
+
+    @Cog.listener()
+    async def on_member_unban(self, guild, user):
+        em = discord.Embed(
+            title="Member unbanned",
+            color=self.bot.success,
+        )
+        em.set_author(name=user, icon_url=user.avatar.url)
+        em.set_footer(text=user.id)
+
+        channel = await self.get_logs_channel(guild.id)
+        await channel.send(embed=em)
+    
+    @Cog.listener()
     async def on_guild_join(self, guild):
-        # if more than half of the members are bots
         if len([m for m in guild.members if m.bot]) > len(guild.members) / 2:
             try:
                 await guild.text_channels[0].send(
-                    '👋 I have automatically left this server since it has a high bot to member ratio.')
+                    '👋 I have automatically left this server since it has a high bot to member ratio.'
+                )
                 await guild.leave()
             except Exception as e:
                 print(e)
         
-    @commands.Cog.listener()
+    @Cog.listener()
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):
             pass
@@ -66,7 +127,7 @@ class Events(Cog):
         elif isinstance(error, commands.DisabledCommand):
             await ctx.send(f'**{ctx.command}**, is a disabled command in **{ctx.guild.name}**')
         elif isinstance(error, commands.ChannelNotFound):
-            await ctx.send('The channel you have specified could not be found.')
+            await ctx.send('Please specify a channel or the channel could not be found.')
         elif isinstance(error, commands.NoPrivateMessage):
             await ctx.author.send('This command cannot be used in DM\'s')
         elif isinstance(error, commands.EmojiNotFound):
@@ -80,7 +141,6 @@ class Events(Cog):
             await ctx.send(embed=em)
 
         else:
-            # raise error for debugging
             await ctx.send(f"{self.bot.no} An error occured. My developer has been notified!")
             channel = self.bot.get_channel(764729444237180949)
             e = discord.Embed(
