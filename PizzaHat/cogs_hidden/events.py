@@ -41,56 +41,68 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_message_edit(self, before, after):
-        em = discord.Embed(
-            title=f"Message edited in {before.message.channel}",
-            color=self.bot.success,
-            timestamp=before.created_at
-        )
-        em.add_field(name="-Before", value=before.content, inline=False)
-        em.add_field(name="+After", value=after.content, inline=False)
-        em.set_author(name=before.author, icon_url=before.author.avatar.url)
-        em.set_footer(text=before.author.id)
+        try:
+            em = discord.Embed(
+                title=f"Message edited in {before.message.channel}",
+                color=self.bot.success,
+                timestamp=before.created_at
+            )
+            em.add_field(name="-Before", value=before.content, inline=False)
+            em.add_field(name="+After", value=after.content, inline=False)
+            em.set_author(name=before.author, icon_url=before.author.avatar.url)
+            em.set_footer(text=before.author.id)
 
-        channel = await self.get_logs_channel(before.guild.id)
-        await channel.send(embed=em)
+            channel = await self.get_logs_channel(before.guild.id)
+            await channel.send(embed=em)
+        except:
+            pass
 
     @Cog.listener()
     async def on_message_delete(self, msg):
-        em = discord.Embed(
-            title=f"Message deleted in {msg.channel}",
-            description=msg.content,
-            color=self.bot.failed,
-            timestamp=msg.created_at
-        )
-        em.set_author(name=msg.author, icon_url=msg.author.avatar.url)
-        em.set_footer(text=msg.author.id)
+        try:
+            em = discord.Embed(
+                title=f"Message deleted in {msg.channel}",
+                description=msg.content,
+                color=self.bot.failed,
+                timestamp=msg.created_at
+            )
+            em.set_author(name=msg.author, icon_url=msg.author.avatar.url)
+            em.set_footer(text=msg.author.id)
 
-        channel = await self.get_logs_channel(msg.guild.id)
-        await channel.send(embed=em)
+            channel = await self.get_logs_channel(msg.guild.id)
+            await channel.send(embed=em)
+        except:
+            pass
     
     @Cog.listener()
     async def on_member_ban(self, guild, user):
-        em = discord.Embed(
-            title="Member banned",
-            color=self.bot.failed,
-        )
-        em.set_author(name=user, icon_url=user.avatar.url)
-        em.set_footer(text=user.id)
+        try:
+            em = discord.Embed(
+                title="Member banned",
+                color=self.bot.failed,
+            )
+            em.set_author(name=user, icon_url=user.avatar.url)
+            em.set_footer(text=user.id)
 
-        channel = await self.get_logs_channel(guild.id)
-        await channel.send(embed=em)
+            channel = await self.get_logs_channel(guild.id)
+            await channel.send(embed=em)
+        except:
+            pass
 
     @Cog.listener()
     async def on_member_unban(self, guild, user):
-        em = discord.Embed(
-            title="Member unbanned",
-            color=self.bot.success,
-        )
-        em.set_author(name=user, icon_url=user.avatar.url)
-        em.set_footer(text=user.id)
+        try:
+            em = discord.Embed(
+                title="Member unbanned",
+                color=self.bot.success,
+            )
+            em.set_author(name=user, icon_url=user.avatar.url)
+            em.set_footer(text=user.id)
 
-        channel = await self.get_logs_channel(guild.id)
-        await channel.send(embed=em)
+            channel = await self.get_logs_channel(guild.id)
+            await channel.send(embed=em)
+        except:
+            pass
     
     @Cog.listener()
     async def on_guild_join(self, guild):
