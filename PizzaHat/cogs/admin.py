@@ -24,7 +24,7 @@ class Admin(Cog, emoji="👷‍♂️"):
         To replace a log channel, simply run this command again.
         """
         try:
-            await self.bot.db.execute("INSERT INTO modlogs (guild_id, channel_id) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET channel_id=$2 WHERE modlogs.guild_id=$1", ctx.guild.id, channel.id)
+            await self.bot.db.execute("INSERT INTO modlogs (guild_id, channel_id) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET channel_id=$2", ctx.guild.id, channel.id)
             await ctx.send(f"{self.bot.yes} Mod-logs channel set to {channel}")
         except Exception as e:
             print(e)

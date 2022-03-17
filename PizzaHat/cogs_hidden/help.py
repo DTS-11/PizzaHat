@@ -41,7 +41,7 @@ class HelpDropdown(discord.ui.Select):
             placeholder="Choose a catagory...",
             min_values=1,
             max_values=1,
-            options=options
+            options=sorted(options, key=lambda x: x.label)
         )
     
     async def callback(self, interaction: discord.Interaction):
