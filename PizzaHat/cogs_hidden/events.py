@@ -18,10 +18,12 @@ class Events(Cog):
 
 
     async def get_logs_channel(self, guild_id):
-        data = await self.bot.db.execute("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)
-        id = data[0]
-        channel = self.bot.get_channel(id)
-        return channel
+        data = await self.bot.db.fetchval("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)
+        if data:
+            return self.bot.get_channel(data)
+        else:
+            print(f"No modlog for {guild_id}")
+            return None
 
 
     @Cog.listener()
