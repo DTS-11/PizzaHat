@@ -22,7 +22,7 @@ class Events(Cog):
         if data:
             return self.bot.get_channel(data)
         else:
-            print(f"No modlog for {guild_id}")
+            print(f"No modlog has been set for {guild_id}")
             return None
 
 
