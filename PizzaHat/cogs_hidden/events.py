@@ -45,7 +45,7 @@ class Events(Cog):
     async def on_message_edit(self, before, after):
         try:
             em = discord.Embed(
-                title=f"Message edited in {before.message.channel}",
+                title=f"Message edited in {before.channel}",
                 color=self.bot.success,
                 timestamp=before.created_at
             )
