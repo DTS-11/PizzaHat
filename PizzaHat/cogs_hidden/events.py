@@ -56,8 +56,8 @@ class Events(Cog):
 
             channel = await self.get_logs_channel(before.guild.id)
             await channel.send(embed=em)
-        except:
-            pass
+        except Exception as e:
+            print(e)
 
     @Cog.listener()
     async def on_message_delete(self, msg):
@@ -73,8 +73,8 @@ class Events(Cog):
 
             channel = await self.get_logs_channel(msg.guild.id)
             await channel.send(embed=em)
-        except:
-            pass
+        except Exception as e:
+            print(e)
     
     @Cog.listener()
     async def on_member_ban(self, guild, user):
@@ -88,8 +88,8 @@ class Events(Cog):
 
             channel = await self.get_logs_channel(guild.id)
             await channel.send(embed=em)
-        except:
-            pass
+        except Exception as e:
+            print(e)
 
     @Cog.listener()
     async def on_member_unban(self, guild, user):
@@ -103,8 +103,8 @@ class Events(Cog):
 
             channel = await self.get_logs_channel(guild.id)
             await channel.send(embed=em)
-        except:
-            pass
+        except Exception as e:
+            print(e)
     
     @Cog.listener()
     async def on_guild_join(self, guild):
