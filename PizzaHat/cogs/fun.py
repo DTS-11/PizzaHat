@@ -46,10 +46,12 @@ class Fun(Cog, emoji="🥳"):
         await ctx.send('\n'.join(map(to_string, characters)))
 
     @commands.command()
-    async def echo(self, ctx, destination: discord.TextChannel, *, msg: str):
+    async def echo(self, ctx, destination: discord.TextChannel=None, *, msg: str):
         """
         Makes the bot say something in the specified channel
         """
+        if destination is None:
+            destination = ctx.channel
         if not destination.permissions_for(ctx.author).send_messages:
             return await ctx.message.add_reaction("⚠")
         msg = clean_string(msg)

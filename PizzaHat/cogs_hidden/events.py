@@ -21,9 +21,14 @@ class Events(Cog):
         data = await self.bot.db.fetchval("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)
         if data:
             return self.bot.get_channel(data)
-        else:
-            print(f"No modlog has been set for {guild_id}")
-            return None
+
+    async def create_webhook(self, guild_id):
+        channel = await self.get_logs_channel(guild_id)
+        return await channel.create_webhook(
+            name=f"{self.bot.user.name} " + "Logging",
+            avatar=self.bot.avatar.url,
+            reason="For logging"
+        )
 
 
     @Cog.listener()
@@ -43,27 +48,30 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_message_edit(self, before, after):
-        try:
-            em = discord.Embed(
-                title=f"Message edited in {before.channel}",
-                color=self.bot.success,
-                timestamp=before.created_at
-            )
-            em.add_field(name="-Before", value=before.content, inline=False)
-            em.add_field(name="+After", value=after.content, inline=False)
-            em.set_author(name=before.author, icon_url=before.author.avatar.url)
-            em.set_footer(text=before.author.id)
+        if before.content == after.content:
+            return
+        else:
+            try:
+                em = discord.Embed(
+                    title=f"Message edited in #{before.channel}",
+                    color=self.bot.success,
+                    timestamp=before.created_at
+                )
+                em.add_field(name="-Before", value=before.content, inline=False)
+                em.add_field(name="+After", value=after.content, inline=False)
+                em.set_author(name=before.author, icon_url=before.author.avatar.url)
+                em.set_footer(text=before.author.id)
 
-            channel = await self.get_logs_channel(before.guild.id)
-            await channel.send(embed=em)
-        except Exception as e:
-            print(e)
+                webhook = await self.create_webhook(before.guild.id)
+                await webhook.send(embed=em)
+            except Exception as e:
+                print(e)
 
     @Cog.listener()
     async def on_message_delete(self, msg):
         try:
             em = discord.Embed(
-                title=f"Message deleted in {msg.channel}",
+                title=f"Message deleted in #{msg.channel}",
                 description=msg.content,
                 color=self.bot.failed,
                 timestamp=msg.created_at
@@ -71,8 +79,8 @@ class Events(Cog):
             em.set_author(name=msg.author, icon_url=msg.author.avatar.url)
             em.set_footer(text=msg.author.id)
 
-            channel = await self.get_logs_channel(msg.guild.id)
-            await channel.send(embed=em)
+            webhook = await self.create_webhook(msg.guild.id)
+            await webhook.send(embed=em)
         except Exception as e:
             print(e)
     
@@ -86,8 +94,8 @@ class Events(Cog):
             em.set_author(name=user, icon_url=user.avatar.url)
             em.set_footer(text=user.id)
 
-            channel = await self.get_logs_channel(guild.id)
-            await channel.send(embed=em)
+            webhook = await self.create_webhook(guild.id)
+            await webhook.send(embed=em)
         except Exception as e:
             print(e)
 
@@ -101,8 +109,8 @@ class Events(Cog):
             em.set_author(name=user, icon_url=user.avatar.url)
             em.set_footer(text=user.id)
 
-            channel = await self.get_logs_channel(guild.id)
-            await channel.send(embed=em)
+            webhook = await self.create_webhook(guild.id)
+            await webhook.send(embed=em)
         except Exception as e:
             print(e)
     
@@ -116,6 +124,13 @@ class Events(Cog):
                 await guild.leave()
             except Exception as e:
                 print(e)
+
+    @Cog.listener()
+    async def on_guild_remove(self, guild):
+        try:
+            await self.bot.db.execute("DELETE FROM modlogs WHERE guild_id=$1", guild.id)
+        except Exception as e:
+            print(e)
         
     @Cog.listener()
     async def on_command_error(self, ctx, error):
