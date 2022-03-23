@@ -57,7 +57,11 @@ class Utility(Cog, emoji="🛠️"):
         else:
             em.add_field(name='Member bot', value=f'{self.bot.no} No', inline=False)
         em.set_footer(text=f"Requested by {ctx.author}", icon_url = ctx.author.avatar.url)
-        em.set_thumbnail(url = member.avatar.url)
+
+        if member.avatar:
+            em.set_thumbnail(url=member.avatar.url)
+        else:
+            em.set_thumbnail(url="https://logos-world.net/wp-content/uploads/2020/12/Discord-Logo.png")
         await ctx.send(embed=em)
         
     @commands.command(aliases=['si'])
@@ -109,7 +113,10 @@ class Utility(Cog, emoji="🛠️"):
         )
         em.add_field(name='Verification level', value=str(ctx.guild.verification_level).capitalize(), inline=False)
 
-        em.set_thumbnail(url=ctx.guild.icon.url)
+        if ctx.guild.icon.url is None:
+            em.set_thumbnail(url="https://logos-world.net/wp-content/uploads/2020/12/Discord-Logo.png")
+        else:
+            em.set_thumbnail(url=ctx.guild.icon.url)
         em.set_footer(text=f'Created at: {formatted_date(ctx.guild.created_at)}')
         
         await ctx.send(embed=em)

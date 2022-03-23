@@ -26,7 +26,7 @@ class Events(Cog):
         channel = await self.get_logs_channel(guild_id)
         return await channel.create_webhook(
             name=f"{self.bot.user.name} " + "Logging",
-            avatar=self.bot.avatar.url,
+            avatar=self.bot.user.avatar.url,
             reason="For logging"
         )
 
@@ -48,6 +48,9 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_message_edit(self, before, after):
+        if before.author.bot:
+            return
+
         if before.content == after.content:
             return
         else:
@@ -60,7 +63,7 @@ class Events(Cog):
                 em.add_field(name="-Before", value=before.content, inline=False)
                 em.add_field(name="+After", value=after.content, inline=False)
                 em.set_author(name=before.author, icon_url=before.author.avatar.url)
-                em.set_footer(text=before.author.id)
+                em.set_footer(text=f"ID: {before.author.id}")
 
                 webhook = await self.create_webhook(before.guild.id)
                 await webhook.send(embed=em)
@@ -69,6 +72,9 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_message_delete(self, msg):
+        if msg.author.bot:
+            return
+
         try:
             em = discord.Embed(
                 title=f"Message deleted in #{msg.channel}",
@@ -77,12 +83,13 @@ class Events(Cog):
                 timestamp=msg.created_at
             )
             em.set_author(name=msg.author, icon_url=msg.author.avatar.url)
-            em.set_footer(text=msg.author.id)
+            em.set_footer(text=f"ID: {msg.author.id}")
 
             webhook = await self.create_webhook(msg.guild.id)
             await webhook.send(embed=em)
         except Exception as e:
             print(e)
+
     
     @Cog.listener()
     async def on_member_ban(self, guild, user):
@@ -92,7 +99,7 @@ class Events(Cog):
                 color=self.bot.failed,
             )
             em.set_author(name=user, icon_url=user.avatar.url)
-            em.set_footer(text=user.id)
+            em.set_footer(text=f"ID: {user.id}")
 
             webhook = await self.create_webhook(guild.id)
             await webhook.send(embed=em)
@@ -107,12 +114,73 @@ class Events(Cog):
                 color=self.bot.success,
             )
             em.set_author(name=user, icon_url=user.avatar.url)
-            em.set_footer(text=user.id)
+            em.set_footer(text=f"ID: {user.id}")
 
             webhook = await self.create_webhook(guild.id)
             await webhook.send(embed=em)
         except Exception as e:
             print(e)
+
+
+    @Cog.listener()
+    async def on_guild_role_create(self, role):
+        try:
+            em = discord.Embed(
+                title="New role created",
+                color=self.bot.success,
+                timestamp=role.created_at
+            )
+            em.add_field(name="Name", value=role.name, inline=False)
+            em.add_field(name="Color", value=role.color, inline=False)
+            em.set_footer(text=f"ID: {role.id}")
+
+            webhook = await self.create_webhook(role.guild.id)
+            await webhook.send(embed=em)
+        except Exception as e:
+            print(e)
+
+    @Cog.listener()
+    async def on_guild_role_delete(self, role):
+        try:
+            em = discord.Embed(
+                title="Role deleted",
+                color=self.bot.failed,
+                timestamp=role.created_at
+            )
+            em.add_field(name="Name", value=role.name, inline=False)
+            em.add_field(name="Color", value=role.color, inline=False)
+            em.set_footer(text=f"ID: {role.id}")
+
+            webhook = await self.create_webhook(role.guild.id)
+            await webhook.send(embed=em)
+        except Exception as e:
+            print(e)
+
+    @Cog.listener()
+    async def on_guild_role_update(self, before, after):
+        if before == after:
+            return
+        try:
+            em = discord.Embed(
+                title="Role updated",
+                description=f"""**-Before
+                """,
+                color=self.bot.color,
+                timestamp=after.created_at
+            )
+            em.add_field(name="-Before", value="\u200b", inline=False)
+            em.add_field(name="Name", value=before.name, inline=False)
+            em.add_field(name="Color", value=before.color, inline=False)
+            em.add_field(name="+After", value="\u200b", inline=False)
+            em.add_field(name="Name", value=after.name, inline=False)
+            em.add_field(name="Color", value=after.color, inline=False)
+            em.set_footer(text=f"ID: {before.id}")
+
+            webhook = await self.create_webhook(before.guild.id)
+            await webhook.send(embed=em)
+        except Exception as e:
+            print(e)
+
     
     @Cog.listener()
     async def on_guild_join(self, guild):
@@ -131,6 +199,7 @@ class Events(Cog):
             await self.bot.db.execute("DELETE FROM modlogs WHERE guild_id=$1", guild.id)
         except Exception as e:
             print(e)
+
         
     @Cog.listener()
     async def on_command_error(self, ctx, error):
@@ -177,7 +246,10 @@ class Events(Cog):
                 description = f"```py\n{error}\n```",
                 color = self.bot.failed
             )
-            e.set_footer(text = f"From {ctx.guild}", icon_url = ctx.guild.icon.url)
+            if ctx.guild.icon.url is None:
+                e.set_footer(text=f"From {ctx.guild}", icon_url="https://logos-world.net/wp-content/uploads/2020/12/Discord-Logo.png")
+            else:
+                e.set_footer(text=f"From {ctx.guild}", icon_url=ctx.guild.icon.url)
             await channel.send(embed=e)
 
 def setup(bot):
