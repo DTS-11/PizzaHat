@@ -113,10 +113,10 @@ class Utility(Cog, emoji="🛠️"):
         )
         em.add_field(name='Verification level', value=str(ctx.guild.verification_level).capitalize(), inline=False)
 
-        if ctx.guild.icon.url is None:
-            em.set_thumbnail(url="https://logos-world.net/wp-content/uploads/2020/12/Discord-Logo.png")
-        else:
+        if ctx.guild.icon:
             em.set_thumbnail(url=ctx.guild.icon.url)
+        else:
+            em.set_thumbnail(url="https://logos-world.net/wp-content/uploads/2020/12/Discord-Logo.png")
         em.set_footer(text=f'Created at: {formatted_date(ctx.guild.created_at)}')
         
         await ctx.send(embed=em)
