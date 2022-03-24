@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+import traceback
 
 from core.cog import Cog
 
@@ -244,7 +245,7 @@ class Events(Cog):
             channel = self.bot.get_channel(764729444237180949)
             e = discord.Embed(
                 title = "Error",
-                description = f"```py\n{error}\n```",
+                description = f"```py\n{traceback.format_exception(error, error, error.__traceback__)}\n```",
                 color = self.bot.failed
             )
             if ctx.guild.icon.url is None:
