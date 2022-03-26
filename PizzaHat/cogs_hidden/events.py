@@ -25,7 +25,6 @@ class Events(Cog):
 
     async def create_webhook(self, guild_id):
         channel = await self.get_logs_channel(guild_id)
-        print(guild_id)
         return await channel.create_webhook(
             name=f"{self.bot.user.name} " + "Logging",
             avatar=self.bot.user.avatar.url,
