@@ -18,7 +18,6 @@ class PizzaHat(commands.Bot):
             activity = discord.Activity(
                 type=discord.ActivityType.watching, name='dsc.gg/pizza-invite | discord.gg/WhNVDTF'
             ),
-            mentions = discord.AllowedMentions(everyone=False, roles=False)
         )
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
         self.yes = '<:yes:813819712953647206>'
@@ -31,7 +30,7 @@ class PizzaHat(commands.Bot):
         try:
             self.loop.run_until_complete(self.create_db_pool())
         except ConnectionRefusedError:
-            print("Database is not defined, some commands will not work.")
+            print("Database not connected.")
 
         self.load_extension("jishaku")
         self.public_extensions = self.loop.run_until_complete(self.load_extensions("cogs"))

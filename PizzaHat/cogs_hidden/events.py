@@ -25,11 +25,14 @@ class Events(Cog):
 
     async def create_webhook(self, guild_id):
         channel = await self.get_logs_channel(guild_id)
-        return await channel.create_webhook(
-            name=f"{self.bot.user.name} " + "Logging",
-            avatar=self.bot.user.avatar.url,
-            reason="For logging"
-        )
+        if channel:
+            await channel.create_webhook(
+                name=f"{self.bot.user.name} " + "Logging",
+                avatar=self.bot.user.avatar.url,
+                reason="For logging"
+            )
+        else:
+            print(Exception)
 
 
     @Cog.listener()
@@ -240,11 +243,11 @@ class Events(Cog):
             await ctx.send(embed=em)
 
         else:
-            await ctx.send(f"{self.bot.no} An error occured. My developer has been notified!")
+            await ctx.send(f"{self.bot.no} Uh oh, an error occured. My developer has been notified!")
             channel = self.bot.get_channel(764729444237180949)
             e = discord.Embed(
                 title = "Error",
-                description = f"```py\n{traceback.format_exception(error, error, error.__traceback__)}\n```",
+                description = f"```py\n{traceback.format_exception(error.__traceback__)}\n```",
                 color = self.bot.failed
             )
             if ctx.guild.icon.url is None:

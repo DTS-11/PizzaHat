@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from numpy import delete
 from asyncdagpi import Client, ImageFeatures
 import os
 import aiohttp
