@@ -156,8 +156,6 @@ class Events(Cog):
         try:
             em = discord.Embed(
                 title="Role updated",
-                description=f"""**-Before
-                """,
                 color=self.bot.color,
                 timestamp=after.created_at
             )
@@ -189,6 +187,7 @@ class Events(Cog):
     @Cog.listener()
     async def on_guild_remove(self, guild):
         try:
+            print(guild.name)
             await self.bot.db.execute("DELETE FROM modlogs WHERE guild_id=$1", guild.id)
         except Exception as e:
             print(e)
@@ -198,12 +197,16 @@ class Events(Cog):
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):
             pass
+
         elif isinstance(error, commands.NotOwner):
             pass
+
         elif isinstance(error, commands.MissingPermissions):
             await ctx.send(f'You are missing some required permissions: **{error.missing_perms}**')
+
         elif isinstance(error, commands.BotMissingPermissions):
             await ctx.send(f"I'm missing some required permissions: **{error.missing_perms}**")
+
         elif isinstance(error, commands.CommandOnCooldown):
             await ctx.send(
                 f'The command you tried is on cooldown. Try again in {round(error.retry_after)} seconds.'
@@ -211,18 +214,25 @@ class Events(Cog):
                 f'**Cooldown time:**  {round(error.cooldown.per)} seconds'
                 f'\n**Command uses:**  {error.cooldown.rate}'
             )
+
         elif isinstance(error, commands.RoleNotFound):
             await ctx.send('Please provide a role or the role could not be found.')
+
         elif isinstance(error, commands.MemberNotFound):
             await ctx.send('Please specify a member or the member could not be found.')
+
         elif isinstance(error, commands.DisabledCommand):
             await ctx.send(f'**{ctx.command}**, is a disabled command in **{ctx.guild.name}**')
+
         elif isinstance(error, commands.ChannelNotFound):
             await ctx.send('Please specify a channel or the channel could not be found.')
+
         elif isinstance(error, commands.NoPrivateMessage):
             await ctx.author.send('This command cannot be used in DM\'s')
+
         elif isinstance(error, commands.EmojiNotFound):
             await ctx.send('Please provide an emoji or the emoji could not be found.')
+            
         elif isinstance(error, commands.MissingRequiredArgument):
             em = discord.Embed(
                 title = f'{ctx.command.name} {ctx.command.signature}',
