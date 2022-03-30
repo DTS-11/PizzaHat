@@ -23,17 +23,6 @@ class Events(Cog):
         if data:
             return self.bot.get_channel(data)
 
-    async def create_webhook(self, guild_id):
-        channel = await self.get_logs_channel(guild_id)
-        if channel:
-            await channel.create_webhook(
-                name=f"{self.bot.user.name} " + "Logging",
-                avatar=self.bot.user.avatar.url,
-                reason="For logging"
-            )
-        else:
-            print(Exception)
-
 
     @Cog.listener()
     async def on_message(self, msg):
@@ -69,8 +58,8 @@ class Events(Cog):
                 em.set_author(name=before.author, icon_url=before.author.avatar.url)
                 em.set_footer(text=f"ID: {before.author.id}")
 
-                webhook = await self.create_webhook(before.guild.id)
-                await webhook.send(embed=em)
+                channel = await self.get_logs_channel(before.guild.id)
+                await channel.send(embed=em)
             except Exception as e:
                 print(e)
 
@@ -89,8 +78,8 @@ class Events(Cog):
             em.set_author(name=msg.author, icon_url=msg.author.avatar.url)
             em.set_footer(text=f"ID: {msg.author.id}")
 
-            webhook = await self.create_webhook(msg.guild.id)
-            await webhook.send(embed=em)
+            channel = await self.get_logs_channel(msg.guild.id)
+            await channel.send(embed=em)
         except Exception as e:
             print(e)
 
@@ -105,8 +94,8 @@ class Events(Cog):
             em.set_author(name=user, icon_url=user.avatar.url)
             em.set_footer(text=f"ID: {user.id}")
 
-            webhook = await self.create_webhook(guild.id)
-            await webhook.send(embed=em)
+            channel = await self.get_logs_channel(guild.id)
+            await channel.send(embed=em)
         except Exception as e:
             print(e)
 
@@ -120,8 +109,8 @@ class Events(Cog):
             em.set_author(name=user, icon_url=user.avatar.url)
             em.set_footer(text=f"ID: {user.id}")
 
-            webhook = await self.create_webhook(guild.id)
-            await webhook.send(embed=em)
+            channel = await self.get_logs_channel(guild.id)
+            await channel.send(embed=em)
         except Exception as e:
             print(e)
 
@@ -138,8 +127,8 @@ class Events(Cog):
             em.add_field(name="Color", value=role.color, inline=False)
             em.set_footer(text=f"ID: {role.id}")
 
-            webhook = await self.create_webhook(role.guild.id)
-            await webhook.send(embed=em)
+            channel = await self.get_logs_channel(role.guild.id)
+            await channel.send(embed=em)
         except Exception as e:
             print(e)
 
@@ -155,8 +144,8 @@ class Events(Cog):
             em.add_field(name="Color", value=role.color, inline=False)
             em.set_footer(text=f"ID: {role.id}")
 
-            webhook = await self.create_webhook(role.guild.id)
-            await webhook.send(embed=em)
+            channel = await self.get_logs_channel(role.guild.id)
+            await channel.send(embed=em)
         except Exception as e:
             print(e)
 
@@ -180,8 +169,8 @@ class Events(Cog):
             em.add_field(name="Color", value=after.color, inline=False)
             em.set_footer(text=f"ID: {before.id}")
 
-            webhook = await self.create_webhook(before.guild.id)
-            await webhook.send(embed=em)
+            channel = await self.get_logs_channel(before.guild.id)
+            await channel.send(embed=em)
         except Exception as e:
             print(e)
 
