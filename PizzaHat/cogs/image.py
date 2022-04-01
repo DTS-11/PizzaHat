@@ -18,11 +18,10 @@ class Images(Cog, emoji="📷"):
     @staticmethod
     async def generate_image(member: discord.Member, gen_name: str, username: str=None, text: str=None):
         """Helper function for image generation commands."""
-
         url = str(member.display_avatar.with_format("png").with_size(1024))
-        img = await dagpi.image_process(getattr(ImageFeatures, gen_name)(), url, username, text)
+        img = await dagpi.image_process(getattr(ImageFeatures, gen_name)(), url=url, username=username, text=text)
         file = discord.File(fp=img.image, filename=f"{gen_name}.{img.format}")
-
+        
         return file
 
     @commands.command()
