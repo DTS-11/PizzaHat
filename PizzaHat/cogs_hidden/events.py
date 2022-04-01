@@ -53,10 +53,10 @@ class Events(Cog):
                     color=self.bot.success,
                     timestamp=before.created_at
                 )
-                em.add_field(name="-Before", value=before.content, inline=False)
-                em.add_field(name="+After", value=after.content, inline=False)
+                em.add_field(name="- Before", value=before.content, inline=False)
+                em.add_field(name="+ After", value=after.content, inline=False)
                 em.set_author(name=before.author, icon_url=before.author.avatar.url)
-                em.set_footer(text=f"ID: {before.author.id}")
+                em.set_footer(text=f"User ID: {before.author.id}")
 
                 channel = await self.get_logs_channel(before.guild.id)
                 await channel.send(embed=em)
@@ -76,7 +76,7 @@ class Events(Cog):
                 timestamp=msg.created_at
             )
             em.set_author(name=msg.author, icon_url=msg.author.avatar.url)
-            em.set_footer(text=f"ID: {msg.author.id}")
+            em.set_footer(text=f"User ID: {msg.author.id}")
 
             channel = await self.get_logs_channel(msg.guild.id)
             await channel.send(embed=em)
@@ -92,7 +92,7 @@ class Events(Cog):
                 color=self.bot.failed,
             )
             em.set_author(name=user, icon_url=user.avatar.url)
-            em.set_footer(text=f"ID: {user.id}")
+            em.set_footer(text=f"User ID: {user.id}")
 
             channel = await self.get_logs_channel(guild.id)
             await channel.send(embed=em)
@@ -107,7 +107,7 @@ class Events(Cog):
                 color=self.bot.success,
             )
             em.set_author(name=user, icon_url=user.avatar.url)
-            em.set_footer(text=f"ID: {user.id}")
+            em.set_footer(text=f"User ID: {user.id}")
 
             channel = await self.get_logs_channel(guild.id)
             await channel.send(embed=em)
@@ -125,7 +125,7 @@ class Events(Cog):
             )
             em.add_field(name="Name", value=role.name, inline=False)
             em.add_field(name="Color", value=role.color, inline=False)
-            em.set_footer(text=f"ID: {role.id}")
+            em.set_footer(text=f"Role ID: {role.id}")
 
             channel = await self.get_logs_channel(role.guild.id)
             await channel.send(embed=em)
@@ -142,7 +142,7 @@ class Events(Cog):
             )
             em.add_field(name="Name", value=role.name, inline=False)
             em.add_field(name="Color", value=role.color, inline=False)
-            em.set_footer(text=f"ID: {role.id}")
+            em.set_footer(text=f"Role ID: {role.id}")
 
             channel = await self.get_logs_channel(role.guild.id)
             await channel.send(embed=em)
@@ -159,13 +159,13 @@ class Events(Cog):
                 color=self.bot.color,
                 timestamp=after.created_at
             )
-            em.add_field(name="-Before", value="\u200b", inline=False)
+            em.add_field(name="- Before", value="\u200b", inline=False)
             em.add_field(name="Name", value=before.name, inline=False)
             em.add_field(name="Color", value=before.color, inline=False)
-            em.add_field(name="+After", value="\u200b", inline=False)
+            em.add_field(name="+ After", value="\u200b", inline=False)
             em.add_field(name="Name", value=after.name, inline=False)
             em.add_field(name="Color", value=after.color, inline=False)
-            em.set_footer(text=f"ID: {before.id}")
+            em.set_footer(text=f"Role ID: {before.id}")
 
             channel = await self.get_logs_channel(before.guild.id)
             await channel.send(embed=em)
