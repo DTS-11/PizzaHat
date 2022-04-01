@@ -438,6 +438,7 @@ class Utility(Cog, emoji="🛠️"):
     async def strawpoll(self, ctx, *, question_and_choices: str = None):
         """
         Separate questions and answers by `|` or `,`\nAt least two answers required.
+        Inspired by drapes#4798
         """
         if "|" in question_and_choices:
             delimiter = "|"
@@ -460,6 +461,37 @@ class Utility(Cog, emoji="🛠️"):
             data = await r.json()
         id = data["id"]
         await ctx.send(f"http://www.strawpoll.me/{id}")
+        
+    @commands.command(aliases=['send_server_emojis', 'send_emojis', 'send_emotes'])
+    @commands.has_guild_permissions(manage_emojis=True)
+    @commands.cooldown(1, 30, commands.BucketType.user)
+    async def send_server_emotes(self, ctx):
+        """
+        Sends the servers emotes and their raw form in a list.
+        Created by drapes#4798
+        """
+        emojis = ctx.guild.emojis
+        emoji_string = ''
+        for e in emojis:
+            if e.animated == True:
+                info = f'<a:{e.name}:{e.id}> - `<a:{e.name}:{e.id}>`\n'
+            else:
+                info = f'<:{e.name}:{e.id}> - `<:{e.name}:{e.id}>`\n'
+            emoji_string += info
+        chunk = emoji_string.split('\n')
+
+        x = 15    
+
+        final_list= lambda chunk, x: [chunk[i:i+x] for i in range(0, len(chunk), x)]
+
+        output=final_list(chunk, x)
+
+        for b in output:
+            try:
+                c = '\n'.join(b)
+                await ctx.send(c)
+            except:
+                pass
         
 def setup(bot):
     bot.add_cog(Utility(bot))
