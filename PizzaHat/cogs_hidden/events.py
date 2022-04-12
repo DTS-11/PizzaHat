@@ -23,6 +23,7 @@ class Events(Cog):
         if data:
             return self.bot.get_channel(data)
 
+# ====== MESSAGE LOGS ======
 
     @Cog.listener()
     async def on_message(self, msg):
@@ -83,6 +84,7 @@ class Events(Cog):
         except Exception as e:
             print(e)
 
+# ====== MEMBER LOGS ======
     
     @Cog.listener()
     async def on_member_ban(self, guild, user):
@@ -114,6 +116,7 @@ class Events(Cog):
         except Exception as e:
             print(e)
 
+# ====== GUILD LOGS ======
 
     @Cog.listener()
     async def on_guild_role_create(self, role):
@@ -171,7 +174,6 @@ class Events(Cog):
             await channel.send(embed=em)
         except Exception as e:
             print(e)
-
     
     @Cog.listener()
     async def on_guild_join(self, guild):
@@ -192,7 +194,8 @@ class Events(Cog):
         except Exception as e:
             print(e)
 
-        
+# ====== ERROR HANDLER ======
+
     @Cog.listener()
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):
@@ -249,10 +252,11 @@ class Events(Cog):
                 description = f"```py\n{traceback.format_exception(error.__traceback__)}\n```",
                 color = self.bot.failed
             )
-            if ctx.guild.icon.url is None:
-                e.set_footer(text=f"From {ctx.guild}", icon_url="https://logos-world.net/wp-content/uploads/2020/12/Discord-Logo.png")
-            else:
+
+            if ctx.guild.icon.url:
                 e.set_footer(text=f"From {ctx.guild}", icon_url=ctx.guild.icon.url)
+            else:
+                pass
             await channel.send(embed=e)
 
 def setup(bot):

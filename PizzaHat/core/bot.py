@@ -40,7 +40,7 @@ class PizzaHat(commands.Bot):
         if not hasattr(self, 'uptime'):
             self.uptime = datetime.datetime.utcnow()
         self.togetherControl = await DiscordTogether(os.getenv("TOKEN"), debug=True)
-        print("Bot online.")
+        print(f"Logged in as {self.user}")
         
     async def create_db_pool(self):
         self.db = await asyncpg.create_pool(

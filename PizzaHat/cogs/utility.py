@@ -19,16 +19,23 @@ class Utility(Cog, emoji="🛠️"):
         self.bot = bot
 
     @commands.command(aliases=['latency'])
-    async def ping(self,ctx):
+    async def ping(self, ctx):
         """Shows latency of bot."""
-        await ctx.send(f":ping_pong: Pong!\nBot latency: `{round(self.bot.latency*1000)}ms`")
+        time1 = time.perf_counter()
+        msg = await ctx.send("Pinging...")
+        time2 = time.perf_counter()
+
+        await msg.edit(
+            "🏓 Pong!"
+            f"API: `{round(self.bot.latency*1000)}ms`"
+            f"Bot: `{round(time2-time1)*1000}`ms"
+        )
 
     @commands.command(aliases=['whois','ui'])
     @commands.guild_only()
     async def userinfo(self, ctx,  member:discord.Member=None):
         """
         Shows info about a user.
-        
         If no user is given, returns value of yourself.
         """
         if member is None:
