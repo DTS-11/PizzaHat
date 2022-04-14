@@ -42,7 +42,7 @@ class Games(Cog, emoji=819957465160220734):
 
         def check(reaction, user):
             self.reacted = reaction.emoji
-            return user == ctx.author and str(reaction.emoji)
+            return user == ctx.author and str(reaction.emoji) and reaction.message == ctx.message
 
         before_wait = datetime.datetime.now()
         reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
