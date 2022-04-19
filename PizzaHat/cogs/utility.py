@@ -28,7 +28,7 @@ class Utility(Cog, emoji="🛠️"):
         await msg.edit(
             "🏓 Pong!"
             f"\nAPI: `{round(self.bot.latency*1000)}ms`"
-            f"\nBot: `{round(time2-time1)*1000}`ms"
+            f"\nBot: `{round(time2-time1)*1000}ms`"
         )
 
     @commands.command(aliases=['whois','ui'])

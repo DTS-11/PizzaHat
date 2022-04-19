@@ -13,3 +13,4 @@ humanfriendly
 discord-together
 numpy
 jishaku
+psutil
