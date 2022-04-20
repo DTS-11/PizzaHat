@@ -33,7 +33,7 @@ class Events(Cog):
         if self.bot.user == msg.author:
             return
         
-        if msg.content == f"<@!{self.bot.user.id}":
+        if msg.content in {"<@860889936914677770>", "<@!860889936914677770>"}:
             em = discord.Embed(color=self.bot.color)
             em.add_field(
                 name='<a:wave_animated:783393435242463324> Hello! <a:wave_animated:783393435242463324>',
