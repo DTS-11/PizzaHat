@@ -12,6 +12,11 @@ start_time = time.time()
 def to_keycap(c):
     return '\N{KEYCAP TEN}' if c == 10 else str(c) + '\u20e3'
 
+def format_date(dt:datetime.datetime):
+            if dt is None:
+                return 'N/A'
+            return f'<t:{int(dt.timestamp())}>'
+
 
 class Utility(Cog, emoji="🛠️"):
     """Utility Commands"""
@@ -44,25 +49,42 @@ class Utility(Cog, emoji="🛠️"):
         rolelist = [role.mention for role in list(member.roles[::-1]) if not role is ctx.guild.default_role] 
         roles = ", ".join(rolelist)
 
-        def format_date(dt:datetime.datetime):
-            if dt is None:
-                return 'N/A'
-            return f'<t:{int(dt.timestamp())}>'
-
         em = discord.Embed(
             color=member.color,
             timestamp=ctx.message.created_at
         )
         em.set_author(name=member, icon_url=member.avatar.url)
+
         em.add_field(name="User ID", value=member.id, inline=False)
         em.add_field(name="Display Name", value=member.display_name, inline=False)
-        em.add_field(name="Account Creation", value=format_date(member.created_at), inline=False)
-        em.add_field(name="Joined Server", value=format_date(member.joined_at), inline=False)
-        em.add_field(name=f'Roles [{len(rolelist)}]', value=roles or f'{self.bot.no} N/A', inline=False)
+        em.add_field(
+            name="Account Creation",
+            value=format_date(member.created_at),
+            inline=False
+        )
+        em.add_field(
+            name="Joined Server",
+            value=format_date(member.joined_at),
+            inline=False
+        )
+        em.add_field(
+            name=f"Roles [{len(rolelist)}]",
+            value=roles or f'{self.bot.no} N/A',
+            inline=False
+        )
         if member.bot:
-            em.add_field(name='Member Bot', value=f'{self.bot.yes} Yes', inline=False)
+            em.add_field(
+                name="Member Bot",
+                value=f"{self.bot.yes} Yes",
+                inline=False
+            )
         else:
-            em.add_field(name='Member bot', value=f'{self.bot.no} No', inline=False)
+            em.add_field(
+                name="Member bot",
+                value=f"{self.bot.no} No",
+                inline=False
+            )
+
         em.set_footer(text=f"Requested by {ctx.author}", icon_url = ctx.author.avatar.url)
 
         if member.avatar:
@@ -138,11 +160,6 @@ class Utility(Cog, emoji="🛠️"):
         if channel is None:
             channel  = ctx.channel
 
-        def format_date(dt:datetime.datetime):
-            if dt is None:
-                return 'N/A'
-            return f'<t:{int(dt.timestamp())}>'
-
         e = discord.Embed(title='Channel information', color=self.bot.color)
         e.add_field(name='Channel name', value=channel.name, inline=True)
         e.add_field(name='Channel ID', value=channel.id, inline=True)
@@ -158,10 +175,6 @@ class Utility(Cog, emoji="🛠️"):
     async def roleinfo(self, ctx, *, role: discord.Role):
         """Gives some info about the specified role.
         You can mention the role or give the name of it."""
-        def format_date(dt:datetime.datetime):
-            if dt is None:
-                return 'N/A'
-            return f'<t:{int(dt.timestamp())}>'
 
         e = discord.Embed(title='Role Information', color=self.bot.color)
         e.add_field(name='Role name', value=role.name, inline=True)
@@ -248,7 +261,6 @@ class Utility(Cog, emoji="🛠️"):
         is_managed = "Yes" if emoji.managed else "No"
         is_animated = "Yes" if emoji.animated else "No"
         requires_colons = "Yes" if emoji.require_colons else "No"
-        creation_time = emoji.created_at.strftime("%I:%M %p %B %d, %Y")
         can_use_emoji = (
             "Everyone"
             if not emoji.roles
@@ -260,7 +272,7 @@ class Utility(Cog, emoji="🛠️"):
         **- ID:** {emoji.id}
         **- URL:** [Link To Emoji]({emoji.url})
         **- Author:** {emoji.user.mention}
-        **- Time Created:** {creation_time}
+        **- Time Created:** {format_date(emoji.created_at)}
         **- Usable by:** {can_use_emoji}
         **__Others:__**
         **- Animated:** {is_animated}

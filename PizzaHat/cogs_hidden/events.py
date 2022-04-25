@@ -246,10 +246,10 @@ class Events(Cog):
 
         else:
             await ctx.send(f"{self.bot.no} Uh oh, an error occured. My developer has been notified!")
-            channel = self.bot.get_channel(764729444237180949)
+            channel = self.bot.get_channel(968060469325733888)
             e = discord.Embed(
                 title = "Error",
-                description = f"```py\n{traceback.format_exception(error.__traceback__)}\n```",
+                description = f"```py\n{traceback.format_exception(error, error, error.__traceback__)}```",
                 color = self.bot.failed
             )
 

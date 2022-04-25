@@ -1,4 +1,3 @@
-from typing import Mapping
 import discord
 from discord.ext import commands
 import contextlib
@@ -46,7 +45,10 @@ class HelpDropdown(discord.ui.Select):
     
     async def callback(self, interaction: discord.Interaction):
         if interaction.user != self.ctx.author:
-            return await self.ctx.send("Not your help command.", ephemeral=True)
+            return await interaction.response.send(
+                f"This help command was invoked by {self.ctx.author}\nThey can only use this.",
+                ephemeral=True
+            )
 
         cog_name = self.values[0]
 
@@ -61,8 +63,13 @@ class HelpDropdown(discord.ui.Select):
 
 class HelpView(discord.ui.View):
     def __init__(self, mapping: dict, ctx: commands.Context):
-        super().__init__()
+        super().__init__(timeout=180)
         self.add_item(HelpDropdown(mapping, ctx))
+        self.message = None
+
+    async def on_timeout(self) -> None:
+        self.children[0].disabled = True
+        await self.message.edit(view=self)
 
 
 class MyHelp(commands.HelpCommand):
@@ -97,7 +104,8 @@ class MyHelp(commands.HelpCommand):
             "If you can't see any module, it means that you don't have the permission to view them.\n\n"
         )
 
-        await self.context.send(embed=em, view=HelpView(mapping, self.context))
+        view = HelpView(mapping, self.context)
+        view.message = await self.context.send(embed=em, view=view)
 
     async def send_command_help(self, command):
         if command.cog is None or not self.context.bot.cog_is_public(command.cog):
