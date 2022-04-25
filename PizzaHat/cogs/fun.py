@@ -45,6 +45,25 @@ class Fun(Cog, emoji="🥳"):
 
         await ctx.send('\n'.join(map(to_string, characters)))
 
+    @commands.command(name="credits")
+    async def _credits(self, ctx):
+        """Shows all the people who have helped make this bot."""
+        em = discord.Embed(
+            title="Credits",
+            color=self.bot.success,
+            timestamp=ctx.message.created_at
+        )
+        em.set_thumbnail(url=self.bot.user.avatar.url)
+
+        em.add_field(
+            name="Contributors",
+            value="[View on GitHub](https://github.com/DTS-11/PizzaHat/graphs/contributors)",
+            inline=False
+        )
+        em.add_field(name="Bot avatar made by", value="Potato Jesus#1950", inline=False)
+        
+        await ctx.send(embed=em)
+
     @commands.command()
     async def echo(self, ctx, destination: discord.TextChannel=None, *, msg: str):
         """
