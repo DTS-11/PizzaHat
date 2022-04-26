@@ -28,6 +28,7 @@ class Fun(Cog, emoji="🥳"):
         self.engine = Interpreter(blocks)
 
     @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def charinfo(self, ctx, *, characters: str):
         """Shows you information about a number of characters.
         Only up to 15 characters at a time.
@@ -46,6 +47,7 @@ class Fun(Cog, emoji="🥳"):
         await ctx.send('\n'.join(map(to_string, characters)))
 
     @commands.command(name="credits")
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def _credits(self, ctx):
         """Shows all the people who have helped make this bot."""
         em = discord.Embed(
@@ -65,12 +67,11 @@ class Fun(Cog, emoji="🥳"):
         await ctx.send(embed=em)
 
     @commands.command()
-    async def echo(self, ctx, destination: discord.TextChannel=None, *, msg: str):
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def echo(self, ctx, destination: discord.TextChannel, *, msg: str):
         """
         Makes the bot say something in the specified channel
         """
-        if destination is None:
-            destination = ctx.channel
         if not destination.permissions_for(ctx.author).send_messages:
             return await ctx.message.add_reaction("⚠")
         msg = clean_string(msg)
@@ -79,11 +80,13 @@ class Fun(Cog, emoji="🥳"):
         return await ctx.message.add_reaction("✅")
 
     @commands.command(aliases=["ss"])
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def screenshot(self, ctx, *, url):
         """Takes a screenshot from a given URL."""
         await ctx.send(f"https://image.thum.io/get/https://{url}")
         
     @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def choose(self, ctx, *options):
         """Choose between multiple things.
         Max: 10 options."""
@@ -96,12 +99,14 @@ class Fun(Cog, emoji="🥳"):
         else:
             await ctx.send(f"{ctx.author.mention}, I choose `{random.choice(options)}`")
 
-    @commands.command()
+    @commands.command(aliases=["emojify"])
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def enlarge(self, ctx, emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
         """Enlarges a given emoji."""
         await ctx.send(emoji.url)
         
     @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def reverse(self, ctx, *, text):
         """Reverse some text."""
         e = discord.Embed(color=self.bot.color)
@@ -110,6 +115,7 @@ class Fun(Cog, emoji="🥳"):
         await ctx.send(embed=e)
     
     @commands.command(aliases=["calc"])
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def calculate(self, ctx, *, query):
         """Do some math calculations. Can't do algebraic expressions."""
         query = query.replace(",", "")
@@ -128,6 +134,7 @@ class Fun(Cog, emoji="🥳"):
         await ctx.send(embed=embed)
     
     @commands.command(aliases=['tc', 'taxcalc'])
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def taxcalculator(self, ctx, value:int):
         """Dank Memer tax-calculator."""
         # values
@@ -150,6 +157,7 @@ class Fun(Cog, emoji="🥳"):
         await ctx.send(embed=embed)
 
     @commands.command(name='8ball')
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def _8ball(self, ctx, *, question):
         """Ask any question, and let the bot respond with the answers."""
         responses = ['As I see it, yes.',
@@ -180,31 +188,36 @@ class Fun(Cog, emoji="🥳"):
         await ctx.send(embed=em)
     
     @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def hack(self, ctx, member: discord.Member):
         """Hack someone and get their details."""
         used_words = ['Nerd','Sucker','Noob','Sup','Yo','Wassup','Nab','Nub','fool','stupid','b1tch','fvck','idiot']
         mails = ['@gmail.com','@hotmail.com','@yahoo.com']
 
-        hacking = await ctx.send(f"Hacking {member.name}....")
-        await asyncio.sleep(1.55)
-        await hacking.edit(content='Finding info....')
-        await asyncio.sleep(1.55)
-        await hacking.edit(content=f"Discord email address: {member.name}{random.choice(mails)}")
-        await asyncio.sleep(2)
-        await hacking.edit(content=f"Password: x2yz{member.name}xxy65")
-        await asyncio.sleep(2)
-        await hacking.edit(content=f'Most used words: {random.choice(used_words)}')
-        await asyncio.sleep(1.55)
-        await hacking.edit(content='IP address: 127.0.0.1:50')
-        await asyncio.sleep(1.55)
-        await hacking.edit(content='Selling information to the government....')
-        await asyncio.sleep(2)
-        await hacking.edit(content=f'Reporting {member.name} to Discord for violating ToS')
-        await asyncio.sleep(2)
-        await hacking.edit(content='Hacking medical records.....')
-        await asyncio.sleep(1.55)
-        await hacking.edit(content=f"{ctx.author.mention} successfully hacked {member.mention}")
-        await ctx.send("The ultimate, totally real hacking has been completed!")
+        if member is ctx.author:
+            return await ctx.send("You can't hack yourself.")
+        else:
+            hacking = await ctx.send(f"Hacking {member.name}....")
+            await asyncio.sleep(1.55)
+            await hacking.edit(content='Finding info....')
+            await asyncio.sleep(1.55)
+            await hacking.edit(content=f"Discord email address: {member.name}{random.choice(mails)}")
+            await asyncio.sleep(2)
+            await hacking.edit(content=f"Password: x2yz{member.name}xxy65{member.discriminator}")
+            await asyncio.sleep(2)
+            await hacking.edit(content=f'Most used words: {random.choice(used_words)}')
+            await asyncio.sleep(1.55)
+            await hacking.edit(content='IP address: 127.0.0.1:50')
+            await asyncio.sleep(1.55)
+            await hacking.edit(content='Selling information to the government....')
+            await asyncio.sleep(2)
+            await hacking.edit(content=f'Reporting {member.name} to Discord for violating ToS')
+            await asyncio.sleep(2)
+            await hacking.edit(content='Hacking medical records.....')
+            await asyncio.sleep(1.55)
+            await hacking.edit(content=f"{ctx.author.mention} successfully hacked {member.mention}")
+
+            await ctx.send("The ultimate, totally real hacking has been completed!")
 
 def setup(bot):
     bot.add_cog(Fun(bot))

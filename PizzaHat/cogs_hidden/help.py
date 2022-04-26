@@ -14,7 +14,7 @@ def cog_help_embed(cog):
             "`<>` required | `[]` optional\n\n" +
             ("\n".join([
                 f"<:arrowright:842059363875291146> `{x.name}` • {x.help}"
-                for x in cog.get_commands()
+                for x in sorted(cog.get_commands(), key=lambda c: c.name)
             ]))
         ),
         color=discord.Color.blue()

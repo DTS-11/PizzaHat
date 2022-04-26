@@ -24,6 +24,7 @@ class Utility(Cog, emoji="🛠️"):
         self.bot = bot
 
     @commands.command(aliases=['latency'])
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def ping(self, ctx):
         """Shows latency of bot."""
         time1 = time.perf_counter()
@@ -37,6 +38,7 @@ class Utility(Cog, emoji="🛠️"):
         )
 
     @commands.command(aliases=['whois','ui'])
+    @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
     async def userinfo(self, ctx,  member:discord.Member=None):
         """
@@ -94,6 +96,7 @@ class Utility(Cog, emoji="🛠️"):
         await ctx.send(embed=em)
         
     @commands.command(aliases=['si'])
+    @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
     async def serverinfo(self, ctx):
         """Shows various info about the server."""
@@ -151,6 +154,7 @@ class Utility(Cog, emoji="🛠️"):
         await ctx.send(embed=em)
 
     @commands.command(aliases=['ci'])
+    @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
     async def channelinfo(self, ctx, channel:discord.TextChannel=None):
         """
@@ -171,6 +175,7 @@ class Utility(Cog, emoji="🛠️"):
         await ctx.send(embed=e)
     
     @commands.command(aliases=['ri'])
+    @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
     async def roleinfo(self, ctx, *, role: discord.Role):
         """Gives some info about the specified role.
@@ -209,7 +214,8 @@ class Utility(Cog, emoji="🛠️"):
         return fmt.format(d=days, h=hours, m=minutes, s=seconds)
 
     @commands.command(aliases=['stats'])
-    async def botinfo(self, ctx):
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def about(self, ctx):
         """Shows info about bot."""
         server_count = len(self.bot.guilds)
         total_users = len(set(self.bot.get_all_members()))
@@ -251,6 +257,8 @@ class Utility(Cog, emoji="🛠️"):
         await ctx.send(embed=em)
 
     @commands.command(aliases=['ei'])
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.guild_only()
     async def emojiinfo(self, ctx, emoji:discord.Emoji):
         """Shows info about emoji."""
         try:
@@ -290,6 +298,7 @@ class Utility(Cog, emoji="🛠️"):
         await ctx.send(embed=embed)
 
     @commands.command(name='invite')
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def invite_cmd(self, ctx):
         """Gives invite of bot."""
         b1 = Button(label="Invite", emoji="✉️", url="https://dsc.gg/pizza-invite")
@@ -311,11 +320,13 @@ class Utility(Cog, emoji="🛠️"):
         await ctx.send(embed=em, view=view)
 
     @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def support(self, ctx):
         """Gives link to support server"""
         await ctx.send('Do you want help? Join the support server now!\nhttps://discord.gg/WhNVDTF')
 
     @commands.command()
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def suggest(self, ctx, *, suggestion):
         """Suggest some commands that should be included in bot."""
         await ctx.send(f'{self.bot.yes} {ctx.author.mention}, your suggestion has been recorded!')
@@ -345,6 +356,7 @@ class Utility(Cog, emoji="🛠️"):
         await ctx.send(embed=e)
 
     @commands.command(aliases=['perms'])
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def permissions(self, ctx, *, member: discord.Member = None):
         """Shows a member's permissions.
         If used in DM's, shows your permissions in a DM channel."""
@@ -354,13 +366,15 @@ class Utility(Cog, emoji="🛠️"):
         await self.say_permissions(ctx, member, channel)
 
     @commands.command(aliases=['botperms'])
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def botpermissions(self, ctx):
         """Shows the bot's permissions."""
         channel = ctx.channel
         member = ctx.message.guild.me
         await self.say_permissions(ctx, member, channel)
 
-    @commands.command(aliases=['av','profile','pfp'])
+    @commands.command(aliases=['av'])
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def avatar(self, ctx, member: discord.Member=None):
         """
         Displays a user's avatar
@@ -375,6 +389,7 @@ class Utility(Cog, emoji="🛠️"):
         await ctx.send(embed=em)
     
     @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def vote(self,ctx):
         """Vote for the bot."""
         em = discord.Embed(
@@ -390,6 +405,8 @@ class Utility(Cog, emoji="🛠️"):
         await ctx.send(embed=em, view=view)
     
     @commands.command()
+    @commands.guild_only()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_guild_permissions(manage_messages=True)
     async def poll(self, ctx, *, questions_and_choices: str):
         """
@@ -436,6 +453,8 @@ class Utility(Cog, emoji="🛠️"):
             await poll.add_reaction(emoji)
 
     @commands.command()
+    @commands.guild_only()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_guild_permissions(manage_messages=True)
     async def quickpoll(self, ctx, *, question: str):
         """
@@ -453,6 +472,8 @@ class Utility(Cog, emoji="🛠️"):
         await msg.add_reaction(no_thumb)
 
     @commands.command()
+    @commands.guild_only()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_guild_permissions(manage_messages=True)
     async def strawpoll(self, ctx, *, question_and_choices: str = None):
         """
@@ -481,8 +502,9 @@ class Utility(Cog, emoji="🛠️"):
         await ctx.send(f"http://www.strawpoll.me/{id}")
         
     @commands.command()
-    @commands.has_guild_permissions(manage_emojis=True)
+    @commands.guild_only()
     @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.has_guild_permissions(manage_emojis=True)
     async def emotes(self, ctx):
         """
         Sends the servers emotes and their raw form in a list.
