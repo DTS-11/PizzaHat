@@ -503,7 +503,7 @@ class Utility(Cog, emoji="🛠️"):
         
     @commands.command()
     @commands.guild_only()
-    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.cooldown(1, 20, commands.BucketType.user)
     @commands.has_guild_permissions(manage_emojis=True)
     async def emotes(self, ctx):
         """
@@ -531,6 +531,7 @@ class Utility(Cog, emoji="🛠️"):
                 await ctx.send(c)
             except:
                 pass
+
         
 def setup(bot):
     bot.add_cog(Utility(bot))

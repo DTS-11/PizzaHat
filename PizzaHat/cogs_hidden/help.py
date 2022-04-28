@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-import contextlib
 
 from core.cog import Cog
 
@@ -11,14 +10,13 @@ def cog_help_embed(cog):
         title=f'{title} Category',
         description=(
             f"{cog.full_description}\n\n"
-            "`<>` required | `[]` optional\n\n" +
-            ("\n".join([
-                f"<:arrowright:842059363875291146> `{x.name}` • {x.help}"
-                for x in sorted(cog.get_commands(), key=lambda c: c.name)
-            ]))
-        ),
+            "`<>` required | `[]` optional"),
         color=discord.Color.blue()
     )
+
+    for x in sorted(cog.get_commands(), key=lambda c: c.name):
+        em.add_field(name=f"{x.name} {x.signature}", value=x.help, inline=False)
+
     em.set_footer(text='Use help [command] for more info')
     return em
 
@@ -96,13 +94,7 @@ class MyHelp(commands.HelpCommand):
         )
         em.set_thumbnail(url=ctx.me.avatar.url)
 
-        usable = sum([len(await self.filter_commands(cmds)) for _, cmds in mapping.items()])
-
-        em.description = (
-            f"{len(ctx.bot.commands)} commands | {usable} usable\n\n"
-            "Use `help [command | module]` for more info.\n"
-            "If you can't see any module, it means that you don't have the permission to view them.\n\n"
-        )
+        em.description = ("Use `help [command | module]` for more info.\n")
 
         view = HelpView(mapping, self.context)
         view.message = await self.context.send(embed=em, view=view)
@@ -120,14 +112,6 @@ class MyHelp(commands.HelpCommand):
 
         if cog := command.cog:
             embed.add_field(name="Category", value=cog.qualified_name, inline=False)
-
-        can_run = "No"
-
-        with contextlib.suppress(commands.CommandError):
-            if await command.can_run(self.context):
-                can_run = "Yes"
-            
-        embed.add_field(name="Usable", value=can_run, inline=False)
 
         if command._buckets and (cooldown := command._buckets._cooldown):
             embed.add_field(
