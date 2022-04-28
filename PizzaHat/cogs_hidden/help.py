@@ -129,14 +129,11 @@ class MyHelp(commands.HelpCommand):
             color=discord.Color.blue()
         )
 
-        if filtered_commands := await self.filter_commands(commands):
-            for command in filtered_commands:
-                embed.add_field(
-                    name=self.get_command_signature(command),
-                    value=command.help or "No help found...",
-                    inline=False)
-        if not filtered_commands:
-            await self.send("You don't have the required permissions for viewing this.")
+        for command in commands:
+            embed.add_field(
+                name=self.get_command_signature(command),
+                value=command.help or "No help found...",
+                inline=False)
 
         await self.send(embed=embed)
 
