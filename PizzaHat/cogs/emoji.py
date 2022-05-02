@@ -35,14 +35,14 @@ class Emoji(Cog, emoji="😀"):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.group()
+    @commands.group(name="emoji")
     @commands.guild_only()
     @commands.has_guild_permissions(manage_emojis=True)
-    async def emoji(self, ctx):
+    async def _emoji(self, ctx):
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
-    @emoji.command()
+    @_emoji.command()
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_guild_permissions(manage_emojis=True)
