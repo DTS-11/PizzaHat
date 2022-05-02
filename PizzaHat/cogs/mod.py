@@ -65,7 +65,7 @@ class Mod(Cog, emoji=847248846526087239):
             await ctx.send(f'{self.bot.yes} Nickname changed to `{nick}`')
 
         except discord.HTTPException:
-            await ctx.send(f"{self.bot.no} Something went wrong.")
+            await ctx.send("Something went wrong.")
 
     @commands.command(aliases=['sn'])
     @commands.guild_only()
@@ -79,8 +79,37 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Manage Nicknames permission.
         """
-        await member.edit(nick=nick)
-        await ctx.send(f'{self.bot.yes} Nickname for {member.name} was changed to {member.mention}')
+        try:
+            await member.edit(nick=nick)
+            await ctx.send(f'{self.bot.yes} Nickname for {member.name} was changed to {member.mention}')
+        
+        except discord.HTTPException:
+            await ctx.send("Something went wrong.")
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_nicknames=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def decancer(self, ctx, member: discord.Member):
+        """
+        Removes special characters and renames the member as "Moderated Nickname"
+
+        In order for this to work, the bot must have Manage Nicknames permissions.
+
+        To use this command, you must have Manage Nicknames permission.
+        """
+        characters = "!@#$%^&*()_+-=.,/?;:[]{}`~\"'\\|<>"
+
+        try:
+            if characters in member.name:
+                await member.edit(
+                    nick="Moderated Nickname",
+                    reason="PizzaHat decancer member."
+                )
+                await ctx.send(f"{self.bot.yes} Successfully decancered {member}")
+        
+        except discord.HTTPException:
+            await ctx.send("Something went wrong.")
 
     @commands.command(aliases=['sm'])
     @commands.guild_only()

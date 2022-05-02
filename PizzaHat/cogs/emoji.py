@@ -38,13 +38,8 @@ class Emoji(Cog, emoji="😀"):
 
     @commands.group(name="emoji")
     @commands.guild_only()
-<<<<<<< HEAD
     @commands.has_permissions(manage_emojis=True)
-    async def emoji(self, ctx):
-=======
-    @commands.has_guild_permissions(manage_emojis=True)
     async def _emoji(self, ctx):
->>>>>>> 783dbf631950fae82d39285f4ef5ce1ab5e27550
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
