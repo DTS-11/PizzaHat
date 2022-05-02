@@ -97,7 +97,12 @@ class Fun(Cog, emoji="🥳"):
             await ctx.send('Max no: of options: 10')
             return
         else:
-            await ctx.send(f"{ctx.author.mention}, I choose `{random.choice(options)}`")
+            e = discord.Embed(
+                title="Choose",
+                description=f"{ctx.author.mention}, I choose `{random.choice(options)}`",
+                color=self.bot.color
+            )
+            await ctx.send(embed=e)
 
     @commands.command(aliases=["emojify"])
     @commands.cooldown(1, 3, commands.BucketType.user)
@@ -112,10 +117,11 @@ class Fun(Cog, emoji="🥳"):
         e = discord.Embed(color=self.bot.color)
         e.add_field(name='Input', value=f'```\n{text}\n```', inline=False)
         e.add_field(name='Output', value=f'```\n{text[::-1]}\n```', inline=False)
+
         await ctx.send(embed=e)
     
     @commands.command(aliases=["calc"])
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def calculate(self, ctx, *, query):
         """Do some math calculations. Can't do algebraic expressions."""
         query = query.replace(",", "")
@@ -188,7 +194,7 @@ class Fun(Cog, emoji="🥳"):
         await ctx.send(embed=em)
     
     @commands.command()
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def hack(self, ctx, member: discord.Member):
         """Hack someone and get their details."""
         used_words = ['Nerd','Sucker','Noob','Sup','Yo','Wassup','Nab','Nub','fool','stupid','b1tch','fvck','idiot']
@@ -218,6 +224,7 @@ class Fun(Cog, emoji="🥳"):
             await hacking.edit(content=f"{ctx.author.mention} successfully hacked {member.mention}")
 
             await ctx.send("The ultimate, totally real hacking has been completed!")
+
 
 def setup(bot):
     bot.add_cog(Fun(bot))

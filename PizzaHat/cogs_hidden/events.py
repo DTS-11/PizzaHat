@@ -194,8 +194,7 @@ class Events(Cog):
         except Exception as e:
             print(e)
 
-# ====== ERROR HANDLER ======
-
+            
     @Cog.listener()
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):
@@ -211,12 +210,7 @@ class Events(Cog):
             await ctx.send(f"I'm missing some required permissions: **{error.missing_perms}**")
 
         elif isinstance(error, commands.CommandOnCooldown):
-            await ctx.send(
-                f'The command you tried is on cooldown. Try again in {round(error.retry_after)} seconds.'
-                f'\n\n**Command name:**  {ctx.command}\n'
-                f'**Cooldown time:**  {round(error.cooldown.per)} seconds'
-                f'\n**Command uses:**  {error.cooldown.rate}'
-            )
+            await ctx.send(f'The command you tried is on cooldown. Try again in {round(error.retry_after)} seconds.')
 
         elif isinstance(error, commands.RoleNotFound):
             await ctx.send('Please provide a role or the role could not be found.')
@@ -245,19 +239,22 @@ class Events(Cog):
             await ctx.send(embed=em)
 
         else:
-            await ctx.send(f"{self.bot.no} Uh oh, an error occured. My developer has been notified!")
+            await ctx.send("Something went wrong. My developer has been notified!")
+
+            error = "\n".join(traceback.format_exception(error, error, error.__traceback__))
             channel = self.bot.get_channel(968060469325733888)
             e = discord.Embed(
                 title = "Error",
-                description = f"```py\n{traceback.format_exception(error, error, error.__traceback__)}```",
+                description = f"```py\n{error}```",
                 color = self.bot.failed
             )
 
             if ctx.guild.icon.url:
                 e.set_footer(text=f"From {ctx.guild}", icon_url=ctx.guild.icon.url)
             else:
-                pass
+                e.set_footer(text=f"From {ctx.guild}")
             await channel.send(embed=e)
+            
 
 def setup(bot):
     bot.add_cog(Events(bot))

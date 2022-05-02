@@ -10,13 +10,13 @@ class Admin(Cog, emoji="👷‍♂️"):
         self.bot = bot
 
     @commands.group(invoke_without_command=True)
-    @commands.has_guild_permissions(manage_guild=True)
+    @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     async def set(self, ctx):
         await ctx.send("Need to use a sub-command")
 
     @set.command(aliases=['log'])
-    @commands.has_guild_permissions(manage_guild=True)
+    @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     async def logs(self, ctx, channel: discord.TextChannel):
         """

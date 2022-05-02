@@ -22,5 +22,6 @@ class AutoMod(Cog):
     async def on_message(self, msg):
         pass
 
+
 def setup(bot):
     bot.add_cog(AutoMod(bot))

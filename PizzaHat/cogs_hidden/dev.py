@@ -1,14 +1,17 @@
 import discord
 from discord.ext import commands
 import io
+import os
+import sys
 import inspect
 import textwrap
 import traceback
 from contextlib import redirect_stdout
-import sys
-import os
 
 from core.cog import Cog
+
+def restart_bot():
+    os.execv(sys.executable, ['python'] + sys.argv)
 
 
 class Dev(Cog, emoji=808407479687053403):
@@ -16,13 +19,12 @@ class Dev(Cog, emoji=808407479687053403):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(aliases=['logout'])
+    @commands.command()
     @commands.is_owner()
     async def restart(self, ctx):
         """Restarts the bot."""
-        await ctx.send('Restarting bot...')
-        exe = sys.executable
-        os.execl(exe, exe, *sys.argv)
+        await ctx.message.add_reaction("✅")
+        restart_bot()
 
     @commands.command()
     @commands.is_owner()

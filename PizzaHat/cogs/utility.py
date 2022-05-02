@@ -3,14 +3,10 @@ from discord.ext import commands
 from discord.ui import Button, View
 import time
 import datetime
-import shlex
 
 from core.cog import Cog
 
 start_time = time.time()
-
-def to_keycap(c):
-    return '\N{KEYCAP TEN}' if c == 10 else str(c) + '\u20e3'
 
 def format_date(dt:datetime.datetime):
             if dt is None:
@@ -55,7 +51,7 @@ class Utility(Cog, emoji="🛠️"):
             color=member.color,
             timestamp=ctx.message.created_at
         )
-        em.set_author(name=member, icon_url=member.avatar.url)
+        em.set_author(name=member, icon_url=member.display_avatar)
 
         em.add_field(name="User ID", value=member.id, inline=False)
         em.add_field(name="Display Name", value=member.display_name, inline=False)
@@ -403,108 +399,11 @@ class Utility(Cog, emoji="🛠️"):
         b2 = Button(label="DBL", url="https://discordbotlist.com/bots/zion/upvote/")
         view = View(b1, b2)
         await ctx.send(embed=em, view=view)
-    
-    @commands.command()
-    @commands.guild_only()
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.has_guild_permissions(manage_messages=True)
-    async def poll(self, ctx, *, questions_and_choices: str):
-        """
-        Separate questions and answers by either `|` or `,` 
-        supports up to 10 choices
-        """
-        if "|" in questions_and_choices:
-            delimiter = "|"
-        elif "," in questions_and_choices:
-            delimiter = ","
-        else:
-            delimiter = None
-        if delimiter is not None:
-            questions_and_choices = questions_and_choices.split(delimiter)
-        else:
-            questions_and_choices = shlex.split(questions_and_choices)
-
-        if len(questions_and_choices) < 3:
-            return await ctx.send('Need at least 1 question with 2 choices.')
-        elif len(questions_and_choices) > 11:
-            return await ctx.send('You can only have up to 10 choices.')
-
-        perms = ctx.channel.permissions_for(ctx.guild.me)
-        if not (perms.read_message_history or perms.add_reactions):
-            return await ctx.send('I need `Read Message History` and `Add Reactions` permissions.')
-
-        question = questions_and_choices[0]
-        choices = [(to_keycap(e), v)
-                   for e, v in enumerate(questions_and_choices[1:], 1)]
-
-        try:
-            await ctx.message.delete()
-        except:
-            pass
-
-        fmt = '{0} asks: {1}\n\n{2}'
-        answer = '\n'.join('%s: %s' % t for t in choices)
-        e = discord.Embed(
-            description=fmt.format(ctx.message.author, question.replace("@", "@\u200b"), answer.replace("@", "@\u200b")),
-            color=discord.Color.green()
-            )
-        poll = await ctx.send(embed=e)
-        for emoji, _ in choices:
-            await poll.add_reaction(emoji)
-
-    @commands.command()
-    @commands.guild_only()
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.has_guild_permissions(manage_messages=True)
-    async def quickpoll(self, ctx, *, question: str):
-        """
-        Quick and easy yes/no poll
-        For advanced poll, see `poll`
-        """
-        msg = await ctx.send("**{}** asks: {}".format(ctx.message.author, question.replace("@", "@\u200b")))
-        try:
-            await ctx.message.delete()
-        except:
-            pass
-        yes_thumb = "👍"
-        no_thumb = "👎"
-        await msg.add_reaction(yes_thumb)
-        await msg.add_reaction(no_thumb)
-
-    @commands.command()
-    @commands.guild_only()
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.has_guild_permissions(manage_messages=True)
-    async def strawpoll(self, ctx, *, question_and_choices: str = None):
-        """
-        Separate questions and answers by `|` or `,`\nAt least two answers required.
-        """
-        if "|" in question_and_choices:
-            delimiter = "|"
-        else:
-            delimiter = ","
-        question_and_choices = question_and_choices.split(delimiter)
-        if len(question_and_choices) == 1:
-            return await ctx.send("Not enough choices supplied")
-        elif len(question_and_choices) >= 31:
-            return await ctx.send("Too many choices")
-        question, *choices = question_and_choices
-        choices = [x.lstrip() for x in choices]
-        header = {"Content-Type": "application/json"}
-        payload = {
-            "title": question,
-            "options": choices,
-            "multi": False
-        }
-        async with self.bot.session.post("https://www.strawpoll.me/api/v2/polls", headers=header, json=payload) as r:
-            data = await r.json()
-        id = data["id"]
-        await ctx.send(f"http://www.strawpoll.me/{id}")
         
     @commands.command()
     @commands.guild_only()
     @commands.cooldown(1, 20, commands.BucketType.user)
-    @commands.has_guild_permissions(manage_emojis=True)
+    @commands.has_permissions(manage_emojis=True)
     async def emotes(self, ctx):
         """
         Sends the servers emotes and their raw form in a list.

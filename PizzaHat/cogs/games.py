@@ -15,46 +15,49 @@ class Games(Cog, emoji=819957465160220734):
     @commands.command(aliases=['pie'])
     async def catch(self, ctx):
         """Catch the pie, by reacting. Dont't drop it!"""
+        try:
+            em = discord.Embed(color=self.bot.color)
+            pie_title = '🥧  __Catch The Pie Game__  🥧'
+            pie_desc = ('To catch the pie you must simply react with the emoji, when it appears.'
+                        'Click as fast as you can and see how fast you caught it... \n'
+                        '**Good Luck!** \n\n')
+            pie_count_down = 'Here we go in {}...'
 
-        em = discord.Embed(color=self.bot.color)
-        pie_title = '🥧  __Catch The Pie Game__  🥧'
-        pie_desc = ('To catch the pie you must simply react with the emoji, when it appears.'
-                    'Click as fast as you can and see how fast you caught it... \n'
-                    '**Good Luck!** \n\n')
-        pie_count_down = 'Here we go in {}...'
+            em.add_field(name=pie_title, value=pie_desc + pie_count_down.format('3'), inline=False)
+            pie1 = await ctx.send(embed=em)
 
-        em.add_field(name=pie_title, value=pie_desc + pie_count_down.format('3'), inline=False)
-        pie1 = await ctx.send(embed=em)
+            for i in range(2):
+                await asyncio.sleep(1)
 
-        for i in range(2):
+                em = discord.Embed(color=self.bot.color)
+                em.add_field(
+                    name=pie_title,
+                    value=pie_desc + pie_count_down.format(str(3 - i - 1)),
+                    inline=False
+                )
+                await pie1.edit(embed=em)
+
             await asyncio.sleep(1)
+            await pie1.add_reaction('🥧')
+
+            def check(reaction, user):
+                self.reacted = reaction.emoji
+                return user == ctx.author and str(reaction.emoji) and reaction.message == pie1
+
+            before_wait = datetime.datetime.now()
+            reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
+            after_wait = datetime.datetime.now()
+            time_delta = after_wait - before_wait
+            time_taken = time_delta.total_seconds()
 
             em = discord.Embed(color=self.bot.color)
-            em.add_field(
-                name=pie_title,
-                value=pie_desc + pie_count_down.format(str(3 - i - 1)),
-                inline=False
-            )
+            em.add_field(name=pie_title, value=pie_desc + f'You caught it in **{round(time_taken, 3)} seconds**', inline=False)
             await pie1.edit(embed=em)
-
-        await asyncio.sleep(1)
-        await pie1.add_reaction('🥧')
-
-        def check(reaction, user):
-            self.reacted = reaction.emoji
-            return user == ctx.author and str(reaction.emoji) and reaction.message == pie1
-
-        before_wait = datetime.datetime.now()
-        reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
-        after_wait = datetime.datetime.now()
-        time_delta = after_wait - before_wait
-        time_taken = time_delta.total_seconds()
-
-        em = discord.Embed(color=self.bot.color)
-        em.add_field(name=pie_title, value=pie_desc + f'You caught it in **{round(time_taken, 3)} seconds**', inline=False)
-        await pie1.edit(embed=em)
+        
+        except asyncio.TimeoutError:
+            await ctx.send("Timed out.")
     
-    @commands.command(aliases = ['imposter','amongus'])
+    @commands.command(aliases = ['amongus'])
     async def impostor(self, ctx):
         """Classic among us game. Find the impostor **among us**"""
         embed1 = discord.Embed(
@@ -175,7 +178,6 @@ class Games(Cog, emoji=819957465160220734):
 
         except asyncio.TimeoutError:
             timeout = await ctx.send('The time is up, try again')
-            await timeout.delete(delay=10)
 
     @commands.command(aliases=['dice'])
     async def roll(self, ctx):

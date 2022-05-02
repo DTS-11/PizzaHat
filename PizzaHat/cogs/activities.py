@@ -62,5 +62,6 @@ class Activities(Cog, emoji="🚀"):
         link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'betrayal')
         await ctx.send(f"Click the link to start the activity\n{link}")
         
+        
 def setup(bot):
     bot.add_cog(Activities(bot))

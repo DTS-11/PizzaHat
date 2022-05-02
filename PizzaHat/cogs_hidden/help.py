@@ -5,9 +5,9 @@ from core.cog import Cog
 
 
 def cog_help_embed(cog):
-    title = cog.qualified_name or "No"
+    title = cog.qualified_name
     em = discord.Embed(
-        title=f'{title} Category',
+        title=f'{title} Commands',
         description=(
             f"{cog.full_description}\n\n"
             "`<>` required | `[]` optional"),
@@ -96,8 +96,8 @@ class MyHelp(commands.HelpCommand):
 
         em.description = ("Use `help [command | module]` for more info.\n")
 
-        view = HelpView(mapping, self.context)
-        view.message = await self.context.send(embed=em, view=view)
+        view = HelpView(mapping, ctx)
+        view.message = await ctx.send(embed=em, view=view)
 
     async def send_command_help(self, command):
         if command.cog is None or not self.context.bot.cog_is_public(command.cog):
@@ -145,7 +145,7 @@ class MyHelp(commands.HelpCommand):
         if not self.context.bot.cog_is_public(cog):
             # pretend this hidden cog doesn't exist, send the same message the bot
             # would send if user uses p!help with an invalid cog name
-            return await self.send(content=f'No command called "{cog.qualified_name}" found.')
+            return await self.send(content=f'No cog called "{cog.qualified_name}" found.')
 
         await self.send(embed=cog_help_embed(cog))
 
@@ -155,13 +155,12 @@ class MyHelp(commands.HelpCommand):
 
 
 class Help(Cog, emoji="❓"):
-    """Gives help on the bot."""
-
     def __init__(self, bot):
         self.bot = bot
         help_command = MyHelp()
         help_command.cog = self
         bot.help_command = help_command
+
 
 def setup(bot):
     bot.add_cog(Help(bot))
