@@ -12,5 +12,5 @@ requests
 humanfriendly
 discord-together
 numpy
-jishaku
+jishaku==2.4.0
 psutil
