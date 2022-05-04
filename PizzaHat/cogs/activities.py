@@ -15,7 +15,7 @@ class Activities(Cog, emoji="🚀"):
         Must join a VC.
         """
         link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'youtube')
-        await ctx.sendf("Click the link to start the activity\n{link}")
+        await ctx.send("Click the link to start the activity\n{link}")
         
     @commands.command(aliases=["pokernight"])
     async def poker(self, ctx):
