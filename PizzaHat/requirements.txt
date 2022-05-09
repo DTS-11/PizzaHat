@@ -1,4 +1,4 @@
-git+https://github.com/Rapptz/discord.py
+py-cord==b7
 asyncpg
 TagScriptEngine
 aiohttp

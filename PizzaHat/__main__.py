@@ -8,4 +8,4 @@ if __name__ == '__main__':
     load_dotenv()
 
     bot = PizzaHat()
-    bot.run(os.getenv("TEST_BOT"))
+    bot.run(os.getenv("TOKEN"))
