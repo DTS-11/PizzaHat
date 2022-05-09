@@ -34,7 +34,6 @@ class Emoji(Cog, emoji="😀"):
     """Emoji management commands."""
     def __init__(self, bot):
         self.bot = bot
-        print(self.emoji)
 
     @commands.group(name="emoji")
     @commands.guild_only()

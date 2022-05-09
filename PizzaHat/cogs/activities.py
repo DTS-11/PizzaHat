@@ -14,8 +14,14 @@ class Activities(Cog, emoji="🚀"):
         Starts a YouTube Together activity in your server.
         Must join a VC.
         """
-        link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'youtube')
-        await ctx.send("Click the link to start the activity\n{link}")
+        voice_state = ctx.author.voice
+
+        if voice_state is None:
+            return await ctx.send("You need to join a VC to use this command.")
+            
+        else:
+            link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'youtube')
+            await ctx.send(f"Click the link to start the activity\n{link}")
         
     @commands.command(aliases=["pokernight"])
     async def poker(self, ctx):
@@ -23,8 +29,14 @@ class Activities(Cog, emoji="🚀"):
         Starts a Poker Night activity in your server.
         Must join a VC.
         """
-        link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'poker')
-        await ctx.send(f"Click the link to start the activity\n{link}")
+        voice_state = ctx.author.voice
+
+        if voice_state is None:
+            return await ctx.send("You need to join a VC to use this command.")
+
+        else:
+            link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'poker')
+            await ctx.send(f"Click the link to start the activity\n{link}")
         
     @commands.command()
     async def chess(self, ctx):
@@ -32,8 +44,14 @@ class Activities(Cog, emoji="🚀"):
         Starts a Chess in the Park activity in your server.
         Must join a VC.
         """
-        link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'chess')
-        await ctx.send(f"Click the link to start the activity\n{link}")
+        voice_state = ctx.author.voice
+
+        if voice_state is None:
+            return await ctx.send("You need to join a VC to use this command.")
+        
+        else:
+            link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'chess')
+            await ctx.send(f"Click the link to start the activity\n{link}")
         
     @commands.command()
     async def checkers(self, ctx):
@@ -41,8 +59,14 @@ class Activities(Cog, emoji="🚀"):
         Starts a Checkers in the Park activity in your server.
         Must join a VC.
         """
-        link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'checkers')
-        await ctx.send(f"Click the link to start the activity\n{link}")
+        voice_state = ctx.author.voice
+
+        if voice_state is None:
+            return await ctx.send("You need to join a VC to use this command.")
+
+        else:
+            link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'checkers')
+            await ctx.send(f"Click the link to start the activity\n{link}")
         
     @commands.command()
     async def spellcast(self, ctx):
@@ -50,8 +74,14 @@ class Activities(Cog, emoji="🚀"):
         Starts a Spell Case activity in your server.
         Must join a VC.
         """
-        link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'spellcast')
-        await ctx.send(f"Click the link to start the activity\n{link}")
+        voice_state = ctx.author.voice
+
+        if voice_state is None:
+            return await ctx.send("You need to join a VC to use this command.")
+            
+        else:
+            link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'spellcast')
+            await ctx.send(f"Click the link to start the activity\n{link}")
         
     @commands.command()
     async def betrayal(self, ctx):
@@ -59,8 +89,14 @@ class Activities(Cog, emoji="🚀"):
         Starts a Betrayal IO activity in your server.
         Must join a VC.
         """
-        link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'betrayal')
-        await ctx.send(f"Click the link to start the activity\n{link}")
+        voice_state = ctx.author.voice
+
+        if voice_state is None:
+            return await ctx.send("You need to join a VC to use this command.")
+
+        else:
+            link = await self.bot.togetherControl.create_link(ctx.author.voice.channel.id, 'betrayal')
+            await ctx.send(f"Click the link to start the activity\n{link}")
         
         
 def setup(bot):
