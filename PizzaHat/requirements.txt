@@ -1,4 +1,4 @@
-py-cord==2.0.0b7
+py-cord==2.0.0rc1
 asyncpg
 TagScriptEngine
 aiohttp
