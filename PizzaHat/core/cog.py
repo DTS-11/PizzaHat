@@ -1,10 +1,9 @@
-from discord.cog import CogMeta as PycordCogMeta
-from discord.ext.commands import Cog as PycordCog
+from discord.ext.commands import CogMeta as DiscordCogMeta
+from discord.ext.commands import Cog as DiscordCog
 
 
-class CogMeta(PycordCogMeta):
+class CogMeta(DiscordCogMeta):
     """Metaclass used for passing an emoji parameter to a Cog object."""
-
     def __new__(mcs, *args, **kwargs):
         name, bases, attrs = args
         attrs["__cog_emoji__"] = kwargs.pop("emoji", None)
@@ -13,7 +12,7 @@ class CogMeta(PycordCogMeta):
         return mcs.instance
 
 
-class Cog(PycordCog, metaclass=CogMeta):
+class Cog(DiscordCog, metaclass=CogMeta):
     """
     Base class for all cogs that contains an emoji passed either by id 
     or the raw name.

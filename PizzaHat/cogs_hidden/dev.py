@@ -160,5 +160,5 @@ class Dev(Cog, emoji=808407479687053403):
         except Exception as e:
             print(e)
 
-def setup(bot):
-    bot.add_cog(Dev(bot))
+async def setup(bot):
+    await bot.add_cog(Dev(bot))

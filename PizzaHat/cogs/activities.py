@@ -99,5 +99,5 @@ class Activities(Cog, emoji="🚀"):
             await ctx.send(f"Click the link to start the activity\n{link}")
         
         
-def setup(bot):
-    bot.add_cog(Activities(bot))
+async def setup(bot):
+    await bot.add_cog(Activities(bot))

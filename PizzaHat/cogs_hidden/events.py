@@ -256,5 +256,5 @@ class Events(Cog):
             await channel.send(embed=e)
             
 
-def setup(bot):
-    bot.add_cog(Events(bot))
+async def setup(bot):
+    await bot.add_cog(Events(bot))

@@ -226,5 +226,5 @@ class Fun(Cog, emoji="🥳"):
             await ctx.send("The ultimate, totally real hacking has been completed!")
 
 
-def setup(bot):
-    bot.add_cog(Fun(bot))
+async def setup(bot):
+    await bot.add_cog(Fun(bot))

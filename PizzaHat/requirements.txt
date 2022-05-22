@@ -1,4 +1,4 @@
-py-cord==2.0.0b7
+git+https://github.com/Rapptz/discord.py
 asyncpg
 TagScriptEngine
 aiohttp
@@ -12,5 +12,6 @@ requests
 humanfriendly
 discord-together
 numpy
-jishaku==2.4.0
+jishaku
 psutil
+topggpy

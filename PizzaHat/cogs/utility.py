@@ -44,8 +44,13 @@ class Utility(Cog, emoji="🛠️"):
         if member is None:
             member = ctx.author
 
-        rolelist = [role.mention for role in list(member.roles[::-1]) if not role is ctx.guild.default_role] 
-        roles = ", ".join(rolelist)
+        uroles = [role.mention for role in member.roles if not role.is_default()]
+        uroles.reverse()
+
+        if len(uroles) > 15:
+            uroles = [f"{', '.join(uroles[:10])} (+{len(member.roles) - 11})"]
+
+        user_roles = ('**({} Total)**').format(len(member.roles) - 1) if uroles != [] else ('No roles')
 
         em = discord.Embed(
             color=member.color,
@@ -66,8 +71,8 @@ class Utility(Cog, emoji="🛠️"):
             inline=False
         )
         em.add_field(
-            name=f"Roles [{len(rolelist)}]",
-            value=roles or f'{self.bot.no} N/A',
+            name="Roles",
+            value=', '.join(uroles) + user_roles,
             inline=False
         )
         if member.bot:
@@ -152,7 +157,7 @@ class Utility(Cog, emoji="🛠️"):
     @commands.command(aliases=['ci'])
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
-    async def channelinfo(self, ctx, channel:discord.TextChannel=None):
+    async def channelinfo(self, ctx, channel: discord.TextChannel=None):
         """
         Shows info about a channel.
         If no channel is given, returns value for the current channel.
@@ -161,13 +166,28 @@ class Utility(Cog, emoji="🛠️"):
             channel  = ctx.channel
 
         e = discord.Embed(title='Channel information', color=self.bot.color)
-        e.add_field(name='Channel name', value=channel.name, inline=True)
-        e.add_field(name='Channel ID', value=channel.id, inline=True)
-        e.add_field(name='Mention', value=f'`<#{channel.id}>`', inline=True)
+        e.add_field(name='Channel name', value=channel.name, inline=False)
+        e.add_field(name='Channel ID', value=channel.id, inline=False)
+        e.add_field(name='Mention', value=channel.mention, inline=False)
         e.add_field(name='Category name', value=channel.category.name, inline=False)
         e.add_field(name='Channel Created', value=format_date(channel.created_at), inline=False)
         e.add_field(name="NSFW", value=f'{self.bot.yes} Yes' if channel.nsfw else f'{self.bot.no} No', inline=False)
         
+        await ctx.send(embed=e)
+
+    @commands.command(aliases=['vi'])
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.guild_only()
+    async def vcinfo(self, ctx, vc: discord.VoiceChannel):
+        """Shows info about a voice channel."""
+        e = discord.Embed(title='VC Information', color=self.bot.color)
+        e.add_field(name='VC name', value=vc.name, inline=False)
+        e.add_field(name='VC ID', value=vc.id, inline=False)
+        e.add_field(name='VC bitrate', value=vc.bitrate, inline=False)
+        e.add_field(name='Mention', value=vc.mention, inline=False)
+        e.add_field(name='Category name', value=vc.category.name, inline=False)
+        e.add_field(name='VC Created', value=format_date(vc.created_at), inline=False)
+
         await ctx.send(embed=e)
     
     @commands.command(aliases=['ri'])
@@ -178,17 +198,58 @@ class Utility(Cog, emoji="🛠️"):
         You can mention the role or give the name of it."""
 
         e = discord.Embed(title='Role Information', color=self.bot.color)
-        e.add_field(name='Role name', value=role.name, inline=True)
-        e.add_field(name='Role ID', value=role.id, inline=True)
-        e.add_field(name='Mention', value=f'`<@&{role.id}>`', inline=True)
+        e.add_field(name='Role name', value=role.name, inline=False)
+        e.add_field(name='Role ID', value=role.id, inline=False)
+        e.add_field(name='Mention', value=role.mention, inline=False)
         e.add_field(name='Role Created', value=format_date(role.created_at), inline=False)
-        e.add_field(name='Role Color', value=role.color, inline=True)
+        e.add_field(name='Role Color', value=role.color, inline=False)
         if role.mentionable:
-            e.add_field(name='Mentionable', value=f'{self.bot.yes} Yes', inline=True)
+            e.add_field(name='Mentionable', value=f'{self.bot.yes} Yes', inline=False)
         else:
-            e.add_field(name='Mentionable', value=f'{self.bot.no} No', inline=True)
+            e.add_field(name='Mentionable', value=f'{self.bot.no} No', inline=False)
         
         await ctx.send(embed=e)
+
+    @commands.command(aliases=['ei'])
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.guild_only()
+    async def emojiinfo(self, ctx, emoji:discord.Emoji):
+        """Shows info about emoji."""
+        try:
+            emoji = await emoji.guild.fetch_emoji(emoji.id)
+        except discord.NotFound:
+            return await ctx.send("I could not find this emoji in the given guild.")
+
+        is_managed = "Yes" if emoji.managed else "No"
+        is_animated = "Yes" if emoji.animated else "No"
+        requires_colons = "Yes" if emoji.require_colons else "No"
+        can_use_emoji = (
+            "Everyone"
+            if not emoji.roles
+            else " ".join(role.name for role in emoji.roles)
+        )
+        description = f"""
+        **__General:__**
+        **- Name:** {emoji.name}
+        **- ID:** {emoji.id}
+        **- URL:** [Link To Emoji]({emoji.url})
+        **- Author:** {emoji.user.mention}
+        **- Time Created:** {format_date(emoji.created_at)}
+        **- Usable by:** {can_use_emoji}
+        **__Others:__**
+        **- Animated:** {is_animated}
+        **- Managed:** {is_managed}
+        **- Requires Colons:** {requires_colons}
+        **- Guild Name:** {emoji.guild.name}
+        **- Guild ID:** {emoji.guild.id}
+        """
+        embed = discord.Embed(
+            title=f"**Emoji Information for:** `{emoji.name}`",
+            description=description,
+            colour=0xADD8E6,
+        )
+        embed.set_thumbnail(url=emoji.url)
+        await ctx.send(embed=embed)
 
     def get_bot_uptime(self, *, brief=False):
         now = datetime.datetime.utcnow()
@@ -237,7 +298,7 @@ class Utility(Cog, emoji="🛠️"):
             inline=False
         )
         em.add_field(
-            name="<:pycord:929100002440122428> Pycord version",
+            name="<:dpy:824585353221505025> Discord.py version",
             value=f"<:join_arrow:946077216297590836> `{discord.__version__}`",
             inline=False
         )
@@ -252,47 +313,6 @@ class Utility(Cog, emoji="🛠️"):
 
         await ctx.send(embed=em)
 
-    @commands.command(aliases=['ei'])
-    @commands.cooldown(1, 3, commands.BucketType.user)
-    @commands.guild_only()
-    async def emojiinfo(self, ctx, emoji:discord.Emoji):
-        """Shows info about emoji."""
-        try:
-            emoji = await emoji.guild.fetch_emoji(emoji.id)
-        except discord.NotFound:
-            return await ctx.send("I could not find this emoji in the given guild.")
-
-        is_managed = "Yes" if emoji.managed else "No"
-        is_animated = "Yes" if emoji.animated else "No"
-        requires_colons = "Yes" if emoji.require_colons else "No"
-        can_use_emoji = (
-            "Everyone"
-            if not emoji.roles
-            else " ".join(role.name for role in emoji.roles)
-        )
-        description = f"""
-        **__General:__**
-        **- Name:** {emoji.name}
-        **- ID:** {emoji.id}
-        **- URL:** [Link To Emoji]({emoji.url})
-        **- Author:** {emoji.user.mention}
-        **- Time Created:** {format_date(emoji.created_at)}
-        **- Usable by:** {can_use_emoji}
-        **__Others:__**
-        **- Animated:** {is_animated}
-        **- Managed:** {is_managed}
-        **- Requires Colons:** {requires_colons}
-        **- Guild Name:** {emoji.guild.name}
-        **- Guild ID:** {emoji.guild.id}
-        """
-        embed = discord.Embed(
-            title=f"**Emoji Information for:** `{emoji.name}`",
-            description=description,
-            colour=0xADD8E6,
-        )
-        embed.set_thumbnail(url=emoji.url)
-        await ctx.send(embed=embed)
-
     @commands.command(name='invite')
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def invite_cmd(self, ctx):
@@ -300,7 +320,11 @@ class Utility(Cog, emoji="🛠️"):
         b1 = Button(label="Invite", emoji="✉️", url="https://dsc.gg/pizza-invite")
         b2 = Button(label="Support", emoji="📨", url="https://discord.gg/WhNVDTF")
         b3 = Button(label="Vote", emoji="🗳", url="https://top.gg/bot/860889936914677770/vote")
-        view = View(b1, b2, b3)
+        view = View()
+        view.add_item(item=b1)
+        view.add_item(item=b2)
+        view.add_item(item=b3)
+
         em=discord.Embed(
             title=':link: Links',
             description=(
@@ -395,9 +419,13 @@ class Utility(Cog, emoji="🛠️"):
         )
         em.set_thumbnail(url=self.bot.user.avatar.url)
         em.set_footer(text='Make sure to leave a nice review too!')
+
         b1 = Button(label="Top.gg", url="https://top.gg/bot/860889936914677770/vote")
         b2 = Button(label="DBL", url="https://discordbotlist.com/bots/zion/upvote/")
-        view = View(b1, b2)
+        view = View()
+        view.add_item(item=b1)
+        view.add_item(item=b2)
+
         await ctx.send(embed=em, view=view)
         
     @commands.command()
@@ -432,5 +460,5 @@ class Utility(Cog, emoji="🛠️"):
                 pass
 
         
-def setup(bot):
-    bot.add_cog(Utility(bot))
+async def setup(bot):
+    await bot.add_cog(Utility(bot))

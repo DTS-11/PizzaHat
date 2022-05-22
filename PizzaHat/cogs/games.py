@@ -177,30 +177,7 @@ class Games(Cog, emoji=819957465160220734):
             await ctx.send(embed=choose_embed)
 
         except asyncio.TimeoutError:
-            timeout = await ctx.send('The time is up, try again')
-
-    @commands.command(aliases=['dice'])
-    async def roll(self, ctx):
-        """Rolls a dice... That's all."""
-        choices = "4 6 8 10 12 20".split()
-
-        message = await ctx.send(f"Choose a number:\n**{'** **'.join(choices)}**")
-        
-        def check(m):
-            return m.author == ctx.author
-
-        try:
-            message = await self.bot.wait_for("message", check = check, timeout = 30.0)
-            m = message.content
-
-            if m not in choices:
-                await ctx.send("Sorry, invalid choice.")
-                return
-            
-            await ctx.send(f"**{random.randint(1, int(m))}**")
-        except asyncio.TimeoutError:
-            await message.delete()
-            await ctx.send("Process has been canceled because you didn't respond in **30 seconds**")
+            await ctx.send('The time is up, try again')
 
     @commands.command()
     async def flip(self,ctx):
@@ -256,5 +233,6 @@ class Games(Cog, emoji=819957465160220734):
                 await headORtail.delete()
                 await ctx.send('The time ended, please try again')
 
-def setup(bot):
-    bot.add_cog(Games(bot))
+
+async def setup(bot):
+    await bot.add_cog(Games(bot))

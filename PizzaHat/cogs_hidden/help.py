@@ -5,11 +5,13 @@ from core.cog import Cog
 
 
 def cog_help_embed(cog):
+    desc = cog.full_description if cog.full_description else None
+
     title = cog.qualified_name
     em = discord.Embed(
         title=f'{title} Commands',
         description=(
-            f"{cog.full_description}\n\n"
+            f"{desc}\n\n"
             "`<>` required | `[]` optional"),
         color=discord.Color.blue()
     )
@@ -27,30 +29,26 @@ class HelpDropdown(discord.ui.Select):
         self.ctx = ctx
 
         options = []
+        cog_exceptions = ["AutoMod", "Dev", "Events", "Help", "Jishaku"]
+
         for cog, _ in mapping.items():
-            options.append(discord.SelectOption(
-                label=cog.qualified_name,
-                description=cog.description,
-                emoji=cog.emoji
-            ))
+            if cog and cog.qualified_name not in cog_exceptions:
+                options.append(discord.SelectOption(
+                    label=cog.qualified_name,
+                    emoji=cog.emoji if hasattr(cog, "emoji") else None
+                ))
 
         super().__init__(
-            placeholder="Choose a catagory...",
+            placeholder="Choose a category...",
             min_values=1,
             max_values=1,
             options=sorted(options, key=lambda x: x.label)
         )
     
     async def callback(self, interaction: discord.Interaction):
-        if interaction.user != self.ctx.author:
-            return await interaction.response.send(
-                f"This help command was invoked by {self.ctx.author}\nThey can only use this.",
-                ephemeral=True
-            )
-
         cog_name = self.values[0]
-
         cog = None
+        
         for c, _ in self.cog_mapping.items():
             if c and c.qualified_name == cog_name:
                 cog = c
@@ -62,8 +60,8 @@ class HelpDropdown(discord.ui.Select):
 class HelpView(discord.ui.View):
     def __init__(self, mapping: dict, ctx: commands.Context):
         super().__init__(timeout=180)
-        self.add_item(HelpDropdown(mapping, ctx))
         self.message = None
+        self.add_item(HelpDropdown(mapping, ctx))
 
     async def on_timeout(self) -> None:
         self.children[0].disabled = True
@@ -85,7 +83,7 @@ class MyHelp(commands.HelpCommand):
 
     async def send_bot_help(self, mapping):
         ctx = self.context
-        mapping = dict(filter(lambda x: x[0] and ctx.bot.cog_is_public(x[0]), mapping.items()))
+        mapping = dict(filter(lambda x: x[0] and (await ctx.bot.cog_is_public(x[0]) for _ in '_'), mapping.items()))
 
         em = discord.Embed(
             title=f"{ctx.me.display_name} Help Menu",
@@ -100,7 +98,7 @@ class MyHelp(commands.HelpCommand):
         view.message = await ctx.send(embed=em, view=view)
 
     async def send_command_help(self, command):
-        if command.cog is None or not self.context.bot.cog_is_public(command.cog):
+        if command.cog is None or not (await self.context.bot.cog_is_public(command.cog)):
             return await self.send(content=f'No command called "{command}" found.')
 
         signature = self.get_command_signature(command)
@@ -142,7 +140,7 @@ class MyHelp(commands.HelpCommand):
         await self.send_help_embed(title, group.help, group.commands)
 
     async def send_cog_help(self, cog):
-        if not self.context.bot.cog_is_public(cog):
+        if not (await self.context.bot.cog_is_public(cog)):
             # pretend this hidden cog doesn't exist, send the same message the bot
             # would send if user uses p!help with an invalid cog name
             return await self.send(content=f'No cog called "{cog.qualified_name}" found.')
@@ -162,5 +160,5 @@ class Help(Cog, emoji="❓"):
         bot.help_command = help_command
 
 
-def setup(bot):
-    bot.add_cog(Help(bot))
+async def setup(bot):
+    await bot.add_cog(Help(bot))

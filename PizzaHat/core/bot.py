@@ -1,10 +1,31 @@
 import discord
 from discord.ext import commands
+from discord.ext.commands.errors import ExtensionAlreadyLoaded
 from discord_together import DiscordTogether
 import datetime
-import os
-import asyncpg
 import aiohttp
+import os
+
+
+
+INITIAL_EXTENSIONS = [
+    "cogs.activities",
+    "cogs.admin",
+    "cogs.emoji",
+    "cogs.fun",
+    "cogs.games",
+    "cogs.image",
+    "cogs.mod",
+    "cogs.poll",
+    "cogs.utility",
+]
+
+SUB_EXTENSIONS = [
+    "cogs_hidden.automod",
+    "cogs_hidden.dev",
+    "cogs_hidden.events",
+    "cogs_hidden.help",
+]
 
 
 class PizzaHat(commands.Bot):
@@ -16,36 +37,30 @@ class PizzaHat(commands.Bot):
             strip_after_prefix = True,
             status = discord.Status.online,
             activity = discord.Activity(
-                type=discord.ActivityType.watching, name='dsc.gg/pizza-invite | discord.gg/WhNVDTF'
+                type=discord.ActivityType.watching, name="p!help | pizzahat.ml"
             ),
         )
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
-        self.yes = '<:yes:813819712953647206>'
-        self.no = '<:no:829841023445631017>'
-        self.color = discord.Color.blue()
+        self.yes = "<:yes:813819712953647206>"
+        self.no = "<:no:829841023445631017>"
+        self.color = 0x456dd4
         self.success = discord.Color.green()
         self.failed = discord.Color.red()
         self.session = aiohttp.ClientSession()
 
-        try:
-            self.loop.run_until_complete(self.create_db_pool())
-        except ConnectionRefusedError:
-            print("Database not connected.")
-
-        self.load_extension("jishaku")
-        self.public_extensions = self.loop.run_until_complete(self.load_extensions("cogs"))
-        self.hidden_extensions = ["jishaku"] + self.loop.run_until_complete(self.load_extensions("cogs_hidden"))
 
     async def on_ready(self):
         if not hasattr(self, 'uptime'):
             self.uptime = datetime.datetime.utcnow()
+
         self.togetherControl = await DiscordTogether(os.getenv("TOKEN"), debug=True)
         print(f"Logged in as {self.user}")
-        
-    async def create_db_pool(self):
-        self.db = await asyncpg.create_pool(
-            database = os.getenv("PGDATABASE"), user = os.getenv("PGUSER"), password = os.getenv("PGPASSWORD")
-        )
+
+
+    async def setup_hook(self):
+        self.public_extensions = await self.load_extensions("cogs")
+        self.hidden_extensions = ["jishaku"] + await self.load_extensions("cogs_hidden")
+
 
     async def load_extensions(self, dir_name: str):
         extensions = []
@@ -60,12 +75,20 @@ class PizzaHat(commands.Bot):
             ext_name = f"{dir_name}.{file_name.split('.')[0]}"
 
             try:
-                self.load_extension(ext_name)
+                await self.load_extension(ext_name)
                 extensions.append(ext_name)
                 success += 1
+
             except Exception as e:
                 fails[ext_name] = e
                 fail += 1
+
+            try:
+                await self.load_extension("jishaku")
+                print("Jishaku has been loaded.")
+            
+            except ExtensionAlreadyLoaded:
+                pass
             
             print(  # fancy loading
                 (f"Loading extension {ext_name} "
@@ -80,6 +103,7 @@ class PizzaHat(commands.Bot):
                 print(f"  {ext_name}: {e}")
         
         return extensions
+
     
-    def cog_is_public(self, cog: commands.Cog):
+    async def cog_is_public(self, cog: commands.Cog):
         return cog.__module__ in self.public_extensions

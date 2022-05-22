@@ -12,8 +12,8 @@ dagpi = Client(os.getenv('DAGPI'))
 
 class Images(Cog, emoji="📷"):
     """Image Commands"""
-    def __init__(self, client):
-        self.client = client
+    def __init__(self, bot):
+        self.bot = bot
     
     @staticmethod
     async def generate_image(member: discord.Member, gen_name: str, username: str=None, text: str=None):
@@ -39,58 +39,61 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     async def pixel(self, ctx, member: discord.Member=None):
-        """Pixellates a user's avatar.
-        If no user is provided, returns yours avatar."""
+        """
+        Pixellates a user's avatar.
+        If no user is provided, returns your avatar.
+        """
         if member is None:
             member = ctx.author
         await ctx.send(file=await Images.generate_image(member, "pixel"))
 
     @commands.command()
     async def tweet(self, ctx, member: discord.Member, *, text):
-        """Tweeting with your pfp.
-        If no user is provided, replaces with your pfp."""
+        """Tweeting with your pfp."""
         uname = member.name
         text = str(text)
         await ctx.send(file=await Images.generate_image(member, "tweet", uname, text))
 
     @commands.command()
-    async def triggered(self, ctx, member: discord.Member = None):
+    async def triggered(self, ctx, member: discord.Member=None):
         """Triggers yours or someone's avatar."""
         if member is None:
             member = ctx.author
         await ctx.send(file=await Images.generate_image(member, "triggered"))
     
     @commands.command()
-    async def wasted(self, ctx, member: discord.Member = None):
-        """GTA wasted...
-        If no user is given, returns yours."""
+    async def wasted(self, ctx, member: discord.Member=None):
+        """
+        GTA wasted...
+        If no user is given, returns yours.
+        """
         if member is None:
             member = ctx.author
         await ctx.send(file=await Images.generate_image(member, "wasted"))
 
     @commands.command()
-    async def angel(self, ctx, member: discord.Member = None):
-        """Angelify your pfp."""
+    async def angel(self, ctx, member: discord.Member=None):
+        """Angelify your pfp or someone's."""
         if member is None:
             member = ctx.author
-        await ctx.send(file=await Images.generate_image(member, "angle"))
+        await ctx.send(file=await Images.generate_image(member, "angel"))
 
     @commands.command()
-    async def hitler(self, ctx, member: discord.Member = None):
+    async def hitler(self, ctx, member: discord.Member=None):
         """Changes you or someone into hitler."""
         if member is None:
             member = ctx.author
         await ctx.send(file=await Images.generate_image(member, "hitler"))
 
     @commands.command()
-    async def delete(self, ctx, member: discord.Member = None):
+    async def delete(self, ctx, member: discord.Member=None):
         """Delete someone or yourself."""
         if member is None:
             member = ctx.author
         await ctx.send(file=await Images.generate_image(member, "delete"))
 
     @commands.command()
-    async def wanted(self, ctx, member: discord.Member = None):
+    async def wanted(self, ctx, member: discord.Member=None):
         """Police wanted poster."""
         if member is None:
             member = ctx.author
@@ -98,14 +101,14 @@ class Images(Cog, emoji="📷"):
         await ctx.send(file=await Images.generate_image(member, "wanted"))
 
     @commands.command()
-    async def jail(self, ctx, member: discord.Member = None):
+    async def jail(self, ctx, member: discord.Member=None):
         """Lock yourself or someone behind bars."""
         if member is None:
             member = ctx.author
         await ctx.send(file=await Images.generate_image(member, "jail"))
 
     @commands.command()
-    async def trash(self, ctx, member: discord.Member = None):
+    async def trash(self, ctx, member: discord.Member=None):
         """Replace the trash with your face/avatar."""
         if member is None:
             member = ctx.author
@@ -119,5 +122,5 @@ class Images(Cog, emoji="📷"):
         await ctx.send(file=await Images.generate_image(member, "discord", uname, text))
 
 
-def setup(client):
-    client.add_cog(Images(client))
+async def setup(bot):
+    await bot.add_cog(Images(bot))

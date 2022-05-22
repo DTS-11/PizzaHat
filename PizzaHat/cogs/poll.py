@@ -118,5 +118,5 @@ class Polls(Cog, emoji="🗳"):
         await ctx.send(f"http://www.strawpoll.me/{id}")
         
 
-def setup(bot):
-    bot.add_cog(Polls(bot))
+async def setup(bot):
+    await bot.add_cog(Polls(bot))

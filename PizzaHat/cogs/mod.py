@@ -252,7 +252,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def clear(self, ctx, amount: int = 100):
+    async def clear(self, ctx, amount: int=100):
         """
         Deletes certain amount of messages in the current channel.
         If no amount is given, it deletes upto 100 messages.
@@ -264,6 +264,7 @@ class Mod(Cog, emoji=847248846526087239):
         if amount > 100:
             return await ctx.send(f'{self.bot.no} I can only purge 100 messages at a time.')
         else:
+            await ctx.message.delete()
             await ctx.channel.purge(limit=amount)
             await ctx.send(f'{self.bot.yes} {amount} messages cleared by {ctx.author}', delete_after=2.5)
 
@@ -271,7 +272,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def cleanup(self, ctx, amount: int = 100):
+    async def cleanup(self, ctx, amount: int=100):
         """
         Cleans up bot's messages in the current channel.
         If no amount is given, it deletes upto 100 messages.
@@ -402,9 +403,10 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(moderate_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def timeout(self, ctx, member: discord.Member, time, *, reason=None):
+    async def timeout(self, ctx, member: discord.Member, duration, *, reason=None):
         """
         Mutes or timeouts a member for specific time.
+        Maximum duration of timeout: 28 days (API limitation)
         Use 5m for 5 mins, 1h for 1 hour etc...
 
         In order for this to work, the bot must have Moderate Members permissions.
@@ -414,10 +416,13 @@ class Mod(Cog, emoji=847248846526087239):
         if reason is None:
             reason = f"Action done by {ctx.author}"
 
-        time = humanfriendly.parse_timespan(time)
+        humanly_duration = humanfriendly.parse_timespan(duration)
 
-        await member.timeout(until=discord.utils.utcnow() + datetime.timedelta(seconds=time), reason=reason)
-        await ctx.send(f"{self.bot.yes} {member} has been muted for {time}.\nReason: {reason}")
+        await member.timeout(
+            discord.utils.utcnow() + datetime.timedelta(seconds=humanly_duration),
+            reason=reason
+        )
+        await ctx.send(f"{self.bot.yes} {member} has been timed out for {duration}.\nReason: {reason}")
 
     @commands.command()
     @commands.guild_only()
@@ -433,7 +438,8 @@ class Mod(Cog, emoji=847248846526087239):
         """
         if reason is None:
             reason = f"Action done by {ctx.author}"
-        await member.remove_timeout(reason=reason)
+
+        await member.timeout(None, reason=reason)
         await ctx.send(f"{self.bot.yes} {member} has been unmuted!")
 
     @commands.command()
@@ -542,5 +548,5 @@ class Mod(Cog, emoji=847248846526087239):
             print("".join(traceback.format_exception(e, e, e.__traceback__)))
 
 
-def setup(bot):
-  bot.add_cog(Mod(bot))
+async def setup(bot):
+  await bot.add_cog(Mod(bot))
