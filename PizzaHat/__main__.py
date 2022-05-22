@@ -40,7 +40,7 @@ if __name__ == '__main__':
     try:
         loop = asyncio.get_event_loop()
         loop.run_until_complete(create_db_pool())
-        start_top_gg.start(bot)
+        start_top_gg()
 
     except ConnectionRefusedError:
         print("Database not connected.")
