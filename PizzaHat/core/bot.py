@@ -4,6 +4,7 @@ from discord.ext.commands.errors import ExtensionAlreadyLoaded
 from discord_together import DiscordTogether
 import datetime
 import aiohttp
+import wavelink
 import os
 
 
@@ -16,15 +17,16 @@ INITIAL_EXTENSIONS = [
     "cogs.games",
     "cogs.image",
     "cogs.mod",
+    "cogs.music",
     "cogs.poll",
     "cogs.utility",
 ]
 
 SUB_EXTENSIONS = [
-    "cogs_hidden.automod",
-    "cogs_hidden.dev",
-    "cogs_hidden.events",
-    "cogs_hidden.help",
+    "utils.automod",
+    "utils.dev",
+    "utils.events",
+    "utils.help",
 ]
 
 
@@ -57,9 +59,36 @@ class PizzaHat(commands.Bot):
         print(f"Logged in as {self.user}")
 
 
+    async def on_wavelink_node_ready(self, node: wavelink.Node):
+        print(f"Node: {node.identifier} is ready.")
+
+    async def on_wavelink_track_end(self, player: wavelink.Player, track: wavelink.Track, reason):
+        ctx = player.ctx
+        vc: player = ctx.voice_client
+
+        if vc.loop:
+            return await vc.play(track)
+
+        try:
+            next_song = vc.queue.get()
+            await vc.play(next_song)
+
+            em = discord.Embed(color=self.color)
+            em.add_field(name="▶ Now playing", value=f"[{next_song.title}]({next_song.uri})", inline=False)
+            em.add_field(name="⌛ Song Duration", value=str(datetime.timedelta(seconds=next_song.duration)), inline=False)
+            em.add_field(name="👥 Requested by", value=ctx.author.mention, inline=False)
+            em.add_field(name="🎵 Song by", value=next_song.author, inline=False)
+            em.set_thumbnail(url=vc.source.thumbnail)
+
+            await ctx.send(embed=em)
+
+        except wavelink.errors.QueueEmpty:
+            pass
+
+
     async def setup_hook(self):
         self.public_extensions = await self.load_extensions("cogs")
-        self.hidden_extensions = ["jishaku"] + await self.load_extensions("cogs_hidden")
+        self.hidden_extensions = ["jishaku"] + await self.load_extensions("utils")
 
 
     async def load_extensions(self, dir_name: str):

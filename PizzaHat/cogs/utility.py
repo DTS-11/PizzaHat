@@ -9,9 +9,9 @@ from core.cog import Cog
 start_time = time.time()
 
 def format_date(dt:datetime.datetime):
-            if dt is None:
-                return 'N/A'
-            return f'<t:{int(dt.timestamp())}>'
+    if dt is None:
+        return 'N/A'
+    return f'<t:{int(dt.timestamp())}>'
 
 
 class Utility(Cog, emoji="🛠️"):
@@ -27,7 +27,7 @@ class Utility(Cog, emoji="🛠️"):
         msg = await ctx.send("Pinging...")
         time2 = time.perf_counter()
 
-        await msg.edit(
+        await msg.edit(content=
             "🏓 Pong!"
             f"\nAPI: `{round(self.bot.latency*1000)}ms`"
             f"\nBot: `{round(time2-time1)*1000}ms`"
@@ -157,7 +157,7 @@ class Utility(Cog, emoji="🛠️"):
     @commands.command(aliases=['ci'])
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
-    async def channelinfo(self, ctx, channel: discord.TextChannel=None):
+    async def channelinfo(self, ctx, *, channel: discord.TextChannel=None):
         """
         Shows info about a channel.
         If no channel is given, returns value for the current channel.
@@ -178,7 +178,7 @@ class Utility(Cog, emoji="🛠️"):
     @commands.command(aliases=['vi'])
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
-    async def vcinfo(self, ctx, vc: discord.VoiceChannel):
+    async def vcinfo(self, ctx, *, vc: discord.VoiceChannel):
         """Shows info about a voice channel."""
         e = discord.Embed(title='VC Information', color=self.bot.color)
         e.add_field(name='VC name', value=vc.name, inline=False)

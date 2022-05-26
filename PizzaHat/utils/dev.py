@@ -146,7 +146,7 @@ class Dev(Cog, emoji=808407479687053403):
     @commands.is_owner()
     async def load(self, ctx, cog):
         try:
-            self.bot.load_extension(cog)
+            await self.bot.load_extension(cog)
             await ctx.send(f"{self.bot.yes} Cog loaded")
         except Exception as e:
             print(e)
@@ -155,10 +155,21 @@ class Dev(Cog, emoji=808407479687053403):
     @commands.is_owner()
     async def unload(self, ctx, cog):
         try:
-            self.bot.unload_extension(cog)
+            await self.bot.unload_extension(cog)
             await ctx.send(f"{self.bot.yes} Cog unloaded")
         except Exception as e:
             print(e)
+
+    @commands.command()
+    @commands.is_owner()
+    async def reload(self, ctx, cog):
+        try:
+            await self.bot.unload_extension(cog)
+            await self.bot.load_extension(cog)
+            await ctx.send(f"{self.bot.yes} Cog reloaded")
+        except Exception as e:
+            print(e)
+
 
 async def setup(bot):
     await bot.add_cog(Dev(bot))

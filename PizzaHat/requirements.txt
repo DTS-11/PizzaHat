@@ -1,4 +1,5 @@
 git+https://github.com/Rapptz/discord.py
+discord.py[voice]
 asyncpg
 TagScriptEngine
 aiohttp
@@ -15,3 +16,4 @@ numpy
 jishaku
 psutil
 topggpy
+wavelink

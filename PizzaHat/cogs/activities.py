@@ -4,11 +4,12 @@ from core.cog import Cog
 
 
 class Activities(Cog, emoji="🚀"):
-    """Discord Activity (beta)"""
+    """Discord Activities"""
     def __init__(self, bot):
         self.bot=bot
 
     @commands.command(aliases=["ytt"])
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def yttogether(self, ctx):
         """
         Starts a YouTube Together activity in your server.
@@ -24,6 +25,7 @@ class Activities(Cog, emoji="🚀"):
             await ctx.send(f"Click the link to start the activity\n{link}")
         
     @commands.command(aliases=["pokernight"])
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def poker(self, ctx):
         """
         Starts a Poker Night activity in your server.
@@ -39,6 +41,7 @@ class Activities(Cog, emoji="🚀"):
             await ctx.send(f"Click the link to start the activity\n{link}")
         
     @commands.command()
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def chess(self, ctx):
         """
         Starts a Chess in the Park activity in your server.
@@ -54,6 +57,7 @@ class Activities(Cog, emoji="🚀"):
             await ctx.send(f"Click the link to start the activity\n{link}")
         
     @commands.command()
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def checkers(self, ctx):
         """
         Starts a Checkers in the Park activity in your server.
@@ -69,6 +73,7 @@ class Activities(Cog, emoji="🚀"):
             await ctx.send(f"Click the link to start the activity\n{link}")
         
     @commands.command()
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def spellcast(self, ctx):
         """
         Starts a Spell Case activity in your server.
@@ -84,6 +89,7 @@ class Activities(Cog, emoji="🚀"):
             await ctx.send(f"Click the link to start the activity\n{link}")
         
     @commands.command()
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def betrayal(self, ctx):
         """
         Starts a Betrayal IO activity in your server.
