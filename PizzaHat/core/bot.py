@@ -6,6 +6,7 @@ import datetime
 import aiohttp
 import asyncpg
 import wavelink
+import traceback
 import ssl
 import os
 
@@ -100,57 +101,36 @@ class PizzaHat(commands.Bot):
 
 
     async def setup_hook(self):
-        self.public_extensions = await self.load_extensions("cogs")
-        self.hidden_extensions = ["jishaku"] + await self.load_extensions("utils")
+        for ext in INITIAL_EXTENSIONS:
+            try:
+                self.public_extensions = await self.load_extension(ext)
+                print(f"Loaded {ext}")
+
+            except Exception as e:
+                print(f"Failed to load extension {ext}")
+                print("".join(traceback.format_exception(e, e, e.__traceback__)))
+
+        for sub_ext in SUB_EXTENSIONS:
+            try:
+                await self.load_extension(sub_ext)
+                print(f"Loaded {sub_ext}")
+            
+            except Exception as e:
+                print(f"Failed to load extension {sub_ext}")
+                print("".join(traceback.format_exception(e, e, e.__traceback__)))
+
+        try:
+            await self.load_extension("jishaku")
+            print("Jishaku has been loaded.")
+            
+        except ExtensionAlreadyLoaded:
+            pass
 
         try:
             await self.loop.create_task(self.create_db_pool())
         
         except ConnectionRefusedError:
             print("DB not connected.")
-
-
-    async def load_extensions(self, dir_name: str):
-        extensions = []
-
-        success = fail = 0
-        fails = {}
-
-        list_dir = [file_name for file_name in os.listdir(dir_name) if file_name.endswith(".py")]
-        total = len(list_dir)
-
-        for file_name in list_dir:
-            ext_name = f"{dir_name}.{file_name.split('.')[0]}"
-
-            try:
-                await self.load_extension(ext_name)
-                extensions.append(ext_name)
-                success += 1
-
-            except Exception as e:
-                fails[ext_name] = e
-                fail += 1
-
-            try:
-                await self.load_extension("jishaku")
-                print("Jishaku has been loaded.")
-            
-            except ExtensionAlreadyLoaded:
-                pass
-            
-            print(  # fancy loading
-                (f"Loading extension {ext_name} "
-                f"(Success {success}, Fail {fail}, Done {success + fail}/{total})")
-                + " " * 20,  # whitespace padding
-                end="\r" if success + fail < total else "\n"
-            )
-        
-        if fail:
-            print(f"Failed to load {fail} extention(s):")
-            for ext_name, e in fails.items():
-                print(f"  {ext_name}: {e}")
-        
-        return extensions
 
     
     async def cog_is_public(self, cog: commands.Cog):
