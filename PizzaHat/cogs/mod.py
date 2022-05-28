@@ -16,22 +16,27 @@ class Mod(Cog, emoji=847248846526087239):
 
     async def warn_log(self, guild_id, user_id):
         data = await self.bot.db.fetchrow("SELECT * FROM warnlogs WHERE guild_id=$1 AND user_id=$2", guild_id, user_id)
+        
         if not data:
             print("No data")
+
         else:
             return data
 
     async def warn_entry(self, guild_id, user_id, reason, time):
         data = await self.warn_log(guild_id, user_id)
+
         if data == []:
             await self.bot.db.execute("INSERT INTO warnlogs (guild_id, user_id, warns, time) VALUES ($1, $2, $3, $4)", guild_id, user_id, [reason], [time])
             return
+
         warns = data[2]
         times = data[3]
 
         if not warns:
             warns = [reason]
             times = [time]
+        
         else:
             warns.append(reason)
             times.append(time)
@@ -40,10 +45,12 @@ class Mod(Cog, emoji=847248846526087239):
 
     async def delete_warn(self, guild_id, user_id, index):
         data = await self.warn_log(guild_id, user_id)
+
         if len(data[2])>=1:
             data[2].remove(data[2][index])
             data[3].remove(data[3][index])
             return await self.bot.db.execute("UPDATE warnlogs SET warns = $1, time = $2 WHERE guild_id = $3 AND user_id = $4", data[2], data[3], guild_id, user_id)
+        
         else:
             await self.bot.db.execute("DELETE FROM warnlogs WHERE guild_id = $1 AND user_id = $2", guild_id, user_id)
 
@@ -101,10 +108,10 @@ class Mod(Cog, emoji=847248846526087239):
         characters = "!@#$%^&*()_+-=.,/?;:[]{}`~\"'\\|<>"
 
         try:
-            if characters in member.name:
+            if member.display_name[0] in characters and not member.display_name.startswith("[AFK] "):
                 await member.edit(
                     nick="Moderated Nickname",
-                    reason="PizzaHat decancer member."
+                    reason=f"Decancered member (req. by: {ctx.author})."
                 )
                 await ctx.send(f"{self.bot.yes} Successfully decancered {member}")
         
@@ -156,13 +163,16 @@ class Mod(Cog, emoji=847248846526087239):
         """
         role = role or ctx.guild.default_role
         channel = channel or ctx.channel
+
         overwrite = channel.overwrites_for(role)
         overwrite.send_messages = False
 
         await channel.set_permissions(role, overwrite=overwrite)
         await ctx.message.add_reaction('🔒')
+
         em = discord.Embed(color=self.bot.color)
         em.add_field(name='🔒 Locked', value=f"{channel.mention} has been locked for {role.mention}",inline=False)
+        
         await ctx.send(embed=em)
 
     @lock.command(name='server')
@@ -182,6 +192,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         for tc in ctx.guild.text_channels:
             await tc.set_permissions(role, send_messages=False, add_reactions=False)
+
         for vc in ctx.guild.voice_channels:
             await vc.set_permissions(role, connect=False, speak=False)
 
@@ -190,6 +201,7 @@ class Mod(Cog, emoji=847248846526087239):
             description=f'The server has been locked by a staff member. You are **not muted**.',
             color=self.bot.success
         )
+
         await ctx.send(embed=em)
 
     @commands.group()
@@ -213,13 +225,16 @@ class Mod(Cog, emoji=847248846526087239):
         """
         role = role or ctx.guild.default_role
         channel = channel or ctx.channel
+
         overwrite = channel.overwrites_for(role)
         overwrite.send_messages = True
 
         await channel.set_permissions(role, overwrite=overwrite)
         await ctx.message.add_reaction('🔓')
+
         em = discord.Embed(color=self.bot.color)
         em.add_field(name='🔓 Unlocked', value=f"{channel.mention} has been unlocked for {role.mention}",inline=False)
+
         await ctx.send(embed=em)
 
     @unlock.command(name='server')
@@ -236,8 +251,10 @@ class Mod(Cog, emoji=847248846526087239):
         To use this command, you must have Manage Channels permission.
         """
         role = ctx.guild.default_role or role
+
         for tc in ctx.guild.text_channels:
             await tc.set_permissions(role, send_messages=True, add_reactions=True, read_message_history=True)
+
         for vc in ctx.guild.voice_channels:
             await vc.set_permissions(role, connect=True, speak=True)
 
@@ -246,6 +263,7 @@ class Mod(Cog, emoji=847248846526087239):
             description=f'The server has been unlocked.',
             color=self.bot.success
         )
+
         await ctx.send(embed=em)
 
     @commands.command(aliases=['purge'])
@@ -263,6 +281,7 @@ class Mod(Cog, emoji=847248846526087239):
         """
         if amount > 100:
             return await ctx.send(f'{self.bot.no} I can only purge 100 messages at a time.')
+
         else:
             await ctx.message.delete()
             await ctx.channel.purge(limit=amount)
@@ -329,6 +348,7 @@ class Mod(Cog, emoji=847248846526087239):
             await ctx.guild.ban(discord.Object(id=member), reason=f"{reason}")
             user = await self.bot.fetch_user(member)
             await ctx.send(f'{self.bot.yes} Banned `{user}`')
+
         else:
             await member.ban(reason=f"{reason}", delete_message_days=0)
             await ctx.send(f'{self.bot.yes} Banned `{member}`')
@@ -474,20 +494,26 @@ class Mod(Cog, emoji=847248846526087239):
         """
         if reason is None:
             reason = f"No reason given.\nWarned done by {ctx.author}"
+
         try:
             if member == ctx.author or member == self.bot.user:
                 return await ctx.send('You cant warn yourself or the bot.')
+
             if not ctx.author.top_role.position == member.top_role.position:
                 if not ctx.author.top_role.position > member.top_role.position:
                     return await ctx.send('You cant warn someone that has higher or same role heirarchy.')
+
             await self.warn_entry(ctx.guild.id, member.id, reason, float(ctx.message.created_at.timestamp()))
+
             em = discord.Embed(
                     title=f"{self.bot.yes} Warned User",
                     description=f'Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}',
                     color=self.bot.success,
                     timestamp=datetime.datetime.utcnow()
                 )
+
             await ctx.send(embed=em)
+
         except Exception as e:
             print("".join(traceback.format_exception(e, e, e.__traceback__)))
 
@@ -510,18 +536,23 @@ class Mod(Cog, emoji=847248846526087239):
             timestamp=datetime.datetime.utcnow()
         )
         em.set_thumbnail(url=member.avatar.url)
+
         if not data:
             return await ctx.send(embed=em)
+
         if not len(data[2]):
             return await ctx.send(embed=em)
+
         for i in range(len(data[2])):
             reason = data[2][i]
+
         em = discord.Embed(
                 title=f'Warnings of {member.name} | {len(data[2])} warns',
                 description=f'Reason: {reason}\nWarn ID: `{data[3][i]}`',
                 color=self.bot.color,
                 timestamp=datetime.datetime.utcnow()
             )
+
         await ctx.send(embed=em)
 
     @commands.command(aliases=['delwarn'])
@@ -538,12 +569,15 @@ class Mod(Cog, emoji=847248846526087239):
             data = await self.warn_log(ctx.guild.id, member.id)
             if data == []:
                 return await ctx.send(f'{self.bot.no} This user has no warns!')
+
             if data[2] and warn_id in data[3]:
                 index = data[3].index(warn_id)
                 await self.delete_warn(ctx.guild.id, member.id, index)
                 return await ctx.send(f'{self.bot.yes} Warn entry deleted!')
+
             else:
                 return await ctx.send(f'{self.bot.no} No warn entry found for this user.')
+
         except Exception as e:
             print("".join(traceback.format_exception(e, e, e.__traceback__)))
 
