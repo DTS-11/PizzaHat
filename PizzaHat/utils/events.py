@@ -5,6 +5,8 @@ import traceback
 from core.cog import Cog
 
 
+LOG_CHANNEL = 980151632199299092
+
 class Events(Cog):
     """Events cog"""
     def __init__(self, bot):
@@ -177,24 +179,38 @@ class Events(Cog):
     
     @Cog.listener()
     async def on_guild_join(self, guild):
-        if len([m for m in guild.members if m.bot]) > len(guild.members) / 2:
+        if len([m for m in guild.members if m.bot]) > len(guild.members): #/ 2:
             try:
                 await guild.text_channels[0].send(
                     '👋 I have automatically left this server since it has a high bot to member ratio.'
                 )
                 await guild.leave()
-            except Exception as e:
-                print(e)
+            except:
+                pass
+
+        em = discord.Embed(
+            title="Guild Joined",
+            color=self.bot.success
+        )
+        em.add_field(name="Guild", value=guild.name, inline=False)
+        em.add_field(name="Members", value=len([m for m in guild.members if not m.bot]), inline=False)
+        em.add_field(name="Bots", value=sum(member.bot for member in guild.members), inline=False)
+
+        channel = await self.bot.get_channel(LOG_CHANNEL)
+        await channel.send(embed=em)
 
     @Cog.listener()
     async def on_guild_remove(self, guild):
         try:
-            print(guild.name)
             await self.bot.db.execute("DELETE FROM modlogs WHERE guild_id=$1", guild.id)
         except Exception as e:
             print(e)
 
-            
+        channel = await self.bot.get_channel(LOG_CHANNEL)
+        await channel.send(f"Left {guild.name}")
+
+# ====== ERROR HANDLER ======
+
     @Cog.listener()
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):
@@ -219,13 +235,13 @@ class Events(Cog):
             await ctx.send('Please specify a member or the member could not be found.')
 
         elif isinstance(error, commands.DisabledCommand):
-            await ctx.send(f'**{ctx.command}**, is a disabled command in **{ctx.guild.name}**')
+            await ctx.send(f'Sorry, **{ctx.command}** is a disabled command in this guild.')
 
         elif isinstance(error, commands.ChannelNotFound):
             await ctx.send('Please specify a channel or the channel could not be found.')
 
         elif isinstance(error, commands.NoPrivateMessage):
-            await ctx.author.send('This command cannot be used in DM\'s')
+            await ctx.author.send('This command cannot be used in DMs')
 
         elif isinstance(error, commands.EmojiNotFound):
             await ctx.send('Please provide an emoji or the emoji could not be found.')
