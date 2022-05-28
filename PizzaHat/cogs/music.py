@@ -72,7 +72,7 @@ class Music(Cog, emoji=929100003178348634):
             else:
                 vc: wavelink.Player = ctx.voice_client
                 await vc.stop()
-                await ctx.send(f"⏭ Skipped [{vc.track.title}]({vc.track.uri})")
+                await ctx.send("⏭ Skipped.")
 
         except wavelink.errors.QueueEmpty:
             return await ctx.send("Queue is empty.")
@@ -119,7 +119,7 @@ class Music(Cog, emoji=929100003178348634):
 
         else:
             vc: wavelink.Player = ctx.voice_client
-            await vc.queue.clear()
+            vc.queue.clear()
             await vc.stop()
             await ctx.message.add_reaction("⏹")
 
@@ -168,11 +168,14 @@ class Music(Cog, emoji=929100003178348634):
             queue = vc.queue.copy()
             song_count = 0
 
-            for song in queue:
+            for songs in queue:
                 song_count += 1
+                songs = [i.title for i in vc.queue]
 
-                em = discord.Embed(title=f"Queued songs {song_count}", color=self.bot.color)
-                em.description = "\n".join(song.title)
+                em = discord.Embed(title=f"Queued songs [{song_count}]", color=self.bot.color)
+
+                for song in songs:
+                    em.add_field(name="\u200b", value=song, inline=False)
 
             await ctx.send(embed=em)
 
