@@ -179,14 +179,14 @@ class Events(Cog):
     
     @Cog.listener()
     async def on_guild_join(self, guild):
-        if len([m for m in guild.members if m.bot]) > len(guild.members): #/ 2:
-            try:
-                await guild.text_channels[0].send(
-                    '👋 I have automatically left this server since it has a high bot to member ratio.'
-                )
-                await guild.leave()
-            except:
-                pass
+        # if len([m for m in guild.members if m.bot]) > len(guild.members) / 2:
+        #     try:
+        #         await guild.text_channels[0].send(
+        #             '👋 I have automatically left this server since it has a high bot to member ratio.'
+        #         )
+        #         await guild.leave()
+        #     except:
+        #         pass
 
         em = discord.Embed(
             title="Guild Joined",
