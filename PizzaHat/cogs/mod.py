@@ -10,7 +10,7 @@ from core.cog import Cog
 
 
 class Mod(Cog, emoji=847248846526087239):
-    """Moderation related commands"""
+    """Keep your server safe!"""
     def __init__(self,bot):
         self.bot = bot
 

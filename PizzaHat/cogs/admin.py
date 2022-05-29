@@ -5,7 +5,7 @@ from core.cog import Cog
 
 
 class Admin(Cog, emoji="👷‍♂️"):
-    """Admin only commands."""
+    """Admin configuration commands."""
     def __init__(self, bot):
         self.bot = bot
 

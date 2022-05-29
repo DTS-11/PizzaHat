@@ -17,7 +17,7 @@ def clean_string(string):
 
 
 class Fun(Cog, emoji="🥳"):
-    """Fun Commands."""
+    """Fun commands which can be used to have some fun."""
     def __init__(self, bot):
         self.bot = bot
         blocks = [

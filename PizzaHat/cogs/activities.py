@@ -4,7 +4,7 @@ from core.cog import Cog
 
 
 class Activities(Cog, emoji="🚀"):
-    """Discord Activities"""
+    """Discord Activities."""
     def __init__(self, bot):
         self.bot=bot
 

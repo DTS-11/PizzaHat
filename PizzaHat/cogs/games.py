@@ -8,7 +8,7 @@ from core.cog import Cog
 
 
 class Games(Cog, emoji=819957465160220734):
-    """Fun Games to play when bored."""
+    """Fun games to play when bored."""
     def __init__(self,bot):
         self.bot = bot
 

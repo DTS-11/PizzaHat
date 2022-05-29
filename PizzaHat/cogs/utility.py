@@ -15,7 +15,7 @@ def format_date(dt:datetime.datetime):
 
 
 class Utility(Cog, emoji="🛠️"):
-    """Utility Commands"""
+    """Utility commands which makes your discord experience smooth!"""
     def __init__(self,bot):
         self.bot = bot
 

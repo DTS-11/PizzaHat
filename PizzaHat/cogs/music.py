@@ -8,7 +8,7 @@ from core.cog import Cog
 
 
 class Music(Cog, emoji=929100003178348634):
-    """Music Commands."""
+    """Listen to music and chill!"""
     def __init__(self, bot):
         self.bot = bot
         bot.loop.create_task(self.connect_nodes())
