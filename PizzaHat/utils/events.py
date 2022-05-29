@@ -266,9 +266,9 @@ class Events(Cog):
             )
 
             if ctx.guild.icon.url:
-                e.set_footer(text=f"From {ctx.guild}", icon_url=ctx.guild.icon.url)
+                e.set_footer(text=f"From {ctx.guild} [{ctx.guild.id}]", icon_url=ctx.guild.icon.url)
             else:
-                e.set_footer(text=f"From {ctx.guild}")
+                e.set_footer(text=f"From {ctx.guild} [{ctx.guild.id}]")
             await channel.send(embed=e)
             
 
