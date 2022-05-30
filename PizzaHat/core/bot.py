@@ -66,6 +66,9 @@ class PizzaHat(commands.Bot):
         ctx = player.ctx
         vc: player = ctx.voice_client
 
+        track.info["requester"] = ctx.author
+        wavelink_track = wavelink.Track(track.id, track.info)
+
         if vc.loop:
             return await vc.play(track)
 
@@ -76,7 +79,7 @@ class PizzaHat(commands.Bot):
             em = discord.Embed(color=self.color)
             em.add_field(name="▶ Now playing", value=f"[{next_song.title}]({next_song.uri})", inline=False)
             em.add_field(name="⌛ Song Duration", value=str(datetime.timedelta(seconds=next_song.duration)), inline=False)
-            em.add_field(name="👥 Requested by", value=ctx.author.mention, inline=False)
+            em.add_field(name="👥 Requested by", value=wavelink_track, inline=False)
             em.add_field(name="🎵 Song by", value=next_song.author, inline=False)
             em.set_thumbnail(url=vc.source.thumbnail)
 
@@ -87,8 +90,8 @@ class PizzaHat(commands.Bot):
 
 
     async def setup_hook(self):
-        self.public_extensions = await self.load_extensions("cogs")
-        self.hidden_extensions = ["jishaku"] + await self.load_extensions("utils")
+        self.public_extensions = await self.load_extensions("../cogs")
+        self.hidden_extensions = ["jishaku"] + await self.load_extensions("../utils")
 
         try:
             await self.loop.create_task(self.create_db_pool())
