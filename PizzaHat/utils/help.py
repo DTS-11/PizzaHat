@@ -1,21 +1,19 @@
 import discord
 from discord.ext import commands
-from typing import Mapping
 
 from core.cog import Cog
 
 
-def bot_help_embed(ctx: commands.Context, mapping: Mapping):
-    mapping = dict(filter(lambda x: x[0] and (await ctx.bot.cog_is_public(x[0]) for _ in '_'), mapping.items()))
+def bot_help_embed(ctx: commands.Context):
 
     em = discord.Embed(
-        title=f"{ctx.me.name} Help Menu",
+        title=f"{ctx.me.name} Help",
         timestamp=ctx.message.created_at,
         color=discord.Color.blue()
     )
     em.description = (
         """
-Hello, welcome to the help menu!\n\n
+Hello, welcome to the help page!\n\n
 Use `help [command]` for more info on a command.\n
 Use `help [category]` for more info on a command.\n
 Use the dropdown menu to select a category.\n
@@ -114,7 +112,7 @@ class HelpView(discord.ui.View):
 
     @discord.ui.button(label="Home", emoji="🏠", style=discord.ButtonStyle.blurple)
     async def go_home(self, interaction: discord.Interaction, button: discord.ui.Button):
-        embed = bot_help_embed(self.ctx, self.mapping)
+        embed = bot_help_embed(self.ctx)
         await interaction.message.edit(embed=embed, view=self)
 
     @discord.ui.button(label="Delete Menu", emoji="🛑", style=discord.ButtonStyle.danger)
@@ -125,7 +123,7 @@ class HelpView(discord.ui.View):
 class MyHelp(commands.HelpCommand):
     def __init__(self):
         super().__init__(
-            command_attrs={
+            command_attrs = {
                 "help": "Help command for the bot",
                 "cooldown": commands.CooldownMapping.from_cooldown(1, 3, commands.BucketType.user),
                 "aliases": ['h']
@@ -138,12 +136,9 @@ class MyHelp(commands.HelpCommand):
     async def send_bot_help(self, mapping):
         ctx = self.context
         view = HelpView(mapping, ctx)
-        view.message = await ctx.send(embed=bot_help_embed(ctx, mapping), view=view)
+        view.message = await ctx.send(embed=bot_help_embed(ctx), view=view)
 
     async def send_command_help(self, command):
-        if command.cog is None or not (await self.context.bot.cog_is_public(command.cog)):
-            return await self.send(content=f'No command called "{command}" found.')
-
         signature = self.get_command_signature(command)
         embed = discord.Embed(
             title=signature,
@@ -190,11 +185,6 @@ class MyHelp(commands.HelpCommand):
         await self.send_help_embed(title, group.help, group.commands)
 
     async def send_cog_help(self, cog):
-        if not (await self.context.bot.cog_is_public(cog)):
-            # pretend this hidden cog doesn't exist, send the same message the bot
-            # would send if user uses p!help with an invalid cog name
-            return await self.send(content=f'No cog called "{cog.qualified_name}" found.')
-
         await self.send(embed=cog_help_embed(cog))
 
     async def send_error_message(self, error):
