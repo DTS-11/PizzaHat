@@ -24,6 +24,9 @@ class Events(Cog):
         data = await self.bot.db.fetchval("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)
         if data:
             return self.bot.get_channel(data)
+        
+        else:
+            pass
 
 # ====== MESSAGE LOGS ======
 
