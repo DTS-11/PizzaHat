@@ -15,10 +15,10 @@ def bot_help_embed(ctx: commands.Context, mapping: Mapping):
     )
     em.description = (
         """
-        Hello, welcome to the help menu!\n\n
-        Use `help [command]` for more info on a command.\n
-        Use `help [category]` for more info on a command.\n
-        Use the dropdown menu to select a category.\n
+Hello, welcome to the help menu!\n\n
+Use `help [command]` for more info on a command.\n
+Use `help [category]` for more info on a command.\n
+Use the dropdown menu to select a category.\n
         """
     )
 
