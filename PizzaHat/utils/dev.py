@@ -164,8 +164,7 @@ class Dev(Cog, emoji=808407479687053403):
     @commands.is_owner()
     async def reload(self, ctx, cog):
         try:
-            await self.bot.unload_extension(cog)
-            await self.bot.load_extension(cog)
+            await self.bot.reload_extension(cog)
             await ctx.send(f"{self.bot.yes} Cog reloaded")
         except Exception as e:
             print(e)
