@@ -223,10 +223,10 @@ class Events(Cog):
             pass
 
         elif isinstance(error, commands.MissingPermissions):
-            await ctx.send(f'You are missing some required permissions: **{error.missing_perms}**')
+            await ctx.send(f'You are missing some required permissions: "{error.missing_perms}"')
 
         elif isinstance(error, commands.BotMissingPermissions):
-            await ctx.send(f"I'm missing some required permissions: **{error.missing_perms}**")
+            await ctx.send(f'Im missing some required permissions: "{error.missing_perms}"')
 
         elif isinstance(error, commands.CommandOnCooldown):
             await ctx.send(f'The command you tried is on cooldown. Try again in {round(error.retry_after)} seconds.')
