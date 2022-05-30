@@ -196,7 +196,7 @@ class Events(Cog):
         em.add_field(name="Members", value=len([m for m in guild.members if not m.bot]), inline=False)
         em.add_field(name="Bots", value=sum(member.bot for member in guild.members), inline=False)
 
-        channel = await self.bot.get_channel(LOG_CHANNEL)
+        channel = self.bot.get_channel(LOG_CHANNEL)
         await channel.send(embed=em)
 
     @Cog.listener()
@@ -206,7 +206,7 @@ class Events(Cog):
         except Exception as e:
             print(e)
 
-        channel = await self.bot.get_channel(LOG_CHANNEL)
+        channel = self.bot.get_channel(LOG_CHANNEL)
         await channel.send(f"Left {guild.name}")
 
 # ====== ERROR HANDLER ======
