@@ -117,7 +117,6 @@ class PizzaHat(commands.Bot):
             try:
                 self.public_extensions = await self.load_extension(ext)
                 print(f"Loaded {ext}")
-                print("=========================")
 
             except Exception as e:
                 print(f"Failed to load extension {ext}")
@@ -127,7 +126,6 @@ class PizzaHat(commands.Bot):
             try:
                 await self.load_extension(sub_ext)
                 print(f"Loaded {sub_ext}")
-                print("=========================")
 
             except Exception as e:
                 print(f"Failed to load extension {sub_ext}")
