@@ -90,8 +90,13 @@ class PizzaHat(commands.Bot):
 
 
     async def setup_hook(self):
-        self.public_extensions = await self.load_extensions("./container/cogs")
-        self.hidden_extensions = ["jishaku"] + await self.load_extensions("./container/utils")
+        # pterodactyl host
+        self.public_extensions = await self.load_extensions("./container/PizzaHat/cogs")
+        self.hidden_extensions = ["jishaku"] + await self.load_extensions("./container/PizzaHat/utils")
+
+        # normal loading..
+        # self.public_extensions = await self.load_extensions("cogs")
+        # self.hidden_extensions = ["jishaku"] + await self.load_extensions("utils")
 
         try:
             await self.loop.create_task(self.create_db_pool())
