@@ -1,6 +1,4 @@
 import discord
-from discord.ext import commands
-import traceback
 
 from core.cog import Cog
 
@@ -211,65 +209,6 @@ class Events(Cog):
 
         channel = self.bot.get_channel(LOG_CHANNEL)
         await channel.send(f"Left {guild.name}")
-
-# ====== ERROR HANDLER ======
-
-    @Cog.listener()
-    async def on_command_error(self, ctx, error):
-        if isinstance(error, commands.CommandNotFound):
-            pass
-
-        elif isinstance(error, commands.NotOwner):
-            pass
-
-        elif isinstance(error, commands.MissingPermissions):
-            await ctx.send(f'You are missing some required permissions: "{error.missing_perms}"')
-
-        elif isinstance(error, commands.BotMissingPermissions):
-            await ctx.send(f'Im missing some required permissions: "{error.missing_perms}"')
-
-        elif isinstance(error, commands.CommandOnCooldown):
-            await ctx.send(f'The command you tried is on cooldown. Try again in {round(error.retry_after)} seconds.')
-
-        elif isinstance(error, commands.RoleNotFound):
-            await ctx.send('Please provide a role or the role could not be found.')
-
-        elif isinstance(error, commands.MemberNotFound):
-            await ctx.send('Please specify a member or the member could not be found.')
-
-        elif isinstance(error, commands.DisabledCommand):
-            await ctx.send(f'Sorry, **{ctx.command}** is a disabled command in this guild.')
-
-        elif isinstance(error, commands.ChannelNotFound):
-            await ctx.send('Please specify a channel or the channel could not be found.')
-
-        elif isinstance(error, commands.NoPrivateMessage):
-            await ctx.author.send('This command cannot be used in DMs')
-
-        elif isinstance(error, commands.EmojiNotFound):
-            await ctx.send('Please provide an emoji or the emoji could not be found.')
-            
-        elif isinstance(error, commands.MissingRequiredArgument):
-            em = discord.Embed(
-                title = f'{ctx.command.name} {ctx.command.signature}',
-                description = ctx.command.help,
-                color = discord.Color.og_blurple()
-            )
-            await ctx.send(embed=em)
-
-        else:
-            await ctx.send("Something went wrong. My developer has been notified!")
-
-            error = "\n".join(traceback.format_exception(error, error, error.__traceback__))
-            channel = self.bot.get_channel(968060469325733888)
-            e = discord.Embed(
-                title = "Error",
-                description = f"```py\n{error}```",
-                color = self.bot.failed
-            )
-
-            e.set_footer(text=f"From {ctx.guild} [{ctx.guild.id}]")
-            await channel.send(embed=e)
             
 
 async def setup(bot):
