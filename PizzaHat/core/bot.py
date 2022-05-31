@@ -29,7 +29,7 @@ INITIAL_EXTENSIONS = [
 SUB_EXTENSIONS = [
     "utils.automod",
     "utils.dev",
-    #"utils.events",
+    "utils.events",
     "utils.help",
 ]
 
@@ -46,7 +46,7 @@ class PizzaHat(commands.Bot):
     def __init__(self):
         allowed_mentions = discord.AllowedMentions(roles=False, everyone=False, users=True)
         intents = discord.Intents(
-            #guilds=True,
+            guilds=True,
             members=True,
             bans=True,
             emojis=True,
