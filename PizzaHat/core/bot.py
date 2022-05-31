@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.ext.commands import Context, CommandError
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
 from discord_together import DiscordTogether
 import datetime
@@ -7,6 +8,7 @@ import aiohttp
 import asyncpg
 import wavelink
 import traceback
+import sys
 import ssl
 import os
 
@@ -28,7 +30,7 @@ INITIAL_EXTENSIONS = [
 SUB_EXTENSIONS = [
     "utils.automod",
     "utils.dev",
-    "utils.events",
+    #"utils.events",
     "utils.help",
 ]
 
@@ -157,3 +159,39 @@ class PizzaHat(commands.Bot):
         
         except ConnectionRefusedError:
             print("DB not connected.")
+
+        
+    async def on_command_error(self, ctx: Context, error: CommandError) -> None:
+        if isinstance(error, commands.CommandNotFound):
+            pass
+
+        elif isinstance(error, commands.NotOwner):
+            pass
+
+        if isinstance(error, commands.NoPrivateMessage):
+            await ctx.author.send('This command cannot be used in private messages.')
+
+        elif isinstance(error, commands.DisabledCommand):
+            await ctx.author.send('Sorry. This command is disabled and cannot be used.')
+        
+        elif isinstance(error, commands.MissingPermissions):
+            await ctx.send(f'You are missing some required permissions: "{error.missing_perms}"')
+
+        elif isinstance(error, commands.CommandInvokeError):
+            original = error.original
+            if not isinstance(original, discord.HTTPException):
+                print(f'In {ctx.command.qualified_name}:', file=sys.stderr)
+                traceback.print_tb(original.__traceback__)
+                print(f'{original.__class__.__name__}: {original}', file=sys.stderr)
+
+        elif isinstance(error, commands.ArgumentParsingError):
+            await ctx.send(str(error))
+
+        elif isinstance(error, commands.MissingRequiredArgument):
+            em = discord.Embed(
+                title = f"{ctx.command.name} {ctx.command.signature}",
+                description = ctx.command.help,
+                color = discord.Color.og_blurple()
+            )
+
+            await ctx.send(embed=em)
