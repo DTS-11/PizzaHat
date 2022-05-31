@@ -98,14 +98,11 @@ class HelpView(discord.ui.View):
         self.add_item(HelpDropdown(mapping, ctx))
 
     async def on_timeout(self) -> None:
-        for child in self.children:
-            child.disabled = True
-
         if self.message:
-            await self.message.edit(view=self)
+            for child in self.children:
+                child.disabled = True
 
-        else:
-            pass
+            await self.message.edit(view=self)
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user == self.ctx.author:
@@ -121,6 +118,7 @@ class HelpView(discord.ui.View):
     @discord.ui.button(label="Delete Menu", emoji="🛑", style=discord.ButtonStyle.danger)
     async def delete_menu(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.message.delete()
+        self.stop()
 
 
 class MyHelp(commands.HelpCommand):
