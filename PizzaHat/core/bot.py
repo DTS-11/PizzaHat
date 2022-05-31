@@ -1,18 +1,17 @@
-import discord
-from discord.ext import commands
-from discord.ext.commands import Context, CommandError
-from discord.ext.commands.errors import ExtensionAlreadyLoaded
-from discord_together import DiscordTogether
 import datetime
+import os
+import ssl
+import sys
+import traceback
+
 import aiohttp
 import asyncpg
+import discord
 import wavelink
-import traceback
-import sys
-import ssl
-import os
-
-
+from discord.ext import commands
+from discord.ext.commands import CommandError, Context
+from discord.ext.commands.errors import ExtensionAlreadyLoaded
+from discord_together import DiscordTogether
 
 INITIAL_EXTENSIONS = [
     "cogs.activities",

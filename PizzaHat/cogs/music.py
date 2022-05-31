@@ -1,10 +1,10 @@
-import discord
-import wavelink
 import os
 from datetime import timedelta
-from discord.ext import commands
 
+import discord
+import wavelink
 from core.cog import Cog
+from discord.ext import commands
 
 
 class Music(Cog, emoji=929100003178348634):

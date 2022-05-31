@@ -1,8 +1,9 @@
-import discord
-from discord.ext import commands
 import shlex
 
+import discord
 from core.cog import Cog
+from discord.ext import commands
+
 
 def to_keycap(c):
     return '\N{KEYCAP TEN}' if c == 10 else str(c) + '\u20e3'

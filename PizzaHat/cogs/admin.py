@@ -1,7 +1,6 @@
 import discord
-from discord.ext import commands
-
 from core.cog import Cog
+from discord.ext import commands
 
 
 class Admin(Cog, emoji="👷‍♂️"):

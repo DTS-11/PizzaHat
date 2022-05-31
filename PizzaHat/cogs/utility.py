@@ -1,10 +1,10 @@
+import datetime
+import time
+
 import discord
+from core.cog import Cog
 from discord.ext import commands
 from discord.ui import Button, View
-import time
-import datetime
-
-from core.cog import Cog
 
 start_time = time.time()
 

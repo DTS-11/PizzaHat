@@ -1,5 +1,5 @@
-from discord.ext.commands import CogMeta as DiscordCogMeta
 from discord.ext.commands import Cog as DiscordCog
+from discord.ext.commands import CogMeta as DiscordCogMeta
 
 
 class CogMeta(DiscordCogMeta):

@@ -1,7 +1,5 @@
 import discord
-
 from core.cog import Cog
-
 
 LOG_CHANNEL = 980151632199299092
 

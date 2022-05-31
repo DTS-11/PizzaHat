@@ -1,14 +1,15 @@
-import discord
-from discord.ext import commands
 import asyncio
 import random
-import time
-from TagScriptEngine import Interpreter, block
-from typing import Union
-import unicodedata
 import re
+import time
+import unicodedata
+from typing import Union
 
+import discord
 from core.cog import Cog
+from discord.ext import commands
+from TagScriptEngine import Interpreter, block
+
 
 def clean_string(string):
     string = re.sub('@', '@\u200b', string)

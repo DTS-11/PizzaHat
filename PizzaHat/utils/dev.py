@@ -1,14 +1,15 @@
-import discord
-from discord.ext import commands
+import inspect
 import io
 import os
 import sys
-import inspect
 import textwrap
 import traceback
 from contextlib import redirect_stdout
 
+import discord
 from core.cog import Cog
+from discord.ext import commands
+
 
 def restart_bot():
     os.execv(sys.executable, ['python'] + sys.argv)

@@ -1,7 +1,7 @@
 import discord
+from core.cog import Cog
 from discord.ext import commands
 
-from core.cog import Cog
 
 class AutoMod(Cog):
     def __init__(self, bot):

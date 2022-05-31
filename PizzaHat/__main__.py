@@ -1,7 +1,8 @@
-import topgg
 import os
-from dotenv import load_dotenv
+
+import topgg
 from discord.ext import tasks
+from dotenv import load_dotenv
 
 from core.bot import PizzaHat
 
