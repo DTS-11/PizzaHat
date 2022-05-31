@@ -43,15 +43,28 @@ I'm also open source. You can see my code on [GitHub](https://github.com/DTS-11/
 
 class PizzaHat(commands.Bot):
     def __init__(self):
+        allowed_mentions = discord.AllowedMentions(roles=False, everyone=False, users=True)
+        intents = discord.Intents(
+            #guilds=True,
+            members=True,
+            bans=True,
+            emojis=True,
+            voice_states=True,
+            messages=True,
+            reactions=True,
+            message_content=True,
+        )
         super().__init__(
             command_prefix = commands.when_mentioned_or("p!", "P!"),
-            description=description,
-            intents = discord.Intents.all(),
+            description = description,
+            intents = intents,
+            allowed_mentions = allowed_mentions,
             case_insensitive = True,
             strip_after_prefix = True,
             status = discord.Status.online,
             activity = discord.Activity(
-                type=discord.ActivityType.watching, name="p!help | pizzahat.ml"
+                type = discord.ActivityType.watching,
+                name = "p!help | pizzahat.ml"
             ),
         )
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
