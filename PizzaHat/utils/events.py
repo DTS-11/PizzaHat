@@ -268,10 +268,7 @@ class Events(Cog):
                 color = self.bot.failed
             )
 
-            if ctx.guild.icon.url:
-                e.set_footer(text=f"From {ctx.guild} [{ctx.guild.id}]", icon_url=ctx.guild.icon.url)
-            else:
-                e.set_footer(text=f"From {ctx.guild} [{ctx.guild.id}]")
+            e.set_footer(text=f"From {ctx.guild} [{ctx.guild.id}]")
             await channel.send(embed=e)
             
 
