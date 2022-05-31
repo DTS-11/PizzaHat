@@ -7,7 +7,7 @@ from core.cog import Cog
 def bot_help_embed(ctx: commands.Context):
 
     em = discord.Embed(
-        title=f"{ctx.me.name} Help",
+        title=f"{ctx.bot.user.name} Help",
         timestamp=ctx.message.created_at,
         color=discord.Color.blue()
     )
@@ -32,7 +32,7 @@ Use the dropdown menu to select a category.\n
         inline=False
     )
 
-    em.set_thumbnail(url=ctx.me.avatar.url)
+    em.set_thumbnail(url=ctx.bot.user.avatar.url)
     em.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
 
     return em
@@ -102,7 +102,11 @@ class HelpView(discord.ui.View):
         for child in self.children:
             child.disabled = True
 
-        await self.message.edit(view=self)
+        if self.message:
+            await self.message.edit(view=self)
+
+        else:
+            pass
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user == self.ctx.author:
