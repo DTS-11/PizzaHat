@@ -49,7 +49,8 @@ def cog_help_embed(cog):
     )
 
     for x in sorted(cog.get_commands(), key=lambda c: c.name):
-        em.add_field(name=f"{x.name} {x.signature}", value=x.short_doc, inline=False)
+        cmd_help = x.short_doc if x.short_doc else x.help
+        em.add_field(name=f"{x.name} {x.signature}", value=cmd_help, inline=False)
 
     em.set_footer(text='Use help [command] for more info')
     return em
@@ -174,9 +175,10 @@ class MyHelp(commands.HelpCommand):
         )
 
         for command in commands:
+            cmd_help = command.short_doc if command.short_doc else command.help
             embed.add_field(
                 name=self.get_command_signature(command),
-                value=command.short_doc or "No help found...",
+                value=cmd_help or "No help found...",
                 inline=False)
 
         await self.send(embed=embed)
