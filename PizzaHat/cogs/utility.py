@@ -313,14 +313,12 @@ class Utility(Cog, emoji="🛠️"):
         em = discord.Embed(color=self.bot.color)
         em.set_author(name=dev, icon_url=dev.avatar.url)
 
-        em.add_field(
-            name="About",
-            value=self.bot.description
-        )
+        em.title = "About"
+        em.description = self.bot.description
 
         em.add_field(
             name="Servers",
-            value={guilds}
+            value=guilds
         )
         em.add_field(
             name="Users",
