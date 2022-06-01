@@ -19,6 +19,7 @@ class Utility(Cog, emoji="🛠️"):
     """Utility commands which makes your discord experience smooth!"""
     def __init__(self, bot):
         self.bot = bot
+        self.process = psutil.Process()
 
     @commands.command(aliases=['latency'])
     @commands.cooldown(1, 3, commands.BucketType.user)
