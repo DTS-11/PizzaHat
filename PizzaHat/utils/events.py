@@ -1,3 +1,4 @@
+from types import NoneType
 import discord
 from core.cog import Cog
 
@@ -20,9 +21,6 @@ class Events(Cog):
         data = await self.bot.db.fetchval("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)
         if data:
             return self.bot.get_channel(data)
-        
-        else:
-            pass
 
 # ====== MESSAGE LOGS ======
 
@@ -48,6 +46,7 @@ class Events(Cog):
 
         if before.content == after.content:
             return
+
         else:
             try:
                 em = discord.Embed(
@@ -62,8 +61,9 @@ class Events(Cog):
 
                 channel = await self.get_logs_channel(before.guild.id)
                 await channel.send(embed=em)
-            except Exception as e:
-                print(e)
+                
+            except NoneType:
+                pass
 
     @Cog.listener()
     async def on_message_delete(self, msg):
@@ -82,8 +82,9 @@ class Events(Cog):
 
             channel = await self.get_logs_channel(msg.guild.id)
             await channel.send(embed=em)
-        except Exception as e:
-            print(e)
+
+        except NoneType:
+            pass
 
 # ====== MEMBER LOGS ======
     
@@ -99,8 +100,9 @@ class Events(Cog):
 
             channel = await self.get_logs_channel(guild.id)
             await channel.send(embed=em)
-        except Exception as e:
-            print(e)
+
+        except NoneType:
+            pass
 
     @Cog.listener()
     async def on_member_unban(self, guild, user):
@@ -114,8 +116,9 @@ class Events(Cog):
 
             channel = await self.get_logs_channel(guild.id)
             await channel.send(embed=em)
-        except Exception as e:
-            print(e)
+
+        except NoneType:
+            pass
 
 # ====== GUILD LOGS ======
 
@@ -133,8 +136,9 @@ class Events(Cog):
 
             channel = await self.get_logs_channel(role.guild.id)
             await channel.send(embed=em)
-        except Exception as e:
-            print(e)
+
+        except NoneType:
+            pass
 
     @Cog.listener()
     async def on_guild_role_delete(self, role):
@@ -150,8 +154,9 @@ class Events(Cog):
 
             channel = await self.get_logs_channel(role.guild.id)
             await channel.send(embed=em)
-        except Exception as e:
-            print(e)
+
+        except NoneType:
+            pass
 
     @Cog.listener()
     async def on_guild_role_update(self, before, after):
@@ -173,8 +178,9 @@ class Events(Cog):
 
             channel = await self.get_logs_channel(before.guild.id)
             await channel.send(embed=em)
-        except Exception as e:
-            print(e)
+
+        except NoneType:
+            pass
     
     @Cog.listener()
     async def on_guild_join(self, guild):
@@ -202,6 +208,10 @@ class Events(Cog):
     async def on_guild_remove(self, guild):
         try:
             await self.bot.db.execute("DELETE FROM modlogs WHERE guild_id=$1", guild.id)
+        
+        except NoneType:
+            pass
+        
         except Exception as e:
             print(e)
 
