@@ -17,8 +17,8 @@ PizzaHat is a multi-purpose bot, made to satisfy your needs, as well as your ser
 	
 ## <img src="https://cdn.discordapp.com/emojis/800797566471897088.png?size=80" height="30px"> • Features
 
-- 📌 Over 80+ commands! </li>
-- 🔼 90%+ uptime. </li>
+- 📌 Over 90+ commands! </li>
+- 🔼 95%+ uptime. </li>
 - 🏓 Low latency. </li>
 - <img src="https://cdn.discordapp.com/emojis/847248846526087239.png?size=80" height="19px"> Powerful moderation. </li>
 - 🚀 Activities. </li>
