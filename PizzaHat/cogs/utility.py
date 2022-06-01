@@ -310,15 +310,17 @@ class Utility(Cog, emoji="🛠️"):
         dpy_version = discord.__version__
         dev = self.bot.get_user(710247495334232164)
 
-        em = discord.Embed(
-            title="Bot stats",
-            color=self.bot.color
-        )
+        em = discord.Embed(color=self.bot.color)
         em.set_author(name=dev, icon_url=dev.avatar.url)
 
         em.add_field(
+            name="About",
+            value=self.bot.description
+        )
+
+        em.add_field(
             name="Servers",
-            value=f"{guilds}"
+            value={guilds}
         )
         em.add_field(
             name="Users",
@@ -334,11 +336,11 @@ class Utility(Cog, emoji="🛠️"):
         )
         em.add_field(
             name="Discord.py version",
-            value=f"{dpy_version}"
+            value=dpy_version
         )
         em.add_field(
             name="Uptime",
-            value=f"{self.get_bot_uptime(brief=True)}"
+            value=self.get_bot_uptime(brief=True)
         )
 
         em.set_thumbnail(url=self.bot.user.avatar.url)
