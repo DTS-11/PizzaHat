@@ -1,4 +1,3 @@
-from types import NoneType
 import discord
 from core.cog import Cog
 
@@ -51,23 +50,18 @@ class Events(Cog):
         if before.content == after.content:
             return
 
-        else:
-            try:
-                em = discord.Embed(
-                    title=f"Message edited in #{before.channel}",
-                    color=self.bot.success,
-                    timestamp=before.created_at
-                )
-                em.add_field(name="- Before", value=before.content, inline=False)
-                em.add_field(name="+ After", value=after.content, inline=False)
-                em.set_author(name=before.author, icon_url=before.author.avatar.url)
-                em.set_footer(text=f"User ID: {before.author.id}")
+        em = discord.Embed(
+            title=f"Message edited in #{before.channel}",
+            color=self.bot.success,
+            timestamp=before.created_at
+        )
+        em.add_field(name="- Before", value=before.content, inline=False)
+        em.add_field(name="+ After", value=after.content, inline=False)
+        em.set_author(name=before.author, icon_url=before.author.avatar.url)
+        em.set_footer(text=f"User ID: {before.author.id}")
 
-                channel = await self.get_logs_channel(before.guild.id)
-                await channel.send(embed=em)
-                
-            except NoneType:
-                pass
+        channel = await self.get_logs_channel(before.guild.id)
+        await channel.send(embed=em)
 
     @Cog.listener()
     async def on_message_delete(self, msg):
