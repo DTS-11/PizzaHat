@@ -36,7 +36,7 @@ SUB_EXTENSIONS = [
 
 description = """
 I'm PizzaHat, a bot made by DTS#5976 to provide some epic server utilities.
-I have features such as moderation, utiltity, music and more! You can get more information on my commands by using the dropdown below.
+I have features such as moderation, utiltity, music and more!
 
 I'm also open source. You can see my code on [GitHub](https://github.com/DTS-11/PizzaHat)
 """
