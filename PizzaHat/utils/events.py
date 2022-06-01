@@ -19,8 +19,12 @@ class Events(Cog):
 
     async def get_logs_channel(self, guild_id):
         data = await self.bot.db.fetchval("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)
-        if data:
-            return self.bot.get_channel(data)
+        try:
+            if data:
+                return self.bot.get_channel(data)
+        
+        except AttributeError:
+            pass
 
 # ====== MESSAGE LOGS ======
 
@@ -69,7 +73,6 @@ class Events(Cog):
     async def on_message_delete(self, msg):
         if msg.author.bot:
             return
-
 
         em = discord.Embed(
             title=f"Message deleted in #{msg.channel}",
