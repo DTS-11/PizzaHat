@@ -70,117 +70,95 @@ class Events(Cog):
         if msg.author.bot:
             return
 
-        try:
-            em = discord.Embed(
-                title=f"Message deleted in #{msg.channel}",
-                description=msg.content,
-                color=self.bot.failed,
-                timestamp=msg.created_at
-            )
-            em.set_author(name=msg.author, icon_url=msg.author.avatar.url)
-            em.set_footer(text=f"User ID: {msg.author.id}")
 
-            channel = await self.get_logs_channel(msg.guild.id)
-            await channel.send(embed=em)
+        em = discord.Embed(
+            title=f"Message deleted in #{msg.channel}",
+            description=msg.content,
+            color=self.bot.failed,
+            timestamp=msg.created_at
+        )
+        em.set_author(name=msg.author, icon_url=msg.author.avatar.url)
+        em.set_footer(text=f"User ID: {msg.author.id}")
 
-        except NoneType:
-            pass
+        channel = await self.get_logs_channel(msg.guild.id)
+        await channel.send(embed=em)
 
 # ====== MEMBER LOGS ======
     
     @Cog.listener()
     async def on_member_ban(self, guild, user):
-        try:
-            em = discord.Embed(
-                title="Member banned",
-                color=self.bot.failed,
-            )
-            em.set_author(name=user, icon_url=user.avatar.url)
-            em.set_footer(text=f"User ID: {user.id}")
+        em = discord.Embed(
+            title="Member banned",
+            color=self.bot.failed,
+        )
+        em.set_author(name=user, icon_url=user.avatar.url)
+        em.set_footer(text=f"User ID: {user.id}")
 
-            channel = await self.get_logs_channel(guild.id)
-            await channel.send(embed=em)
-
-        except NoneType:
-            pass
+        channel = await self.get_logs_channel(guild.id)
+        await channel.send(embed=em)
 
     @Cog.listener()
     async def on_member_unban(self, guild, user):
-        try:
-            em = discord.Embed(
-                title="Member unbanned",
-                color=self.bot.success,
-            )
-            em.set_author(name=user, icon_url=user.avatar.url)
-            em.set_footer(text=f"User ID: {user.id}")
+        em = discord.Embed(
+            title="Member unbanned",
+            color=self.bot.success,
+        )
+        em.set_author(name=user, icon_url=user.avatar.url)
+        em.set_footer(text=f"User ID: {user.id}")
 
-            channel = await self.get_logs_channel(guild.id)
-            await channel.send(embed=em)
-
-        except NoneType:
-            pass
+        channel = await self.get_logs_channel(guild.id)
+        await channel.send(embed=em)
 
 # ====== GUILD LOGS ======
 
     @Cog.listener()
     async def on_guild_role_create(self, role):
-        try:
-            em = discord.Embed(
-                title="New role created",
-                color=self.bot.success,
-                timestamp=role.created_at
-            )
-            em.add_field(name="Name", value=role.name, inline=False)
-            em.add_field(name="Color", value=role.color, inline=False)
-            em.set_footer(text=f"Role ID: {role.id}")
+        em = discord.Embed(
+            title="New role created",
+            color=self.bot.success,
+            timestamp=role.created_at
+        )
+        em.add_field(name="Name", value=role.name, inline=False)
+        em.add_field(name="Color", value=role.color, inline=False)
+        em.set_footer(text=f"Role ID: {role.id}")
 
-            channel = await self.get_logs_channel(role.guild.id)
-            await channel.send(embed=em)
-
-        except NoneType:
-            pass
+        channel = await self.get_logs_channel(role.guild.id)
+        await channel.send(embed=em)
 
     @Cog.listener()
     async def on_guild_role_delete(self, role):
-        try:
-            em = discord.Embed(
-                title="Role deleted",
-                color=self.bot.failed,
-                timestamp=role.created_at
-            )
-            em.add_field(name="Name", value=role.name, inline=False)
-            em.add_field(name="Color", value=role.color, inline=False)
-            em.set_footer(text=f"Role ID: {role.id}")
+        em = discord.Embed(
+            title="Role deleted",
+            color=self.bot.failed,
+            timestamp=role.created_at
+        )
+        em.add_field(name="Name", value=role.name, inline=False)
+        em.add_field(name="Color", value=role.color, inline=False)
+        em.set_footer(text=f"Role ID: {role.id}")
 
-            channel = await self.get_logs_channel(role.guild.id)
-            await channel.send(embed=em)
-
-        except NoneType:
-            pass
+        channel = await self.get_logs_channel(role.guild.id)
+        await channel.send(embed=em)
 
     @Cog.listener()
     async def on_guild_role_update(self, before, after):
         if before == after:
             return
-        try:
-            em = discord.Embed(
-                title="Role updated",
-                color=self.bot.color,
-                timestamp=after.created_at
-            )
-            em.add_field(name="- Before", value="\u200b", inline=False)
-            em.add_field(name="Name", value=before.name, inline=False)
-            em.add_field(name="Color", value=before.color, inline=False)
-            em.add_field(name="+ After", value="\u200b", inline=False)
-            em.add_field(name="Name", value=after.name, inline=False)
-            em.add_field(name="Color", value=after.color, inline=False)
-            em.set_footer(text=f"Role ID: {before.id}")
 
-            channel = await self.get_logs_channel(before.guild.id)
-            await channel.send(embed=em)
+        em = discord.Embed(
+            title="Role updated",
+            color=self.bot.color,
+            timestamp=after.created_at
+        )
+        em.add_field(name="- Before", value="\u200b", inline=False)
+        em.add_field(name="Name", value=before.name, inline=False)
+        em.add_field(name="Color", value=before.color, inline=False)
+        em.add_field(name="+ After", value="\u200b", inline=False)
+        em.add_field(name="Name", value=after.name, inline=False)
+        em.add_field(name="Color", value=after.color, inline=False)
+        em.set_footer(text=f"Role ID: {before.id}")
 
-        except NoneType:
-            pass
+        channel = await self.get_logs_channel(before.guild.id)
+        await channel.send(embed=em)
     
     @Cog.listener()
     async def on_guild_join(self, guild):
@@ -206,14 +184,7 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_guild_remove(self, guild):
-        try:
-            await self.bot.db.execute("DELETE FROM modlogs WHERE guild_id=$1", guild.id)
-        
-        except NoneType:
-            pass
-        
-        except Exception as e:
-            print(e)
+        await self.bot.db.execute("DELETE FROM modlogs WHERE guild_id=$1", guild.id)
 
         channel = self.bot.get_channel(LOG_CHANNEL)
         await channel.send(f"Left {guild.name}")
