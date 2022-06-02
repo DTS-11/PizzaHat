@@ -1,6 +1,7 @@
+from typing import Optional, Union
+
 from discord import ButtonStyle, Emoji, PartialEmoji
 from discord.ui import Button
-from typing import Optional, Union
 
 
 class ButtonCreation(Button):
