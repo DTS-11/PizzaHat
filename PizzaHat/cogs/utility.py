@@ -4,10 +4,12 @@ import time
 import discord
 import psutil
 from core.cog import Cog
+from core.buttons import ButtonCreation
 from discord.ext import commands
 from discord.ui import Button, View
 
 start_time = time.time()
+view = View()
 
 def format_date(dt:datetime.datetime):
     if dt is None:
@@ -317,10 +319,6 @@ class Utility(Cog, emoji="🛠️"):
         em.description = self.bot.description
 
         em.add_field(
-            name="Servers",
-            value=guilds
-        )
-        em.add_field(
             name="Users",
             value=f"{total_members} total\n{total_unique} unique"
         )
@@ -333,6 +331,10 @@ class Utility(Cog, emoji="🛠️"):
             value=f"{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU"
         )
         em.add_field(
+            name="Guilds",
+            value=guilds
+        )
+        em.add_field(
             name="Discord.py version",
             value=dpy_version
         )
@@ -342,7 +344,7 @@ class Utility(Cog, emoji="🛠️"):
         )
 
         em.set_thumbnail(url=self.bot.user.avatar.url)
-        em.set_footer(text="Made with ♥ with discord.py", icon_url="http://i.imgur.com/5BFecvA.png")
+        em.set_footer(text="Made with 💖 with discord.py", icon_url="http://i.imgur.com/5BFecvA.png")
 
         await ctx.send(embed=em)
 
@@ -351,26 +353,31 @@ class Utility(Cog, emoji="🛠️"):
     async def invite_cmd(self, ctx):
         """Gives invite of bot."""
 
-        b1 = Button(label="Invite", emoji="✉️", url="https://dsc.gg/pizza-invite")
-        b2 = Button(label="Support", emoji="📨", url="https://discord.gg/WhNVDTF")
-        b3 = Button(label="Vote", emoji="🗳", url="https://top.gg/bot/860889936914677770/vote")
-        view = View()
-        view.add_item(item=b1)
-        view.add_item(item=b2)
-        view.add_item(item=b3)
+        b1 = ButtonCreation(
+            label="Invite",
+            emoji="✉️",
+            url="https://dsc.gg/pizza-invite"
+        )
+        b2 = ButtonCreation(
+            label="Support",
+            emoji="📨",
+            url="https://discord.gg/WhNVDTF"
+        )
+
+        view.add_item(b1).add_item(b2)
 
         em=discord.Embed(
-            title=':link: Links',
+            title='🔗 Links',
             description=(
                 'Click on the links below if you cant see the buttons for some reason.\n'
                 '[Invite me](https://dsc.gg/pizza-invite) | '
-                '[Support](https://discord.gg/WhNVDTF) | '
-                '[Vote](https://top.gg/bot/860889936914677770/vote)'
+                '[Support](https://discord.gg/WhNVDTF)'
             ),
             color=self.bot.color
         )
         em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar.url)
         em.set_footer(text='Thank you for inviting me! <3')
+
         await ctx.send(embed=em, view=view)
 
     @commands.command()
@@ -460,11 +467,16 @@ class Utility(Cog, emoji="🛠️"):
         em.set_thumbnail(url=self.bot.user.avatar.url)
         em.set_footer(text='Make sure to leave a nice review too!')
 
-        b1 = Button(label="Top.gg", url="https://top.gg/bot/860889936914677770/vote")
-        b2 = Button(label="DBL", url="https://discordbotlist.com/bots/zion/upvote/")
-        view = View()
-        view.add_item(item=b1)
-        view.add_item(item=b2)
+        b1 = ButtonCreation(
+            label="Top.gg",
+            url="https://top.gg/bot/860889936914677770/vote"
+        )
+        b2 = ButtonCreation(
+            label="DList.gg",
+            url="https://discordlist.gg/bot/860889936914677770/vote"
+        )
+
+        view.add_item(b1).add_item(b2)
 
         await ctx.send(embed=em, view=view)
         
