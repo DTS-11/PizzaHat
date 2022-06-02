@@ -17,9 +17,8 @@ INITIAL_EXTENSIONS = [
     "cogs.activities",
     "cogs.admin",
     "cogs.emoji",
-    "cogs.fun",
-    "cogs.games",
     "cogs.image",
+    "cogs.meta",
     "cogs.mod",
     "cogs.music",
     "cogs.poll",
@@ -28,7 +27,6 @@ INITIAL_EXTENSIONS = [
 
 SUB_EXTENSIONS = [
     "utils.automod",
-    "utils.dev",
     "utils.events",
     "utils.help",
 ]
