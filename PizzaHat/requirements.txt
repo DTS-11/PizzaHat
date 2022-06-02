@@ -17,3 +17,4 @@ jishaku
 psutil
 topggpy
 wavelink
+emojis
