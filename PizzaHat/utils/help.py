@@ -62,7 +62,7 @@ class HelpDropdown(discord.ui.Select):
         self.ctx = ctx
 
         options = []
-        cog_exceptions = ["AutoMod", "Dev", "Events", "Help", "Jishaku"]
+        cog_exceptions = ["AutoMod", "Events", "Help", "Jishaku"]
 
         for cog, _ in mapping.items():
             if cog and cog.qualified_name not in cog_exceptions:
