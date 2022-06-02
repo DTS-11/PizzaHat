@@ -1,29 +1,48 @@
+import os
+
 import discord
+import topgg
 from core.cog import Cog
+from discord.ext import tasks
+from dotenv import load_dotenv
 
 LOG_CHANNEL = 980151632199299092
+
+load_dotenv()
 
 class Events(Cog):
     """Events cog"""
     def __init__(self, bot):
         self.bot = bot
+        bot.loop.create_task(self.update_stats())
+
+    @tasks.loop(minutes=30)
+    async def update_stats(self):
+        try:
+            await self.bot.wait_until_ready()
+            self.topggpy = topgg.DBLClient(self, os.getenv("DBL_TOKEN"), autopost=True)
+            await self.topggpy.post_guild_count()
+            print(f"Posted server count: {self.topggpy.guild_count}")
+
+        except Exception as e:
+            print(f"Failed to post server count\n{e.__class__.__name__}: {e}")
 
     @Cog.listener()
     async def on_ready(self):
         await self.bot.db.execute("""CREATE TABLE IF NOT EXISTS warnlogs 
                     (guild_id BIGINT, user_id BIGINT, warns TEXT[], time NUMERIC[])""")
+
         await self.bot.db.execute("""CREATE TABLE IF NOT EXISTS modlogs 
                     (guild_id BIGINT PRIMARY KEY, channel_id BIGINT)""")
+
+        await self.db.execute("""CREATE TABLE IF NOT EXISTS automod 
+                    (guild_id BIGINT PRIMARY KEY, enabled BOOL)""")
 
 
     async def get_logs_channel(self, guild_id):
         data = await self.bot.db.fetchval("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)
-        try:
-            if data:
-                return self.bot.get_channel(data)
-        
-        except AttributeError:
-            pass
+        if data:
+            return self.bot.get_channel(data)
 
 # ====== MESSAGE LOGS ======
 
@@ -40,10 +59,16 @@ class Events(Cog):
             em.add_field(
                 name='<a:wave_animated:783393435242463324> Hello! <a:wave_animated:783393435242463324>',
                 value=f'Im {self.bot.user.name}, to get started, my prefix is `p!` or `P!` or <@860889936914677770>')
+            
             await msg.channel.send(embed=em)
 
     @Cog.listener()
     async def on_message_edit(self, before, after):
+        channel = await self.get_logs_channel(before.guild.id)
+
+        if not channel:
+            return
+
         if before.author.bot:
             return
 
@@ -60,11 +85,15 @@ class Events(Cog):
         em.set_author(name=before.author, icon_url=before.author.avatar.url)
         em.set_footer(text=f"User ID: {before.author.id}")
 
-        channel = await self.get_logs_channel(before.guild.id)
         await channel.send(embed=em)
 
     @Cog.listener()
     async def on_message_delete(self, msg):
+        channel = await self.get_logs_channel(msg.guild.id)
+
+        if not channel:
+            return
+
         if msg.author.bot:
             return
 
@@ -77,13 +106,17 @@ class Events(Cog):
         em.set_author(name=msg.author, icon_url=msg.author.avatar.url)
         em.set_footer(text=f"User ID: {msg.author.id}")
 
-        channel = await self.get_logs_channel(msg.guild.id)
         await channel.send(embed=em)
 
 # ====== MEMBER LOGS ======
     
     @Cog.listener()
     async def on_member_ban(self, guild, user):
+        channel = await self.get_logs_channel(guild.id)
+
+        if not channel:
+            return
+
         em = discord.Embed(
             title="Member banned",
             color=self.bot.failed,
@@ -91,11 +124,15 @@ class Events(Cog):
         em.set_author(name=user, icon_url=user.avatar.url)
         em.set_footer(text=f"User ID: {user.id}")
 
-        channel = await self.get_logs_channel(guild.id)
         await channel.send(embed=em)
 
     @Cog.listener()
     async def on_member_unban(self, guild, user):
+        channel = await self.get_logs_channel(guild.id)
+
+        if not channel:
+            return
+
         em = discord.Embed(
             title="Member unbanned",
             color=self.bot.success,
@@ -103,13 +140,17 @@ class Events(Cog):
         em.set_author(name=user, icon_url=user.avatar.url)
         em.set_footer(text=f"User ID: {user.id}")
 
-        channel = await self.get_logs_channel(guild.id)
         await channel.send(embed=em)
 
 # ====== GUILD LOGS ======
 
     @Cog.listener()
     async def on_guild_role_create(self, role):
+        channel = await self.get_logs_channel(role.guild.id)
+
+        if not channel:
+            return
+
         em = discord.Embed(
             title="New role created",
             color=self.bot.success,
@@ -119,11 +160,15 @@ class Events(Cog):
         em.add_field(name="Color", value=role.color, inline=False)
         em.set_footer(text=f"Role ID: {role.id}")
 
-        channel = await self.get_logs_channel(role.guild.id)
         await channel.send(embed=em)
 
     @Cog.listener()
     async def on_guild_role_delete(self, role):
+        channel = await self.get_logs_channel(role.guild.id)
+
+        if not channel:
+            return
+
         em = discord.Embed(
             title="Role deleted",
             color=self.bot.failed,
@@ -133,11 +178,15 @@ class Events(Cog):
         em.add_field(name="Color", value=role.color, inline=False)
         em.set_footer(text=f"Role ID: {role.id}")
 
-        channel = await self.get_logs_channel(role.guild.id)
         await channel.send(embed=em)
 
     @Cog.listener()
     async def on_guild_role_update(self, before, after):
+        channel = await self.get_logs_channel(before.guild.id)
+
+        if not channel:
+            return
+
         if before == after:
             return
 
@@ -154,7 +203,6 @@ class Events(Cog):
         em.add_field(name="Color", value=after.color, inline=False)
         em.set_footer(text=f"Role ID: {before.id}")
 
-        channel = await self.get_logs_channel(before.guild.id)
         await channel.send(embed=em)
     
     @Cog.listener()
