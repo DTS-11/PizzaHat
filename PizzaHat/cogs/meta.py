@@ -17,8 +17,8 @@ def clean_string(string):
     return string
 
 
-class Fun(Cog, emoji="🥳"):
-    """Fun commands which can be used to have some fun."""
+class Meta(Cog, emoji="😎"):
+    """Miscellaneous commands."""
     def __init__(self, bot):
         self.bot = bot
         blocks = [
@@ -34,6 +34,7 @@ class Fun(Cog, emoji="🥳"):
         """Shows you information about a number of characters.
         Only up to 15 characters at a time.
         """
+
         if len(characters) > 15:
             await ctx.send('Too many characters ({}/15)'.format(len(characters)))
             return
@@ -51,6 +52,7 @@ class Fun(Cog, emoji="🥳"):
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def _credits(self, ctx):
         """Shows all the people who have helped make this bot."""
+
         em = discord.Embed(
             title="Credits",
             color=self.bot.success,
@@ -70,9 +72,8 @@ class Fun(Cog, emoji="🥳"):
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def echo(self, ctx, destination: discord.TextChannel, *, msg: str):
-        """
-        Makes the bot say something in the specified channel
-        """
+        """Makes the bot say something in the specified channel"""
+
         if not destination.permissions_for(ctx.author).send_messages:
             return await ctx.message.add_reaction("⚠")
         msg = clean_string(msg)
@@ -84,13 +85,17 @@ class Fun(Cog, emoji="🥳"):
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def screenshot(self, ctx, *, url):
         """Takes a screenshot from a given URL."""
+
         await ctx.send(f"https://image.thum.io/get/https://{url}")
         
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def choose(self, ctx, *options):
-        """Choose between multiple things.
-        Max: 10 options."""
+        """
+        Choose between multiple things.
+        Max: 10 options.
+        """
+
         if len(options) <= 1:
             await ctx.send('Min no: of options: 2')
             return
@@ -105,16 +110,18 @@ class Fun(Cog, emoji="🥳"):
             )
             await ctx.send(embed=e)
 
-    @commands.command(aliases=["emojify"])
+    @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def enlarge(self, ctx, emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
-        """Enlarges a given emoji."""
+    async def emojify(self, ctx, emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
+        """Emojify a given emoji."""
+
         await ctx.send(emoji.url)
         
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def reverse(self, ctx, *, text):
         """Reverse some text."""
+
         e = discord.Embed(color=self.bot.color)
         e.add_field(name='Input', value=f'```\n{text}\n```', inline=False)
         e.add_field(name='Output', value=f'```\n{text[::-1]}\n```', inline=False)
@@ -124,26 +131,31 @@ class Fun(Cog, emoji="🥳"):
     @commands.command(aliases=["calc"])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def calculate(self, ctx, *, query):
-        """Do some math calculations. Can't do algebraic expressions."""
+        """Do some math calculations. Cannot do algebraic expressions."""
+
         query = query.replace(",", "")
         engine_input = "{m:" + query + "}"
+
         start = time.monotonic()
         output = self.engine.process(engine_input)
         end = time.monotonic()
 
         output_string = output.body.replace("{m:", "").replace("}", "")
+
         embed = discord.Embed(
             color=self.bot.color,
             title=f"Input: `{query}`",
             description=f"Output: `{output_string}`",
         )
         embed.set_footer(text=f"Calculated in {round((end - start) * 1000, 3)} ms")
+
         await ctx.send(embed=embed)
     
     @commands.command(aliases=['tc', 'taxcalc'])
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def taxcalculator(self, ctx, value:int):
         """Dank Memer tax-calculator."""
+
         # values
         calculation = round(value * 1.0869565217391304)
         amtLost = round(calculation - value)
@@ -161,44 +173,51 @@ class Fun(Cog, emoji="🥳"):
             color=self.bot.color
         )
         embed.add_field(name='Amount to calculate',value=f'```\n⏣ {to_calculate_with_commas}```\nAmount expected to pay```css\n+ ⏣ {number_with_commas}```\nAmount lost by tax (5%)```diff\n- ⏣ {number_with_commas_amt_lost}```\nUser gets```fix\n⏣ {user_gets_with_commas}```',inline=False)
+        
         await ctx.send(embed=embed)
 
     @commands.command(name='8ball')
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def _8ball(self, ctx, *, question):
         """Ask any question, and let the bot respond with the answers."""
-        responses = ['As I see it, yes.',
-                'Ask again later.',
-                'Better not tell you now.',
-                'Cannot predict now.',
-                'Concentrate and ask again.',
-                'Dont count on it.',
-                'It is certain.',
-                'It is decidedly so.',
-                'Most likely.',
-                'My reply is no.',
-                'My sources say no.',
-                'Outlook not so good.',
-                'Outlook good.',
-                'Reply hazy, try again.',
-                'Signs point to yes.',
-                'Very doubtful.',
-                'Without a doubt.',
-                'Yes.',
-                'Yes - definitely.',
-                'You may rely on it.']
+
+        responses = [
+            'As I see it, yes.',
+            'Ask again later.',
+            'Better not tell you now.',
+            'Cannot predict now.',
+            'Concentrate and ask again.',
+            'Dont count on it.',
+            'It is certain.',
+            'It is decidedly so.',
+            'Most likely.',
+            'My reply is no.',
+            'My sources say no.',
+            'Outlook not so good.',
+            'Outlook good.',
+            'Reply hazy, try again.',
+            'Signs point to yes.',
+            'Very doubtful.',
+            'Without a doubt.',
+            'Yes.',
+            'Yes - definitely.',
+            'You may rely on it.'
+        ]
+
         em = discord.Embed(
             title = 'Magic 8ball',
             description = f"Question: {question}\nAnswer: {random.choice(responses)}",
             color=self.bot.color
         )
+
         await ctx.send(embed=em)
     
     @commands.command()
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def hack(self, ctx, member: discord.Member):
         """Hack someone and get their details."""
-        used_words = ['Nerd','Sucker','Noob','Sup','Yo','Wassup','Nab','Nub','fool','stupid','b1tch','fvck','idiot']
+
+        used_words = ['Nerd','Sucker','Noob','Sup','Yo','Wassup','Nab','Nub','fool','stupid']
         mails = ['@gmail.com','@hotmail.com','@yahoo.com']
 
         if member is ctx.author:
@@ -228,4 +247,4 @@ class Fun(Cog, emoji="🥳"):
 
 
 async def setup(bot):
-    await bot.add_cog(Fun(bot))
+    await bot.add_cog(Meta(bot))
