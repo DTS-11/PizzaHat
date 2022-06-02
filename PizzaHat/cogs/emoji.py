@@ -49,6 +49,7 @@ class Emoji(Cog, emoji="😀"):
     @commands.has_permissions(manage_emojis=True)
     async def create(self, ctx, emoji: EmojiURL, name):
         """Creates an emoji for the server under the given name."""
+        
         emoji_count = sum(e.animated == emoji.animated for e in ctx.guild.emojis)
         if emoji_count >= ctx.guild.emoji_limit:
             return await ctx.send('There are no more emoji slots in this server.')

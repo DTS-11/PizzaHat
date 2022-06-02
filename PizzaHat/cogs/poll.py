@@ -20,11 +20,12 @@ class Polls(Cog, emoji="🗳"):
     @commands.has_permissions(manage_messages=True)
     async def poll(self, ctx, *, questions_and_choices: str):
         """
-        Separate questions and answers by either `|` or `,`.
+        Separate questions and answers by either `|` or `,`
         Supports up to 10 choices.
 
         To use this command, you must have Manage Messages permission.
         """
+        
         if "|" in questions_and_choices:
             delimiter = "|"
         elif "," in questions_and_choices:
@@ -51,15 +52,18 @@ class Polls(Cog, emoji="🗳"):
 
         try:
             await ctx.message.delete()
+
         except:
             pass
 
         fmt = '{0} asks: {1}\n\n{2}'
         answer = '\n'.join('%s: %s' % t for t in choices)
+
         e = discord.Embed(
             description=fmt.format(ctx.message.author, question.replace("@", "@\u200b"), answer.replace("@", "@\u200b")),
             color=discord.Color.green()
-            )
+        )
+
         poll = await ctx.send(embed=e)
         for emoji, _ in choices:
             await poll.add_reaction(emoji)
@@ -75,13 +79,18 @@ class Polls(Cog, emoji="🗳"):
 
         To use this command, you must have Manage Messages permission.
         """
+
         msg = await ctx.send("**{}** asks: {}".format(ctx.message.author, question.replace("@", "@\u200b")))
+        
         try:
             await ctx.message.delete()
+
         except:
             pass
+
         yes_thumb = "👍"
         no_thumb = "👎"
+
         await msg.add_reaction(yes_thumb)
         await msg.add_reaction(no_thumb)
 
@@ -91,20 +100,26 @@ class Polls(Cog, emoji="🗳"):
     @commands.has_permissions(manage_messages=True)
     async def strawpoll(self, ctx, *, question_and_choices: str = None):
         """
-        Separate questions and answers by `|` or `,`.
+        Separate questions and answers by `|` or `,`
         At least two answers required.
 
         To use this command, you must have Manage Messages permission.
         """
+
         if "|" in question_and_choices:
             delimiter = "|"
+
         else:
             delimiter = ","
+
         question_and_choices = question_and_choices.split(delimiter)
+
         if len(question_and_choices) == 1:
             return await ctx.send("Not enough choices supplied")
+
         elif len(question_and_choices) >= 31:
             return await ctx.send("Too many choices")
+
         question, *choices = question_and_choices
         choices = [x.lstrip() for x in choices]
         header = {"Content-Type": "application/json"}
@@ -113,9 +128,11 @@ class Polls(Cog, emoji="🗳"):
             "options": choices,
             "multi": False
         }
+
         async with self.bot.session.post("https://www.strawpoll.me/api/v2/polls", headers=header, json=payload) as r:
             data = await r.json()
         id = data["id"]
+
         await ctx.send(f"http://www.strawpoll.me/{id}")
         
 

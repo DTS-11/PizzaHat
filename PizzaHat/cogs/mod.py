@@ -86,6 +86,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Manage Nicknames permission.
         """
+
         try:
             await member.edit(nick=nick)
             await ctx.send(f'{self.bot.yes} Nickname for {member.name} was changed to {member.mention}')
@@ -105,6 +106,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Manage Nicknames permission.
         """
+
         characters = "!@#$%^&*()_+-=.,/?;:[]{}`~\"'\\|<>"
 
         try:
@@ -131,6 +133,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Manage Messages permission.
         """
+
         if seconds is None:
             seconds = ctx.channel.slowmode_delay
             await ctx.send(f'The slowmode in this channel is `{seconds}` seconds')
@@ -161,6 +164,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Manage Channels permission.
         """
+
         role = role or ctx.guild.default_role
         channel = channel or ctx.channel
 
@@ -188,6 +192,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Manage Channels permission.
         """
+
         role = ctx.guild.default_role or role
 
         for tc in ctx.guild.text_channels:
@@ -223,6 +228,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Manage Channels permission.
         """
+
         role = role or ctx.guild.default_role
         channel = channel or ctx.channel
 
@@ -250,6 +256,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Manage Channels permission.
         """
+
         role = ctx.guild.default_role or role
 
         for tc in ctx.guild.text_channels:
@@ -279,6 +286,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Manage Messages permission.
         """
+
         if amount > 100:
             return await ctx.send(f'{self.bot.no} I can only purge 100 messages at a time.')
 
@@ -300,11 +308,13 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Manage Messages permission.
         """
+
         def is_bot(m):
             return m.author == self.bot.user
 
         if amount > 100:
             return await ctx.send(f"{self.bot.no} I can only clear upto 100 messages at a time.")
+
         else:
             await ctx.channel.purge(limit=amount, check=is_bot)
             await ctx.send(f"{self.bot.yes} {amount} messages cleared", delete_after=2.5)
@@ -321,6 +331,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Kick Members permission.
         """
+
         if reason is None:
             reason = f"No reason provided.\nKicked by {ctx.author}"
 
@@ -341,6 +352,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Ban Members permission.
         """
+
         if reason is None:
             reason = f"No reason provided\nBanned by {ctx.author}"
 
@@ -366,6 +378,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Ban Members permission.
         """
+
         if reason is None:
             reason = f"No reason provided\nBanned by {ctx.author}"
 
@@ -392,6 +405,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Ban Members permission.
         """
+
         if reason is None:
             reason = f"No reason given.\nBanned by {ctx.author}"
 
@@ -411,6 +425,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Ban Members permission.
         """
+
         try:
             user = self.bot.get_user(id)
             await ctx.guild.unban(discord.Object(id=id), reason=f'Unbanned by {ctx.author}')
@@ -433,6 +448,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Moderate Members permission.
         """
+
         if reason is None:
             reason = f"Action done by {ctx.author}"
 
@@ -456,6 +472,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Moderate Members permission.
         """
+
         if reason is None:
             reason = f"Action done by {ctx.author}"
 
@@ -474,6 +491,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Manage Roles permission.
         """
+
         if role in user.roles:
             await user.remove_roles(role)
             await ctx.send(f'{self.bot.yes} Successfully removed `{role.name}` from {user}')
@@ -492,6 +510,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Manage Messages permission.
         """
+
         if reason is None:
             reason = f"No reason given.\nWarned done by {ctx.author}"
 
@@ -525,6 +544,7 @@ class Mod(Cog, emoji=847248846526087239):
         Displays the warnings of the user.
         If no user is given, the bot sends your warnings.
         """
+
         if member is None:
             member = ctx.author
 
@@ -565,6 +585,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         To use this command, you must have Manage Messages permission.
         """
+        
         try:
             data = await self.warn_log(ctx.guild.id, member.id)
             if data == []:

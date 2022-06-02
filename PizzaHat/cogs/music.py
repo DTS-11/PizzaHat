@@ -28,6 +28,7 @@ class Music(Cog, emoji=929100003178348634):
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def dc(self, ctx):
         """Leaves a VC."""
+
         await ctx.voice_client.disconnect()
         await ctx.message.add_reaction("👋")
 
@@ -35,6 +36,7 @@ class Music(Cog, emoji=929100003178348634):
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def play(self, ctx, *, song: wavelink.YouTubeTrack):
         """Plays a song."""
+
         if ctx.author.voice is None:
             return await ctx.send("You are not in a voice channel")
         vc: wavelink.Player = ctx.voice_client or await ctx.author.voice.channel.connect(cls=wavelink.Player)
@@ -62,6 +64,7 @@ class Music(Cog, emoji=929100003178348634):
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def skip(self, ctx):
         """Skip to the next song in the queue."""
+
         try:
             if ctx.author.voice is None:
                 return await ctx.send("You are not in a voice channel")
@@ -81,6 +84,7 @@ class Music(Cog, emoji=929100003178348634):
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def pause(self, ctx):
         """Pause a song which is currently playing."""
+
         if ctx.author.voice is None:
             return await ctx.send("You are not in a voice channel")
 
@@ -96,6 +100,7 @@ class Music(Cog, emoji=929100003178348634):
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def resume(self, ctx):
         """Resume a paused song."""
+
         if ctx.author.voice is None:
             return await ctx.send("You are not in a voice channel")
 
@@ -111,6 +116,7 @@ class Music(Cog, emoji=929100003178348634):
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def stop(self, ctx):
         """Stops the playing song and removes everything from the queue."""
+
         if ctx.author.voice is None:
             return await ctx.send("You are not in a voice channel")
 
@@ -127,6 +133,7 @@ class Music(Cog, emoji=929100003178348634):
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def loop(self, ctx):
         """Loop a song."""
+
         if ctx.author.voice is None:
             return await ctx.send("You are not in a voice channel")
 
@@ -152,6 +159,7 @@ class Music(Cog, emoji=929100003178348634):
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def queue(self, ctx):
         """Displays the songs which are in the queue."""
+
         if ctx.author.voice is None:
             return await ctx.send("You are not in a voice channel")
 
@@ -183,6 +191,7 @@ class Music(Cog, emoji=929100003178348634):
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def volume(self, ctx, volume: int):
         """Change the volume of the song"""
+
         if ctx.author.voice is None:
             return await ctx.send("You are not in a voice channel")
 
@@ -205,6 +214,7 @@ class Music(Cog, emoji=929100003178348634):
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def nowplaying(self, ctx):
         """Shows which song is playing."""
+        
         if ctx.author.voice is None:
             return await ctx.send("You are not in a voice channel")
 

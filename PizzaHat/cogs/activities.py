@@ -15,6 +15,7 @@ class Activities(Cog, emoji="🚀"):
         Starts a YouTube Together activity in your server.
         Must join a VC.
         """
+
         voice_state = ctx.author.voice
 
         if voice_state is None:
@@ -31,6 +32,7 @@ class Activities(Cog, emoji="🚀"):
         Starts a Poker Night activity in your server.
         Must join a VC.
         """
+
         voice_state = ctx.author.voice
 
         if voice_state is None:
@@ -47,6 +49,7 @@ class Activities(Cog, emoji="🚀"):
         Starts a Chess in the Park activity in your server.
         Must join a VC.
         """
+
         voice_state = ctx.author.voice
 
         if voice_state is None:
@@ -63,6 +66,7 @@ class Activities(Cog, emoji="🚀"):
         Starts a Checkers in the Park activity in your server.
         Must join a VC.
         """
+
         voice_state = ctx.author.voice
 
         if voice_state is None:
@@ -79,6 +83,7 @@ class Activities(Cog, emoji="🚀"):
         Starts a Spell Case activity in your server.
         Must join a VC.
         """
+
         voice_state = ctx.author.voice
 
         if voice_state is None:
@@ -95,6 +100,7 @@ class Activities(Cog, emoji="🚀"):
         Starts a Betrayal IO activity in your server.
         Must join a VC.
         """
+        
         voice_state = ctx.author.voice
 
         if voice_state is None:
