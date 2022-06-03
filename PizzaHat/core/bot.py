@@ -170,9 +170,22 @@ class PizzaHat(commands.Bot):
 
         elif isinstance(error, commands.DisabledCommand):
             await ctx.author.send('Sorry. This command is disabled and cannot be used.')
+
+        elif isinstance(error, commands.BotMissingPermissions):
+            if error.missing_permissions[0] == 'send_messages':
+                return
+            await ctx.send("I am missing **{}** permissions.".format(' '.join(error.missing_permissions[0].split('_')).title()))
         
         elif isinstance(error, commands.MissingPermissions):
-            await ctx.send(f'You are missing some required permissions: "{error.missing_perms}"')
+            await ctx.send("You need **{}** perms to run this command.".format(' '.join(error.missing_permissions[0].split('_')).title()))
+
+        elif isinstance(error, commands.MaxConcurrencyReached):
+            await ctx.send(
+                "An instance of this command is already running...\n"
+                f"You can only run `{error.number}` instances at the same time.")
+
+        elif isinstance(error, commands.ArgumentParsingError):
+            await ctx.send(str(error))
 
         elif isinstance(error, commands.CommandInvokeError):
             original = error.original
@@ -180,9 +193,6 @@ class PizzaHat(commands.Bot):
                 print(f'In {ctx.command.qualified_name}:', file=sys.stderr)
                 traceback.print_tb(original.__traceback__)
                 print(f'{original.__class__.__name__}: {original}', file=sys.stderr)
-
-        elif isinstance(error, commands.ArgumentParsingError):
-            await ctx.send(str(error))
 
         elif isinstance(error, commands.MissingRequiredArgument):
             em = discord.Embed(
