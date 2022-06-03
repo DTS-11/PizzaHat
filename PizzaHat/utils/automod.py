@@ -1,11 +1,13 @@
-import discord
-from core.cog import Cog
-import re
-from .config import BANNED_WORDS
 import datetime
-from discord.ext import commands
-import emojis
+import re
 import urllib
+
+import discord
+import emojis
+from core.cog import Cog
+from discord.ext import commands
+
+from .config import BANNED_WORDS
 
 
 class AutoMod(Cog):
@@ -59,7 +61,7 @@ class AutoMod(Cog):
         if self.mod_perms(msg):
             return
 
-        am_enabled_guild = await self.check_if_am_is_enabled(msg.guild.id)
+        # am_enabled_guild = await self.check_if_am_is_enabled(msg.guild.id)
 
     async def banned_words(self, msg: discord.Message):
         banned_words = BANNED_WORDS.copy()
