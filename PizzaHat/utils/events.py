@@ -195,12 +195,39 @@ class Events(Cog):
             color=self.bot.color,
             timestamp=after.created_at
         )
-        em.add_field(name="- Before", value="\u200b", inline=False)
-        em.add_field(name="Name", value=before.name, inline=False)
-        em.add_field(name="Color", value=before.color, inline=False)
-        em.add_field(name="+ After", value="\u200b", inline=False)
-        em.add_field(name="Name", value=after.name, inline=False)
-        em.add_field(name="Color", value=after.color, inline=False)
+        if before.name != after.name:
+            em.add_field(name="Name", value=f"{before.name} ➜ {after.name}", inline=False)
+
+        if before.color != after.color:
+            em.add_field(name="Color", value=f"{before.color} ➜ {after.color}", inline=False)
+
+        if before.hoist != after.hoist:
+            em.add_field(name="Hoisted", value=f"{before.hoist} ➜ {after.hoist}", inline=False)
+
+        if before.mentionable != after.mentionable:
+            em.add_field(name="Mentionable", value=f"{before.mentionable} ➜ {after.mentionable}", inline=False)
+
+        if before.position != after.position:
+            em.add_field(name="Position", value=f"{before.position} ➜ {after.position}", inline=False)
+
+        if before.permissions != after.permissions:
+            all_perms = ""
+
+            before_perms = {}
+            after_perms = {}
+
+            for b, B in before.permissions:
+                before_perms.update({b: B})
+
+            for a, A in after.permissions:
+                after_perms.update({a: A})
+
+            for g in before_perms:
+                if before_perms[g] != after_perms[g]:
+                    all_perms += f"**{' '.join(g.split('_')).title()}:** {before_perms[g]} ➜ {after_perms[g]}\n"
+
+            em.add_field(name="Permissions", value=all_perms, inline=False)
+
         em.set_footer(text=f"Role ID: {before.id}")
 
         await channel.send(embed=em)
