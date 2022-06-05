@@ -44,7 +44,7 @@ class Admin(Cog, emoji="👷‍♂️"):
             print(e)
 
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def restart(self, ctx):
         """Restarts the bot."""
@@ -52,7 +52,7 @@ class Admin(Cog, emoji="👷‍♂️"):
         await ctx.message.add_reaction("✅")
         restart_bot()
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def eval(self, ctx, *, body):
         """Eval command."""
@@ -169,7 +169,7 @@ class Admin(Cog, emoji="👷‍♂️"):
                         )
                         await ctx.send(embed=embed)
         
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def unload(self, ctx, cog):
         """Unloads a cog."""
