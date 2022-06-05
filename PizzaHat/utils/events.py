@@ -35,7 +35,7 @@ class Events(Cog):
         await self.bot.db.execute("""CREATE TABLE IF NOT EXISTS modlogs 
                     (guild_id BIGINT PRIMARY KEY, channel_id BIGINT)""")
 
-        await self.db.execute("""CREATE TABLE IF NOT EXISTS automod 
+        await self.bot.db.execute("""CREATE TABLE IF NOT EXISTS automod 
                     (guild_id BIGINT PRIMARY KEY, enabled BOOL)""")
 
 
