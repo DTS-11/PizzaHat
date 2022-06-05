@@ -113,6 +113,7 @@ class Admin(Cog, emoji="👷‍♂️"):
         try:
             with redirect_stdout(stdout):
                 ret = await func()
+                
         except Exception:
             value = stdout.getvalue()
             embed=discord.Embed(
@@ -121,6 +122,7 @@ class Admin(Cog, emoji="👷‍♂️"):
                 color=color
             )
             await ctx.send(embed=embed)
+
         else:
             value = stdout.getvalue()
             if ret is None:
@@ -130,9 +132,12 @@ class Admin(Cog, emoji="👷‍♂️"):
                             description=f'```py\n{value}\n```',
                                 color=color
                             )
+
                         await ctx.send(embed=embed)
+
                     except:
                         paginated_text = paginate(value)
+
                         for page in paginated_text:
                             if page == paginated_text[-1]:
                                 embed=discord.Embed(
@@ -145,6 +150,7 @@ class Admin(Cog, emoji="👷‍♂️"):
                                 description=f'```py\n{page}\n```',
                                 color=color
                                 )
+
                             await ctx.send(embed=embed)
             else:
                 try:
@@ -153,8 +159,10 @@ class Admin(Cog, emoji="👷‍♂️"):
                         color=color
                         )
                     await ctx.send(embed=embed)
+
                 except:
                     paginated_text = paginate(f"{value}{ret}")
+
                     for page in paginated_text:
                         if page == paginated_text[-1]:
                             embed=discord.Embed(
@@ -167,6 +175,7 @@ class Admin(Cog, emoji="👷‍♂️"):
                             description=f'```py\n{page}\n```',
                             color=color
                         )
+
                         await ctx.send(embed=embed)
         
     @commands.command(hidden=True)
@@ -177,6 +186,7 @@ class Admin(Cog, emoji="👷‍♂️"):
         try:
             await self.bot.unload_extension(cog)
             await ctx.send(f"{self.bot.yes} Cog unloaded")
+
         except Exception as e:
             print(e)
 
