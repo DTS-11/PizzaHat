@@ -15,7 +15,7 @@ def restart_bot():
     os.execv(sys.executable, ['python'] + sys.argv)
 
 
-class Admin(Cog, emoji="👷‍♂️"):
+class Admin(Cog, emoji=916988537264570368):
     """Admin configuration commands."""
     def __init__(self, bot):
         self.bot = bot
