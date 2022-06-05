@@ -2,6 +2,8 @@ import discord
 from core.cog import Cog
 from discord.ext import commands
 
+from .config import COG_EXCEPTIONS
+
 
 def bot_help_embed(ctx: commands.Context):
 
@@ -50,7 +52,9 @@ def cog_help_embed(cog):
 
     for x in sorted(cog.get_commands(), key=lambda c: c.name):
         cmd_help = x.short_doc if x.short_doc else x.help
-        em.add_field(name=f"{x.name} {x.signature}", value=cmd_help, inline=False)
+
+        if not x.hidden:
+            em.add_field(name=f"{x.name} {x.signature}", value=cmd_help, inline=False)
 
     em.set_footer(text='Use help [command] for more info')
     return em
@@ -62,12 +66,13 @@ class HelpDropdown(discord.ui.Select):
         self.ctx = ctx
 
         options = []
-        cog_exceptions = ["AutoMod", "Events", "Help", "Jishaku"]
+        cog_exceptions = COG_EXCEPTIONS
 
         for cog, _ in mapping.items():
             if cog and cog.qualified_name not in cog_exceptions:
                 options.append(discord.SelectOption(
                     label=cog.qualified_name,
+                    description=cog.description,
                     emoji=cog.emoji if hasattr(cog, "emoji") else None
                 ))
 
