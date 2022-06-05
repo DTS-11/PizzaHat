@@ -1,11 +1,9 @@
 import datetime
 import os
-import ssl
 import sys
 import traceback
 
 import aiohttp
-import asyncpg
 import discord
 import wavelink
 from discord.ext import commands
@@ -13,22 +11,23 @@ from discord.ext.commands import CommandError, Context
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
 from discord_together import DiscordTogether
 
+
 INITIAL_EXTENSIONS = [
-    "cogs.activities",
-    "cogs.admin",
-    "cogs.emoji",
-    "cogs.image",
-    "cogs.meta",
-    "cogs.mod",
-    "cogs.music",
-    "cogs.poll",
-    "cogs.utility",
+    'cogs.activities',
+    'cogs.admin',
+    'cogs.emoji',
+    'cogs.image',
+    'cogs.meta',
+    'cogs.mod',
+    'cogs.music',
+    'cogs.poll',
+    'cogs.utility',
 ]
 
 SUB_EXTENSIONS = [
-    "utils.automod",
-    "utils.events",
-    "utils.help",
+    'utils.automod',
+    'utils.events',
+    'utils.help',
 ]
 
 
@@ -53,6 +52,7 @@ class PizzaHat(commands.Bot):
             reactions=True,
             message_content=True,
         )
+
         super().__init__(
             command_prefix = commands.when_mentioned_or("p!", "P!"),
             description = description,
@@ -66,6 +66,7 @@ class PizzaHat(commands.Bot):
                 name = "p!help | pizzahat.ml"
             ),
         )
+
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
         self.yes = "<:yes:813819712953647206>"
         self.no = "<:no:829841023445631017>"
@@ -81,17 +82,6 @@ class PizzaHat(commands.Bot):
 
         self.togetherControl = await DiscordTogether(os.getenv("TOKEN"), debug=True)
         print(f"Logged in as {self.user}")
-
-    
-    async def create_db_pool(self):
-        ssl_object = ssl.create_default_context()
-        ssl_object.check_hostname = False
-        ssl_object.verify_mode = ssl.CERT_NONE
-
-        self.db = await asyncpg.create_pool(
-            dsn=os.getenv("DATABASE_URL"),
-            ssl=ssl_object
-        )
 
 
     async def on_wavelink_node_ready(self, node: wavelink.Node):
@@ -150,12 +140,6 @@ class PizzaHat(commands.Bot):
 
         except ExtensionAlreadyLoaded:
             pass
-
-        try:
-            await self.loop.create_task(self.create_db_pool())
-        
-        except ConnectionRefusedError:
-            print("DB not connected.")
 
         
     async def on_command_error(self, ctx: Context, error: CommandError) -> None:
