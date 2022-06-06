@@ -12,6 +12,7 @@ class ButtonCreation(Button):
         style: ButtonStyle = ...,
         emoji: Optional[Union[str, Emoji, PartialEmoji]] = None,
         url: Optional[str] = None,
-        disabled: bool = False
+        disabled: bool = False,
+        row: Optional[int] = None
     ):
-        super().__init__(label=label, style=style, emoji=emoji, url=url, disabled=disabled)
+        super().__init__(label=label, style=style, emoji=emoji, url=url, disabled=disabled, row=row)
