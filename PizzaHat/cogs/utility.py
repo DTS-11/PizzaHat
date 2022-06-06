@@ -9,7 +9,6 @@ from discord.ext import commands
 from discord.ui import Button, View
 
 start_time = time.time()
-view = View()
 
 def format_date(dt:datetime.datetime):
     if dt is None:
@@ -353,6 +352,8 @@ class Utility(Cog, emoji="🛠️"):
     async def invite_cmd(self, ctx):
         """Gives invite of bot."""
 
+        view = View()
+
         b1 = ButtonCreation(
             label="Invite",
             emoji="✉️",
@@ -458,6 +459,8 @@ class Utility(Cog, emoji="🛠️"):
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def vote(self,ctx):
         """Vote for the bot."""
+
+        view = View()
 
         em = discord.Embed(
             title='Vote for me',
