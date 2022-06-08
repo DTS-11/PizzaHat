@@ -40,6 +40,8 @@ I'm also open source. You can see my code on [GitHub](https://github.com/DTS-11/
 
 
 class PizzaHat(commands.Bot):
+    bot_app_info: discord.AppInfo
+
     def __init__(self):
         allowed_mentions = discord.AllowedMentions(roles=False, everyone=False, users=True)
         intents = discord.Intents(
@@ -115,6 +117,9 @@ class PizzaHat(commands.Bot):
 
 
     async def setup_hook(self):
+        self.bot_app_info = await self.application_info()
+        self.owner_id = self.bot_app_info.owner.id
+
         for ext in INITIAL_EXTENSIONS:
             try:
                 self.public_extensions = await self.load_extension(ext)
@@ -186,3 +191,8 @@ class PizzaHat(commands.Bot):
             )
 
             await ctx.send(embed=em)
+
+
+    @property
+    def owner(self) -> discord.User:
+        return self.bot_app_info.owner
