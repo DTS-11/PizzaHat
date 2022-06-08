@@ -48,13 +48,15 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_message(self, msg):
+        bot_id = self.bot.user.id
+
         if msg.author.bot:
             return
 
         if self.bot.user == msg.author:
             return
-        
-        if msg.content in {"<@860889936914677770>", "<@!860889936914677770>"}:
+
+        if f"<@{bot_id}>" or f"<@!{bot_id}>" in msg.content:
             em = discord.Embed(color=self.bot.color)
             em.add_field(
                 name='<a:wave_animated:783393435242463324> Hello! <a:wave_animated:783393435242463324>',
