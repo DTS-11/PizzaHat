@@ -116,6 +116,9 @@ class Mod(Cog, emoji=847248846526087239):
                     reason=f"Decancered member (req. by: {ctx.author})."
                 )
                 await ctx.send(f"{self.bot.yes} Successfully decancered {member}")
+
+            if characters not in member.display_name[0]:
+                await ctx.send("No special characters found.")
         
         except discord.HTTPException:
             await ctx.send("Something went wrong.")
