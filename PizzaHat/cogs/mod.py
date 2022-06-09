@@ -158,7 +158,7 @@ class Mod(Cog, emoji=847248846526087239):
     @lock.command(name='channel')
     @commands.has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def lock_channel(self, ctx, role:discord.Role=None, channel:discord.TextChannel=None):
+    async def lock_channel(self, ctx, role: discord.Role=None, channel: discord.TextChannel=None):
         """
         Locks a channel with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
@@ -173,6 +173,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         overwrite = channel.overwrites_for(role)
         overwrite.send_messages = False
+        overwrite.add_reactions = False
 
         await channel.set_permissions(role, overwrite=overwrite)
         await ctx.message.add_reaction('🔒')
@@ -222,7 +223,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def unlock_channel(self, ctx, role:discord.Role=None, channel:discord.TextChannel=None):
+    async def unlock_channel(self, ctx, role: discord.Role=None, channel: discord.TextChannel=None):
         """
         Unlocks a channel with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
@@ -237,6 +238,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         overwrite = channel.overwrites_for(role)
         overwrite.send_messages = True
+        overwrite.add_reactions = True
 
         await channel.set_permissions(role, overwrite=overwrite)
         await ctx.message.add_reaction('🔓')
