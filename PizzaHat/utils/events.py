@@ -56,7 +56,7 @@ class Events(Cog):
         if self.bot.user == msg.author:
             return
 
-        if f"<@{bot_id}>" or f"<@!{bot_id}>" in msg.content:
+        if msg.content in {f"<@{bot_id}>" or f"<@!{bot_id}>"}:
             em = discord.Embed(color=self.bot.color)
             em.add_field(
                 name='<a:wave_animated:783393435242463324> Hello! <a:wave_animated:783393435242463324>',
