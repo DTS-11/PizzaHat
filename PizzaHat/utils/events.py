@@ -20,8 +20,8 @@ class Events(Cog):
 
     @tasks.loop(minutes=30)
     async def update_stats(self):
-        # Top.gg
         try:
+            # Top.gg
             await self.bot.wait_until_ready()
             self.topggpy = topgg.DBLClient(self, os.getenv("DBL_TOKEN"), autopost=True)
             await self.topggpy.post_guild_count()
@@ -31,6 +31,7 @@ class Events(Cog):
             print(f"Failed to post server count\n{e.__class__.__name__}: {e}")
 
         try:
+            # DList.gg
             url = f"https://api.discordlist.gg/v0/bots/860889936914677770/guilds?count={len(self.bot.guilds)}"
             headers = {'Authorization': f"Bearer {DLIST_TOKEN}", "Content-Type": "application/json"}
             r = requests.put(url, headers=headers)
