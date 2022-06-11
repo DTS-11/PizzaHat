@@ -1,14 +1,16 @@
 import os
 
 import discord
+import requests
 import topgg
 from core.cog import Cog
 from discord.ext import tasks
 from dotenv import load_dotenv
 
-LOG_CHANNEL = 980151632199299092
-
 load_dotenv()
+
+LOG_CHANNEL = 980151632199299092
+DLIST_TOKEN = os.getenv("DLIST_AUTH")
 
 class Events(Cog):
     """Events cog"""
@@ -18,6 +20,7 @@ class Events(Cog):
 
     @tasks.loop(minutes=30)
     async def update_stats(self):
+        # Top.gg
         try:
             await self.bot.wait_until_ready()
             self.topggpy = topgg.DBLClient(self, os.getenv("DBL_TOKEN"), autopost=True)
@@ -26,6 +29,15 @@ class Events(Cog):
 
         except Exception as e:
             print(f"Failed to post server count\n{e.__class__.__name__}: {e}")
+
+        try:
+            url = f"https://api.discordlist.gg/v0/bots/860889936914677770/guilds?count={len(self.bot.guilds)}"
+            headers = {'Authorization': f"Bearer {DLIST_TOKEN}", "Content-Type": "application/json"}
+            r = requests.put(url, headers=headers)
+            print(r.json())
+
+        except Exception as e:
+            print(e)
 
     @Cog.listener()
     async def on_ready(self):
