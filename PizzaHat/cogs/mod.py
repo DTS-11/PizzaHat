@@ -278,6 +278,50 @@ class Mod(Cog, emoji=847248846526087239):
 
         await ctx.send(embed=em)
 
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def hide(self, ctx, role: discord.Role=None, channel: discord.TextChannel=None):
+        """
+        Hides a channel from a given role or @everyone.
+
+        In order for this to work, the bot must have Manage Channels permissions.
+
+        To use this command, you must have Manage Channels permission.
+        """
+
+        role = role or ctx.guild.default_role
+        channel = channel or ctx.channel
+
+        overwrite = channel.overwrites_for(role)
+        overwrite.view_channel = False
+
+        await channel.set_permissions(role, overwrite=overwrite)
+        await ctx.send(f"{channel.mention} has been hidden from `{role}`")
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def expose(self, ctx, role: discord.Role=None, channel: discord.TextChannel=None):
+        """
+        Exposes a channel from a given role or @everyone.
+
+        In order for this to work, the bot must have Manage Channels permissions.
+
+        To use this command, you must have Manage Channels permission.
+        """
+
+        role = role or ctx.guild.default_role
+        channel = channel or ctx.channel
+
+        overwrite = channel.overwrites_for(role)
+        overwrite.view_channel = True
+
+        await channel.set_permissions(role, overwrite=overwrite)
+        await ctx.send(f"{channel.mention} has been exposed to `{role}`")
+
     @commands.command(aliases=['purge'])
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
