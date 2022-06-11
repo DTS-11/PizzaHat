@@ -25,7 +25,7 @@ PizzaHat is a multi-purpose bot, made to satisfy your needs, as well as your ser
 - 🥳 Fun commands. </li>
 - ⚒️ Utility commands. </li>
 - 📷 Image manipulation commands. </li>
-- 🎮 Game commands. </li>
+- 🎵 Music commands. </li>
 - 📔 Logging system. </li>
 - 🗳 Poll voting system </li>
 - <img src="https://cdn.discordapp.com/emojis/809170074006192130.png?size=80" height="19px"> Regularly updated and maintained! </li>
@@ -38,6 +38,8 @@ PizzaHat is a multi-purpose bot, made to satisfy your needs, as well as your ser
 	
 ## <img src="https://cdn.discordapp.com/emojis/802615572080099378.png?size=80" height="30px"> • Self hosting
 
-Please don't run an instance of this bot. The code here is for **educational and development purpose only!** Instead, I'd recommend inviting the bot. And the bot is not made to be configurable, if you decide to run your own instance, you should change the necessary things and give credits to the repo and it's contributors.
+Please DON'T run an instance of this bot. The code here is for **educational and development purpose only!** Instead, I'd recommend inviting the bot. And the bot is not made to be configurable. 
+
+If you decide to run your own instance, you should change the necessary things and give credits to the repo and it's contributors.We **WILL NOT** provide support on self-hosting
 
 <h2 align="center"> <a href="https://dsc.gg/pizza-invite">Invite Bot</a> | <a href="https://discord.gg/WhNVDTF">Discord server</a> <h2/>
