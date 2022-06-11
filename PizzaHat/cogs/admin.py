@@ -3,12 +3,18 @@ import io
 import os
 import sys
 import textwrap
+import time
 import traceback
 from contextlib import redirect_stdout
+from typing import TYPE_CHECKING, Awaitable, Callable, Union
 
 import discord
 from core.cog import Cog
 from discord.ext import commands
+from utils.formats import TabularData, plural
+
+if TYPE_CHECKING:
+    from asyncpg import Record
 
 
 def restart_bot():
@@ -177,6 +183,50 @@ class Admin(Cog, emoji=916988537264570368):
                         )
 
                         await ctx.send(embed=embed)
+
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def sql(self, ctx, *, query: str):
+        """Run some SQL."""
+
+        query = self.cleanup_code(query)
+
+        is_multistatement = query.count(';') > 1
+        strategy: Callable[[str], Union[Awaitable[list[Record]], Awaitable[str]]]
+
+        if is_multistatement:
+            # fetch does not support multiple statements
+            strategy = ctx.db.execute
+
+        else:
+            strategy = ctx.db.fetch
+
+        try:
+            start = time.perf_counter()
+            results = await strategy(query)
+            dt = (time.perf_counter() - start) * 1000.0
+
+        except Exception:
+            return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
+
+        rows = len(results)
+
+        if isinstance(results, str) or rows == 0:
+            return await ctx.send(f'`{dt:.2f}ms: {results}`')
+
+        headers = list(results[0].keys())
+        table = TabularData()
+        table.set_columns(headers)
+        table.add_rows(list(r.values()) for r in results)
+        render = table.render()
+
+        fmt = f'```\n{render}\n```\n*Returned {plural(rows):row} in {dt:.2f}ms*'
+        if len(fmt) > 2000:
+            fp = io.BytesIO(fmt.encode('utf-8'))
+            await ctx.send('Too many results...', file=discord.File(fp, 'results.txt'))
+            
+        else:
+            await ctx.send(fmt)
         
     @commands.command(hidden=True)
     @commands.is_owner()
