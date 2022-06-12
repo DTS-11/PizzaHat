@@ -6,7 +6,7 @@ import psutil
 from core.cog import Cog
 from core.buttons import ButtonCreation
 from discord.ext import commands
-from discord.ui import Button, View
+from discord.ui import View
 
 start_time = time.time()
 
@@ -37,13 +37,59 @@ class Utility(Cog, emoji="🛠️"):
             f"\nBot: `{round(time2-time1)*1000}ms`"
         )
 
+    @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def badges(self, ctx, member: discord.Member=None):
+        """
+        Shows different badges of a user.
+        If no user is given, returns your badges.
+
+        This command can be only used in the support server.
+        """
+
+        # thanks to Dominik#3040 for helping me out with this command.
+        if ctx.guild.id != 764049436275114004:
+            return await ctx.send("This command can be only used in the support server.\nhttps://discord.gg/WhNVDTF")
+
+        badges = []
+
+        staff_role = ctx.guild.get_role(849669358316683284)
+        partner_role = ctx.guild.get_role(972071921791410188)
+        booster_role = ctx.guild.get_role(782258520791449600)
+        contrib_role = ctx.guild.get_role(950785470286163988)
+
+        if member is None:
+            member = ctx.author
+
+        if member.id == self.bot.owner.id:
+            badges.append("<:developer:833297795761831956> Developer of PizzaHat")
+
+        for roles in member.roles:
+            if roles == staff_role:
+                badges.append("<:staff:916988537264570368> Staff Member in the support server")
+
+            elif roles == booster_role:
+                badges.append("<:booster:983684380134371339> Booster in the support server")
+
+            elif roles == contrib_role:
+                badges.append("<:github:983685053752176691> Contributor of PizzaHat")
+            
+            elif roles == partner_role:
+                badges.append("<:partner:916988537033875468> PizzaHat's Partner")
+
+        em = discord.Embed(color=self.bot.color)
+        em.set_author(name=f"{member} Badges", icon_url=member.avatar.url)
+        em.description = "\n".join(badges) if len(badges) != 0 else "This user has no special badges."
+
+        await ctx.send(embed=em)
+
     @commands.command(aliases=['whois','ui'])
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
-    async def userinfo(self, ctx,  member:discord.Member=None):
+    async def userinfo(self, ctx, member: discord.Member=None):
         """
         Shows info about a user.
-        If no user is given, returns value of yourself.
+        If no user is given, returns info about yourself.
         """
 
         if member is None:
@@ -61,17 +107,17 @@ class Utility(Cog, emoji="🛠️"):
             color=member.color,
             timestamp=ctx.message.created_at
         )
-        em.set_author(name=member, icon_url=member.display_avatar)
+        em.set_author(name=member)
 
         em.add_field(name="User ID", value=member.id, inline=False)
         em.add_field(name="Display Name", value=member.display_name, inline=False)
         em.add_field(
-            name="Account Creation",
+            name="Created",
             value=format_date(member.created_at),
             inline=False
         )
         em.add_field(
-            name="Joined Server",
+            name="Joined",
             value=format_date(member.joined_at),
             inline=False
         )
@@ -86,6 +132,7 @@ class Utility(Cog, emoji="🛠️"):
                 value=f"{self.bot.yes} Yes",
                 inline=False
             )
+            
         else:
             em.add_field(
                 name="Member bot",
@@ -97,8 +144,10 @@ class Utility(Cog, emoji="🛠️"):
 
         if member.avatar:
             em.set_thumbnail(url=member.avatar.url)
+
         else:
             em.set_thumbnail(url="https://logos-world.net/wp-content/uploads/2020/12/Discord-Logo.png")
+
         await ctx.send(embed=em)
         
     @commands.command(aliases=['si'])
@@ -113,49 +162,58 @@ class Utility(Cog, emoji="🛠️"):
             return f'{date:%m-%d-%Y | %H:%M} UTC'
 
         features = [f.lower().title().replace("_", " ") for f in ctx.guild.features]
+        all_features = f"{self.bot.yes} " + f"\n{self.bot.yes}".join(features)
+
+        boost_level = f"{ctx.guild.premium_tier} Level" if {ctx.guild.premium_tier} == 2 else "No Level"
+        boosts = f"<:booster:983684380134371339> {ctx.guild.premium_subscription_count} Boosts ({boost_level})"
 
         em = discord.Embed(title=f'{ctx.guild.name}', color=self.bot.color)
-        em.add_field(name='<:owner:811749694744297502> Owner', value=ctx.guild.owner, inline=False)
-        em.add_field(name='Description', value=ctx.guild.description, inline=False)
-        em.add_field(name='Guild ID', value=ctx.guild.id, inline=False)
-        em.add_field(name=f'Roles', value=len(ctx.guild.roles), inline=False)
+        em.description = f"""
+**Owner:** {ctx.guild.owner.mention} `[{ctx.guild.owner}]`
+**Description:** {ctx.guild.description if ctx.guild.description else "N/A"}
+**ID:** {ctx.guild.id}
+"""
+
         em.add_field(
-            name=f'Members ({ctx.guild.member_count})',
+            name=f'👥 {ctx.guild.member_count} Members',
             value=(
                 f'<:memberlist:811747305543434260> Humans: {len([m for m in ctx.guild.members if not m.bot])}\n'
                 f'<:botlist:811747723434786859> Bots: {sum(member.bot for member in ctx.guild.members)}'
             ),
             inline=False
         )
+
         em.add_field(
             name='Channels',
             value=(
                 f'<:textchannel:811747767763992586> Text: {len(ctx.guild.text_channels)}\n'
-                f'<:voicechannel:811748732906635295> Voice: {len(ctx.guild.voice_channels)}'
+                f'<:voicechannel:811748732906635295> Voice: {len(ctx.guild.voice_channels)}\n'
+                f'📁 Categories: {len(ctx.guild.categories)}'
             ),
             inline=False
         )
-        em.add_field(name='📁 Categories', value=len(ctx.guild.categories), inline=False)
-        em.add_field(name='Emojis', value=len(ctx.guild.emojis), inline=False)
+
+        em.add_field(name='<:role:985140259702583326> Role Count', value=len(ctx.guild.roles), inline=False)
+        em.add_field(name='🙂 Emoji Count', value=len(ctx.guild.emojis), inline=False)
+
         em.add_field(
-            name='Boost Info',
-            value=(
-                f'<:boosts:811749808133373996> Boosts: {ctx.guild.premium_subscription_count}\n'
-                f'<:boostlevel:811749895143948288> Server level: {ctx.guild.premium_tier}'
-            ),
+            name='<:verified:985139472813412362> Verification level',
+            value=str(ctx.guild.verification_level).capitalize(),
             inline=False
         )
+
         em.add_field(
-            name="Server Features",
-            value=f'{self.bot.yes}' + f'\n{self.bot.yes}'.join(features) if features else f'{self.bot.no} None',
+            name="✨ Server Features",
+            value=f"{boosts}\n" + all_features if boosts and features else f'{self.bot.no} None',
             inline=False
         )
-        em.add_field(name='Verification level', value=str(ctx.guild.verification_level).capitalize(), inline=False)
 
         if ctx.guild.icon:
             em.set_thumbnail(url=ctx.guild.icon.url)
+
         else:
             em.set_thumbnail(url="https://logos-world.net/wp-content/uploads/2020/12/Discord-Logo.png")
+
         em.set_footer(text=f'Created at: {formatted_date(ctx.guild.created_at)}')
         
         await ctx.send(embed=em)
@@ -166,13 +224,17 @@ class Utility(Cog, emoji="🛠️"):
     async def channelinfo(self, ctx, *, channel: discord.TextChannel=None):
         """
         Shows info about a channel.
-        If no channel is given, returns value for the current channel.
+        If no channel is given, returns info for the current channel.
         """
 
         if channel is None:
             channel  = ctx.channel
 
-        e = discord.Embed(title='Channel information', color=self.bot.color)
+        e = discord.Embed(
+            title="Channel information",
+            color=self.bot.color
+        )
+
         e.add_field(name='Channel name', value=channel.name, inline=False)
         e.add_field(name='Channel ID', value=channel.id, inline=False)
         e.add_field(name='Mention', value=channel.mention, inline=False)
@@ -185,7 +247,7 @@ class Utility(Cog, emoji="🛠️"):
     @commands.command(aliases=['vi'])
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
-    async def vcinfo(self, ctx, *, vc: discord.VoiceChannel):
+    async def vcinfo(self, ctx, vc: discord.VoiceChannel):
         """Shows info about a voice channel."""
 
         e = discord.Embed(title='VC Information', color=self.bot.color)
@@ -201,7 +263,7 @@ class Utility(Cog, emoji="🛠️"):
     @commands.command(aliases=['ri'])
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
-    async def roleinfo(self, ctx, *, role: discord.Role):
+    async def roleinfo(self, ctx, role: discord.Role):
         """
         Gives some info about the specified role.
         You can mention the role or give the name of it.
@@ -213,8 +275,10 @@ class Utility(Cog, emoji="🛠️"):
         e.add_field(name='Mention', value=role.mention, inline=False)
         e.add_field(name='Role Created', value=format_date(role.created_at), inline=False)
         e.add_field(name='Role Color', value=role.color, inline=False)
+
         if role.mentionable:
             e.add_field(name='Mentionable', value=f'{self.bot.yes} Yes', inline=False)
+
         else:
             e.add_field(name='Mentionable', value=f'{self.bot.no} No', inline=False)
         
@@ -223,11 +287,12 @@ class Utility(Cog, emoji="🛠️"):
     @commands.command(aliases=['ei'])
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
-    async def emojiinfo(self, ctx, emoji:discord.Emoji):
+    async def emojiinfo(self, ctx, emoji: discord.Emoji):
         """Shows info about emoji."""
 
         try:
             emoji = await emoji.guild.fetch_emoji(emoji.id)
+
         except discord.NotFound:
             return await ctx.send("I could not find this emoji in the given guild.")
 
@@ -272,8 +337,10 @@ class Utility(Cog, emoji="🛠️"):
         if not brief:
             if days:
                 fmt = '{d} days, {h} hours, {m} minutes, and {s} seconds'
+
             else:
                 fmt = '{h} hours, {m} minutes, and {s} seconds'
+
         else:
             fmt = '{h}h {m}m {s}s'
             if days:
@@ -302,6 +369,7 @@ class Utility(Cog, emoji="🛠️"):
             for channel in guild.channels:
                 if isinstance(channel, discord.TextChannel):
                     text += 1
+
                 elif isinstance(channel, discord.VoiceChannel):
                     voice += 1
 
