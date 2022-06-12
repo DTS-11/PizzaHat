@@ -77,8 +77,11 @@ class Utility(Cog, emoji="🛠️"):
             elif roles == partner_role:
                 badges.append("<:partner:916988537033875468> PizzaHat's Partner")
 
-        em = discord.Embed(color=self.bot.color)
-        em.set_author(name=f"{member} Badges", icon_url=member.avatar.url)
+        em = discord.Embed(
+            title=f"{member} Badges",
+            color=self.bot.color
+        )
+        em.set_thumbnail(url=member.avatar.url)
         em.description = "\n".join(badges) if len(badges) != 0 else "This user has no special badges."
 
         await ctx.send(embed=em)
@@ -167,7 +170,7 @@ class Utility(Cog, emoji="🛠️"):
         boost_level = f"{ctx.guild.premium_tier} Level" if {ctx.guild.premium_tier} == 2 else "No Level"
         boosts = f"<:booster:983684380134371339> {ctx.guild.premium_subscription_count} Boosts ({boost_level})"
 
-        em = discord.Embed(title=f'{ctx.guild.name}', color=self.bot.color)
+        em = discord.Embed(title=ctx.guild.name, color=self.bot.color)
         em.description = f"""
 **Owner:** {ctx.guild.owner.mention} `[{ctx.guild.owner}]`
 **Description:** {ctx.guild.description if ctx.guild.description else "N/A"}
