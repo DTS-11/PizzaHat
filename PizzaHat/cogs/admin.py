@@ -26,6 +26,13 @@ class Admin(Cog, emoji=916988537264570368):
     def __init__(self, bot):
         self.bot = bot
 
+    def cleanup_code(self, content: str) -> str:
+        """Automatically removes code blocks from the code."""
+        # remove ```py\n```
+        if content.startswith('```') and content.endswith('```'):
+            return '\n'.join(content.split('\n')[1:-1])
+            
+
     @commands.group(invoke_without_command=True)
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
