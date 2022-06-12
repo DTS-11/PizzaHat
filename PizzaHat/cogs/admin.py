@@ -31,6 +31,9 @@ class Admin(Cog, emoji=916988537264570368):
         # remove ```py\n```
         if content.startswith('```') and content.endswith('```'):
             return '\n'.join(content.split('\n')[1:-1])
+        
+        else:
+            return content
             
 
     @commands.group(invoke_without_command=True)
@@ -203,10 +206,10 @@ class Admin(Cog, emoji=916988537264570368):
 
         if is_multistatement:
             # fetch does not support multiple statements
-            strategy = ctx.db.execute
+            strategy = self.bot.db.execute
 
         else:
-            strategy = ctx.db.fetch
+            strategy = self.bot.db.fetch
 
         try:
             start = time.perf_counter()
