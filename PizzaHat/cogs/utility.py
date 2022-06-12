@@ -165,7 +165,7 @@ class Utility(Cog, emoji="🛠️"):
             return f'{date:%m-%d-%Y | %H:%M} UTC'
 
         features = [f.lower().title().replace("_", " ") for f in ctx.guild.features]
-        all_features = f"{self.bot.yes} " + f"\n{self.bot.yes}".join(features)
+        all_features = f"{self.bot.yes} " + f"\n{self.bot.yes} ".join(features)
 
         boost_level = f"{ctx.guild.premium_tier} Level" if {ctx.guild.premium_tier} == 2 else "No Level"
         boosts = f"<:booster:983684380134371339> {ctx.guild.premium_subscription_count} Boosts ({boost_level})"
