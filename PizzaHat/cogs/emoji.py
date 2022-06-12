@@ -48,27 +48,56 @@ class Emoji(Cog, emoji="😀"):
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_emojis=True)
     async def create(self, ctx, emoji: EmojiURL, name):
-        """Creates an emoji for the server under the given name."""
+        """
+        Creates an emoji for the server under the given name.
+        
+        In order for this to work, the bot must have Manage Emojis permissions.
+
+        To use this command, you must have Manage Emojis permission.
+        """
         
         emoji_count = sum(e.animated == emoji.animated for e in ctx.guild.emojis)
+
         if emoji_count >= ctx.guild.emoji_limit:
             return await ctx.send('There are no more emoji slots in this server.')
 
         async with self.bot.session.get(emoji.url) as resp:
             if resp.status >= 400:
                 return await ctx.send('Could not fetch the image.')
+
             if int(resp.headers['Content-Length']) >= (256 * 1024):
                 return await ctx.send('Image is too big.')
+
             data = await resp.read()
             coro = ctx.guild.create_custom_emoji(name=name, image=data, reason=f"Action done by {ctx.author}")
+
             try:
                 created = await asyncio.wait_for(coro, timeout=10.0)
+
             except asyncio.TimeoutError:
                 return await ctx.send('Sorry, the bot is rate limited or it took too long.')
+
             except discord.HTTPException as e:
-                return await ctx.send(f'Failed to create emoji: {e}')
+                return await ctx.send(f"Failed to create emoji: {e}")
+
             else:
-                return await ctx.send(f'Created {created}')    
+                return await ctx.send(f"Created {created}")    
+
+    @_emoji.command()
+    @commands.guild_only()
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.has_permissions(manage_emojis=True)
+    async def delete(self, ctx, emoji: discord.Emoji):
+        """
+        Deletes an emoji from the server.
+        
+        In order for this to work, the bot must have Manage Emojis permissions.
+
+        To use this command, you must have Manage Emojis permission.
+        """
+
+        await emoji.delete(reason=f"Action done by {ctx.author}")
+        await ctx.send(f"{self.bot.yes} Emoji successfully deleted.")
 
 
 async def setup(bot):
