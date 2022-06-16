@@ -15,6 +15,7 @@ from discord_together import DiscordTogether
 INITIAL_EXTENSIONS = [
     'cogs.activities',
     'cogs.admin',
+    'cogs.dev',
     'cogs.emoji',
     'cogs.image',
     'cogs.meta',
