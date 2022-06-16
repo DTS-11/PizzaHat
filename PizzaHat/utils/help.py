@@ -1,12 +1,12 @@
 import discord
 from core.cog import Cog
+from discord import ButtonStyle, Interaction, ui
 from discord.ext import commands
 
 from .config import COG_EXCEPTIONS
 
 
 def bot_help_embed(ctx: commands.Context):
-
     em = discord.Embed(
         title=f"{ctx.bot.user.name} Help",
         timestamp=ctx.message.created_at,
@@ -38,10 +38,11 @@ Use the dropdown menu to select a category.\n
 
     return em
 
+
 def cog_help_embed(cog):
     desc = cog.full_description if cog.full_description else None
-
     title = cog.qualified_name
+
     em = discord.Embed(
         title=f'{title} Commands',
         description=(
@@ -52,24 +53,42 @@ def cog_help_embed(cog):
 
     for x in sorted(cog.get_commands(), key=lambda c: c.name):
         cmd_help = x.short_doc if x.short_doc else x.help
+        em.add_field(name=f"{x.name} {x.signature}", value=cmd_help, inline=False)
 
-        if not x.hidden:
-            em.add_field(name=f"{x.name} {x.signature}", value=cmd_help, inline=False)
+    em.set_footer(text="Use help [command] for more info.")
 
-    em.set_footer(text='Use help [command] for more info')
     return em
 
 
-class HelpDropdown(discord.ui.Select):
+def cmds_list_embed(ctx: commands.Context, mapping):
+    em = discord.Embed(
+        title=f"{ctx.bot.user.name} Help",
+        timestamp=ctx.message.created_at,
+        color=discord.Color.blue()
+    )
+
+    em.set_thumbnail(url=ctx.bot.user.avatar.url)
+    em.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
+
+    for cog, commands_ in mapping.items():
+        if cog and cog.qualified_name not in COG_EXCEPTIONS:
+            cmds = ", ".join([f"`{command.name}`" for command in commands_])
+            cog_emoji = cog.emoji if hasattr(cog, "emoji") else None
+            
+            em.add_field(name=f"{cog_emoji} {cog.qualified_name}", value=cmds, inline=False)
+
+    return em
+
+
+class HelpDropdown(ui.Select):
     def __init__(self, mapping: dict, ctx: commands.Context):
         self.cog_mapping = mapping
         self.ctx = ctx
 
         options = []
-        cog_exceptions = COG_EXCEPTIONS
 
         for cog, _ in mapping.items():
-            if cog and cog.qualified_name not in cog_exceptions:
+            if cog and cog.qualified_name not in COG_EXCEPTIONS:
                 options.append(discord.SelectOption(
                     label=cog.qualified_name,
                     description=cog.description,
@@ -83,7 +102,7 @@ class HelpDropdown(discord.ui.Select):
             options=sorted(options, key=lambda x: x.label)
         )
     
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction: Interaction):
         cog_name = self.values[0]
         cog = None
         
@@ -92,10 +111,10 @@ class HelpDropdown(discord.ui.Select):
                 cog = c
                 break
 
-        await interaction.message.edit(embed=cog_help_embed(cog))
+        await interaction.response.edit_message(embed=cog_help_embed(cog))
 
 
-class HelpView(discord.ui.View):
+class HelpView(ui.View):
     def __init__(self, mapping: dict, ctx: commands.Context):
         super().__init__(timeout=180)
         self.ctx = ctx
@@ -110,19 +129,24 @@ class HelpView(discord.ui.View):
 
             await self.message.edit(view=self)
 
-    async def interaction_check(self, interaction: discord.Interaction):
+    async def interaction_check(self, interaction: Interaction):
         if interaction.user == self.ctx.author:
             return True
 
         await interaction.response.send_message("Not your help command ._.", ephemeral=True)
 
-    @discord.ui.button(label="Home", emoji="🏠", style=discord.ButtonStyle.blurple)
-    async def go_home(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @ui.button(label="Home", emoji="🏠", style=ButtonStyle.blurple)
+    async def go_home(self, interaction: Interaction, button: ui.Button):
         embed = bot_help_embed(self.ctx)
-        await interaction.message.edit(embed=embed, view=self)
+        await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Delete Menu", emoji="🛑", style=discord.ButtonStyle.danger)
-    async def delete_menu(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @ui.button(label="Commands List", emoji="📜", style=ButtonStyle.blurple)
+    async def cmds_list(self, interaction: Interaction, button: ui.Button):
+        embed = cmds_list_embed(self.ctx, self.mapping)
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @ui.button(label="Delete Menu", emoji="🛑", style=ButtonStyle.red)
+    async def delete_menu(self, interaction: Interaction, button: ui.Button):
         await interaction.message.delete()
         self.stop()
 
