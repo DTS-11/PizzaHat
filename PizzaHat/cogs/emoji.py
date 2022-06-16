@@ -31,7 +31,7 @@ class EmojiURL:
         else:
             return cls(animated=partial.animated, url=str(partial.url))
 
-class Emoji(Cog, emoji="😀"):
+class Emojis(Cog, emoji="😀"):
     """Emoji management commands."""
     def __init__(self, bot):
         self.bot = bot
@@ -101,4 +101,4 @@ class Emoji(Cog, emoji="😀"):
 
 
 async def setup(bot):
-    await bot.add_cog(Emoji(bot))
+    await bot.add_cog(Emojis(bot))
