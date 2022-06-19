@@ -4,9 +4,8 @@ import time
 import discord
 import psutil
 from core.cog import Cog
-from core.buttons import ButtonCreation
 from discord.ext import commands
-from discord.ui import View
+from discord.ui import Button, View
 
 start_time = time.time()
 
@@ -425,12 +424,12 @@ class Utility(Cog, emoji="🛠️"):
 
         view = View()
 
-        b1 = ButtonCreation(
+        b1 = Button(
             label="Invite",
             emoji="✉️",
             url="https://dsc.gg/pizza-invite"
         )
-        b2 = ButtonCreation(
+        b2 = Button(
             label="Support",
             emoji="📨",
             url="https://discord.gg/WhNVDTF"
@@ -460,19 +459,26 @@ class Utility(Cog, emoji="🛠️"):
         await ctx.send('Do you want help? Join the support server now!\nhttps://discord.gg/WhNVDTF')
 
     @commands.command()
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, 60, commands.BucketType.user)
     async def suggest(self, ctx, *, suggestion):
-        """Suggest some commands that should be included in bot."""
+        """
+        Suggest some commands that should be included in bot.
+        This command need not be used if you are in the support server.
+        """
 
-        await ctx.send(f'{self.bot.yes} {ctx.author.mention}, your suggestion has been recorded!')
-        em = discord.Embed(color=self.bot.color)
-        em.add_field(name='__New suggestion!__', value=suggestion, inline=False)
-        em.set_footer(text=f'Sent by {ctx.author} from {ctx.guild}', icon_url = ctx.author.avatar.url)
+        await ctx.send(f"{self.bot.yes} {ctx.author.mention}, your suggestion has been recorded!")
+        channel = self.bot.get_channel(798259756803817545)
 
-        channel = self.bot.get_channel(818927218884345866)
-        e = await channel.send(embed=em)
-        await e.add_reaction('⬆️')
-        await e.add_reaction('⬇️')
+        em = discord.Embed(
+            description=f"> {suggestion}",
+            color=self.bot.color
+        )
+
+        em.set_author(name=ctx.author, icon_url=ctx.author.avatar.url)
+
+        msg = await channel.send(embed=em)
+        await msg.add_reaction("🔼")
+        await msg.add_reaction("🔽")
 
     # show perms
     async def say_permissions(self, ctx, member, channel):
@@ -541,11 +547,11 @@ class Utility(Cog, emoji="🛠️"):
         em.set_thumbnail(url=self.bot.user.avatar.url)
         em.set_footer(text='Make sure to leave a nice review too!')
 
-        b1 = ButtonCreation(
+        b1 = Button(
             label="Top.gg",
             url="https://top.gg/bot/860889936914677770/vote"
         )
-        b2 = ButtonCreation(
+        b2 = Button(
             label="DList.gg",
             url="https://discordlist.gg/bot/860889936914677770/vote"
         )
