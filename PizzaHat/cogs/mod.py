@@ -163,6 +163,8 @@ class Mod(Cog, emoji=847248846526087239):
         Locks a channel with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
 
+        Example: `p!lock channel [@role] [#channel]`
+
         In order for this to work, the bot must have Manage Channels permissions.
 
         To use this command, you must have Manage Channels permission.
@@ -227,6 +229,8 @@ class Mod(Cog, emoji=847248846526087239):
         """
         Unlocks a channel with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
+
+        Example: `p!unlock channel [@role] [#channel]`
 
         In order for this to work, the bot must have Manage Channels permissions.
 
