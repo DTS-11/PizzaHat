@@ -190,7 +190,7 @@ class AutoMod(Cog):
         return False
 
     async def zalgo_text(self, msg: discord.Message):
-        x = self.zalgo_regex.search(urllib.parse.quote(msg.content.encode("utf-8")))
+        x = self.zalgo_regex.search(urllib.parse.quote(msg.content.encode("utf-8")))  # type: ignore
         if x:
             await msg.delete()
             await msg.channel.send(
