@@ -1,4 +1,5 @@
 import discord
+from core.bot import PizzaHat
 from core.cog import Cog
 from discord import ButtonStyle, Interaction, ui
 from discord.ext import commands
@@ -125,7 +126,7 @@ class HelpView(ui.View):
     async def on_timeout(self) -> None:
         if self.message:
             for child in self.children:
-                child.disabled = True
+                child.disabled = True  # type: ignore
 
             await self.message.edit(view=self)
 
@@ -167,7 +168,7 @@ class MyHelp(commands.HelpCommand):
     async def send_bot_help(self, mapping):
         ctx = self.context
         view = HelpView(mapping, ctx)
-        view.message = await ctx.send(embed=bot_help_embed(ctx), view=view)
+        view.message = await ctx.send(embed=bot_help_embed(ctx), view=view)  # type: ignore
 
     async def send_command_help(self, command):
         signature = self.get_command_signature(command)
@@ -225,8 +226,8 @@ class MyHelp(commands.HelpCommand):
 
 
 class Help(Cog, emoji="❓"):
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: PizzaHat):
+        self.bot: PizzaHat = bot
         help_command = MyHelp()
         help_command.cog = self
         bot.help_command = help_command

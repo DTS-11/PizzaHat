@@ -1,8 +1,10 @@
 import shlex
 
 import discord
+from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
+from discord.ext.commands import Context
 
 
 def to_keycap(c):
@@ -11,14 +13,14 @@ def to_keycap(c):
 
 class Polls(Cog, emoji="🗳"):
     """Poll voting system."""
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: PizzaHat):
+        self.bot: PizzaHat = bot
 
     @commands.command()
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
-    async def poll(self, ctx, *, questions_and_choices: str):
+    async def poll(self, ctx: Context, *, questions_and_choices: str):
         """
         Separate questions and answers by either `|` or `,`
         Supports up to 10 choices.
@@ -72,7 +74,7 @@ class Polls(Cog, emoji="🗳"):
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
-    async def quickpoll(self, ctx, *, question: str):
+    async def quickpoll(self, ctx: Context, *, question: str):
         """
         Quick and easy yes/no poll
         For advanced poll, see `poll` command.
@@ -98,7 +100,7 @@ class Polls(Cog, emoji="🗳"):
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
-    async def strawpoll(self, ctx, *, question_and_choices: str = None):
+    async def strawpoll(self, ctx: Context, *, question_and_choices: str = None):
         """
         Separate questions and answers by `|` or `,`
         At least two answers required.

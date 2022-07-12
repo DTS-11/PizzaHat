@@ -3,6 +3,7 @@ import os
 import discord
 import requests
 import topgg
+from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import tasks
 from dotenv import load_dotenv
@@ -14,31 +15,31 @@ DLIST_TOKEN = os.getenv("DLIST_AUTH")
 
 class Events(Cog):
     """Events cog"""
-    def __init__(self, bot):
-        self.bot = bot
-        bot.loop.create_task(self.update_stats())
+    def __init__(self, bot: PizzaHat):
+        self.bot: PizzaHat = bot
+        # bot.loop.create_task(self.update_stats())
 
-    @tasks.loop(minutes=30)
-    async def update_stats(self):
-        try:
-            # Top.gg
-            await self.bot.wait_until_ready()
-            self.topggpy = topgg.DBLClient(self, os.getenv("DBL_TOKEN"), autopost=True)
-            await self.topggpy.post_guild_count()
-            print(f"Posted server count: {self.topggpy.guild_count}")
+    # @tasks.loop(minutes=30)
+    # async def update_stats(self):
+    #     try:
+    #         # Top.gg
+    #         await self.bot.wait_until_ready()
+    #         self.topggpy = topgg.DBLClient(self, os.getenv("DBL_TOKEN"), autopost=True)
+    #         await self.topggpy.post_guild_count()
+    #         print(f"Posted server count: {self.topggpy.guild_count}")
 
-        except Exception as e:
-            print(f"Failed to post server count\n{e.__class__.__name__}: {e}")
+    #     except Exception as e:
+    #         print(f"Failed to post server count\n{e.__class__.__name__}: {e}")
 
-        try:
-            # DList.gg
-            url = f"https://api.discordlist.gg/v0/bots/860889936914677770/guilds?count={len(self.bot.guilds)}"
-            headers = {'Authorization': f"Bearer {DLIST_TOKEN}", "Content-Type": "application/json"}
-            r = requests.put(url, headers=headers)
-            print(r.json())
+    #     try:
+    #         # DList.gg
+    #         url = f"https://api.discordlist.gg/v0/bots/860889936914677770/guilds?count={len(self.bot.guilds)}"
+    #         headers = {'Authorization': f"Bearer {DLIST_TOKEN}", "Content-Type": "application/json"}
+    #         r = requests.put(url, headers=headers)
+    #         print(r.json())
 
-        except Exception as e:
-            print(e)
+    #     except Exception as e:
+    #         print(e)
 
     @Cog.listener()
     async def on_ready(self):
@@ -53,7 +54,7 @@ class Events(Cog):
 
 
     async def get_logs_channel(self, guild_id):
-        data = await self.bot.db.fetchval("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)
+        data = await self.bot.db.fetchval("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)  # type: ignore
         if data:
             return self.bot.get_channel(data)
 
@@ -100,7 +101,7 @@ class Events(Cog):
         em.set_author(name=before.author, icon_url=before.author.avatar.url)
         em.set_footer(text=f"User ID: {before.author.id}")
 
-        await channel.send(embed=em)
+        await channel.send(embed=em)  # type: ignore
 
     @Cog.listener()
     async def on_message_delete(self, msg):
@@ -121,7 +122,7 @@ class Events(Cog):
         em.set_author(name=msg.author, icon_url=msg.author.avatar.url)
         em.set_footer(text=f"User ID: {msg.author.id}")
 
-        await channel.send(embed=em)
+        await channel.send(embed=em)  # type: ignore
 
 # ====== MEMBER LOGS ======
     
@@ -139,7 +140,7 @@ class Events(Cog):
         em.set_author(name=user, icon_url=user.avatar.url)
         em.set_footer(text=f"User ID: {user.id}")
 
-        await channel.send(embed=em)
+        await channel.send(embed=em)  # type: ignore
 
     @Cog.listener()
     async def on_member_unban(self, guild, user):
@@ -155,7 +156,7 @@ class Events(Cog):
         em.set_author(name=user, icon_url=user.avatar.url)
         em.set_footer(text=f"User ID: {user.id}")
 
-        await channel.send(embed=em)
+        await channel.send(embed=em)  # type: ignore
 
 # ====== GUILD LOGS ======
 
@@ -175,7 +176,7 @@ class Events(Cog):
         em.add_field(name="Color", value=role.color, inline=False)
         em.set_footer(text=f"Role ID: {role.id}")
 
-        await channel.send(embed=em)
+        await channel.send(embed=em)  # type: ignore
 
     @Cog.listener()
     async def on_guild_role_delete(self, role):
@@ -271,7 +272,7 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_guild_remove(self, guild):
-        await self.bot.db.execute("DELETE FROM modlogs WHERE guild_id=$1", guild.id)
+        await self.bot.db.execute("DELETE FROM modlogs WHERE guild_id=$1", guild.id)  # type: ignore
 
         channel = self.bot.get_channel(LOG_CHANNEL)
         await channel.send(f"Left {guild.name}")

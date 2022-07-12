@@ -5,17 +5,19 @@ import uuid
 
 import discord
 import humanfriendly
+from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
+from discord.ext.commands import Context
 
 
 class Mod(Cog, emoji=847248846526087239):
     """Keep your server safe!"""
-    def __init__(self,bot):
-        self.bot = bot
+    def __init__(self, bot: PizzaHat):
+        self.bot: PizzaHat = bot
 
     async def warn_log(self, guild_id, user_id):
-        data = await self.bot.db.fetchrow("SELECT * FROM warnlogs WHERE guild_id=$1 AND user_id=$2", guild_id, user_id)
+        data = await self.bot.db.fetchrow("SELECT * FROM warnlogs WHERE guild_id=$1 AND user_id=$2", guild_id, user_id)  # type: ignore
         
         if not data:
             print("No data")
@@ -27,7 +29,7 @@ class Mod(Cog, emoji=847248846526087239):
         data = await self.warn_log(guild_id, user_id)
 
         if data == []:
-            await self.bot.db.execute("INSERT INTO warnlogs (guild_id, user_id, warns, time) VALUES ($1, $2, $3, $4)", guild_id, user_id, [reason], [time])
+            await self.bot.db.execute("INSERT INTO warnlogs (guild_id, user_id, warns, time) VALUES ($1, $2, $3, $4)", guild_id, user_id, [reason], [time])  # type: ignore
             return
 
         warns = data[2]
@@ -41,7 +43,7 @@ class Mod(Cog, emoji=847248846526087239):
             warns.append(reason)
             times.append(time)
 
-        await self.bot.db.execute("UPDATE warnlogs SET time = $1, warns = $2 WHERE guild_id = $3 AND user_id = $4", times, warns, guild_id, user_id)
+        await self.bot.db.execute("UPDATE warnlogs SET time = $1, warns = $2 WHERE guild_id = $3 AND user_id = $4", times, warns, guild_id, user_id)  # type: ignore
 
     async def delete_warn(self, guild_id, user_id, index):
         data = await self.warn_log(guild_id, user_id)
@@ -52,13 +54,13 @@ class Mod(Cog, emoji=847248846526087239):
             return await self.bot.db.execute("UPDATE warnlogs SET warns = $1, time = $2 WHERE guild_id = $3 AND user_id = $4", data[2], data[3], guild_id, user_id)
         
         else:
-            await self.bot.db.execute("DELETE FROM warnlogs WHERE guild_id = $1 AND user_id = $2", guild_id, user_id)
+            await self.bot.db.execute("DELETE FROM warnlogs WHERE guild_id = $1 AND user_id = $2", guild_id, user_id)  # type: ignore
 
     @commands.command(aliases=['mn'])
     @commands.guild_only()
     @commands.has_permissions(manage_nicknames=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def modnick(self, ctx, member: discord.Member):
+    async def modnick(self, ctx: Context, member: discord.Member):
         """
         Sets a random moderated nickname.
 
@@ -78,7 +80,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_nicknames=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def setnick(self, ctx, member: discord.Member, *, nick):
+    async def setnick(self, ctx: Context, member: discord.Member, *, nick):
         """
         Sets a custom nickname.
 
@@ -98,7 +100,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_nicknames=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def decancer(self, ctx, member: discord.Member):
+    async def decancer(self, ctx: Context, member: discord.Member):
         """
         Removes special characters and renames the member as "Moderated Nickname"
 
@@ -127,7 +129,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def slowmode(self, ctx, seconds: int=None):
+    async def slowmode(self, ctx: Context, seconds: int=None):  # type: ignore
         """
         Change the slow-mode in the current channel.
         If no values are given, the bot returns slowmode of the current channel.
@@ -137,28 +139,31 @@ class Mod(Cog, emoji=847248846526087239):
         To use this command, you must have Manage Messages permission.
         """
 
+        if ctx.channel is discord.DMChannel:
+            return await ctx.send("Slow-mode cannot be checked/added.")
+
         if seconds is None:
-            seconds = ctx.channel.slowmode_delay
+            seconds = ctx.channel.slowmode_delay  # type: ignore
             await ctx.send(f'The slowmode in this channel is `{seconds}` seconds')
 
         elif seconds == 0:
-            await ctx.channel.edit(slowmode_delay=0)
+            await ctx.channel.edit(slowmode_delay=0)  # type: ignore
             await ctx.send(f'{self.bot.yes} Slow-mode set to none in this channel. Chat goes brrrr....')
 
         else:
-            await ctx.channel.edit(slowmode_delay=seconds)
+            await ctx.channel.edit(slowmode_delay=seconds)  # type: ignore
             await ctx.send(f"{self.bot.yes} Slow-mode in this channel changed to `{seconds}` seconds!")
 
     @commands.group(aliases=['lockdown'])
     @commands.has_permissions(manage_channels=True)
-    async def lock(self, ctx):
+    async def lock(self, ctx: Context):
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
     @lock.command(name='channel')
     @commands.has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def lock_channel(self, ctx, role: discord.Role=None, channel: discord.TextChannel=None):
+    async def lock_channel(self, ctx: Context, role: discord.Role=None, channel: discord.TextChannel=None):  # type: ignore
         """
         Locks a channel with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
@@ -189,7 +194,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def lock_server(self, ctx, role: discord.Role=None):
+    async def lock_server(self, ctx: Context, role: discord.Role=None):  # type: ignore
         """
         Locks the whole server with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
@@ -217,7 +222,7 @@ class Mod(Cog, emoji=847248846526087239):
 
     @commands.group()
     @commands.has_permissions(manage_channels=True)
-    async def unlock(self, ctx):
+    async def unlock(self, ctx: Context):
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
@@ -225,7 +230,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def unlock_channel(self, ctx, role: discord.Role=None, channel: discord.TextChannel=None):
+    async def unlock_channel(self, ctx: Context, role: discord.Role=None, channel: discord.TextChannel=None):  # type: ignore
         """
         Unlocks a channel with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
@@ -256,7 +261,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def unlock_server(self, ctx, role: discord.Role=None):
+    async def unlock_server(self, ctx: Context, role: discord.Role=None):  # type: ignore
         """
         Unlocks the whole server with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
@@ -286,7 +291,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def hide(self, ctx, role: discord.Role=None, channel: discord.TextChannel=None):
+    async def hide(self, ctx: Context, role: discord.Role=None, channel: discord.TextChannel=None):  # type: ignore
         """
         Hides a channel from a given role or @everyone.
 
@@ -308,7 +313,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def expose(self, ctx, role: discord.Role=None, channel: discord.TextChannel=None):
+    async def expose(self, ctx: Context, role: discord.Role=None, channel: discord.TextChannel=None):  # type: ignore
         """
         Exposes a channel from a given role or @everyone.
 
@@ -330,7 +335,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def clear(self, ctx, amount: int=100):
+    async def clear(self, ctx: Context, amount: int=100):
         """
         Deletes certain amount of messages in the current channel.
         If no amount is given, it deletes upto 100 messages.
@@ -340,19 +345,22 @@ class Mod(Cog, emoji=847248846526087239):
         To use this command, you must have Manage Messages permission.
         """
 
+        if ctx.channel is discord.DMChannel:
+            return await ctx.send("Messages cannot be cleared.")
+
         if amount > 100:
             return await ctx.send(f'{self.bot.no} I can only purge 100 messages at a time.')
 
         else:
             await ctx.message.delete()
-            await ctx.channel.purge(limit=amount)
+            await ctx.channel.purge(limit=amount)  # type: ignore
             await ctx.send(f'{self.bot.yes} {amount} messages cleared by {ctx.author}', delete_after=2.5)
 
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def cleanup(self, ctx, amount: int=100):
+    async def cleanup(self, ctx: Context, amount: int=100):
         """
         Cleans up bot's messages in the current channel.
         If no amount is given, it deletes upto 100 messages.
@@ -365,6 +373,9 @@ class Mod(Cog, emoji=847248846526087239):
         def is_bot(m):
             return m.author == self.bot.user
 
+        if ctx.channel is discord.DMChannel:
+            return await ctx.send("Cannot clear messages.")
+
         if amount > 100:
             return await ctx.send(f"{self.bot.no} I can only clear upto 100 messages at a time.")
 
@@ -376,7 +387,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(kick_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def kick(self, ctx, member: discord.Member, *, reason=None):
+    async def kick(self, ctx: Context, member: discord.Member, *, reason=None):
         """
         Kicks a member from the server.
 
@@ -396,7 +407,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
-    async def ban(self, ctx, member: typing.Union[discord.Member,int], *, reason=None):
+    async def ban(self, ctx: Context, member: typing.Union[discord.Member, int], *, reason=None):
         """
         Bans a member whether or not the member is in the server.
         You can ban the member using their ID or my mentioning them.
@@ -422,7 +433,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
-    async def massban(self, ctx, members: commands.Greedy[discord.Member], *, reason=None):
+    async def massban(self, ctx: Context, members: commands.Greedy[discord.Member], *, reason=None):
         """
         Mass bans multiple members from the server.
         You can only ban users, who are in the server.
@@ -447,7 +458,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def softban(self, ctx, member: discord.Member, *, reason=None):
+    async def softban(self, ctx: Context, member: discord.Member, *, reason=None):
         """Soft bans a member from the server.
 
         A softban is basically banning the member from the server but
@@ -462,15 +473,15 @@ class Mod(Cog, emoji=847248846526087239):
         if reason is None:
             reason = f"No reason given.\nBanned by {ctx.author}"
 
-        await ctx.guild.ban(member, reason)
-        await ctx.guild.unban(member, reason)
+        await ctx.guild.ban(member, reason)  # type: ignore
+        await ctx.guild.unban(member, reason)  # type: ignore
         await ctx.send(f"{self.bot.yes} Sucessfully soft-banned {member}.")
 
     @commands.command(aliases=['ub'])
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def unban(self, ctx, id: int):
+    async def unban(self, ctx: Context, id: int):
         """
         Unbans a member from the server using their ID.
 
@@ -491,7 +502,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(moderate_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def timeout(self, ctx, member: discord.Member, duration, *, reason=None):
+    async def timeout(self, ctx: Context, member: discord.Member, duration, *, reason=None):
         """
         Mutes or timeouts a member for specific time.
         Maximum duration of timeout: 28 days (API limitation)
@@ -517,7 +528,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(moderate_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def unmute(self, ctx, member: discord.Member, *, reason=None):
+    async def unmute(self, ctx: Context, member: discord.Member, *, reason=None):
         """
         Unmutes or removes a member from timeout.
 
@@ -536,7 +547,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def role(self, ctx, user: discord.Member, *, role: discord.Role):
+    async def role(self, ctx: Context, user: discord.Member, *, role: discord.Role):
         """
         Assign or remove role from a user just from one command.
 
@@ -557,7 +568,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def warn(self, ctx, member: discord.Member, *, reason=None):
+    async def warn(self, ctx: Context, member: discord.Member, *, reason=None):
         """
         Warns a user.
 
@@ -571,8 +582,8 @@ class Mod(Cog, emoji=847248846526087239):
             if member == ctx.author or member == self.bot.user:
                 return await ctx.send('You cant warn yourself or the bot.')
 
-            if not ctx.author.top_role.position == member.top_role.position:
-                if not ctx.author.top_role.position > member.top_role.position:
+            if not ctx.author.top_role.position == member.top_role.position:  # type: ignore
+                if not ctx.author.top_role.position > member.top_role.position:  # type: ignore
                     return await ctx.send('You cant warn someone that has higher or same role heirarchy.')
 
             await self.warn_entry(ctx.guild.id, member.id, reason, float(ctx.message.created_at.timestamp()))
@@ -592,14 +603,14 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.command(aliases=['warns'])
     @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def warnings(self, ctx, member:discord.Member=None):
+    async def warnings(self, ctx: Context, member:discord.Member=None):  # type: ignore
         """
         Displays the warnings of the user.
         If no user is given, the bot sends your warnings.
         """
 
         if member is None:
-            member = ctx.author
+            member = ctx.author  # type: ignore
 
         data = await self.warn_log(ctx.guild.id, member.id)
         em = discord.Embed(
@@ -632,7 +643,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def deletewarn(self, ctx, member: discord.Member, warn_id: float):
+    async def deletewarn(self, ctx: Context, member: discord.Member, warn_id: float):
         """
         Deletes a warn of the user with warn ID.
 
@@ -653,7 +664,7 @@ class Mod(Cog, emoji=847248846526087239):
                 return await ctx.send(f'{self.bot.no} No warn entry found for this user.')
 
         except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
 
 
 async def setup(bot):

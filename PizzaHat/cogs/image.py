@@ -5,8 +5,10 @@ import aiohttp
 import alexflipnote
 import discord
 from asyncdagpi import Client, ImageFeatures
+from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
+from discord.ext.commands import Context
 
 dagpi = Client(os.getenv('DAGPI'))
 alex_api = alexflipnote.Client()
@@ -14,12 +16,12 @@ alex_api = alexflipnote.Client()
 
 class Images(Cog, emoji="📷"):
     """Cool image commands!"""
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: PizzaHat):
+        self.bot: PizzaHat = bot
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def meme(self, ctx):
+    async def meme(self, ctx: Context):
         """Gets a random meme from Reddit."""
 
         async with aiohttp.ClientSession() as cs:
@@ -34,7 +36,7 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def bird(self, ctx):
+    async def bird(self, ctx: Context):
         """Return a random bird pic or gif."""
 
         em = discord.Embed(color=self.bot.color)
@@ -45,7 +47,7 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def dog(self, ctx):
+    async def dog(self, ctx: Context):
         """Return a random dog pic or gif."""
 
         em = discord.Embed(color=self.bot.color)
@@ -56,7 +58,7 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def cat(self, ctx):
+    async def cat(self, ctx: Context):
         """Return a random cat pic or gif."""
 
         em = discord.Embed(color=self.bot.color)
@@ -67,7 +69,7 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def sadcat(self, ctx):
+    async def sadcat(self, ctx: Context):
         """Return a random sadcat pic or gif."""
 
         em = discord.Embed(color=self.bot.color)
@@ -78,7 +80,7 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def coffee(self, ctx):
+    async def coffee(self, ctx: Context):
         """Return a random coffee pic or gif."""
 
         em = discord.Embed(color=self.bot.color)
@@ -89,7 +91,7 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def pixel(self, ctx, member: discord.Member=None):
+    async def pixel(self, ctx: Context, member: discord.Member=None):
         """
         Pixellates a user's avatar.
         If no user is provided, returns your avatar.
@@ -106,7 +108,7 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def tweet(self, ctx, member: discord.Member, *, text):
+    async def tweet(self, ctx: Context, member: discord.Member, *, text):
         """Tweeting with your pfp."""
 
         uname = member.name
@@ -119,7 +121,7 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def triggered(self, ctx, member: discord.Member=None):
+    async def triggered(self, ctx: Context, member: discord.Member=None):
         """Triggers yours or someone's avatar."""
 
         if member is None:
@@ -133,7 +135,7 @@ class Images(Cog, emoji="📷"):
     
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def wasted(self, ctx, member: discord.Member=None):
+    async def wasted(self, ctx: Context, member: discord.Member=None):
         """
         GTA wasted...
         If no user is given, returns yours.
@@ -150,7 +152,7 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def angel(self, ctx, member: discord.Member=None):
+    async def angel(self, ctx: Context, member: discord.Member=None):
         """Angelify your pfp or someone else's."""
 
         if member is None:
@@ -164,7 +166,7 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def hitler(self, ctx, member: discord.Member=None):
+    async def hitler(self, ctx: Context, member: discord.Member=None):
         """Changes you or someone into hitler."""
 
         if member is None:
@@ -178,7 +180,7 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def delete(self, ctx, member: discord.Member=None):
+    async def delete(self, ctx: Context, member: discord.Member=None):
         """Delete someone or yourself."""
 
         if member is None:
@@ -192,7 +194,7 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def wanted(self, ctx, member: discord.Member=None):
+    async def wanted(self, ctx: Context, member: discord.Member=None):
         """Police wanted poster."""
 
         if member is None:
@@ -206,7 +208,7 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def jail(self, ctx, member: discord.Member=None):
+    async def jail(self, ctx: Context, member: discord.Member=None):
         """Lock yourself or someone behind bars."""
 
         if member is None:
@@ -220,7 +222,7 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def trash(self, ctx, member: discord.Member=None):
+    async def trash(self, ctx: Context, member: discord.Member=None):
         """Replace the trash with your avatar."""
 
         if member is None:
@@ -234,7 +236,7 @@ class Images(Cog, emoji="📷"):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def discord(self, ctx, member: discord.Member, *, text):
+    async def discord(self, ctx: Context, member: discord.Member, *, text):
         """Send a Discord message, simple."""
         
         uname = member.name
@@ -247,7 +249,7 @@ class Images(Cog, emoji="📷"):
 
     # @commands.command()
     # @commands.cooldown(1, 5, commands.BucketType.user)
-    # async def bonk(self, ctx, member: discord.Member):
+    # async def bonk(self, ctx: Context, member: discord.Member):
     #     """"""
 
     #     if member is None:

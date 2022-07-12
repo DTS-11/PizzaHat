@@ -15,8 +15,8 @@ async def main():
     async with pool as db_pool:
         print("DB Connected")
         async with bot:
-            bot.db = db_pool
-            await bot.start(os.getenv("TOKEN"))
+            bot.db = db_pool  # type: ignore
+            await bot.start(os.getenv("TEST_BOT"))  # type: ignore
 
 
 if __name__ == '__main__':

@@ -9,8 +9,10 @@ from contextlib import redirect_stdout
 from typing import TYPE_CHECKING, Awaitable, Callable, Union
 
 import discord
+from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
+from discord.ext.commands import Context
 from utils.formats import TabularData, plural
 
 if TYPE_CHECKING:
@@ -23,8 +25,8 @@ def restart_bot():
 
 class Dev(Cog, emoji=833297795761831956):
     """Developer commands."""
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: PizzaHat):
+        self.bot: PizzaHat = bot
 
     def cleanup_code(self, content: str) -> str:
         """Automatically removes code blocks from the code."""
@@ -38,22 +40,22 @@ class Dev(Cog, emoji=833297795761831956):
 
     @commands.command(hidden=True)
     @commands.is_owner()
-    async def restart(self, ctx):
+    async def restart(self, ctx: Context):
         """Restarts the bot."""
 
         await ctx.message.add_reaction("✅")
         restart_bot()
 
-    @commands.command(hidden=True)
+    @commands.command(name="eval", hidden=True)
     @commands.is_owner()
-    async def eval(self, ctx, *, body):
+    async def _eval(self, ctx: Context, *, body: str):
         """Eval command."""
 
         env = {
             'ctx': ctx,
             'bot': self.bot,
             'client': self.bot,
-            'db': self.bot.db,
+            'db': self.bot.db,  # type: ignore
             'channel': ctx.channel,
             'author': ctx.author,
             'guild': ctx.guild,
@@ -81,10 +83,11 @@ class Dev(Cog, emoji=833297795761831956):
                 pages.append(text[last:curr])
             return list(filter(lambda a: a != '', pages))
         
-        color = 0x2e3135
+        color = self.bot.color
 
         try:
             exec(to_compile, env)
+
         except Exception as e:
             embed=discord.Embed(
                 title='Error',
@@ -94,6 +97,7 @@ class Dev(Cog, emoji=833297795761831956):
             await ctx.send(embed=embed)
 
         func = env['func']
+
         try:
             with redirect_stdout(stdout):
                 ret = await func()
@@ -115,7 +119,7 @@ class Dev(Cog, emoji=833297795761831956):
                         embed=discord.Embed(
                             description=f'```py\n{value}\n```',
                                 color=color
-                            )
+                        )
 
                         await ctx.send(embed=embed)
 
@@ -127,13 +131,14 @@ class Dev(Cog, emoji=833297795761831956):
                                 embed=discord.Embed(
                                     description=f'```py\n{page}\n```',
                                     color=color
-                                    )
+                                )
                                 await ctx.send(embed=embed)
                                 break
+
                             embed=discord.Embed(
                                 description=f'```py\n{page}\n```',
                                 color=color
-                                )
+                            )
 
                             await ctx.send(embed=embed)
             else:
@@ -141,7 +146,7 @@ class Dev(Cog, emoji=833297795761831956):
                     embed=discord.Embed(
                         description=f'```py\n{value}{ret}\n```',
                         color=color
-                        )
+                    )
                     await ctx.send(embed=embed)
 
                 except:
@@ -152,9 +157,10 @@ class Dev(Cog, emoji=833297795761831956):
                             embed=discord.Embed(
                                 description=f'```py\n{page}\n```',
                                 color=color
-                                )
+                            )
                             await ctx.send(embed=embed)
                             break
+
                         embed=discord.Embed(
                             description=f'```py\n{page}\n```',
                             color=color
@@ -164,7 +170,7 @@ class Dev(Cog, emoji=833297795761831956):
 
     @commands.command(hidden=True)
     @commands.is_owner()
-    async def sql(self, ctx, *, query: str):
+    async def sql(self, ctx: Context, *, query: str):
         """Run some SQL."""
 
         query = self.cleanup_code(query)
@@ -174,10 +180,10 @@ class Dev(Cog, emoji=833297795761831956):
 
         if is_multistatement:
             # fetch does not support multiple statements
-            strategy = self.bot.db.execute
+            strategy = self.bot.db.execute  # type: ignore
 
         else:
-            strategy = self.bot.db.fetch
+            strategy = self.bot.db.fetch  # type: ignore
 
         try:
             start = time.perf_counter()
@@ -208,7 +214,7 @@ class Dev(Cog, emoji=833297795761831956):
         
     @commands.command(hidden=True)
     @commands.is_owner()
-    async def unload(self, ctx, cog):
+    async def unload(self, ctx: Context, cog):
         """Unloads a cog."""
         
         try:

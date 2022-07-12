@@ -2,8 +2,10 @@ import asyncio
 
 import discord
 import yarl
+from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
+from discord.ext.commands import Context
 
 
 # credits to R.Danny:
@@ -14,7 +16,7 @@ class EmojiURL:
         self.animated: bool = animated
 
     @classmethod
-    async def convert(cls, ctx, argument):
+    async def convert(cls, ctx: Context, argument):
         try:
             partial = await commands.PartialEmojiConverter().convert(ctx, argument)
         except commands.BadArgument:
@@ -33,13 +35,13 @@ class EmojiURL:
 
 class Emojis(Cog, emoji="😀"):
     """Emoji management commands."""
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: PizzaHat):
+        self.bot: PizzaHat = bot
 
     @commands.group(name="emoji")
     @commands.guild_only()
     @commands.has_permissions(manage_emojis=True)
-    async def _emoji(self, ctx):
+    async def _emoji(self, ctx: Context):
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
@@ -47,7 +49,7 @@ class Emojis(Cog, emoji="😀"):
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_emojis=True)
-    async def create(self, ctx, emoji: EmojiURL, name):
+    async def create(self, ctx: Context, emoji: EmojiURL, name):
         """
         Creates an emoji for the server under the given name.
         
@@ -87,7 +89,7 @@ class Emojis(Cog, emoji="😀"):
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_emojis=True)
-    async def delete(self, ctx, emoji: discord.Emoji):
+    async def delete(self, ctx: Context, emoji: discord.Emoji):
         """
         Deletes an emoji from the server.
         

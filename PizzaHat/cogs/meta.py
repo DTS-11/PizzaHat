@@ -6,8 +6,10 @@ import unicodedata
 from typing import Union
 
 import discord
+from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
+from discord.ext.commands import Context
 from TagScriptEngine import Interpreter, block
 
 
@@ -19,8 +21,8 @@ def clean_string(string):
 
 class Meta(Cog, emoji="😎"):
     """Miscellaneous commands."""
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: PizzaHat):
+        self.bot: PizzaHat = bot
         blocks = [
             block.MathBlock(),
             block.RandomBlock(),
@@ -30,7 +32,7 @@ class Meta(Cog, emoji="😎"):
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def charinfo(self, ctx, *, characters: str):
+    async def charinfo(self, ctx: Context, *, characters: str):
         """Shows you information about a number of characters.
         Only up to 15 characters at a time.
         """
@@ -50,7 +52,7 @@ class Meta(Cog, emoji="😎"):
 
     @commands.command(name="credits")
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def _credits(self, ctx):
+    async def _credits(self, ctx: Context):
         """Shows all the people who have helped make this bot."""
 
         em = discord.Embed(
@@ -71,7 +73,7 @@ class Meta(Cog, emoji="😎"):
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def echo(self, ctx, destination: discord.TextChannel, *, msg: str):
+    async def echo(self, ctx: Context, channel: discord.TextChannel, *, msg: str):
         """Makes the bot say something in the specified channel"""
 
         if not destination.permissions_for(ctx.author).send_messages:
@@ -83,14 +85,14 @@ class Meta(Cog, emoji="😎"):
 
     @commands.command(aliases=["ss"])
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def screenshot(self, ctx, *, url):
+    async def screenshot(self, ctx: Context, *, url: str):
         """Takes a screenshot from a given URL."""
 
         await ctx.send(f"https://image.thum.io/get/https://{url}")
         
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def choose(self, ctx, *options):
+    async def choose(self, ctx: Context, *options):
         """
         Choose between multiple things.
         Max: 10 options.
@@ -99,9 +101,11 @@ class Meta(Cog, emoji="😎"):
         if len(options) <= 1:
             await ctx.send('Min no: of options: 2')
             return
+
         if len(options) > 10:
             await ctx.send('Max no: of options: 10')
             return
+
         else:
             e = discord.Embed(
                 title="Choose",
@@ -112,14 +116,14 @@ class Meta(Cog, emoji="😎"):
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def emojify(self, ctx, emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
+    async def emojify(self, ctx: Context, emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
         """Emojify a given emoji."""
 
         await ctx.send(emoji.url)
         
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def reverse(self, ctx, *, text):
+    async def reverse(self, ctx: Context, *, text):
         """Reverse some text."""
 
         e = discord.Embed(color=self.bot.color)
@@ -130,7 +134,7 @@ class Meta(Cog, emoji="😎"):
     
     @commands.command(aliases=["calc"])
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def calculate(self, ctx, *, query):
+    async def calculate(self, ctx: Context, *, query):
         """Do some math calculations. Cannot do algebraic expressions."""
 
         query = query.replace(",", "")
@@ -153,7 +157,7 @@ class Meta(Cog, emoji="😎"):
     
     @commands.command(aliases=['tc', 'taxcalc'])
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def taxcalculator(self, ctx, value:int):
+    async def taxcalculator(self, ctx: Context, value:int):
         """Dank Memer tax-calculator."""
 
         # values
@@ -178,7 +182,7 @@ class Meta(Cog, emoji="😎"):
 
     @commands.command(name='8ball')
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def _8ball(self, ctx, *, question):
+    async def _8ball(self, ctx: Context, *, question: str):
         """Ask any question, and let the bot respond with the answers."""
 
         responses = [
@@ -213,8 +217,8 @@ class Meta(Cog, emoji="😎"):
         await ctx.send(embed=em)
     
     @commands.command()
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def hack(self, ctx, member: discord.Member):
+    @commands.cooldown(1, 25, commands.BucketType.user)
+    async def hack(self, ctx: Context, member: discord.Member):
         """Hack someone and get their details."""
 
         used_words = ['Nerd','Sucker','Noob','Sup','Yo','Wassup','Nab','Nub','fool','stupid']

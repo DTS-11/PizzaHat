@@ -3,8 +3,10 @@ import time
 
 import discord
 import psutil
+from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
+from discord.ext.commands import Context
 from discord.ui import Button, View
 
 start_time = time.time()
@@ -17,13 +19,13 @@ def format_date(dt:datetime.datetime):
 
 class Utility(Cog, emoji="🛠️"):
     """Utility commands which makes your discord experience smooth!"""
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: PizzaHat):
+        self.bot: PizzaHat = bot
         self.process = psutil.Process()
 
     @commands.command(aliases=['latency'])
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def ping(self, ctx):
+    async def ping(self, ctx: Context):
         """Shows latency of bot."""
 
         time1 = time.perf_counter()
@@ -38,7 +40,7 @@ class Utility(Cog, emoji="🛠️"):
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def badges(self, ctx, member: discord.Member=None):
+    async def badges(self, ctx: Context, member: discord.Member=None):
         """
         Shows different badges of a user.
         If no user is given, returns your badges.
@@ -88,7 +90,7 @@ class Utility(Cog, emoji="🛠️"):
     @commands.command(aliases=['whois','ui'])
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
-    async def userinfo(self, ctx, member: discord.Member=None):
+    async def userinfo(self, ctx: Context, member: discord.Member=None):
         """
         Shows info about a user.
         If no user is given, returns info about yourself.
@@ -103,7 +105,7 @@ class Utility(Cog, emoji="🛠️"):
         if len(uroles) > 15:
             uroles = [f"{', '.join(uroles[:10])} (+{len(member.roles) - 11})"]
 
-        user_roles = ('**({} Total)**').format(len(member.roles) - 1) if uroles != [] else ('No roles')
+        user_roles = (' **({} Total)**').format(len(member.roles) - 1) if uroles != [] else ('No roles')
 
         em = discord.Embed(
             color=member.color,
@@ -118,6 +120,7 @@ class Utility(Cog, emoji="🛠️"):
             value=format_date(member.created_at),
             inline=False
         )
+
         em.add_field(
             name="Joined",
             value=format_date(member.joined_at),
@@ -128,6 +131,7 @@ class Utility(Cog, emoji="🛠️"):
             value=', '.join(uroles) + user_roles,
             inline=False
         )
+
         if member.bot:
             em.add_field(
                 name="Member Bot",
@@ -155,7 +159,7 @@ class Utility(Cog, emoji="🛠️"):
     @commands.command(aliases=['si'])
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
-    async def serverinfo(self, ctx):
+    async def serverinfo(self, ctx: Context):
         """Shows various info about the server."""
 
         def formatted_date(date):
@@ -223,7 +227,7 @@ class Utility(Cog, emoji="🛠️"):
     @commands.command(aliases=['ci'])
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
-    async def channelinfo(self, ctx, *, channel: discord.TextChannel=None):
+    async def channelinfo(self, ctx: Context, *, channel: discord.TextChannel=None):
         """
         Shows info about a channel.
         If no channel is given, returns info for the current channel.
@@ -249,7 +253,7 @@ class Utility(Cog, emoji="🛠️"):
     @commands.command(aliases=['vi'])
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
-    async def vcinfo(self, ctx, vc: discord.VoiceChannel):
+    async def vcinfo(self, ctx: Context, vc: discord.VoiceChannel):
         """Shows info about a voice channel."""
 
         e = discord.Embed(title='VC Information', color=self.bot.color)
@@ -265,7 +269,7 @@ class Utility(Cog, emoji="🛠️"):
     @commands.command(aliases=['ri'])
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
-    async def roleinfo(self, ctx, role: discord.Role):
+    async def roleinfo(self, ctx: Context, role: discord.Role):
         """
         Gives some info about the specified role.
         You can mention the role or give the name of it.
@@ -289,7 +293,7 @@ class Utility(Cog, emoji="🛠️"):
     @commands.command(aliases=['ei'])
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
-    async def emojiinfo(self, ctx, emoji: discord.Emoji):
+    async def emojiinfo(self, ctx: Context, emoji: discord.Emoji):
         """Shows info about emoji."""
 
         try:
@@ -306,6 +310,7 @@ class Utility(Cog, emoji="🛠️"):
             if not emoji.roles
             else " ".join(role.name for role in emoji.roles)
         )
+
         description = f"""
         **__General:__**
         **- Name:** {emoji.name}
@@ -321,12 +326,14 @@ class Utility(Cog, emoji="🛠️"):
         **- Guild Name:** {emoji.guild.name}
         **- Guild ID:** {emoji.guild.id}
         """
+
         embed = discord.Embed(
             title=f"**Emoji Information for:** `{emoji.name}`",
             description=description,
             colour=0xADD8E6,
         )
         embed.set_thumbnail(url=emoji.url)
+
         await ctx.send(embed=embed)
 
     def get_bot_uptime(self, *, brief=False):
@@ -352,7 +359,7 @@ class Utility(Cog, emoji="🛠️"):
 
     @commands.command(aliases=['stats'])
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def about(self, ctx):
+    async def about(self, ctx: Context):
         """Tells you information about the bot itself."""
 
         total_members = 0
@@ -391,22 +398,27 @@ class Utility(Cog, emoji="🛠️"):
             name="Users",
             value=f"{total_members} total\n{total_unique} unique"
         )
+
         em.add_field(
             name="Channels",
             value=f"{text + voice} total\n{text} text\n{voice} voice"
         )
+
         em.add_field(
             name="Process",
             value=f"{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU"
         )
+
         em.add_field(
             name="Guilds",
             value=guilds
         )
+
         em.add_field(
             name="Discord.py version",
             value=dpy_version
         )
+
         em.add_field(
             name="Uptime",
             value=self.get_bot_uptime(brief=True)
@@ -419,7 +431,7 @@ class Utility(Cog, emoji="🛠️"):
 
     @commands.command(name='invite')
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def invite_cmd(self, ctx):
+    async def invite_cmd(self, ctx: Context):
         """Gives invite of bot."""
 
         view = View()
@@ -453,14 +465,14 @@ class Utility(Cog, emoji="🛠️"):
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def support(self, ctx):
+    async def support(self, ctx: Context):
         """Gives link to support server"""
 
         await ctx.send('Do you want help? Join the support server now!\nhttps://discord.gg/WhNVDTF')
 
     @commands.command()
     @commands.cooldown(1, 60, commands.BucketType.user)
-    async def suggest(self, ctx, *, suggestion):
+    async def suggest(self, ctx: Context, *, suggestion):
         """
         Suggest some commands that should be included in bot.
         This command need not be used if you are in the support server.
@@ -477,11 +489,11 @@ class Utility(Cog, emoji="🛠️"):
         em.set_author(name=ctx.author, icon_url=ctx.author.avatar.url)
 
         msg = await channel.send(embed=em)
-        await msg.add_reaction("🔼")
-        await msg.add_reaction("🔽")
+        await msg.add_reaction("👍")
+        await msg.add_reaction("👎")
 
     # show perms
-    async def say_permissions(self, ctx, member, channel):
+    async def say_permissions(self, ctx: Context, member, channel):
         permissions = channel.permissions_for(member)
         e = discord.Embed()
         allowed, denied = [], []
@@ -498,27 +510,30 @@ class Utility(Cog, emoji="🛠️"):
 
     @commands.command(aliases=['perms'])
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def permissions(self, ctx, *, member: discord.Member = None):
+    async def permissions(self, ctx: Context, *, member: discord.Member = None):
         """Shows a member's permissions.
         If used in DM's, shows your permissions in a DM channel."""
 
         channel = ctx.message.channel
+
         if member is None:
             member = ctx.author
+
         await self.say_permissions(ctx, member, channel)
 
     @commands.command(aliases=['botperms'])
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def botpermissions(self, ctx):
+    async def botpermissions(self, ctx: Context):
         """Shows the bot's permissions."""
 
         channel = ctx.channel
         member = ctx.message.guild.me
+
         await self.say_permissions(ctx, member, channel)
 
     @commands.command(aliases=['av'])
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def avatar(self, ctx, member: discord.Member=None):
+    async def avatar(self, ctx: Context, member: discord.Member=None):
         """
         Displays a user's avatar
         If no member is provided, returns your avatar.
@@ -530,6 +545,7 @@ class Utility(Cog, emoji="🛠️"):
         em = discord.Embed(title=f"Avatar of {member.name}", color=self.bot.color)
         em.set_image(url=member.avatar.url)
         em.set_footer(text=f"Requested by {ctx.author.name}")
+
         await ctx.send(embed=em)
     
     @commands.command()
@@ -564,19 +580,23 @@ class Utility(Cog, emoji="🛠️"):
     @commands.guild_only()
     @commands.cooldown(1, 20, commands.BucketType.user)
     @commands.has_permissions(manage_emojis=True)
-    async def emotes(self, ctx):
+    async def emotes(self, ctx: Context):
         """
         Sends the servers emotes and their raw form in a list.
         """
 
         emojis = ctx.guild.emojis
         emoji_string = ''
+
         for e in emojis:
             if e.animated == True:
                 info = f'<a:{e.name}:{e.id}> - `<a:{e.name}:{e.id}>`\n'
+
             else:
                 info = f'<:{e.name}:{e.id}> - `<:{e.name}:{e.id}>`\n'
+
             emoji_string += info
+
         chunk = emoji_string.split('\n')
 
         x = 15    
@@ -589,6 +609,7 @@ class Utility(Cog, emoji="🛠️"):
             try:
                 c = '\n'.join(b)
                 await ctx.send(c)
+                
             except:
                 pass
 

@@ -25,9 +25,9 @@ class Cog(DiscordCog, metaclass=CogMeta):
         e = None
 
         if hasattr(self, "__cog_emoji__"):
-            e = self.__cog_emoji__
+            e = self.__cog_emoji__  # type: ignore
             if isinstance(e, int):  # custom emoji referenced by id
-                e = self.bot.get_emoji(e)
+                e = self.bot.get_emoji(e)  # type: ignore
         
         return e
     

@@ -83,16 +83,16 @@ class PizzaHat(commands.Bot):
         if not hasattr(self, 'uptime'):
             self.uptime = datetime.datetime.utcnow()
 
-        self.togetherControl = await DiscordTogether(os.getenv("TOKEN"), debug=True)
+        self.togetherControl = await DiscordTogether(os.getenv("TOKEN"), debug=True)  # type: ignore
         print(f"Logged in as {self.user}")
 
 
     async def on_wavelink_node_ready(self, node: wavelink.Node):
         print(f"Node: {node.identifier} is ready.")
 
-    async def on_wavelink_track_end(self, player: wavelink.Player, track: wavelink.Track, reason):
-        ctx = player.ctx
-        vc: player = ctx.voice_client
+    async def on_wavelink_track_end(self, player: wavelink.Player, track: wavelink.Track, reason: str):
+        ctx = player.ctx  # type: ignore
+        vc: player = ctx.voice_client  # type: ignore
 
         track.info["requester"] = ctx.author
         wavelink_track = wavelink.Track(track.id, track.info)
@@ -117,35 +117,42 @@ class PizzaHat(commands.Bot):
             pass
 
 
-    async def setup_hook(self):
+    async def setup_hook(self) -> None:
         self.bot_app_info = await self.application_info()
         self.owner_id = self.bot_app_info.owner.id
+
+        success = fail = 0
+        total = len(INITIAL_EXTENSIONS + SUB_EXTENSIONS)
 
         for ext in INITIAL_EXTENSIONS:
             try:
                 self.public_extensions = await self.load_extension(ext)
-                print(f"Loaded {ext}")
+                success += 1
 
             except Exception as e:
                 print(f"Failed to load extension {ext}")
-                print("".join(traceback.format_exception(e, e, e.__traceback__)))
+                print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+                fail += 1
 
         for sub_ext in SUB_EXTENSIONS:
             try:
                 await self.load_extension(sub_ext)
-                print(f"Loaded {sub_ext}")
+                success += 1
 
             except Exception as e:
-                print(f"Failed to load extension {sub_ext}")
-                print("".join(traceback.format_exception(e, e, e.__traceback__)))
+                print(f"Failed to load extension: {sub_ext}")
+                print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+                fail += 1
 
         try:
             await self.load_extension("jishaku")
             print("Jishaku has been loaded.")
-            print("=========================")
 
         except ExtensionAlreadyLoaded:
             pass
+
+        print(f"Loaded all cogs.\nSuccess: {success}, Fail: {fail}\nDone! ({success+fail}/{total})")
+        print("=========================")
 
         
     async def on_command_error(self, ctx: Context, error: CommandError) -> None:
@@ -164,6 +171,7 @@ class PizzaHat(commands.Bot):
         elif isinstance(error, commands.BotMissingPermissions):
             if error.missing_permissions[0] == 'send_messages':
                 return
+                
             await ctx.send("I am missing **{}** permissions.".format(' '.join(error.missing_permissions[0].split('_')).title()))
         
         elif isinstance(error, commands.MissingPermissions):

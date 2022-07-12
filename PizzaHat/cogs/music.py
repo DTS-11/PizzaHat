@@ -3,14 +3,16 @@ from datetime import timedelta
 
 import discord
 import wavelink
+from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
+from discord.ext.commands import Context
 
 
 class Music(Cog, emoji=929100003178348634):
     """Listen to music and chill!"""
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: PizzaHat):
+        self.bot: PizzaHat = bot
         bot.loop.create_task(self.connect_nodes())
 
     async def connect_nodes(self):
@@ -26,7 +28,7 @@ class Music(Cog, emoji=929100003178348634):
 
     @commands.command(aliases=['leave'])
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def dc(self, ctx):
+    async def dc(self, ctx: Context):
         """Leaves a VC."""
 
         await ctx.voice_client.disconnect()
@@ -34,7 +36,7 @@ class Music(Cog, emoji=929100003178348634):
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def play(self, ctx, *, song: wavelink.YouTubeTrack):
+    async def play(self, ctx: Context, *, song: wavelink.YouTubeTrack):
         """Plays a song."""
 
         if ctx.author.voice is None:
@@ -62,7 +64,7 @@ class Music(Cog, emoji=929100003178348634):
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def skip(self, ctx):
+    async def skip(self, ctx: Context):
         """Skip to the next song in the queue."""
 
         try:
@@ -82,7 +84,7 @@ class Music(Cog, emoji=929100003178348634):
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def pause(self, ctx):
+    async def pause(self, ctx: Context):
         """Pause a song which is currently playing."""
 
         if ctx.author.voice is None:
@@ -98,7 +100,7 @@ class Music(Cog, emoji=929100003178348634):
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def resume(self, ctx):
+    async def resume(self, ctx: Context):
         """Resume a paused song."""
 
         if ctx.author.voice is None:
@@ -114,7 +116,7 @@ class Music(Cog, emoji=929100003178348634):
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def stop(self, ctx):
+    async def stop(self, ctx: Context):
         """Stops the playing song and removes everything from the queue."""
 
         if ctx.author.voice is None:
@@ -131,7 +133,7 @@ class Music(Cog, emoji=929100003178348634):
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def loop(self, ctx):
+    async def loop(self, ctx: Context):
         """Loop a song."""
 
         if ctx.author.voice is None:
@@ -157,7 +159,7 @@ class Music(Cog, emoji=929100003178348634):
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def queue(self, ctx):
+    async def queue(self, ctx: Context):
         """Displays the songs which are in the queue."""
 
         if ctx.author.voice is None:
@@ -189,7 +191,7 @@ class Music(Cog, emoji=929100003178348634):
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def volume(self, ctx, volume: int):
+    async def volume(self, ctx: Context, volume: int):
         """Change the volume of the song"""
 
         if ctx.author.voice is None:
@@ -212,7 +214,7 @@ class Music(Cog, emoji=929100003178348634):
 
     @commands.command(aliases=['np'])
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def nowplaying(self, ctx):
+    async def nowplaying(self, ctx: Context):
         """Shows which song is playing."""
         
         if ctx.author.voice is None:
