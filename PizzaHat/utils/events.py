@@ -1,3 +1,4 @@
+import datetime
 import os
 
 import discord
@@ -7,11 +8,15 @@ from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import tasks
 from dotenv import load_dotenv
+from humanfriendly import format_timespan
 
 load_dotenv()
 
 LOG_CHANNEL = 980151632199299092
 DLIST_TOKEN = os.getenv("DLIST_AUTH")
+
+reason = discord.AuditLogEntry.reason or "No reason provided."  # type: ignore
+
 
 class Events(Cog):
     """Events cog"""
@@ -136,7 +141,11 @@ class Events(Cog):
         em = discord.Embed(
             title="Member banned",
             color=self.bot.failed,
+            timestamp=datetime.datetime.utcnow()
         )
+
+        em.add_field(name="Reason", value=reason, inline=False)
+
         em.set_author(name=user, icon_url=user.avatar.url)
         em.set_footer(text=f"User ID: {user.id}")
 
@@ -152,13 +161,77 @@ class Events(Cog):
         em = discord.Embed(
             title="Member unbanned",
             color=self.bot.success,
+            timestamp=datetime.datetime.utcnow()
         )
+
+        em.add_field(name="Reason", value=reason, inline=False)
+
         em.set_author(name=user, icon_url=user.avatar.url)
         em.set_footer(text=f"User ID: {user.id}")
 
         await channel.send(embed=em)  # type: ignore
 
-# ====== GUILD LOGS ======
+    @Cog.listener(name="on_member_update")
+    async def member_role_update(self, before, after):
+        channel = await self.get_logs_channel(before.guild.id)
+        roles = []
+        role_text = ""
+
+        if not channel:
+            return
+
+        if before.roles == after.roles:
+            return
+
+        if len(before.roles) > len(after.roles):
+            for e in before.roles:
+                if e not in after.roles:
+                    roles.append(e)
+
+        else:
+            for e in after.roles:
+                if e not in before.roles:
+                    roles.append(e)
+
+        for h in roles:
+            role_text += f"`{h.name}`, "
+        role_text = role_text[:-2]
+
+        em = discord.Embed(
+            description=f"Role{'s' if len(roles) > 1 else ''} {role_text} "
+                        f"{'were' if len(roles) > 1 else 'was'} "
+                        f"{'added to' if len(before.roles) < len(after.roles) else 'removed from'} "
+                        f"{after.mention}",
+            color=self.bot.color,
+            timestamp=datetime.datetime.utcnow(),
+        )
+        em.set_author(name=after, icon_url=after.display_avatar.url)
+        em.set_footer(text=f"ID: {after.id}")
+
+        await channel.send(embed=em)  # type: ignore
+
+    @Cog.listener("on_member_update")
+    async def member_nickname_update(self, before, after):
+        channel = await self.get_logs_channel(before.guild.id)
+
+        if not channel:
+            return
+
+        if before.nick == after.nick:
+            return
+
+        em = discord.Embed(
+            title="Nickname updated",
+            description=f"`{before.nick}` ➜ `{after.nick}`",
+            color=self.bot.color,
+            timestamp=datetime.datetime.utcnow()
+        )
+        em.set_author(name=after, icon_url=after.display_avatar.url)
+        em.set_footer(text=f"ID: {after.id}")
+
+        await channel.send(embed=em)  # type: ignore
+
+# ====== ROLE LOGS ======
 
     @Cog.listener()
     async def on_guild_role_create(self, role):
@@ -188,22 +261,22 @@ class Events(Cog):
         em = discord.Embed(
             title="Role deleted",
             color=self.bot.failed,
-            timestamp=role.created_at
+            timestamp=datetime.datetime.utcnow()
         )
         em.add_field(name="Name", value=role.name, inline=False)
         em.add_field(name="Color", value=role.color, inline=False)
         em.set_footer(text=f"Role ID: {role.id}")
 
-        await channel.send(embed=em)
+        await channel.send(embed=em)  # type: ignore
 
-    @Cog.listener()
-    async def on_guild_role_update(self, before, after):
+    @Cog.listener(name="on_guild_role_update")
+    async def guild_role_update(self, before, after):
         channel = await self.get_logs_channel(before.guild.id)
 
         if not channel:
             return
 
-        if before == after:
+        if before.position - after.position in [1, -1]:
             return
 
         em = discord.Embed(
@@ -211,6 +284,7 @@ class Events(Cog):
             color=self.bot.color,
             timestamp=after.created_at
         )
+
         if before.name != after.name:
             em.add_field(name="Name", value=f"{before.name} ➜ {after.name}", inline=False)
 
@@ -246,7 +320,125 @@ class Events(Cog):
 
         em.set_footer(text=f"Role ID: {before.id}")
 
-        await channel.send(embed=em)
+        await channel.send(embed=em)  # type: ignore
+
+# ===== GUILD LOGS =====
+
+    @Cog.listener("on_guild_update")
+    async def guild_update_log(self, before, after):
+        channel = await self.get_logs_channel(before.guild.id)
+
+        if not channel:
+            return
+
+        em = discord.Embed(
+            title="Server updated",
+            color=self.bot.color,
+            timestamp=datetime.datetime.utcnow()
+        )
+            
+        em.set_author(name=after, icon_url=after.icon.url)
+        em.set_footer(text=f"ID: {after.id}")
+
+        if before.afk_channel != after.afk_channel:
+            em.add_field(
+                name="AFK Channel",
+                value=f"`{before.afk_channel}` ➜ `{after.afk_channel}`",
+                inline=False
+            )
+
+        if before.afk_timeout != after.afk_timeout:
+            em.add_field(
+                name="AFK Timeout",
+                value=f"`{format_timespan(before.afk_timeout)}` ➜ `{format_timespan(after.afk_timeout)}`",
+                inline=False
+            )
+
+        if before.banner != after.banner:
+            em.add_field(
+                name="Banner updated!",
+                value=f"{'`None`' if before.banner is None else '[`Before`]('+str(before.banner.url)+')'} ➜ {'`None`' if after.banner is None else '[`After`]('+str(after.banner.url)+')'}",
+                inline=False
+            )
+
+        if before.default_notifications != after.default_notifications:
+            em.add_field(
+                name="Default Notifications",
+                value=f"`{before.default_notifications}` ➜ `{after.default_notifications}`",
+                inline=False
+            )
+
+        if before.description != after.description:
+            em.add_field(
+                name="Description",
+                value=f"```{before.description}``` ➜ ```{after.description}```",
+                inline=False
+            )
+
+        if before.icon != after.icon:
+            em.add_field(
+                name="Icon",
+                value=f"{'`None`' if before.icon is None else '[`Before`]('+str(before.icon.url)+')'} ➜ {'`None`' if after.icon is None else '[`After`]('+str(after.icon.url)+')'}",
+                inline=False
+            )
+
+        if before.mfa_level != after.mfa_level:
+            em.add_field(
+                name="2FA Requirement",
+                value=f"`{'True' if before.mfa_level == 1 else 'False'}` ➜ `{'True' if after.mfa_level == 1 else 'False'}`",
+                inline=False
+            )
+
+        if before.name != after.name:
+            em.add_field(
+                name="Name",
+                value=f"`{before.name}` ➜ `{after.name}`",
+                inline=False
+            )
+
+        if before.owner != after.owner:
+            em.add_field(
+                name="Owner",
+                value=f"`{before.owner}` ➜ `{after.owner}`",
+                inline=False
+            )
+
+        if before.public_updates_channel != after.public_updates_channel:
+            em.add_field(
+                name="New community updates channel",
+                value=f"`{before.public_updates_channel}` ➜ `{after.public_updates_channel}`",
+                inline=False
+            )
+
+        if before.region != after.region:
+            em.add_field(
+                name="Region",
+                value=f"`{before.region}` ➜ `{after.region}`",
+                inline=False
+            )
+
+        if before.rules_channel != after.rules_channel:
+            em.add_field(
+                name="Rules channel",
+                value=f"`{before.rules_channel}` ➜ `{after.rules_channel}`",
+                inline=False
+            )
+
+        if before.splash != after.splash:
+            em.add_field(
+                name="Invite splash banner",
+                value=f"{'`None`' if before.splash is None else '[`Before`]('+str(before.splash.url)+')'} ➜ {'`None`' if after.splash is None else '[`After`]('+str(after.splash.url)+')'}",
+                inline=False
+            )
+
+        if before.system_channel != after.system_channel:
+            em.add_field(
+                name="System channel",
+                value=f"`{before.system_channel}` ➜ `{after.system_channel}`",
+                inline=False
+            )
+
+        await channel.send(embed=em)  # type: ignore
     
     @Cog.listener()
     async def on_guild_join(self, guild):
@@ -266,16 +458,17 @@ class Events(Cog):
         em.add_field(name="Guild", value=guild.name, inline=False)
         em.add_field(name="Members", value=len([m for m in guild.members if not m.bot]), inline=False)
         em.add_field(name="Bots", value=sum(member.bot for member in guild.members), inline=False)
+        em.add_field(name="Owner", value=guild.owner, inline=False)
 
         channel = self.bot.get_channel(LOG_CHANNEL)
-        await channel.send(embed=em)
+        await channel.send(embed=em)  # type: ignore
 
     @Cog.listener()
     async def on_guild_remove(self, guild):
         await self.bot.db.execute("DELETE FROM modlogs WHERE guild_id=$1", guild.id)  # type: ignore
 
         channel = self.bot.get_channel(LOG_CHANNEL)
-        await channel.send(f"Left {guild.name}")
+        await channel.send(f"Left {guild.name}")  # type: ignore
             
 
 async def setup(bot):
