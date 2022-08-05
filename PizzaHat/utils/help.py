@@ -148,8 +148,9 @@ class HelpView(ui.View):
 
     @ui.button(label="Delete Menu", emoji="🛑", style=ButtonStyle.red)
     async def delete_menu(self, interaction: Interaction, button: ui.Button):
-        await interaction.message.delete()
-        self.stop()
+        if interaction.message is not None:
+            await interaction.message.delete()
+            self.stop()
 
 
 class MyHelp(commands.HelpCommand):
