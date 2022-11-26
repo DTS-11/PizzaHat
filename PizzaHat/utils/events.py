@@ -15,47 +15,56 @@ load_dotenv()
 LOG_CHANNEL = 980151632199299092
 DLIST_TOKEN = os.getenv("DLIST_AUTH")
 
-reason = discord.AuditLogEntry.reason or "No reason provided."  # type: ignore
-
 
 class Events(Cog):
     """Events cog"""
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
-        bot.loop.create_task(self.update_stats())
+    #     bot.loop.create_task(self.update_stats())
 
-    @tasks.loop(minutes=30)
-    async def update_stats(self):
-        try:
-            # Top.gg
-            await self.bot.wait_until_ready()
-            self.topggpy = topgg.DBLClient(self, os.getenv("DBL_TOKEN"), autopost=True)
-            await self.topggpy.post_guild_count()
-            print(f"Posted server count: {self.topggpy.guild_count}")
+    # @tasks.loop(minutes=30)
+    # async def update_stats(self):
+    #     try:
+    #         # Top.gg
+    #         await self.bot.wait_until_ready()
+    #         self.topggpy = topgg.DBLClient(self, os.getenv("DBL_TOKEN"), autopost=True)
+    #         await self.topggpy.post_guild_count()
+    #         print(f"Posted server count: {self.topggpy.guild_count}")
 
-        except Exception as e:
-            print(f"Failed to post server count\n{e.__class__.__name__}: {e}")
+    #     except Exception as e:
+    #         print(f"Failed to post server count\n{e.__class__.__name__}: {e}")
 
-        try:
-            # DList.gg
-            url = f"https://api.discordlist.gg/v0/bots/860889936914677770/guilds?count={len(self.bot.guilds)}"
-            headers = {'Authorization': f"Bearer {DLIST_TOKEN}", "Content-Type": "application/json"}
-            r = requests.put(url, headers=headers)
-            print(r.json())
+    #     try:
+    #         # DList.gg
+    #         url = f"https://api.discordlist.gg/v0/bots/860889936914677770/guilds?count={len(self.bot.guilds)}"
+    #         headers = {'Authorization': f"Bearer {DLIST_TOKEN}", "Content-Type": "application/json"}
+    #         r = requests.put(url, headers=headers)
+    #         print(r.json())
 
-        except Exception as e:
-            print(e)
+    #     except Exception as e:
+    #         print(e)
 
     @Cog.listener()
     async def on_ready(self):
-        await self.bot.db.execute("""CREATE TABLE IF NOT EXISTS warnlogs 
-                    (guild_id BIGINT, user_id BIGINT, warns TEXT[], time NUMERIC[])""")
+        await self.bot.db.execute(  # type: ignore
+            """CREATE TABLE IF NOT EXISTS warnlogs 
+            (guild_id BIGINT, user_id BIGINT, warns TEXT[], time NUMERIC[])"""
+        )
 
-        await self.bot.db.execute("""CREATE TABLE IF NOT EXISTS modlogs 
-                    (guild_id BIGINT PRIMARY KEY, channel_id BIGINT)""")
+        await self.bot.db.execute(  # type: ignore
+            """CREATE TABLE IF NOT EXISTS modlogs 
+            (guild_id BIGINT PRIMARY KEY, channel_id BIGINT)"""
+        )
 
-        await self.bot.db.execute("""CREATE TABLE IF NOT EXISTS automod 
-                    (guild_id BIGINT PRIMARY KEY, enabled BOOL)""")
+        await self.bot.db.execute(  # type: ignore
+            """CREATE TABLE IF NOT EXISTS automod 
+            (guild_id BIGINT PRIMARY KEY, enabled BOOL)"""
+        )
+
+        await self.bot.db.execute(  # type: ignore
+            """CREATE TABLE IF NOT EXISTS staff_role 
+            (guild_id BIGINT, role_id BIGINT)"""
+        )
 
 
     async def get_logs_channel(self, guild_id):
@@ -67,21 +76,22 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_message(self, msg):
-        bot_id = self.bot.user.id
+        if self.bot is None:
+            bot_id = self.bot.user.id
 
-        if msg.author.bot:
-            return
+            if msg.author.bot:
+                return
 
-        if self.bot.user == msg.author:
-            return
+            if self.bot.user == msg.author:
+                return
 
-        if msg.content in {f"<@{bot_id}>" or f"<@!{bot_id}>"}:
-            em = discord.Embed(color=self.bot.color)
-            em.add_field(
-                name='<a:wave_animated:783393435242463324> Hello! <a:wave_animated:783393435242463324>',
-                value=f'Im {self.bot.user.name}, to get started, my prefix is `p!` or `P!` or <@860889936914677770>')
-            
-            await msg.channel.send(embed=em)
+            if msg.content in {f"<@{bot_id}>" or f"<@!{bot_id}>"}:
+                em = discord.Embed(color=self.bot.color)
+                em.add_field(
+                    name="<a:wave_animated:783393435242463324> Hello! <a:wave_animated:783393435242463324>",
+                    value=f"I'm {self.bot.user.name}, to get started, my prefix is `p!` or `P!` or <@860889936914677770>")
+                    
+                await msg.channel.send(embed=em)
 
     @Cog.listener()
     async def on_message_edit(self, before, after):
@@ -144,7 +154,7 @@ class Events(Cog):
             timestamp=datetime.datetime.utcnow()
         )
 
-        em.add_field(name="Reason", value=reason, inline=False)
+        em.add_field(name="Reason", value=discord.AuditLogAction.ban, inline=False)
 
         em.set_author(name=user, icon_url=user.avatar.url)
         em.set_footer(text=f"User ID: {user.id}")
@@ -164,7 +174,7 @@ class Events(Cog):
             timestamp=datetime.datetime.utcnow()
         )
 
-        em.add_field(name="Reason", value=reason, inline=False)
+        em.add_field(name="Reason", value=discord.AuditLogAction.unban, inline=False)
 
         em.set_author(name=user, icon_url=user.avatar.url)
         em.set_footer(text=f"User ID: {user.id}")

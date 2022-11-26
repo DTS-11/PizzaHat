@@ -19,9 +19,9 @@ class Music(Cog, emoji=929100003178348634):
         await self.bot.wait_until_ready()
         await wavelink.NodePool.create_node(
             bot=self.bot,
-            host=os.getenv("WAVELINK_HOST"),
+            host=os.getenv("WAVELINK_HOST"),  # type: ignore
             port=443,
-            password=os.getenv("WAVELINK_PASS"),
+            password=os.getenv("WAVELINK_PASS"),  # type: ignore
             https=True
         )
 
@@ -31,17 +31,18 @@ class Music(Cog, emoji=929100003178348634):
     async def dc(self, ctx: Context):
         """Leaves a VC."""
 
-        await ctx.voice_client.disconnect()
-        await ctx.message.add_reaction("👋")
+        if ctx.voice_client is not None:
+            await ctx.voice_client.disconnect(force=True)
+            await ctx.message.add_reaction("👋")
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def play(self, ctx: Context, *, song: wavelink.YouTubeTrack):
         """Plays a song."""
 
-        if ctx.author.voice is None:
+        if ctx.author.voice is None:  # type: ignore
             return await ctx.send("You are not in a voice channel")
-        vc: wavelink.Player = ctx.voice_client or await ctx.author.voice.channel.connect(cls=wavelink.Player)
+        vc: wavelink.Player = ctx.voice_client or await ctx.author.voice.channel.connect(cls=wavelink.Player)  # type: ignore
 
         if vc.queue.is_empty and not vc.is_playing():
             await vc.play(song)
@@ -51,7 +52,7 @@ class Music(Cog, emoji=929100003178348634):
             em.add_field(name="⌛ Song Duration", value=str(timedelta(seconds=song.duration)), inline=False)
             em.add_field(name="👥 Requested by", value=ctx.author.mention, inline=False)
             em.add_field(name="🎵 Song by", value=song.author, inline=False)
-            em.set_thumbnail(url=vc.source.thumbnail)
+            em.set_thumbnail(url=vc.source.thumbnail)  # type: ignore
 
             await ctx.send(embed=em)
 
@@ -59,7 +60,7 @@ class Music(Cog, emoji=929100003178348634):
             await vc.queue.put_wait(song)
             await ctx.send(f"{self.bot.yes} Added `{song.title}` to the queue...")
 
-        vc.ctx = ctx
+        vc.ctx = ctx  # type: ignore
         setattr(vc, "loop", False)
 
     @commands.command()
@@ -68,14 +69,14 @@ class Music(Cog, emoji=929100003178348634):
         """Skip to the next song in the queue."""
 
         try:
-            if ctx.author.voice is None:
+            if ctx.author.voice is None:  # type: ignore
                 return await ctx.send("You are not in a voice channel")
 
             elif not ctx.voice_client:
                 return await ctx.send("You are not playing any music")
             
             else:
-                vc: wavelink.Player = ctx.voice_client
+                vc: wavelink.Player = ctx.voice_client  # type: ignore
                 await vc.stop()
                 await ctx.send("⏭ Skipped.")
 
@@ -87,14 +88,14 @@ class Music(Cog, emoji=929100003178348634):
     async def pause(self, ctx: Context):
         """Pause a song which is currently playing."""
 
-        if ctx.author.voice is None:
+        if ctx.author.voice is None:  # type: ignore
             return await ctx.send("You are not in a voice channel")
 
         elif not ctx.voice_client:
             return await ctx.send("You are not playing any music")
         
         else:
-            vc: wavelink.Player = ctx.voice_client
+            vc: wavelink.Player = ctx.voice_client  # type: ignore
             await vc.pause()
             await ctx.message.add_reaction("⏸")
 
@@ -103,14 +104,14 @@ class Music(Cog, emoji=929100003178348634):
     async def resume(self, ctx: Context):
         """Resume a paused song."""
 
-        if ctx.author.voice is None:
+        if ctx.author.voice is None:  # type: ignore
             return await ctx.send("You are not in a voice channel")
 
         elif not ctx.voice_client:
             return await ctx.send("You are not playing any music")
 
         else:
-            vc: wavelink.Player = ctx.voice_client
+            vc: wavelink.Player = ctx.voice_client  # type: ignore
             await vc.resume()
             await ctx.message.add_reaction("▶")
 
@@ -119,14 +120,14 @@ class Music(Cog, emoji=929100003178348634):
     async def stop(self, ctx: Context):
         """Stops the playing song and removes everything from the queue."""
 
-        if ctx.author.voice is None:
+        if ctx.author.voice is None:  # type: ignore
             return await ctx.send("You are not in a voice channel")
 
         elif not ctx.voice_client:
             return await ctx.send("You are not playing any music")
 
         else:
-            vc: wavelink.Player = ctx.voice_client
+            vc: wavelink.Player = ctx.voice_client  # type: ignore
             vc.queue.clear()
             await vc.stop()
             await ctx.message.add_reaction("⏹")
@@ -136,22 +137,22 @@ class Music(Cog, emoji=929100003178348634):
     async def loop(self, ctx: Context):
         """Loop a song."""
 
-        if ctx.author.voice is None:
+        if ctx.author.voice is None:  # type: ignore
             return await ctx.send("You are not in a voice channel")
 
         elif not ctx.voice_client:
             return await ctx.send("You are not playing any music")
 
         else:
-            vc: wavelink.Player = ctx.voice_client
+            vc: wavelink.Player = ctx.voice_client  # type: ignore
         
         try:
-            vc.loop ^= True
+            vc.loop ^= True  # type: ignore
 
         except Exception:
             setattr(vc, "loop", False)
 
-        if vc.loop:
+        if vc.loop:  # type: ignore
             return await ctx.send("🔁 Loop is now enabled")
         
         else:
@@ -162,14 +163,14 @@ class Music(Cog, emoji=929100003178348634):
     async def queue(self, ctx: Context):
         """Displays the songs which are in the queue."""
 
-        if ctx.author.voice is None:
+        if ctx.author.voice is None:  # type: ignore
             return await ctx.send("You are not in a voice channel")
 
         elif not ctx.voice_client:
             return await ctx.send("You are not playing any music")
 
         else:
-            vc: wavelink.Player = ctx.voice_client
+            vc: wavelink.Player = ctx.voice_client  # type: ignore
         
         if vc.queue.is_empty:
             return await ctx.send("Queue is empty.")
@@ -177,12 +178,17 @@ class Music(Cog, emoji=929100003178348634):
         else:
             queue = vc.queue.copy()
             song_count = 0
+            
+            em=discord.Embed(
+                color=self.bot.color,
+                timestamp=ctx.message.created_at
+            )
 
             for songs in queue:
                 song_count += 1
-                songs = [i.title for i in vc.queue]
+                songs = [i.title for i in vc.queue]  # type: ignore
 
-                em = discord.Embed(title=f"Queued songs [{song_count}]", color=self.bot.color)
+                em.title=f"Queued songs [{song_count}]"
 
                 for song in songs:
                     em.add_field(name="\u200b", value=song, inline=False)
@@ -194,14 +200,14 @@ class Music(Cog, emoji=929100003178348634):
     async def volume(self, ctx: Context, volume: int):
         """Change the volume of the song"""
 
-        if ctx.author.voice is None:
+        if ctx.author.voice is None:  # type: ignore
             return await ctx.send("You are not in a voice channel")
 
         elif not ctx.voice_client:
             return await ctx.send("You are not playing any music")
 
         else:
-            vc: wavelink.Player = ctx.voice_client
+            vc: wavelink.Player = ctx.voice_client  # type: ignore
         
         if volume > 100:
             return await ctx.send("That is wayy too high...")
@@ -217,26 +223,27 @@ class Music(Cog, emoji=929100003178348634):
     async def nowplaying(self, ctx: Context):
         """Shows which song is playing."""
         
-        if ctx.author.voice is None:
+        if ctx.author.voice is None:  # type: ignore
             return await ctx.send("You are not in a voice channel")
 
         elif not ctx.voice_client:
             return await ctx.send("You are not playing any music")
 
         else:
-            vc: wavelink.Player = ctx.voice_client
+            vc: wavelink.Player = ctx.voice_client  # type: ignore
 
         if not vc.is_playing():
             return await ctx.send("Nothing is playing right now.")
 
         else:
-            em = discord.Embed(color=self.bot.color)
-            em.add_field(name="▶ Now playing", value=f"[{vc.track.title}]({vc.track.uri})", inline=False)
-            em.add_field(name="⌛ Song Duration", value=str(timedelta(seconds=vc.track.duration)), inline=False)
-            em.add_field(name="🎵 Song by", value=vc.track.author, inline=False)
-            em.set_thumbnail(url=vc.source.thumbnail)
+            if vc.track is not None:
+                em = discord.Embed(color=self.bot.color)
+                em.add_field(name="▶ Now playing", value=f"[{vc.track.title}]({vc.track.uri})", inline=False)  # type: ignore
+                em.add_field(name="⌛ Song Duration", value=str(timedelta(seconds=vc.track.duration)), inline=False)
+                em.add_field(name="🎵 Song by", value=vc.track.author, inline=False)  # type: ignore
+                em.set_thumbnail(url=vc.source.thumbnail)  # type: ignore
 
-            await ctx.send(embed=em)
+                await ctx.send(embed=em)
 
 
 async def setup(bot):

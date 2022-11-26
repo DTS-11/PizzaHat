@@ -32,29 +32,31 @@ class Mod(Cog, emoji=847248846526087239):
             await self.bot.db.execute("INSERT INTO warnlogs (guild_id, user_id, warns, time) VALUES ($1, $2, $3, $4)", guild_id, user_id, [reason], [time])  # type: ignore
             return
 
-        warns = data[2]
-        times = data[3]
+        if data is not None:
+            warns = data[2]
+            times = data[3]
 
-        if not warns:
-            warns = [reason]
-            times = [time]
-        
-        else:
-            warns.append(reason)
-            times.append(time)
+            if not warns:
+                warns = [reason]
+                times = [time]
+            
+            else:
+                warns.append(reason)
+                times.append(time)
 
-        await self.bot.db.execute("UPDATE warnlogs SET time = $1, warns = $2 WHERE guild_id = $3 AND user_id = $4", times, warns, guild_id, user_id)  # type: ignore
+            await self.bot.db.execute("UPDATE warnlogs SET time = $1, warns = $2 WHERE guild_id = $3 AND user_id = $4", times, warns, guild_id, user_id)  # type: ignore
 
     async def delete_warn(self, guild_id, user_id, index):
         data = await self.warn_log(guild_id, user_id)
 
-        if len(data[2])>=1:
-            data[2].remove(data[2][index])
-            data[3].remove(data[3][index])
-            return await self.bot.db.execute("UPDATE warnlogs SET warns = $1, time = $2 WHERE guild_id = $3 AND user_id = $4", data[2], data[3], guild_id, user_id)
-        
-        else:
-            await self.bot.db.execute("DELETE FROM warnlogs WHERE guild_id = $1 AND user_id = $2", guild_id, user_id)  # type: ignore
+        if data is not None:
+            if len(data[2])>=1:
+                data[2].remove(data[2][index])
+                data[3].remove(data[3][index])
+                return await self.bot.db.execute("UPDATE warnlogs SET warns = $1, time = $2 WHERE guild_id = $3 AND user_id = $4", data[2], data[3], guild_id, user_id)  # type: ignore
+            
+            else:
+                await self.bot.db.execute("DELETE FROM warnlogs WHERE guild_id = $1 AND user_id = $2", guild_id, user_id)  # type: ignore
 
     @commands.command(aliases=['mn'])
     @commands.guild_only()
@@ -175,20 +177,21 @@ class Mod(Cog, emoji=847248846526087239):
         To use this command, you must have Manage Channels permission.
         """
 
-        role = role or ctx.guild.default_role
-        channel = channel or ctx.channel
+        if ctx.guild is not None:
+            role = role or ctx.guild.default_role
+            channel = channel or ctx.channel
 
-        overwrite = channel.overwrites_for(role)
-        overwrite.send_messages = False
-        overwrite.add_reactions = False
+            overwrite = channel.overwrites_for(role)
+            overwrite.send_messages = False
+            overwrite.add_reactions = False
 
-        await channel.set_permissions(role, overwrite=overwrite)
-        await ctx.message.add_reaction('🔒')
+            await channel.set_permissions(role, overwrite=overwrite)
+            await ctx.message.add_reaction('🔒')
 
-        em = discord.Embed(color=self.bot.color)
-        em.add_field(name='🔒 Locked', value=f"{channel.mention} has been locked for {role.mention}",inline=False)
-        
-        await ctx.send(embed=em)
+            em = discord.Embed(color=self.bot.color)
+            em.add_field(name='🔒 Locked', value=f"{channel.mention} has been locked for {role.mention}",inline=False)
+            
+            await ctx.send(embed=em)
 
     @lock.command(name='server')
     @commands.guild_only()
@@ -204,21 +207,22 @@ class Mod(Cog, emoji=847248846526087239):
         To use this command, you must have Manage Channels permission.
         """
 
-        role = ctx.guild.default_role or role
+        if ctx.guild is not None:
+            role = ctx.guild.default_role or role
 
-        for tc in ctx.guild.text_channels:
-            await tc.set_permissions(role, send_messages=False, add_reactions=False)
+            for tc in ctx.guild.text_channels:
+                await tc.set_permissions(role, send_messages=False, add_reactions=False)
 
-        for vc in ctx.guild.voice_channels:
-            await vc.set_permissions(role, connect=False, speak=False)
+            for vc in ctx.guild.voice_channels:
+                await vc.set_permissions(role, connect=False, speak=False)
 
-        em = discord.Embed(
-            title=f'{self.bot.yes} Server Locked',
-            description=f'The server has been locked by a staff member. You are **not muted**.',
-            color=self.bot.success
-        )
+            em = discord.Embed(
+                title=f'{self.bot.yes} Server Locked',
+                description=f'The server has been locked by a staff member. You are **not muted**.',
+                color=self.bot.success
+            )
 
-        await ctx.send(embed=em)
+            await ctx.send(embed=em)
 
     @commands.group()
     @commands.has_permissions(manage_channels=True)
@@ -242,20 +246,22 @@ class Mod(Cog, emoji=847248846526087239):
         To use this command, you must have Manage Channels permission.
         """
 
-        role = role or ctx.guild.default_role
-        channel = channel or ctx.channel
 
-        overwrite = channel.overwrites_for(role)
-        overwrite.send_messages = True
-        overwrite.add_reactions = True
+        if ctx.guild is not None:
+            role = role or ctx.guild.default_role
+            channel = channel or ctx.channel
 
-        await channel.set_permissions(role, overwrite=overwrite)
-        await ctx.message.add_reaction('🔓')
+            overwrite = channel.overwrites_for(role)
+            overwrite.send_messages = True
+            overwrite.add_reactions = True
 
-        em = discord.Embed(color=self.bot.color)
-        em.add_field(name='🔓 Unlocked', value=f"{channel.mention} has been unlocked for {role.mention}",inline=False)
+            await channel.set_permissions(role, overwrite=overwrite)
+            await ctx.message.add_reaction('🔓')
 
-        await ctx.send(embed=em)
+            em = discord.Embed(color=self.bot.color)
+            em.add_field(name='🔓 Unlocked', value=f"{channel.mention} has been unlocked for {role.mention}",inline=False)
+
+            await ctx.send(embed=em)
 
     @unlock.command(name='server')
     @commands.guild_only()
@@ -271,21 +277,23 @@ class Mod(Cog, emoji=847248846526087239):
         To use this command, you must have Manage Channels permission.
         """
 
-        role = ctx.guild.default_role or role
 
-        for tc in ctx.guild.text_channels:
-            await tc.set_permissions(role, send_messages=True, add_reactions=True, read_message_history=True)
+        if ctx.guild is not None:
+            role = ctx.guild.default_role or role
 
-        for vc in ctx.guild.voice_channels:
-            await vc.set_permissions(role, connect=True, speak=True)
+            for tc in ctx.guild.text_channels:
+                await tc.set_permissions(role, send_messages=True, add_reactions=True, read_message_history=True)
 
-        em = discord.Embed(
-            title=f'{self.bot.yes} Server Unlocked',
-            description=f'The server has been unlocked.',
-            color=self.bot.success
-        )
+            for vc in ctx.guild.voice_channels:
+                await vc.set_permissions(role, connect=True, speak=True)
 
-        await ctx.send(embed=em)
+            em = discord.Embed(
+                title=f'{self.bot.yes} Server Unlocked',
+                description=f'The server has been unlocked.',
+                color=self.bot.success
+            )
+
+            await ctx.send(embed=em)
 
     @commands.command()
     @commands.guild_only()
@@ -300,14 +308,15 @@ class Mod(Cog, emoji=847248846526087239):
         To use this command, you must have Manage Channels permission.
         """
 
-        role = role or ctx.guild.default_role
-        channel = channel or ctx.channel
+        if ctx.guild is not None:
+            role = role or ctx.guild.default_role
+            channel = channel or ctx.channel
 
-        overwrite = channel.overwrites_for(role)
-        overwrite.view_channel = False
+            overwrite = channel.overwrites_for(role)
+            overwrite.view_channel = False
 
-        await channel.set_permissions(role, overwrite=overwrite)
-        await ctx.send(f"{channel.mention} has been hidden from `{role}`")
+            await channel.set_permissions(role, overwrite=overwrite)
+            await ctx.send(f"{channel.mention} has been hidden from `{role}`")
 
     @commands.command()
     @commands.guild_only()
@@ -322,14 +331,16 @@ class Mod(Cog, emoji=847248846526087239):
         To use this command, you must have Manage Channels permission.
         """
 
-        role = role or ctx.guild.default_role
-        channel = channel or ctx.channel
 
-        overwrite = channel.overwrites_for(role)
-        overwrite.view_channel = True
+        if ctx.guild is not None:
+            role = role or ctx.guild.default_role
+            channel = channel or ctx.channel
 
-        await channel.set_permissions(role, overwrite=overwrite)
-        await ctx.send(f"{channel.mention} has been exposed to `{role}`")
+            overwrite = channel.overwrites_for(role)
+            overwrite.view_channel = True
+
+            await channel.set_permissions(role, overwrite=overwrite)
+            await ctx.send(f"{channel.mention} has been exposed to `{role}`")
 
     @commands.command(aliases=['purge'])
     @commands.guild_only()
@@ -380,7 +391,7 @@ class Mod(Cog, emoji=847248846526087239):
             return await ctx.send(f"{self.bot.no} I can only clear upto 100 messages at a time.")
 
         else:
-            await ctx.channel.purge(limit=amount, check=is_bot)
+            await ctx.channel.purge(limit=amount, check=is_bot)  # type: ignore
             await ctx.send(f"{self.bot.yes} {amount} messages cleared", delete_after=2.5)
 
     @commands.command()
@@ -420,14 +431,15 @@ class Mod(Cog, emoji=847248846526087239):
         if reason is None:
             reason = f"No reason provided\nBanned by {ctx.author}"
 
-        if isinstance(member, int):
-            await ctx.guild.ban(discord.Object(id=member), reason=f"{reason}")
-            user = await self.bot.fetch_user(member)
-            await ctx.send(f'{self.bot.yes} Banned `{user}`')
+        if ctx.guild is not None:
+            if isinstance(member, int):
+                await ctx.guild.ban(discord.Object(id=member), reason=f"{reason}")
+                user = await self.bot.fetch_user(member)
+                await ctx.send(f"{self.bot.yes} Banned `{user}`")
 
-        else:
-            await member.ban(reason=f"{reason}", delete_message_days=0)
-            await ctx.send(f'{self.bot.yes} Banned `{member}`')
+            else:
+                await member.ban(reason=f"{reason}", delete_message_days=0)
+                await ctx.send(f"{self.bot.yes} Banned `{member}`")
 
     @commands.command(aliases=['mb'])
     @commands.guild_only()
@@ -491,12 +503,13 @@ class Mod(Cog, emoji=847248846526087239):
         """
 
         try:
-            user = self.bot.get_user(id)
-            await ctx.guild.unban(discord.Object(id=id), reason=f'Unbanned by {ctx.author}')
-            await ctx.send(f'{self.bot.yes} Unbanned `{user}`')
+            if ctx.guild is not None:
+                user = self.bot.get_user(id)
+                await ctx.guild.unban(discord.Object(id=id), reason=f"Unbanned by {ctx.author}")
+                await ctx.send(f'{self.bot.yes} Unbanned `{user}`')
 
         except discord.NotFound:
-            await ctx.send('Not a valid previously banned member or the member could not be found.')
+            await ctx.send("Not a valid previously banned member or the member could not be found.")
 
     @commands.command(aliases=['mute'])
     @commands.guild_only()
@@ -579,26 +592,27 @@ class Mod(Cog, emoji=847248846526087239):
             reason = f"No reason given.\nWarned done by {ctx.author}"
 
         try:
-            if member == ctx.author or member == self.bot.user:
-                return await ctx.send('You cant warn yourself or the bot.')
+            if ctx.guild is not None:
+                if member == ctx.author or member == self.bot.user:
+                    return await ctx.send('You cant warn yourself or the bot.')
 
-            if not ctx.author.top_role.position == member.top_role.position:  # type: ignore
-                if not ctx.author.top_role.position > member.top_role.position:  # type: ignore
-                    return await ctx.send('You cant warn someone that has higher or same role heirarchy.')
+                if not ctx.author.top_role.position == member.top_role.position:  # type: ignore
+                    if not ctx.author.top_role.position > member.top_role.position:  # type: ignore
+                        return await ctx.send('You cant warn someone that has higher or same role heirarchy.')
 
-            await self.warn_entry(ctx.guild.id, member.id, reason, float(ctx.message.created_at.timestamp()))
+                await self.warn_entry(ctx.guild.id, member.id, reason, float(ctx.message.created_at.timestamp()))
 
-            em = discord.Embed(
-                    title=f"{self.bot.yes} Warned User",
-                    description=f'Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}',
-                    color=self.bot.success,
-                    timestamp=datetime.datetime.utcnow()
-                )
+                em = discord.Embed(
+                        title=f"{self.bot.yes} Warned User",
+                        description=f'Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}',
+                        color=self.bot.success,
+                        timestamp=datetime.datetime.utcnow()
+                    )
 
-            await ctx.send(embed=em)
+                await ctx.send(embed=em)
 
         except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
 
     @commands.command(aliases=['warns'])
     @commands.guild_only()
@@ -612,32 +626,33 @@ class Mod(Cog, emoji=847248846526087239):
         if member is None:
             member = ctx.author  # type: ignore
 
-        data = await self.warn_log(ctx.guild.id, member.id)
-        em = discord.Embed(
-            title=f'Warnings of {member.name}',
-            description=f'{self.bot.yes} This user has no warns!',
-            color=self.bot.success,
-            timestamp=datetime.datetime.utcnow()
-        )
-        em.set_thumbnail(url=member.avatar.url)
-
-        if not data:
-            return await ctx.send(embed=em)
-
-        if not len(data[2]):
-            return await ctx.send(embed=em)
-
-        for i in range(len(data[2])):
-            reason = data[2][i]
-
-        em = discord.Embed(
-                title=f'Warnings of {member.name} | {len(data[2])} warns',
-                description=f'Reason: {reason}\nWarn ID: `{data[3][i]}`',
-                color=self.bot.color,
+        if ctx.guild and member.avatar is not None:
+            data = await self.warn_log(ctx.guild.id, member.id)
+            em = discord.Embed(
+                title=f'Warnings of {member.name}',
+                description=f'{self.bot.yes} This user has no warns!',
+                color=self.bot.success,
                 timestamp=datetime.datetime.utcnow()
             )
+            em.set_thumbnail(url=member.avatar.url)
 
-        await ctx.send(embed=em)
+            if not data:
+                return await ctx.send(embed=em)
+
+            if not len(data[2]):
+                return await ctx.send(embed=em)
+
+            for i in range(len(data[2])):
+                reason = data[2][i]
+
+                em = discord.Embed(
+                    title=f"Warnings of {member.name} | {len(data[2])} warns",
+                    description=f"Reason: {reason}\nWarn ID: `{data[3][i]}`",
+                    color=self.bot.color,
+                    timestamp=datetime.datetime.utcnow()
+                )
+
+            await ctx.send(embed=em)
 
     @commands.command(aliases=['delwarn'])
     @commands.guild_only()
@@ -651,17 +666,18 @@ class Mod(Cog, emoji=847248846526087239):
         """
         
         try:
-            data = await self.warn_log(ctx.guild.id, member.id)
-            if data == []:
-                return await ctx.send(f'{self.bot.no} This user has no warns!')
+            if ctx.guild is not None:
+                data = await self.warn_log(ctx.guild.id, member.id)
+                if data == []:
+                    return await ctx.send(f'{self.bot.no} This user has no warns!')
 
-            if data[2] and warn_id in data[3]:
-                index = data[3].index(warn_id)
-                await self.delete_warn(ctx.guild.id, member.id, index)
-                return await ctx.send(f'{self.bot.yes} Warn entry deleted!')
+                if data[2] and warn_id in data[3]:
+                    index = data[3].index(warn_id)
+                    await self.delete_warn(ctx.guild.id, member.id, index)
+                    return await ctx.send(f'{self.bot.yes} Warn entry deleted!')
 
-            else:
-                return await ctx.send(f'{self.bot.no} No warn entry found for this user.')
+                else:
+                    return await ctx.send(f'{self.bot.no} No warn entry found for this user.')
 
         except Exception as e:
             print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore

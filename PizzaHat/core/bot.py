@@ -22,6 +22,7 @@ INITIAL_EXTENSIONS = [
     'cogs.mod',
     'cogs.music',
     'cogs.poll',
+    'cogs.tickets',
     'cogs.utility',
 ]
 
@@ -188,18 +189,20 @@ class PizzaHat(commands.Bot):
         elif isinstance(error, commands.CommandInvokeError):
             original = error.original
             if not isinstance(original, discord.HTTPException):
-                print(f'In {ctx.command.qualified_name}:', file=sys.stderr)
-                traceback.print_tb(original.__traceback__)
-                print(f'{original.__class__.__name__}: {original}', file=sys.stderr)
+                if ctx.command is not None:
+                    print(f'In {ctx.command.qualified_name}:', file=sys.stderr)
+                    traceback.print_tb(original.__traceback__)
+                    print(f'{original.__class__.__name__}: {original}', file=sys.stderr)
 
         elif isinstance(error, commands.MissingRequiredArgument):
-            em = discord.Embed(
-                title = f"{ctx.command.name} {ctx.command.signature}",
-                description = ctx.command.help,
-                color = discord.Color.og_blurple()
-            )
+            if ctx.command is not None:
+                em = discord.Embed(
+                    title = f"{ctx.command.name} {ctx.command.signature}",
+                    description = ctx.command.help,
+                    color = discord.Color.og_blurple()
+                )
 
-            await ctx.send(embed=em)
+                await ctx.send(embed=em)
 
 
     @property

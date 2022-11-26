@@ -12,11 +12,12 @@ load_dotenv()
 # run "python ." in \PizzaHat\PizzaHat\
 async def main():
     pool = await db.create_db_pool()
-    async with pool as db_pool:
-        print("DB Connected")
-        async with bot:
-            bot.db = db_pool  # type: ignore
-            await bot.start(os.getenv("TOKEN"))  # type: ignore
+    if pool is not None:
+        async with pool as db_pool:
+            print("DB Connected")
+            async with bot:
+                bot.db = db_pool  # type: ignore
+                await bot.start(os.getenv("TEST_BOT"))  # type: ignore
 
 
 if __name__ == '__main__':

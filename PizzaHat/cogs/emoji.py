@@ -58,32 +58,33 @@ class Emojis(Cog, emoji="😀"):
         To use this command, you must have Manage Emojis permission.
         """
         
-        emoji_count = sum(e.animated == emoji.animated for e in ctx.guild.emojis)
+        if ctx.guild is not None:
+            emoji_count = sum(e.animated == emoji.animated for e in ctx.guild.emojis)
 
-        if emoji_count >= ctx.guild.emoji_limit:
-            return await ctx.send('There are no more emoji slots in this server.')
+            if emoji_count >= ctx.guild.emoji_limit:
+                return await ctx.send('There are no more emoji slots in this server.')
 
-        async with self.bot.session.get(emoji.url) as resp:
-            if resp.status >= 400:
-                return await ctx.send('Could not fetch the image.')
+            async with self.bot.session.get(emoji.url) as resp:
+                if resp.status >= 400:
+                    return await ctx.send('Could not fetch the image.')
 
-            if int(resp.headers['Content-Length']) >= (256 * 1024):
-                return await ctx.send('Image is too big.')
+                if int(resp.headers['Content-Length']) >= (256 * 1024):
+                    return await ctx.send('Image is too big.')
 
-            data = await resp.read()
-            coro = ctx.guild.create_custom_emoji(name=name, image=data, reason=f"Action done by {ctx.author}")
+                data = await resp.read()
+                coro = ctx.guild.create_custom_emoji(name=name, image=data, reason=f"Action done by {ctx.author}")
 
-            try:
-                created = await asyncio.wait_for(coro, timeout=10.0)
+                try:
+                    created = await asyncio.wait_for(coro, timeout=10.0)
 
-            except asyncio.TimeoutError:
-                return await ctx.send('Sorry, the bot is rate limited or it took too long.')
+                except asyncio.TimeoutError:
+                    return await ctx.send('Sorry, the bot is rate limited or it took too long.')
 
-            except discord.HTTPException as e:
-                return await ctx.send(f"Failed to create emoji: {e}")
+                except discord.HTTPException as e:
+                    return await ctx.send(f"Failed to create emoji: {e}")
 
-            else:
-                return await ctx.send(f"Created {created}")    
+                else:
+                    return await ctx.send(f"Created {created}")    
 
     @_emoji.command()
     @commands.guild_only()

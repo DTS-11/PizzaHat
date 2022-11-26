@@ -55,31 +55,33 @@ class Meta(Cog, emoji="😎"):
     async def _credits(self, ctx: Context):
         """Shows all the people who have helped make this bot."""
 
-        em = discord.Embed(
-            title="Credits",
-            color=self.bot.success,
-            timestamp=ctx.message.created_at
-        )
-        em.set_thumbnail(url=self.bot.user.avatar.url)
 
-        em.add_field(
-            name="Contributors",
-            value="[View on GitHub](https://github.com/DTS-11/PizzaHat/graphs/contributors)",
-            inline=False
-        )
-        em.add_field(name="Bot avatar made by", value="Potato Jesus#1950", inline=False)
-        
-        await ctx.send(embed=em)
+        if self.bot.user and self.bot.user.avatar is not None:
+            em = discord.Embed(
+                title="Credits",
+                color=self.bot.success,
+                timestamp=ctx.message.created_at
+            )
+            em.set_thumbnail(url=self.bot.user.avatar.url)
+
+            em.add_field(
+                name="Contributors",
+                value="[View on GitHub](https://github.com/DTS-11/PizzaHat/graphs/contributors)",
+                inline=False
+            )
+            em.add_field(name="Bot avatar made by", value="Potato Jesus#1950", inline=False)
+            
+            await ctx.send(embed=em)
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def echo(self, ctx: Context, channel: discord.TextChannel, *, msg: str):
         """Makes the bot say something in the specified channel"""
 
-        if not destination.permissions_for(ctx.author).send_messages:
+        if not channel.permissions_for(ctx.author).send_messages:  # type: ignore
             return await ctx.message.add_reaction("⚠")
         msg = clean_string(msg)
-        destination = ctx.message.channel if destination is None else destination
+        destination = ctx.message.channel if channel is None else channel
         await destination.send(msg)
         return await ctx.message.add_reaction("✅")
 
@@ -119,7 +121,7 @@ class Meta(Cog, emoji="😎"):
     async def emojify(self, ctx: Context, emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
         """Emojify a given emoji."""
 
-        await ctx.send(emoji.url)
+        await ctx.send(emoji.url)  # type: ignore
         
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)

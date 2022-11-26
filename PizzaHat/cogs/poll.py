@@ -30,21 +30,28 @@ class Polls(Cog, emoji="🗳"):
         
         if "|" in questions_and_choices:
             delimiter = "|"
+
         elif "," in questions_and_choices:
             delimiter = ","
+
         else:
             delimiter = None
+
+
         if delimiter is not None:
-            questions_and_choices = questions_and_choices.split(delimiter)
+            questions_and_choices = questions_and_choices.split(delimiter)  # type: ignore
+
         else:
-            questions_and_choices = shlex.split(questions_and_choices)
+            questions_and_choices = shlex.split(questions_and_choices)  # type: ignore
+
 
         if len(questions_and_choices) < 3:
             return await ctx.send('Need at least 1 question with 2 choices.')
+            
         elif len(questions_and_choices) > 11:
             return await ctx.send('You can only have up to 10 choices.')
 
-        perms = ctx.channel.permissions_for(ctx.guild.me)
+        perms = ctx.channel.permissions_for(ctx.guild.me)  # type: ignore
         if not (perms.read_message_history or perms.add_reactions):
             return await ctx.send('I need `Read Message History` and `Add Reactions` permissions.')
 
@@ -100,7 +107,7 @@ class Polls(Cog, emoji="🗳"):
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
-    async def strawpoll(self, ctx: Context, *, question_and_choices: str = None):
+    async def strawpoll(self, ctx: Context, *, question_and_choices: str):
         """
         Separate questions and answers by `|` or `,`
         At least two answers required.
@@ -114,7 +121,7 @@ class Polls(Cog, emoji="🗳"):
         else:
             delimiter = ","
 
-        question_and_choices = question_and_choices.split(delimiter)
+        question_and_choices = question_and_choices.split(delimiter)  # type: ignore
 
         if len(question_and_choices) == 1:
             return await ctx.send("Not enough choices supplied")
