@@ -1,5 +1,8 @@
+import base64
 import os
 import random
+import time
+from io import BytesIO
 
 import aiohttp
 import alexflipnote
@@ -18,6 +21,22 @@ class Images(Cog, emoji="📷"):
     """Cool image commands!"""
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
+
+    @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def ai_gen(self, ctx: Context, *, prompt:str):
+        """Generate an AI image."""
+
+        eta = int(time.time()*60)
+        msg = await ctx.send(f"Please wait...\nETA: <t:{eta}:t>")
+
+        async with aiohttp.request("POST", "https://backend.craiyon.com/generate", json={"prompt": prompt}) as resp:
+            r = await resp.json()
+            images = r['images']
+            image = BytesIO(base64.decodebytes(images[0].encode("utf-8")))
+
+            await msg.delete()
+            return await ctx.send(file=discord.File(fp=image, filename="GenImg.png"))
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
