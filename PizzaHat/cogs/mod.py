@@ -671,8 +671,8 @@ class Mod(Cog, emoji=847248846526087239):
                 if data == []:
                     return await ctx.send(f'{self.bot.no} This user has no warns!')
 
-                if data[2] and warn_id in data[3]:
-                    index = data[3].index(warn_id)
+                if data[2] and warn_id in data[3]:  # type: ignore
+                    index = data[3].index(warn_id)  # type: ignore
                     await self.delete_warn(ctx.guild.id, member.id, index)
                     return await ctx.send(f'{self.bot.yes} Warn entry deleted!')
 
