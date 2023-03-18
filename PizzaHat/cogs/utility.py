@@ -8,6 +8,7 @@ from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Button, View
+from typing import Union, Optional
 
 start_time = time.time()
 
@@ -558,7 +559,7 @@ class Utility(Cog, emoji="🛠️"):
 
     @commands.command(aliases=['av'])
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def avatar(self, ctx: Context, member: discord.Member=None):  # type: ignore
+    async def avatar(self, ctx: Context, member: Optional[Union[discord.Member, discord.User]]):  # type: ignore
         """
         Displays a user's avatar
         If no member is provided, returns your avatar.
