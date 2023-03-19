@@ -1,7 +1,6 @@
 import base64
 import os
 import random
-import time
 from io import BytesIO
 
 import aiohttp
@@ -27,8 +26,7 @@ class Images(Cog, emoji="📷"):
     async def ai_gen(self, ctx: Context, *, prompt:str):
         """Generate an AI image."""
 
-        eta = int(time.time()*60)
-        msg = await ctx.send(f"Please wait...\nETA: <t:{eta}:t>")
+        msg = await ctx.send("Please wait...")
 
         async with aiohttp.request("POST", "https://backend.craiyon.com/generate", json={"prompt": prompt}) as resp:
             r = await resp.json()
