@@ -27,7 +27,7 @@ class Events(Cog):
         try:
             # Top.gg
             await self.bot.wait_until_ready()
-            self.topggpy = topgg.DBLClient(self, os.getenv("DBL_TOKEN"), autopost=True)
+            self.topggpy = topgg.DBLClient(self, os.getenv("DBL_TOKEN"), autopost=True)  # type: ignore
             await self.topggpy.post_guild_count()
             print(f"Posted server count: {self.topggpy.guild_count}")
 
@@ -59,6 +59,11 @@ class Events(Cog):
         await self.bot.db.execute(  # type: ignore
             """CREATE TABLE IF NOT EXISTS automod 
             (guild_id BIGINT PRIMARY KEY, enabled BOOL)"""
+        )
+
+        await self.bot.db.execute(  # type: ignore
+            """CREATE TABLE IF NOT EXISTS staff_role 
+            (guild_id BIGINT, role_id BIGINT)"""
         )
 
 
