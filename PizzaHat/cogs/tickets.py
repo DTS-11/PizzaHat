@@ -28,7 +28,6 @@ class TicketView(ui.View):
                 interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
                 interaction.guild.me: discord.PermissionOverwrite(read_messages=True),
                 interaction.guild.get_role(self.get_staff_role(interaction.guild.id)): discord.PermissionOverwrite(read_messages=True)  # type: ignore
-                #interaction.guild.get_role(806957774377713685): discord.PermissionOverwrite(read_messages=True)
             }
 
             channel = await interaction.guild.create_text_channel(
