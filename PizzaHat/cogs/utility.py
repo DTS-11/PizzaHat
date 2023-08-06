@@ -124,7 +124,7 @@ class Utility(Cog, emoji="🛠️"):
             color=member.color,
             timestamp=ctx.message.created_at
         )
-        em.set_author(name=member)
+        em.set_author(name=member.global_name)
 
         em.add_field(name="User ID", value=member.id, inline=False)
         em.add_field(name="Display Name", value=member.display_name, inline=False)
