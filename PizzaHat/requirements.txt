@@ -1,4 +1,4 @@
-discord.py=2.2.2
+discord.py==2.2.2
 discord.py[voice]
 asyncpg
 TagScriptEngine
@@ -16,6 +16,6 @@ numpy
 jishaku
 psutil
 topggpy
-wavelink=1.3.3
+wavelink==1.3.3
 emojis
 alexflipnote.py
