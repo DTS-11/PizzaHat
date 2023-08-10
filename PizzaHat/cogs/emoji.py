@@ -1,4 +1,5 @@
 import asyncio
+from typing import Union
 
 import discord
 import yarl
@@ -101,6 +102,13 @@ class Emojis(Cog, emoji="😀"):
 
         await emoji.delete(reason=f"Action done by {ctx.author}")
         await ctx.send(f"{self.bot.yes} Emoji successfully deleted.")
+
+    @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def emojify(self, ctx: Context, emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
+        """Emojify a given emoji."""
+
+        await ctx.send(emoji.url) # type: ignore
 
 
 async def setup(bot):

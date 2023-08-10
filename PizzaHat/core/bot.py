@@ -22,7 +22,7 @@ INITIAL_EXTENSIONS = [
     'cogs.mod',
     'cogs.music',
     'cogs.poll',
-    'cogs.tickets',
+    'cogs.tags',
     'cogs.utility',
 ]
 

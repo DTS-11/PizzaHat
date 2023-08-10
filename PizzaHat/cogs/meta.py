@@ -115,13 +115,6 @@ class Meta(Cog, emoji="😎"):
                 color=self.bot.color
             )
             await ctx.send(embed=e)
-
-    @commands.command()
-    @commands.cooldown(1, 3, commands.BucketType.user)
-    async def emojify(self, ctx: Context, emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
-        """Emojify a given emoji."""
-
-        await ctx.send(emoji.url)  # type: ignore
         
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
