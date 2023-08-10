@@ -3,7 +3,6 @@ import random
 import re
 import time
 import unicodedata
-from typing import Union
 
 import discord
 from core.bot import PizzaHat
