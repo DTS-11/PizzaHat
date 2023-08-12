@@ -67,7 +67,7 @@ class PizzaHat(commands.Bot):
             status = discord.Status.online,
             activity = discord.Activity(
                 type = discord.ActivityType.watching,
-                name = "p!help | pizzahat.ml"
+                name = "p!help"
             ),
         )
 
