@@ -13,11 +13,10 @@ load_dotenv()
 async def main():
     pool = await db.create_db_pool()
     if pool is not None:
-        async with pool as db_pool:
-            print("DB Connected")
-            async with bot:
-                bot.db = db_pool  # type: ignore
-                await bot.start(os.getenv("TOKEN"))  # type: ignore
+        print("DB Connected")
+        async with bot:
+            bot.db = pool  # type: ignore
+            await bot.start(os.getenv("TOKEN"))  # type: ignore
 
 
 if __name__ == '__main__':
