@@ -66,6 +66,11 @@ class Events(Cog):
             (guild_id BIGINT, role_id BIGINT)"""
         )
 
+        await self.bot.db.execute( # type: ignore
+            """CREATE TABLE IF NOT EXISTS tags 
+            (guild_id BIGINT, tag_name TEXT, content TEXT, creator BIGINT)"""
+        )
+
 
     async def get_logs_channel(self, guild_id):
         data = await self.bot.db.fetchval("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)  # type: ignore
