@@ -18,7 +18,7 @@ PizzaHat is a multi-purpose bot, made to satisfy your needs, as well as your ser
 ## <img src="https://cdn.discordapp.com/emojis/800797566471897088.png?size=80" height="30px"> • Features
 
 - 📌 Over 90+ commands! </li>
-- 🔼 95%+ uptime. </li>
+<!-- - 🔼 95%+ uptime. </li> -->
 - 🏓 Low latency. </li>
 - <img src="https://cdn.discordapp.com/emojis/847248846526087239.png?size=80" height="19px"> Powerful moderation. </li>
 - 🚀 Activities. </li>
@@ -28,7 +28,7 @@ PizzaHat is a multi-purpose bot, made to satisfy your needs, as well as your ser
 - 🎵 Music commands. </li>
 - 📔 Logging system. </li>
 - 🗳 Poll voting system </li>
-- <img src="https://cdn.discordapp.com/emojis/809170074006192130.png?size=80" height="19px"> Regularly updated and maintained! </li>
+<!-- - <img src="https://cdn.discordapp.com/emojis/809170074006192130.png?size=80" height="19px"> Regularly updated and maintained! </li> -->
 	
 ## <img src='https://cdn.discordapp.com/emojis/802615573556363284.png?size=80' height="30px"> • How to contribute?
 
