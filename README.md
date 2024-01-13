@@ -17,11 +17,7 @@ PizzaHat Discord Bot <h1/>
 	
 ## <img src="https://cdn.discordapp.com/emojis/800797566471897088.png?size=80" height="30px"> • Features
 
-<<<<<<< HEAD
-- 📌 Over 90+ commands! </li><!-- - 🔼 95%+ uptime. </li> -->
-=======
 - 📌 Over 90+ commands! </li> <!-- - 🔼 95%+ uptime. </li> -->
->>>>>>> 010948154a977e6a45a557fa637366fb71672d53
 - 🏓 Low latency. </li>
 - <img src="https://cdn.discordapp.com/emojis/847248846526087239.png?size=80" height="19px"> Powerful moderation. </li>
 - 🚀 Activities. </li>
@@ -31,18 +27,12 @@ PizzaHat Discord Bot <h1/>
 - 🎵 Music commands. </li>
 - 📔 Logging system. </li>
 - 🗳 Poll voting system </li>
-<<<<<<< HEAD
 - 🏷 Tag system </li>
-- <img src="https://cdn.discordapp.com/emojis/809170074006192130.png?size=80" height="19px"> Regularly updated and maintained! </li>
-=======
 <!-- - <img src="https://cdn.discordapp.com/emojis/809170074006192130.png?size=80" height="19px"> Regularly updated and maintained! </li> -->
->>>>>>> 010948154a977e6a45a557fa637366fb71672d53
 	
 ## <img src='https://cdn.discordapp.com/emojis/802615573556363284.png?size=80' height="30px"> • How to contribute?
 
-- Fork the repo.
-- Add features/changes
-- Submit pull request
+Please check [CONTRIBUTING.md](https://github.com/DTS-11/PizzaHat/blob/main/CONTRIBUTING.md) for more info!
 	
 ## <img src="https://cdn.discordapp.com/emojis/802615572080099378.png?size=80" height="30px"> • Self hosting
 
