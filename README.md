@@ -12,12 +12,16 @@ PizzaHat Discord Bot <h1/>
 
 ## ℹ️ • Info
 
-PizzaHat is a multi-purpose bot, made to satisfy your needs, as well as your server's needs too! This project is open source so that other developers could work on it and make it even better!
+[PizzaHat](https://pizzahat.netlify.app) is a multi-purpose bot, made to satisfy your needs, as well as your server's needs too! This project is open source so that other developers could work on it and make it even better!
 
 	
 ## <img src="https://cdn.discordapp.com/emojis/800797566471897088.png?size=80" height="30px"> • Features
 
+<<<<<<< HEAD
 - 📌 Over 90+ commands! </li><!-- - 🔼 95%+ uptime. </li> -->
+=======
+- 📌 Over 90+ commands! </li> <!-- - 🔼 95%+ uptime. </li> -->
+>>>>>>> 010948154a977e6a45a557fa637366fb71672d53
 - 🏓 Low latency. </li>
 - <img src="https://cdn.discordapp.com/emojis/847248846526087239.png?size=80" height="19px"> Powerful moderation. </li>
 - 🚀 Activities. </li>
@@ -27,8 +31,12 @@ PizzaHat is a multi-purpose bot, made to satisfy your needs, as well as your ser
 - 🎵 Music commands. </li>
 - 📔 Logging system. </li>
 - 🗳 Poll voting system </li>
+<<<<<<< HEAD
 - 🏷 Tag system </li>
 - <img src="https://cdn.discordapp.com/emojis/809170074006192130.png?size=80" height="19px"> Regularly updated and maintained! </li>
+=======
+<!-- - <img src="https://cdn.discordapp.com/emojis/809170074006192130.png?size=80" height="19px"> Regularly updated and maintained! </li> -->
+>>>>>>> 010948154a977e6a45a557fa637366fb71672d53
 	
 ## <img src='https://cdn.discordapp.com/emojis/802615573556363284.png?size=80' height="30px"> • How to contribute?
 
