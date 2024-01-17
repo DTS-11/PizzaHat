@@ -108,7 +108,10 @@ class Emojis(Cog, emoji="😀"):
     async def emojify(self, ctx: Context, emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
         """Emojify a given emoji."""
 
-        await ctx.send(emoji.url) # type: ignore
+        if emoji.url is not None: # type: ignore
+            await ctx.send(emoji.url) # type: ignore
+        else:
+            await ctx.send(emoji) # type: ignore
 
 
 async def setup(bot):
