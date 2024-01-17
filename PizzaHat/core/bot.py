@@ -193,6 +193,8 @@ class PizzaHat(commands.Bot):
                     print(f'In {ctx.command.qualified_name}:', file=sys.stderr)
                     traceback.print_tb(original.__traceback__)
                     print(f'{original.__class__.__name__}: {original}', file=sys.stderr)
+                    print()
+                    print()
 
         elif isinstance(error, commands.MissingRequiredArgument):
             if ctx.command is not None:
