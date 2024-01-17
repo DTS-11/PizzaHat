@@ -211,18 +211,6 @@ class Dev(Cog, emoji=833297795761831956):
             
         else:
             await ctx.send(fmt)
-        
-    @commands.command(hidden=True)
-    @commands.is_owner()
-    async def unload(self, ctx: Context, cog):
-        """Unloads a cog."""
-        
-        try:
-            await self.bot.unload_extension(cog)
-            await ctx.send(f"{self.bot.yes} Cog unloaded")
-
-        except Exception as e:
-            print(e)
 
 
 async def setup(bot):
