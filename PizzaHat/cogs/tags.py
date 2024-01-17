@@ -21,11 +21,11 @@ class Tags(Cog, emoji="🏷"):
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
-    @tag.command()
+    @tag.command(name='create')
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
-    async def create(self, ctx: Context, name: str, *, content: str):
+    async def tag_create(self, ctx: Context, name: str, *, content: str):
         """
         Creates a new tag with given name.
 
@@ -39,7 +39,7 @@ class Tags(Cog, emoji="🏷"):
         try:
             if len(name) > 50:
                 await ctx.send(f"{self.bot.no} Tag name length cannot exceed 50 characters!")
-                
+
             data = await self.bot.db.fetchrow("SELECT * FROM tags WHERE guild_id=$1", ctx.guild.id) # type: ignore
 
             if data is None or data[1] != name:
@@ -52,13 +52,13 @@ class Tags(Cog, emoji="🏷"):
         except Exception as e:
             print(e)
 
-    @tag.command()
+    @tag.command(name='delete', aliases=['remove', 'del'])
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
-    async def delete(self, ctx: Context, tag: str):
+    async def tag_delete(self, ctx: Context, tag: str):
         """
-        Delete an existing tag.
+        Delete an existing tag using tag name.
 
         Example: `p!tag delete new_tag`
 
@@ -78,7 +78,7 @@ class Tags(Cog, emoji="🏷"):
         else:
             await ctx.send(f"{self.bot.no} Tag with name `{tag}` does not exist.")
 
-    @tag.command(name='list')
+    @tag.command(name='list', aliases=['all'])
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def tag_list(self, ctx: Context):
@@ -94,17 +94,17 @@ class Tags(Cog, emoji="🏷"):
 
             if data:
                 for i in data:
-                    em.description += f"<:join_arrow:946077216297590836> {i[0][0:15]}\n" # type: ignore
+                    em.description += f"<:join_arrow:946077216297590836> {i[0]}\n" # type: ignore
 
                 await ctx.send(embed=em)
             
             else:
                 await ctx.send("No tags found.")
 
-    @tag.command()
+    @tag.command(name='info')
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def info(self, ctx: Context, tag: str):
+    async def tag_info(self, ctx: Context, tag: str):
         """Get info on a particular tag."""
 
         data = await self.bot.db.fetch("SELECT tag_name, content, creator FROM tags WHERE guild_id=$1 AND tag_name=$2", ctx.guild.id, tag) # type: ignore
@@ -119,15 +119,15 @@ class Tags(Cog, emoji="🏷"):
         if data:
             for i in data:
                 em.description += i[1]
-                em.add_field(name="Owner", value=f"<@{i[2]}>")
+                em.add_field(name="Owner", value=f"<@{i[2]}> `[{await self.bot.fetch_user(i[2])}]`", inline=False)
 
         await ctx.send(embed=em)
 
-    @tag.command()
+    @tag.command(name='edit')
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
-    async def edit(self, ctx: Context, tag: str, *, content: str):
+    async def tag_edit(self, ctx: Context, tag: str, *, content: str):
         """
         Edit the content of an existing tag.
 
@@ -140,11 +140,12 @@ class Tags(Cog, emoji="🏷"):
 
         data = await self.bot.db.fetch("SELECT tag_name, content FROM tags WHERE guild_id=$1", ctx.guild.id) # type: ignore
 
-        for i in data:
-            if i[0] == tag:
-                await self.bot.db.execute("UPDATE tags SET content=$1 WHERE guild_id=$2 AND tag_name=$3", content, ctx.guild.id, tag) # type: ignore
-                await ctx.send(f"{self.bot.yes} Tag updated!")
-                break
+        if data:
+            for i in data:
+                if i[0] == tag:
+                    await self.bot.db.execute("UPDATE tags SET content=$1 WHERE guild_id=$2 AND tag_name=$3", content, ctx.guild.id, tag) # type: ignore
+                    await ctx.send(f"{self.bot.yes} Tag updated!")
+                    break
         
         else:
             await ctx.send(f"{self.bot.no} Tag with name `{tag}` does not exist.")
