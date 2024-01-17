@@ -13,7 +13,7 @@ class Tags(Cog, emoji="🏷"):
         self.bot: PizzaHat = bot
 
     
-    @commands.group(aliases=['tags'])
+    @commands.group()
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def tag(self, ctx: Context):
