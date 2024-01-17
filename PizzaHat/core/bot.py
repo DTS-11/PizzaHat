@@ -13,7 +13,7 @@ from discord_together import DiscordTogether
 
 
 INITIAL_EXTENSIONS = [
-    'cogs.activities',
+    # 'cogs.activities',
     'cogs.admin',
     'cogs.dev',
     'cogs.emoji',
@@ -23,6 +23,7 @@ INITIAL_EXTENSIONS = [
     # 'cogs.music',
     'cogs.poll',
     'cogs.tags',
+    # 'cogs.activities',
     'cogs.utility',
 ]
 
