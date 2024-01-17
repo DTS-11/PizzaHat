@@ -37,6 +37,9 @@ class Tags(Cog, emoji="🏷"):
         """
 
         try:
+            if len(name) > 50:
+                await ctx.send(f"{self.bot.no} Tag name length cannot exceed 50 characters!")
+                
             data = await self.bot.db.fetchrow("SELECT * FROM tags WHERE guild_id=$1", ctx.guild.id) # type: ignore
 
             if data is None or data[1] != name:
@@ -91,7 +94,7 @@ class Tags(Cog, emoji="🏷"):
 
             if data:
                 for i in data:
-                    em.description += f"<:join_arrow:946077216297590836> {i[0]}\n" # type: ignore
+                    em.description += f"<:join_arrow:946077216297590836> {i[0][0:15]}\n" # type: ignore
 
                 await ctx.send(embed=em)
             
