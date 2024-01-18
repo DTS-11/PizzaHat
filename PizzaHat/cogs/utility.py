@@ -385,6 +385,7 @@ class Utility(Cog, emoji="🛠️"):
 
         total_members = 0
         total_unique = len(self.bot.users)
+        my_commands = [command for command in self.bot.walk_commands()]
 
         text = 0
         voice = 0
@@ -437,8 +438,8 @@ class Utility(Cog, emoji="🛠️"):
         )
 
         em.add_field(
-            name="Discord.py version",
-            value=dpy_version
+            name="Commands",
+            value=len(my_commands)
         )
 
         em.add_field(
@@ -448,7 +449,7 @@ class Utility(Cog, emoji="🛠️"):
 
         if self.bot.user and self.bot.user.avatar is not None:
             em.set_thumbnail(url=self.bot.user.avatar.url)
-        em.set_footer(text="Made with 💖 with discord.py", icon_url="http://i.imgur.com/5BFecvA.png")
+        em.set_footer(text=f"Made with 💖 with discord.py v{dpy_version}", icon_url="http://i.imgur.com/5BFecvA.png")
 
         await ctx.send(embed=em)
 
