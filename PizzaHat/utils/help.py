@@ -48,7 +48,7 @@ def cog_help_embed(cog):
         title=f'{title} Commands',
         description=(
             f"{desc}\n\n"
-            "`<>` required | `[]` optional"),
+            "```ml\n<> Required Argument | [] Optional Argument\n```"),
         color=discord.Color.blue()
     )
 
@@ -73,7 +73,7 @@ def cmds_list_embed(ctx: commands.Context, mapping):
 
     for cog, commands_ in mapping.items():
         if cog and cog.qualified_name not in COG_EXCEPTIONS:
-            cmds = ", ".join([f"`{command.name}`" for command in commands_])
+            cmds = ", ".join([f"`{command.name}`" for command in sorted(commands_, key=lambda x: x.name)])
             cog_emoji = cog.emoji if hasattr(cog, "emoji") else None
             
             em.add_field(name=f"{cog_emoji} {cog.qualified_name}", value=cmds, inline=False)
