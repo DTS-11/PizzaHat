@@ -407,12 +407,15 @@ class Mod(Cog, emoji=847248846526087239):
         To use this command, you must have Kick Members permission.
         """
 
-        if reason is None:
-            reason = f"No reason provided.\nKicked by {ctx.author}"
+        try:
+            if reason is None:
+                reason = f"No reason provided.\nKicked by {ctx.author}"
 
-        await member.kick(reason=reason)
-        await ctx.send(f'{self.bot.yes} Kicked `{member}`')
+            await member.kick(reason=reason)
+            await ctx.send(f'{self.bot.yes} Kicked `{member}`')
 
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
 
     @commands.command(aliases=['b'])
     @commands.guild_only()
@@ -428,18 +431,22 @@ class Mod(Cog, emoji=847248846526087239):
         To use this command, you must have Ban Members permission.
         """
 
-        if reason is None:
-            reason = f"No reason provided\nBanned by {ctx.author}"
+        try:
+            if reason is None:
+                reason = f"No reason provided\nBanned by {ctx.author}"
 
-        if ctx.guild is not None:
-            if isinstance(member, int):
-                await ctx.guild.ban(discord.Object(id=member), reason=f"{reason}")
-                user = await self.bot.fetch_user(member)
-                await ctx.send(f"{self.bot.yes} Banned `{user}`")
+            if ctx.guild is not None:
+                if isinstance(member, int):
+                    await ctx.guild.ban(discord.Object(id=member), reason=f"{reason}")
+                    user = await self.bot.fetch_user(member)
+                    await ctx.send(f"{self.bot.yes} Banned `{user}`")
 
-            else:
-                await member.ban(reason=f"{reason}", delete_message_days=0)
-                await ctx.send(f"{self.bot.yes} Banned `{member}`")
+                else:
+                    await member.ban(reason=f"{reason}", delete_message_days=0)
+                    await ctx.send(f"{self.bot.yes} Banned `{member}`")
+
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
 
     @commands.command(aliases=['mb'])
     @commands.guild_only()
@@ -455,16 +462,20 @@ class Mod(Cog, emoji=847248846526087239):
         To use this command, you must have Ban Members permission.
         """
 
-        if reason is None:
-            reason = f"No reason provided\nBanned by {ctx.author}"
+        try:
+            if reason is None:
+                reason = f"No reason provided\nBanned by {ctx.author}"
 
-        if not len(members):
-            await ctx.send('One or more required arguments are missing.')
+            if not len(members):
+                await ctx.send('One or more required arguments are missing.')
 
-        else:
-            for target in members:
-                await target.ban(reason=reason, delete_message_days=0)
-                await ctx.send(f'{self.bot.yes} Banned `{target}`')
+            else:
+                for target in members:
+                    await target.ban(reason=reason, delete_message_days=0)
+                    await ctx.send(f'{self.bot.yes} Banned `{target}`')
+
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
 
     @commands.command(aliases=['sb'])
     @commands.guild_only()
@@ -482,12 +493,16 @@ class Mod(Cog, emoji=847248846526087239):
         To use this command, you must have Ban Members permission.
         """
 
-        if reason is None:
-            reason = f"No reason given.\nBanned by {ctx.author}"
+        try:
+            if reason is None:
+                reason = f"No reason given.\nBanned by {ctx.author}"
 
-        await ctx.guild.ban(member, reason)  # type: ignore
-        await ctx.guild.unban(member, reason)  # type: ignore
-        await ctx.send(f"{self.bot.yes} Sucessfully soft-banned {member}.")
+            await ctx.guild.ban(member, reason)  # type: ignore
+            await ctx.guild.unban(member, reason)  # type: ignore
+            await ctx.send(f"{self.bot.yes} Sucessfully soft-banned {member}.")
+
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
 
     @commands.command(aliases=['ub'])
     @commands.guild_only()
@@ -526,16 +541,20 @@ class Mod(Cog, emoji=847248846526087239):
         To use this command, you must have Moderate Members permission.
         """
 
-        if reason is None:
-            reason = f"Action done by {ctx.author}"
+        try:
+            if reason is None:
+                reason = f"Action done by {ctx.author}"
 
-        humanly_duration = humanfriendly.parse_timespan(duration)
+            humanly_duration = humanfriendly.parse_timespan(duration)
 
-        await member.timeout(
-            discord.utils.utcnow() + datetime.timedelta(seconds=humanly_duration),
-            reason=reason
-        )
-        await ctx.send(f"{self.bot.yes} {member} has been timed out for {duration}.\nReason: {reason}")
+            await member.timeout(
+                discord.utils.utcnow() + datetime.timedelta(seconds=humanly_duration),
+                reason=reason
+            )
+            await ctx.send(f"{self.bot.yes} {member} has been timed out for {duration}.\nReason: {reason}")
+
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
 
     @commands.command()
     @commands.guild_only()
@@ -550,32 +569,119 @@ class Mod(Cog, emoji=847248846526087239):
         To use this command, you must have Moderate Members permission.
         """
 
-        if reason is None:
-            reason = f"Action done by {ctx.author}"
+        try:
+            if reason is None:
+                reason = f"Action done by {ctx.author}"
 
-        await member.timeout(None, reason=reason)
-        await ctx.send(f"{self.bot.yes} {member} has been unmuted!")
+            await member.timeout(None, reason=reason)
+            await ctx.send(f"{self.bot.yes} {member} has been unmuted!")
 
-    @commands.command()
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+
+    @commands.group()
+    @commands.guild_only()
+    @commands.has_permissions(manage_roles=True)
+    async def role(self, ctx: Context):
+        if ctx.subcommand_passed is None:
+            await ctx.send_help(ctx.command)
+
+    @role.command(name='add')
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def role(self, ctx: Context, user: discord.Member, *, role: discord.Role):
+    async def role_add(self, ctx: Context, user: discord.Member, *, role: discord.Role):
         """
-        Assign or remove role from a user just from one command.
+        Assign role to a user.
+
+        In order for this to work, the bot must have Manage Roles permissions.
+
+        To use this command, you must have Manage Roles permission.
+        """
+    
+        try:
+            if role not in user.roles:
+                await user.add_roles(role)
+                await ctx.send(f'{self.bot.yes} Successfully added `{role.name}` to {user}')
+            
+            else:
+                await ctx.send(f"{self.bot.no} {user} already has `{role.name}` role.")
+
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+
+    @role.command(name='remove')
+    @commands.guild_only()
+    @commands.has_permissions(manage_roles=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def role_remove(self, ctx: Context, user: discord.Member, *, role: discord.Role):
+        """
+        Remove role from a user.
 
         In order for this to work, the bot must have Manage Roles permissions.
 
         To use this command, you must have Manage Roles permission.
         """
 
-        if role in user.roles:
-            await user.remove_roles(role)
-            await ctx.send(f'{self.bot.yes} Successfully removed `{role.name}` from {user}')
+        try:
+            if role in user.roles:
+                await user.remove_roles(role)
+                await ctx.send(f'{self.bot.yes} Successfully removed `{role.name}` from {user}')
+            
+            else:
+                await ctx.send(f"{self.bot.no} {user} does not have `{role.name}` role.")
+            
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
 
-        else:
-            await user.add_roles(role)
-            await ctx.send(f'{self.bot.yes} Successfully added `{role.name}` to {user}')
+    @role.command(name='create')
+    @commands.guild_only()
+    @commands.has_permissions(manage_roles=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def role_create(self, ctx: Context, *, role: discord.Role, color: discord.Color = discord.Color.default(), hoist: bool = False):
+        """
+        Create a new role in the server with given color and hoist options.
+
+        In order for this to work, the bot must have Manage Roles permissions.
+
+        To use this command, you must have Manage Roles permission.
+        """
+
+        try:
+            if ctx.guild is not None:
+                if role not in ctx.guild.roles:
+                    await ctx.guild.create_role(
+                        reason=f'Role created by {ctx.author}',
+                        name=role.name,
+                        color=color,
+                        hoist=hoist
+                    )
+                    await ctx.send(f"{self.bot.yes} Role created successfully!")
+
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+
+    @role.command(name='delete')
+    @commands.guild_only()
+    @commands.has_permissions(manage_roles=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def role_delete(self, ctx: Context, *, role: discord.Role):
+        """
+        Delete an already existing role in the server.
+
+        In order for this to work, the bot must have Manage Roles permissions.
+
+        To use this command, you must have Manage Roles permission.
+        """
+
+        try:
+            if ctx.guild is not None:
+                if role in ctx.guild.roles:
+                    await role.delete()
+                    await ctx.send(f"{self.bot.yes} Role deleted successfully!")
+        
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
 
     @commands.command()
     @commands.guild_only()
