@@ -128,7 +128,7 @@ class HelpView(ui.View):
             for child in self.children:
                 child.disabled = True  # type: ignore
 
-            await self.message.edit(view=self)
+            await self.message.edit(view=self) # type: ignore
 
     async def interaction_check(self, interaction: Interaction):
         if interaction.user == self.ctx.author:
