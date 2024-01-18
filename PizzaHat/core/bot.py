@@ -24,7 +24,7 @@ INITIAL_EXTENSIONS = [
     # 'cogs.music',
     'cogs.poll',
     'cogs.tags',
-    # 'cogs.activities',
+    # 'cogs.tickets',
     'cogs.utility',
 ]
 
@@ -37,7 +37,7 @@ SUB_EXTENSIONS = [
 
 description = """
 I'm PizzaHat, a bot made by DTS#5976 to provide some epic server utilities.
-I have features such as moderation, utiltity, music and more!
+I have features such as moderation, utiltity, games and more!
 
 I'm also open source. You can see my code on [GitHub](https://github.com/DTS-11/PizzaHat)
 """
