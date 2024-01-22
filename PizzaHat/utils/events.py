@@ -20,29 +20,29 @@ class Events(Cog):
     """Events cog"""
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
-        bot.loop.create_task(self.update_stats())
+    #     bot.loop.create_task(self.update_stats())
 
-    @tasks.loop(minutes=30)
-    async def update_stats(self):
-        try:
-            # Top.gg
-            await self.bot.wait_until_ready()
-            self.topggpy = topgg.DBLClient(self, os.getenv("DBL_TOKEN"), autopost=True)  # type: ignore
-            await self.topggpy.post_guild_count()
-            print(f"Posted server count: {self.topggpy.guild_count}")
+    # @tasks.loop(minutes=30)
+    # async def update_stats(self):
+    #     try:
+    #         # Top.gg
+    #         await self.bot.wait_until_ready()
+    #         self.topggpy = topgg.DBLClient(self, os.getenv("DBL_TOKEN"), autopost=True)  # type: ignore
+    #         await self.topggpy.post_guild_count()
+    #         print(f"Posted server count: {self.topggpy.guild_count}")
 
-        except Exception as e:
-            print(f"Failed to post server count\n{e.__class__.__name__}: {e}")
+    #     except Exception as e:
+    #         print(f"Failed to post server count\n{e.__class__.__name__}: {e}")
 
-        try:
-            # DList.gg
-            url = f"https://api.discordlist.gg/v0/bots/860889936914677770/guilds?count={len(self.bot.guilds)}"
-            headers = {'Authorization': f"Bearer {DLIST_TOKEN}", "Content-Type": "application/json"}
-            r = requests.put(url, headers=headers)
-            print(r.json())
+    #     try:
+    #         # DList.gg
+    #         url = f"https://api.discordlist.gg/v0/bots/860889936914677770/guilds?count={len(self.bot.guilds)}"
+    #         headers = {'Authorization': f"Bearer {DLIST_TOKEN}", "Content-Type": "application/json"}
+    #         r = requests.put(url, headers=headers)
+    #         print(r.json())
 
-        except Exception as e:
-            print(e)
+    #     except Exception as e:
+    #         print(e)
 
     @Cog.listener()
     async def on_ready(self):
