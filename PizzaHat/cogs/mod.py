@@ -9,6 +9,7 @@ from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
+from utils.ui import Paginator
 
 
 class Mod(Cog, emoji=847248846526087239):
@@ -682,6 +683,52 @@ class Mod(Cog, emoji=847248846526087239):
         
         except Exception as e:
             print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+
+    @role.command(aliases=['all'])
+    @commands.guild_only()
+    @commands.has_permissions(manage_roles=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def list(self, ctx: Context):
+        """
+        List all the server roles.
+
+        In order for this to work, the bot must have Manage Roles permissions.
+
+        To use this command, you must have Manage Roles permission.
+        """
+
+        try:
+            if ctx.guild is not None:
+                roles = sorted(ctx.guild.roles, key=lambda x: x.position, reverse=True)
+                embeds = []
+
+                chunk_size = 10
+                role_chunks = [roles[i:i + chunk_size] for i in range(0, len(roles), chunk_size)]
+
+                for i, chunk in enumerate(role_chunks, 1):
+                    description = "\n\n".join([f"{role.mention} `({role.id})` • {role.name}" for role in chunk])
+                    embeds.append(
+                        discord.Embed(
+                            title=f"{ctx.guild.name} Roles ({len(roles)})",
+                            description=description,
+                            color=self.bot.color,
+                            timestamp=ctx.message.created_at
+                        ).set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
+                        .set_footer(text=f"Page {i}/{len(role_chunks)}")
+                    )
+
+                if not embeds:
+                    return await ctx.send("No roles to display.")
+
+                if len(embeds) == 1:
+                    return await ctx.send(embed=embeds[0])
+
+                view = Paginator(ctx, embeds)
+                return await ctx.send(embed=embeds[0], view=view)
+
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+
 
     @commands.command()
     @commands.guild_only()
