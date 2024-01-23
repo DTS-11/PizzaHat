@@ -1,10 +1,9 @@
+import asyncio
 import os
 
-from dotenv import load_dotenv
-
-from core.bot import PizzaHat
 import core.database as db
-import asyncio
+from core.bot import PizzaHat
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -27,6 +26,9 @@ if __name__ == '__main__':
 
     except ConnectionRefusedError:
         print("DB not connected.")
+
+    except KeyboardInterrupt:
+        print("Bot manually terminated.")
 
     except Exception as e:
         print(e)
