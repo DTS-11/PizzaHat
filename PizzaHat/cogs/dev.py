@@ -45,7 +45,6 @@ class Dev(Cog, emoji=833297795761831956):
 
         await ctx.message.add_reaction("✅")
         restart_bot()
-        await ctx.send('Back online!')
 
     @commands.command(name="eval", hidden=True)
     @commands.is_owner()
