@@ -30,8 +30,10 @@ class Admin(Cog, emoji=916988537264570368):
 
         try:
             await self.bot.db.execute("INSERT INTO staff_role (guild_id, role_id) VALUES ($1, $2)", ctx.guild.id, role.id)  # type: ignore
+            await ctx.send(f"{self.bot.yes} Staff role set to {role.name}")
 
         except Exception as e:
+            await ctx.send(f"{self.bot.no} Something went wrong...")
             print(e)
 
     @set.command(aliases=["log"])
@@ -49,6 +51,7 @@ class Admin(Cog, emoji=916988537264570368):
             await ctx.send(f"{self.bot.yes} Mod-logs channel set to {channel}")
 
         except Exception as e:
+            await ctx.send(f"{self.bot.no} Something went wrong...")
             print(e)
 
     @set.command(aliases=["ticket"])
@@ -89,8 +92,10 @@ class Admin(Cog, emoji=916988537264570368):
 
         try:
             await self.bot.db.execute("INSERT INTO automod (guild_id, enabled) VALUES ($1, $2)", ctx.guild.id, True)  # type: ignore
+            await ctx.send(f"{self.bot.yes} Auto-mod enabled.")
 
         except Exception as e:
+            await ctx.send(f"{self.bot.no} Something went wrong...")
             print(e)
 
 
