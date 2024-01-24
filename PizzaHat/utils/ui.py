@@ -19,7 +19,7 @@ class Paginator(discord.ui.View):
 
             await self.message.edit(view=self)  # type: ignore
 
-    @discord.ui.button(emoji="⏮", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="<<", style=discord.ButtonStyle.gray)
     async def first(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.current == 0:
             return await interaction.response.send_message(
@@ -28,7 +28,7 @@ class Paginator(discord.ui.View):
         await interaction.response.edit_message(embed=self.embeds[0], view=self)
         self.current = 0
 
-    @discord.ui.button(emoji="◀️", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.blurple)
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.current == 0:
             return await interaction.response.send_message(
@@ -44,7 +44,7 @@ class Paginator(discord.ui.View):
         if interaction.message is not None:
             await interaction.message.delete()
 
-    @discord.ui.button(emoji="▶️", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.blurple)
     async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.current + 1 == len(self.embeds):
             return await interaction.response.send_message(
@@ -55,7 +55,7 @@ class Paginator(discord.ui.View):
         )
         self.current += 1
 
-    @discord.ui.button(emoji="⏭", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label=">>", style=discord.ButtonStyle.gray)
     async def last(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.current + 1 == len(self.embeds):
             return await interaction.response.send_message(
