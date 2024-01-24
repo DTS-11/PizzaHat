@@ -739,17 +739,12 @@ class Mod(Cog, emoji=847248846526087239):
         except Exception as e:
             print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
 
-    @role.command(aliases=["all"])
+    @role.command(aliases=["list", "all"])
     @commands.guild_only()
-    @commands.has_permissions(manage_roles=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def list(self, ctx: Context):
+    async def role_list(self, ctx: Context):
         """
         List all the server roles.
-
-        In order for this to work, the bot must have Manage Roles permissions.
-
-        To use this command, you must have Manage Roles permission.
         """
 
         try:
