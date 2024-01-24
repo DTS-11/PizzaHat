@@ -9,10 +9,10 @@ from discord.ext.commands import Context
 
 class Tags(Cog, emoji="🏷"):
     """Commands to fetch something by a tag name."""
+
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
-    
     @commands.group()
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -21,7 +21,7 @@ class Tags(Cog, emoji="🏷"):
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
-    @tag.command(name='create')
+    @tag.command(name="create")
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
@@ -38,21 +38,23 @@ class Tags(Cog, emoji="🏷"):
 
         try:
             if len(name) > 50:
-                await ctx.send(f"{self.bot.no} Tag name length cannot exceed 50 characters!")
+                await ctx.send(
+                    f"{self.bot.no} Tag name length cannot exceed 50 characters!"
+                )
 
-            data = await self.bot.db.fetchrow("SELECT * FROM tags WHERE guild_id=$1", ctx.guild.id) # type: ignore
+            data = await self.bot.db.fetchrow("SELECT * FROM tags WHERE guild_id=$1", ctx.guild.id)  # type: ignore
 
             if data is None or data[1] != name:
-                await self.bot.db.execute("INSERT INTO tags (guild_id, tag_name, content, creator) VALUES ($1, $2, $3, $4)", ctx.guild.id, name, content, ctx.author.id) # type: ignore
+                await self.bot.db.execute("INSERT INTO tags (guild_id, tag_name, content, creator) VALUES ($1, $2, $3, $4)", ctx.guild.id, name, content, ctx.author.id)  # type: ignore
                 await ctx.send(f"{self.bot.yes} Tag created successfully!")
-            
+
             elif data[1] == name:
                 await ctx.send(f"{self.bot.no} Tag with this name already exists!")
-        
+
         except Exception as e:
             print(e)
 
-    @tag.command(name='delete', aliases=['remove', 'del'])
+    @tag.command(name="delete", aliases=["remove", "del"])
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
@@ -67,63 +69,66 @@ class Tags(Cog, emoji="🏷"):
         To use this command, you must have Manage Messages permission.
         """
 
-        data = await self.bot.db.fetch("SELECT * FROM tags WHERE guild_id=$1", ctx.guild.id) # type: ignore
+        data = await self.bot.db.fetch("SELECT * FROM tags WHERE guild_id=$1", ctx.guild.id)  # type: ignore
 
         for i in data:
             if i[1] == tag:
-                await self.bot.db.execute("DELETE FROM tags WHERE guild_id=$1 AND tag_name=$2", ctx.guild.id, tag) # type: ignore
+                await self.bot.db.execute("DELETE FROM tags WHERE guild_id=$1 AND tag_name=$2", ctx.guild.id, tag)  # type: ignore
                 await ctx.send(f"{self.bot.yes} Tag deleted!")
                 break
-            
+
         else:
             await ctx.send(f"{self.bot.no} Tag with name `{tag}` does not exist.")
 
-    @tag.command(name='list', aliases=['all'])
+    @tag.command(name="list", aliases=["all"])
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def tag_list(self, ctx: Context):
         """Retrieve all tags"""
 
         if ctx.guild is not None:
-
-            data = await self.bot.db.fetch("SELECT tag_name FROM tags WHERE guild_id=$1", ctx.guild.id) # type: ignore
+            data = await self.bot.db.fetch("SELECT tag_name FROM tags WHERE guild_id=$1", ctx.guild.id)  # type: ignore
             em = discord.Embed(
-                description='',
+                description="",
                 color=self.bot.color,
             )
 
             if data:
                 for i in data:
-                    em.description += f"<:join_arrow:946077216297590836> {i[0]}\n" # type: ignore
+                    em.description += f"<:join_arrow:946077216297590836> {i[0]}\n"  # type: ignore
 
                 await ctx.send(embed=em)
-            
+
             else:
                 await ctx.send("No tags found.")
 
-    @tag.command(name='info')
+    @tag.command(name="info")
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def tag_info(self, ctx: Context, tag: str):
         """Get info on a particular tag."""
 
-        data = await self.bot.db.fetch("SELECT tag_name, content, creator FROM tags WHERE guild_id=$1 AND tag_name=$2", ctx.guild.id, tag) # type: ignore
+        data = await self.bot.db.fetch("SELECT tag_name, content, creator FROM tags WHERE guild_id=$1 AND tag_name=$2", ctx.guild.id, tag)  # type: ignore
         em = discord.Embed(
             title=tag,
-            description='',
+            description="",
             color=self.bot.color,
-            timestamp=datetime.datetime.utcnow()
+            timestamp=datetime.datetime.utcnow(),
         )
         em.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar)
 
         if data:
             for i in data:
                 em.description += i[1]
-                em.add_field(name="Owner", value=f"<@{i[2]}> `[{await self.bot.fetch_user(i[2])}]`", inline=False)
+                em.add_field(
+                    name="Owner",
+                    value=f"<@{i[2]}> `[{await self.bot.fetch_user(i[2])}]`",
+                    inline=False,
+                )
 
         await ctx.send(embed=em)
 
-    @tag.command(name='edit')
+    @tag.command(name="edit")
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
@@ -138,15 +143,15 @@ class Tags(Cog, emoji="🏷"):
         To use this command, you must have Manage Messages permission.
         """
 
-        data = await self.bot.db.fetch("SELECT tag_name, content FROM tags WHERE guild_id=$1", ctx.guild.id) # type: ignore
+        data = await self.bot.db.fetch("SELECT tag_name, content FROM tags WHERE guild_id=$1", ctx.guild.id)  # type: ignore
 
         if data:
             for i in data:
                 if i[0] == tag:
-                    await self.bot.db.execute("UPDATE tags SET content=$1 WHERE guild_id=$2 AND tag_name=$3", content, ctx.guild.id, tag) # type: ignore
+                    await self.bot.db.execute("UPDATE tags SET content=$1 WHERE guild_id=$2 AND tag_name=$3", content, ctx.guild.id, tag)  # type: ignore
                     await ctx.send(f"{self.bot.yes} Tag updated!")
                     break
-        
+
         else:
             await ctx.send(f"{self.bot.no} Tag with name `{tag}` does not exist.")
 

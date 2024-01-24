@@ -11,31 +11,31 @@ def bot_help_embed(ctx: commands.Context):
     em = discord.Embed(
         title=f"{ctx.bot.user.name} Help",
         timestamp=ctx.message.created_at,
-        color=discord.Color.blue()
+        color=discord.Color.blue(),
     )
-    em.description = (
-        """
+    em.description = """
 Hello, welcome to the help page!\n\n
 Use `help [command]` for more info on a command.\n
 Use `help [category]` for more info on a command.\n
 Use the dropdown menu to select a category.\n
         """
-    )
 
     em.add_field(
         name="Support Server",
         value="For more help, consider joining the official server over at https://discord.gg/WhNVDTF",
-        inline=False
+        inline=False,
     )
     em.add_field(name="About me", value=ctx.bot.description, inline=False)
     em.add_field(
         name="🔗 Links",
         value="**[Invite me](https://dsc.gg/pizza-invite)** • **[Vote](https://top.gg/bot/860889936914677770/vote)**",
-        inline=False
+        inline=False,
     )
 
     em.set_thumbnail(url=ctx.bot.user.avatar.url)
-    em.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
+    em.set_footer(
+        text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url
+    )
 
     return em
 
@@ -45,11 +45,11 @@ def cog_help_embed(cog):
     title = cog.qualified_name
 
     em = discord.Embed(
-        title=f'{title} Commands',
+        title=f"{title} Commands",
         description=(
-            f"{desc}\n\n"
-            "```ml\n<> Required Argument | [] Optional Argument\n```"),
-        color=discord.Color.blue()
+            f"{desc}\n\n" "```ml\n<> Required Argument | [] Optional Argument\n```"
+        ),
+        color=discord.Color.blue(),
     )
 
     for x in sorted(cog.get_commands(), key=lambda c: c.name):
@@ -65,18 +65,27 @@ def cmds_list_embed(ctx: commands.Context, mapping):
     em = discord.Embed(
         title=f"{ctx.bot.user.name} Help",
         timestamp=ctx.message.created_at,
-        color=discord.Color.blue()
+        color=discord.Color.blue(),
     )
 
     em.set_thumbnail(url=ctx.bot.user.avatar.url)
-    em.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
+    em.set_footer(
+        text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url
+    )
 
     for cog, commands_ in mapping.items():
         if cog and cog.qualified_name not in COG_EXCEPTIONS:
-            cmds = ", ".join([f"`{command.name}`" for command in sorted(commands_, key=lambda x: x.name)])
+            cmds = ", ".join(
+                [
+                    f"`{command.name}`"
+                    for command in sorted(commands_, key=lambda x: x.name)
+                ]
+            )
             cog_emoji = cog.emoji if hasattr(cog, "emoji") else None
-            
-            em.add_field(name=f"{cog_emoji} {cog.qualified_name}", value=cmds, inline=False)
+
+            em.add_field(
+                name=f"{cog_emoji} {cog.qualified_name}", value=cmds, inline=False
+            )
 
     return em
 
@@ -90,23 +99,25 @@ class HelpDropdown(ui.Select):
 
         for cog, _ in mapping.items():
             if cog and cog.qualified_name not in COG_EXCEPTIONS:
-                options.append(discord.SelectOption(
-                    label=cog.qualified_name,
-                    description=cog.description,
-                    emoji=cog.emoji if hasattr(cog, "emoji") else None
-                ))
+                options.append(
+                    discord.SelectOption(
+                        label=cog.qualified_name,
+                        description=cog.description,
+                        emoji=cog.emoji if hasattr(cog, "emoji") else None,
+                    )
+                )
 
         super().__init__(
             placeholder="Choose a category...",
             min_values=1,
             max_values=1,
-            options=sorted(options, key=lambda x: x.label)
+            options=sorted(options, key=lambda x: x.label),
         )
-    
+
     async def callback(self, interaction: Interaction):
         cog_name = self.values[0]
         cog = None
-        
+
         for c, _ in self.cog_mapping.items():
             if c and c.qualified_name == cog_name:
                 cog = c
@@ -128,13 +139,15 @@ class HelpView(ui.View):
             for child in self.children:
                 child.disabled = True  # type: ignore
 
-            await self.message.edit(view=self) # type: ignore
+            await self.message.edit(view=self)  # type: ignore
 
     async def interaction_check(self, interaction: Interaction):
         if interaction.user == self.ctx.author:
             return True
 
-        await interaction.response.send_message("Not your help command ._.", ephemeral=True)
+        await interaction.response.send_message(
+            "Not your help command ._.", ephemeral=True
+        )
 
     @ui.button(label="Home", emoji="🏠", style=ButtonStyle.blurple)
     async def go_home(self, interaction: Interaction, button: ui.Button):
@@ -156,13 +169,15 @@ class HelpView(ui.View):
 class MyHelp(commands.HelpCommand):
     def __init__(self):
         super().__init__(
-            command_attrs = {
+            command_attrs={
                 "help": "Help command for the bot",
-                "cooldown": commands.CooldownMapping.from_cooldown(1, 3, commands.BucketType.user),
-                "aliases": ['h']
+                "cooldown": commands.CooldownMapping.from_cooldown(
+                    1, 3, commands.BucketType.user
+                ),
+                "aliases": ["h"],
             }
         )
-    
+
     async def send(self, **kwargs):
         await self.get_destination().send(**kwargs)
 
@@ -176,14 +191,14 @@ class MyHelp(commands.HelpCommand):
         embed = discord.Embed(
             title=signature,
             description=command.help or "No help found...",
-            color=discord.Color.blue()
+            color=discord.Color.blue(),
         )
 
         if command.aliases:
             embed.add_field(
                 name="Aliases",
-                value=', '.join(['`' + str(alias) + '`' for alias in command.aliases]),
-                inline=False
+                value=", ".join(["`" + str(alias) + "`" for alias in command.aliases]),
+                inline=False,
             )
 
         if cog := command.cog:
@@ -202,7 +217,7 @@ class MyHelp(commands.HelpCommand):
         embed = discord.Embed(
             title=title,
             description=description or "No help found...",
-            color=discord.Color.blue()
+            color=discord.Color.blue(),
         )
 
         for command in commands:
@@ -210,7 +225,8 @@ class MyHelp(commands.HelpCommand):
             embed.add_field(
                 name=self.get_command_signature(command),
                 value=cmd_help or "No help found...",
-                inline=False)
+                inline=False,
+            )
 
         await self.send(embed=embed)
 

@@ -11,6 +11,7 @@ from discord.ext.commands import Context
 
 class Music(Cog, emoji=929100003178348634):
     """Listen to music and chill!"""
+
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
         bot.loop.create_task(self.connect_nodes())
@@ -22,11 +23,10 @@ class Music(Cog, emoji=929100003178348634):
             host=os.getenv("WAVELINK_HOST"),  # type: ignore
             port=443,
             password=os.getenv("WAVELINK_PASS"),  # type: ignore
-            https=True
+            https=True,
         )
 
-
-    @commands.command(aliases=['leave'])
+    @commands.command(aliases=["leave"])
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def dc(self, ctx: Context):
         """Leaves a VC."""
@@ -48,8 +48,14 @@ class Music(Cog, emoji=929100003178348634):
             await vc.play(song)
 
             em = discord.Embed(color=self.bot.color)
-            em.add_field(name="▶ Playing", value=f"[{song.title}]({song.uri})", inline=False)
-            em.add_field(name="⌛ Song Duration", value=str(timedelta(seconds=song.duration)), inline=False)
+            em.add_field(
+                name="▶ Playing", value=f"[{song.title}]({song.uri})", inline=False
+            )
+            em.add_field(
+                name="⌛ Song Duration",
+                value=str(timedelta(seconds=song.duration)),
+                inline=False,
+            )
             em.add_field(name="👥 Requested by", value=ctx.author.mention, inline=False)
             em.add_field(name="🎵 Song by", value=song.author, inline=False)
             em.set_thumbnail(url=vc.source.thumbnail)  # type: ignore
@@ -74,7 +80,7 @@ class Music(Cog, emoji=929100003178348634):
 
             elif not ctx.voice_client:
                 return await ctx.send("You are not playing any music")
-            
+
             else:
                 vc: wavelink.Player = ctx.voice_client  # type: ignore
                 await vc.stop()
@@ -93,7 +99,7 @@ class Music(Cog, emoji=929100003178348634):
 
         elif not ctx.voice_client:
             return await ctx.send("You are not playing any music")
-        
+
         else:
             vc: wavelink.Player = ctx.voice_client  # type: ignore
             await vc.pause()
@@ -145,7 +151,7 @@ class Music(Cog, emoji=929100003178348634):
 
         else:
             vc: wavelink.Player = ctx.voice_client  # type: ignore
-        
+
         try:
             vc.loop ^= True  # type: ignore
 
@@ -154,7 +160,7 @@ class Music(Cog, emoji=929100003178348634):
 
         if vc.loop:  # type: ignore
             return await ctx.send("🔁 Loop is now enabled")
-        
+
         else:
             return await ctx.send("🔁 Loop is now disabled.")
 
@@ -171,24 +177,21 @@ class Music(Cog, emoji=929100003178348634):
 
         else:
             vc: wavelink.Player = ctx.voice_client  # type: ignore
-        
+
         if vc.queue.is_empty:
             return await ctx.send("Queue is empty.")
-        
+
         else:
             queue = vc.queue.copy()
             song_count = 0
-            
-            em=discord.Embed(
-                color=self.bot.color,
-                timestamp=ctx.message.created_at
-            )
+
+            em = discord.Embed(color=self.bot.color, timestamp=ctx.message.created_at)
 
             for songs in queue:
                 song_count += 1
                 songs = [i.title for i in vc.queue]  # type: ignore
 
-                em.title=f"Queued songs [{song_count}]"
+                em.title = f"Queued songs [{song_count}]"
 
                 for song in songs:
                     em.add_field(name="\u200b", value=song, inline=False)
@@ -208,7 +211,7 @@ class Music(Cog, emoji=929100003178348634):
 
         else:
             vc: wavelink.Player = ctx.voice_client  # type: ignore
-        
+
         if volume > 100:
             return await ctx.send("That is wayy too high...")
 
@@ -218,11 +221,11 @@ class Music(Cog, emoji=929100003178348634):
         await vc.set_volume(volume)
         await ctx.send(f"{self.bot.yes} Set volume to {volume}%")
 
-    @commands.command(aliases=['np'])
+    @commands.command(aliases=["np"])
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def nowplaying(self, ctx: Context):
         """Shows which song is playing."""
-        
+
         if ctx.author.voice is None:  # type: ignore
             return await ctx.send("You are not in a voice channel")
 
@@ -239,7 +242,11 @@ class Music(Cog, emoji=929100003178348634):
             if vc.track is not None:
                 em = discord.Embed(color=self.bot.color)
                 em.add_field(name="▶ Now playing", value=f"[{vc.track.title}]({vc.track.uri})", inline=False)  # type: ignore
-                em.add_field(name="⌛ Song Duration", value=str(timedelta(seconds=vc.track.duration)), inline=False)
+                em.add_field(
+                    name="⌛ Song Duration",
+                    value=str(timedelta(seconds=vc.track.duration)),
+                    inline=False,
+                )
                 em.add_field(name="🎵 Song by", value=vc.track.author, inline=False)  # type: ignore
                 em.set_thumbnail(url=vc.source.thumbnail)  # type: ignore
 

@@ -20,23 +20,23 @@ if TYPE_CHECKING:
 
 
 def restart_bot():
-    os.execv(sys.executable, ['python'] + sys.argv)
+    os.execv(sys.executable, ["python"] + sys.argv)
 
 
 class Dev(Cog, emoji=833297795761831956):
     """Developer commands."""
+
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
     def cleanup_code(self, content: str) -> str:
         """Automatically removes code blocks from the code."""
         # remove ```py\n```
-        if content.startswith('```') and content.endswith('```'):
-            return '\n'.join(content.split('\n')[1:-1])
-        
+        if content.startswith("```") and content.endswith("```"):
+            return "\n".join(content.split("\n")[1:-1])
+
         else:
             return content
-
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -52,15 +52,15 @@ class Dev(Cog, emoji=833297795761831956):
         """Eval command."""
 
         env = {
-            'ctx': ctx,
-            'bot': self.bot,
-            'client': self.bot,
-            'db': self.bot.db,  # type: ignore
-            'channel': ctx.channel,
-            'author': ctx.author,
-            'guild': ctx.guild,
-            'message': ctx.message,
-            'source': inspect.getsource
+            "ctx": ctx,
+            "bot": self.bot,
+            "client": self.bot,
+            "db": self.bot.db,  # type: ignore
+            "channel": ctx.channel,
+            "author": ctx.author,
+            "guild": ctx.guild,
+            "message": ctx.message,
+            "source": inspect.getsource,
         }
 
         env.update(globals())
@@ -71,7 +71,7 @@ class Dev(Cog, emoji=833297795761831956):
         to_compile = f'async def func():\n{textwrap.indent(body, "    ")}'
 
         def paginate(text: str):
-            '''Simple generator that paginates text.'''
+            """Simple generator that paginates text."""
             last = 0
             pages = []
             for curr in range(0, len(text)):
@@ -79,35 +79,35 @@ class Dev(Cog, emoji=833297795761831956):
                     pages.append(text[last:curr])
                     last = curr
                     appd_index = curr
-            if appd_index != len(text)-1:
+            if appd_index != len(text) - 1:
                 pages.append(text[last:curr])
-            return list(filter(lambda a: a != '', pages))
-        
+            return list(filter(lambda a: a != "", pages))
+
         color = self.bot.color
 
         try:
             exec(to_compile, env)
 
         except Exception as e:
-            embed=discord.Embed(
-                title='Error',
-                description=f'```py\n{e.__class__.__name__}: {e}\n```',
-                color=color
+            embed = discord.Embed(
+                title="Error",
+                description=f"```py\n{e.__class__.__name__}: {e}\n```",
+                color=color,
             )
             await ctx.send(embed=embed)
 
-        func = env['func']
+        func = env["func"]
 
         try:
             with redirect_stdout(stdout):
                 ret = await func()
-                
+
         except Exception:
             value = stdout.getvalue()
-            embed=discord.Embed(
-                title='Error',
-                description=f'```py\n{value}{traceback.format_exc()}\n```',
-                color=color
+            embed = discord.Embed(
+                title="Error",
+                description=f"```py\n{value}{traceback.format_exc()}\n```",
+                color=color,
             )
             await ctx.send(embed=embed)
 
@@ -116,9 +116,8 @@ class Dev(Cog, emoji=833297795761831956):
             if ret is None:
                 if value:
                     try:
-                        embed=discord.Embed(
-                            description=f'```py\n{value}\n```',
-                                color=color
+                        embed = discord.Embed(
+                            description=f"```py\n{value}\n```", color=color
                         )
 
                         await ctx.send(embed=embed)
@@ -128,24 +127,21 @@ class Dev(Cog, emoji=833297795761831956):
 
                         for page in paginated_text:
                             if page == paginated_text[-1]:
-                                embed=discord.Embed(
-                                    description=f'```py\n{page}\n```',
-                                    color=color
+                                embed = discord.Embed(
+                                    description=f"```py\n{page}\n```", color=color
                                 )
                                 await ctx.send(embed=embed)
                                 break
 
-                            embed=discord.Embed(
-                                description=f'```py\n{page}\n```',
-                                color=color
+                            embed = discord.Embed(
+                                description=f"```py\n{page}\n```", color=color
                             )
 
                             await ctx.send(embed=embed)
             else:
                 try:
-                    embed=discord.Embed(
-                        description=f'```py\n{value}{ret}\n```',
-                        color=color
+                    embed = discord.Embed(
+                        description=f"```py\n{value}{ret}\n```", color=color
                     )
                     await ctx.send(embed=embed)
 
@@ -154,16 +150,14 @@ class Dev(Cog, emoji=833297795761831956):
 
                     for page in paginated_text:
                         if page == paginated_text[-1]:
-                            embed=discord.Embed(
-                                description=f'```py\n{page}\n```',
-                                color=color
+                            embed = discord.Embed(
+                                description=f"```py\n{page}\n```", color=color
                             )
                             await ctx.send(embed=embed)
                             break
 
-                        embed=discord.Embed(
-                            description=f'```py\n{page}\n```',
-                            color=color
+                        embed = discord.Embed(
+                            description=f"```py\n{page}\n```", color=color
                         )
 
                         await ctx.send(embed=embed)
@@ -175,7 +169,7 @@ class Dev(Cog, emoji=833297795761831956):
 
         query = self.cleanup_code(query)
 
-        is_multistatement = query.count(';') > 1
+        is_multistatement = query.count(";") > 1
         strategy: Callable[[str], Union[Awaitable[list[Record]], Awaitable[str]]]
 
         if is_multistatement:
@@ -191,12 +185,12 @@ class Dev(Cog, emoji=833297795761831956):
             dt = (time.perf_counter() - start) * 1000.0
 
         except Exception:
-            return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
+            return await ctx.send(f"```py\n{traceback.format_exc()}\n```")
 
         rows = len(results)
 
         if isinstance(results, str) or rows == 0:
-            return await ctx.send(f'`{dt:.2f}ms: {results}`')
+            return await ctx.send(f"`{dt:.2f}ms: {results}`")
 
         headers = list(results[0].keys())
         table = TabularData()
@@ -204,11 +198,11 @@ class Dev(Cog, emoji=833297795761831956):
         table.add_rows(list(r.values()) for r in results)
         render = table.render()
 
-        fmt = f'```\n{render}\n```\n*Returned {plural(rows):row} in {dt:.2f}ms*'
+        fmt = f"```\n{render}\n```\n*Returned {plural(rows):row} in {dt:.2f}ms*"
         if len(fmt) > 2000:
-            fp = io.BytesIO(fmt.encode('utf-8'))
-            await ctx.send('Too many results...', file=discord.File(fp, 'results.txt'))
-            
+            fp = io.BytesIO(fmt.encode("utf-8"))
+            await ctx.send("Too many results...", file=discord.File(fp, "results.txt"))
+
         else:
             await ctx.send(fmt)
 

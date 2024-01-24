@@ -4,6 +4,7 @@ from discord.ext.commands import CogMeta as DiscordCogMeta
 
 class CogMeta(DiscordCogMeta):
     """Metaclass used for passing an emoji parameter to a Cog object."""
+
     def __new__(mcs, *args, **kwargs):
         name, bases, attrs = args
         attrs["__cog_emoji__"] = kwargs.pop("emoji", None)
@@ -14,7 +15,7 @@ class CogMeta(DiscordCogMeta):
 
 class Cog(DiscordCog, metaclass=CogMeta):
     """
-    Base class for all cogs that contains an emoji passed either by id 
+    Base class for all cogs that contains an emoji passed either by id
     or the raw name.
 
     Example usage: `class MyCog(Cog, emoji='❓')`
@@ -28,9 +29,9 @@ class Cog(DiscordCog, metaclass=CogMeta):
             e = self.__cog_emoji__  # type: ignore
             if isinstance(e, int):  # custom emoji referenced by id
                 e = self.bot.get_emoji(e)  # type: ignore
-        
+
         return e
-    
+
     @property
     def full_description(self):
         """The cog's emoji with the cog's description."""

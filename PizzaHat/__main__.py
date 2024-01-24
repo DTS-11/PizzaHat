@@ -18,7 +18,7 @@ async def main():
             await bot.start(os.getenv("TOKEN"))  # type: ignore
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     bot = PizzaHat()
 
     try:

@@ -9,18 +9,18 @@ from discord_games import button_games
 
 class Games(Cog, emoji="🎮"):
     """Games that can be played with the bot!"""
+
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
-
-    @commands.command(aliases=['ttt'])
+    @commands.command(aliases=["ttt"])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def tictactoe(self, ctx: Context, member: discord.User):
         """
         Play tic-tac-toe with another user.
         """
 
-        game = button_games.BetaTictactoe(cross=ctx.author, circle=member) # type: ignore
+        game = button_games.BetaTictactoe(cross=ctx.author, circle=member)  # type: ignore
         await game.start(ctx, embed_color=self.bot.color)
 
     @commands.command()
@@ -42,10 +42,10 @@ class Games(Cog, emoji="🎮"):
 
         game = games.TypeRacer()
         await game.start(ctx, timeout=120, embed_color=self.bot.color)
-    
+
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def rps(self, ctx: Context, member: discord.User = None): # type: ignore
+    async def rps(self, ctx: Context, member: discord.User = None):  # type: ignore
         """
         Play rock, paper, scissors with another user or the bot.
         """
@@ -60,7 +60,7 @@ class Games(Cog, emoji="🎮"):
         Play chess with another user.
         """
 
-        game = button_games.BetaChess(white=ctx.author, black=member) # type: ignore
+        game = button_games.BetaChess(white=ctx.author, black=member)  # type: ignore
         await game.start(ctx, timeout=60, embed_color=self.bot.color)
 
     @commands.command()
@@ -81,7 +81,9 @@ class Games(Cog, emoji="🎮"):
         """
 
         game = button_games.BetaAkinator()
-        await game.start(ctx, timeout=120, delete_button=True, embed_color=self.bot.color)
+        await game.start(
+            ctx, timeout=120, delete_button=True, embed_color=self.bot.color
+        )
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -100,7 +102,7 @@ class Games(Cog, emoji="🎮"):
         Play connect4 with another user.
         """
 
-        game = button_games.BetaConnectFour(red=ctx.author, blue=member) # type: ignore
+        game = button_games.BetaConnectFour(red=ctx.author, blue=member)  # type: ignore
         await game.start(ctx, embed_color=self.bot.color)
 
 
