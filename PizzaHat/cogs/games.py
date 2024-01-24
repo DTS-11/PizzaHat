@@ -21,7 +21,7 @@ class Games(Cog, emoji="🎮"):
         """
 
         game = button_games.BetaTictactoe(cross=ctx.author, circle=member) # type: ignore
-        await game.start(ctx)
+        await game.start(ctx, embed_color=self.bot.color)
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -30,8 +30,8 @@ class Games(Cog, emoji="🎮"):
         Play hangman.
         """
 
-        game = games.Hangman()
-        await game.start(ctx, timeout=180, embed_color=self.bot.color, delete_after_guess=True)
+        game = button_games.BetaHangman()
+        await game.start(ctx, timeout=180, embed_color=self.bot.color)
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -41,7 +41,7 @@ class Games(Cog, emoji="🎮"):
         """
 
         game = games.TypeRacer()
-        await game.start(ctx, timeout=120)
+        await game.start(ctx, timeout=120, embed_color=self.bot.color)
     
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -51,7 +51,7 @@ class Games(Cog, emoji="🎮"):
         """
 
         game = button_games.BetaRockPaperScissors(member)
-        await game.start(ctx, timeout=30)
+        await game.start(ctx, timeout=30, embed_color=self.bot.color)
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -60,11 +60,8 @@ class Games(Cog, emoji="🎮"):
         Play chess with another user.
         """
 
-        game = games.Chess(
-            white=ctx.author, # type: ignore
-            black=member,
-        )
-        await game.start(ctx, timeout=60, add_reaction_after_move=True)
+        game = button_games.BetaChess(white=ctx.author, black=member) # type: ignore
+        await game.start(ctx, timeout=60, embed_color=self.bot.color)
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -74,7 +71,7 @@ class Games(Cog, emoji="🎮"):
         """
 
         game = button_games.BetaWordle()
-        await game.start(ctx)
+        await game.start(ctx, embed_color=self.bot.color)
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -84,7 +81,27 @@ class Games(Cog, emoji="🎮"):
         """
 
         game = button_games.BetaAkinator()
-        await game.start(ctx, timeout=120, delete_button=True)
+        await game.start(ctx, timeout=120, delete_button=True, embed_color=self.bot.color)
+
+    @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def reactiontest(self, ctx: Context):
+        """
+        Test your reaction time.
+        """
+
+        game = button_games.BetaReactionGame()
+        await game.start(ctx, timeout=30, embed_color=self.bot.color)
+
+    @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def connect4(self, ctx: Context, member: discord.User):
+        """
+        Play connect4 with another user.
+        """
+
+        game = button_games.BetaConnectFour(red=ctx.author, blue=member) # type: ignore
+        await game.start(ctx, embed_color=self.bot.color)
 
 
 async def setup(bot):
