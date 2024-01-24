@@ -328,54 +328,6 @@ class Utility(Cog, emoji="🛠️"):
 
         await ctx.send(embed=e)
 
-    @commands.command(aliases=["ei"])
-    @commands.cooldown(1, 3, commands.BucketType.user)
-    @commands.guild_only()
-    async def emojiinfo(self, ctx: Context, emoji: discord.Emoji):
-        """Shows info about emoji."""
-
-        try:
-            if emoji.guild is not None:
-                emoji = await emoji.guild.fetch_emoji(emoji.id)
-
-        except discord.NotFound:
-            return await ctx.send("I could not find this emoji in the given guild.")
-
-        is_managed = "Yes" if emoji.managed else "No"
-        is_animated = "Yes" if emoji.animated else "No"
-        requires_colons = "Yes" if emoji.require_colons else "No"
-        can_use_emoji = (
-            "Everyone"
-            if not emoji.roles
-            else " ".join(role.name for role in emoji.roles)
-        )
-
-        if emoji.guild and emoji.user is not None:
-            description = f"""
-        **__General:__**
-        **- Name:** {emoji.name}
-        **- ID:** {emoji.id}
-        **- URL:** [Link To Emoji]({emoji.url})
-        **- Author:** {emoji.user.mention}
-        **- Time Created:** {format_date(emoji.created_at)}
-        **- Usable by:** {can_use_emoji}
-        **__Others:__**
-        **- Animated:** {is_animated}
-        **- Managed:** {is_managed}
-        **- Requires Colons:** {requires_colons}
-        **- Guild Name:** {emoji.guild.name}
-        **- Guild ID:** {emoji.guild.id}
-        """
-
-            embed = discord.Embed(
-                title=f"**Emoji Information for:** `{emoji.name}`",
-                description=description,
-                colour=0xADD8E6,
-            )
-            embed.set_thumbnail(url=emoji.url)
-
-            await ctx.send(embed=embed)
-
     def get_bot_uptime(self, *, brief=False):
         now = datetime.datetime.utcnow()
         delta = now - self.bot.uptime
