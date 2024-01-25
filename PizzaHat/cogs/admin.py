@@ -13,6 +13,9 @@ class Admin(Cog, emoji=916988537264570368):
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
+    async def get_staff_role(self, guild_id: int):
+        return await self.bot.db.fetchval("SELECT role_id FROM staff_role WHERE guild_id = $1", guild_id)  # type: ignore
+
     @commands.group(invoke_without_command=True, aliases=["setup"])
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
@@ -26,15 +29,13 @@ class Admin(Cog, emoji=916988537264570368):
     @commands.bot_has_permissions(manage_guild=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def staffrole(self, ctx: Context, role: discord.Role):
-        """Set a staff/mod-role."""
+        """
+        Set a staff/mod-role.
+        To replace the role, simply run this command again.
+        """
 
         try:
-            val = await self.bot.db.fetchrow("SELECT * FROM staff_role WHERE guild_id = $1", ctx.guild.id)  # type: ignore
-
-            if val:
-                await ctx.send("Staff role already set.")
-
-            await self.bot.db.execute("INSERT INTO staff_role (guild_id, role_id) VALUES ($1, $2)", ctx.guild.id, role.id)  # type: ignore
+            await self.bot.db.execute("INSERT INTO staff_role (guild_id, role_id) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET role_id=$2", ctx.guild.id, role.id)  # type: ignore
             await ctx.send(f"{self.bot.yes} Staff role set to {role.name}")
 
         except Exception as e:
@@ -68,6 +69,13 @@ class Admin(Cog, emoji=916988537264570368):
         Set up the Tickets system in the server by
         sending the `Create Ticket` message.
         """
+
+        val = await self.get_staff_role(ctx.guild.id)  # type: ignore
+
+        if not val:
+            return await ctx.send(
+                "No staff role set.\nPlease run `p!set staffrole <role>` to set a role to be able to create tickets."
+            )
 
         em = discord.Embed(
             title="Create a ticket!",
