@@ -85,6 +85,7 @@ class Admin(Cog, emoji=916988537264570368):
         em.set_thumbnail(url="https://i.imgur.com/mOTlTBy.png")
 
         await channel.send(embed=em, view=TicketView(self.bot))
+        await ctx.message.add_reaction(self.bot.yes)
 
     @commands.group(invoke_without_command=True)
     @commands.has_permissions(manage_guild=True)
