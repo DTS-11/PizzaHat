@@ -73,17 +73,15 @@ class Games(Cog, emoji="🎮"):
         game = button_games.BetaWordle()
         await game.start(ctx, embed_color=self.bot.color)
 
-    @commands.command()
+    @commands.command(aliases=["aki"])
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def guess(self, ctx: Context):
+    async def akinator(self, ctx: Context):
         """
-        Guess the word.
+        Think of someone/something and I'll try to guess it
         """
 
         game = button_games.BetaAkinator()
-        await game.start(
-            ctx, timeout=120, delete_button=True, embed_color=self.bot.color
-        )
+        await game.start(ctx, delete_button=True, embed_color=self.bot.color)
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
