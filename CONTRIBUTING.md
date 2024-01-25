@@ -2,6 +2,7 @@
 
 - Fork the repo.
 - Create a new branch
-- Add features/changes
+- Add features/changes (with proper docs for help)
+- Format code with Black
 - Commit and push the changes
 - Submit pull request
