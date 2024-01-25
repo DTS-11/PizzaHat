@@ -8,16 +8,11 @@ class Paginator(discord.ui.View):
     def __init__(self, ctx: Context, embeds: List[discord.Embed]):
         super().__init__(timeout=180)
         self.ctx = ctx
-        self.message = None
         self.embeds = embeds
         self.current = 0
 
     async def on_timeout(self) -> None:
-        if self.message:
-            for child in self.children:
-                child.disabled = True  # type: ignore
-
-            await self.message.edit(view=self)  # type: ignore
+        self.clear_items()
 
     @discord.ui.button(label="<<", style=discord.ButtonStyle.gray)
     async def first(self, interaction: discord.Interaction, button: discord.ui.Button):
