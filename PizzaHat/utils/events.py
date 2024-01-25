@@ -65,7 +65,7 @@ class Events(Cog):
 
         await self.bot.db.execute(  # type: ignore
             """CREATE TABLE IF NOT EXISTS staff_role 
-            (guild_id BIGINT, role_id BIGINT)"""
+            (guild_id BIGINT PRIMARY KEY, role_id BIGINT)"""
         )
 
         await self.bot.db.execute(  # type: ignore
