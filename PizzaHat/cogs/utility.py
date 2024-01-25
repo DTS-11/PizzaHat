@@ -556,46 +556,6 @@ class Utility(Cog, emoji="🛠️"):
 
         await ctx.send(embed=em, view=view)
 
-    @commands.command()
-    @commands.guild_only()
-    @commands.cooldown(1, 20, commands.BucketType.user)
-    @commands.has_permissions(manage_emojis=True)
-    async def emotes(self, ctx: Context):
-        """
-        Sends the servers emotes and their raw form in a list.
-        """
-
-        if ctx.guild and ctx.guild.emojis is not None:
-            emojis = ctx.guild.emojis
-            emoji_string = ""
-
-            for e in emojis:
-                if e.animated == True:
-                    info = f"<a:{e.name}:{e.id}> - `<a:{e.name}:{e.id}>`\n"
-
-                else:
-                    info = f"<:{e.name}:{e.id}> - `<:{e.name}:{e.id}>`\n"
-
-                emoji_string += info
-
-            chunk = emoji_string.split("\n")
-
-            x = 15
-
-            final_list = lambda chunk, x: [
-                chunk[i : i + x] for i in range(0, len(chunk), x)
-            ]
-
-            output = final_list(chunk, x)
-
-            for b in output:
-                try:
-                    c = "\n".join(b)
-                    await ctx.send(c)
-
-                except:
-                    pass
-
 
 async def setup(bot):
     await bot.add_cog(Utility(bot))

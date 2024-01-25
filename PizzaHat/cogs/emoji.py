@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 from typing import Union
 
 import discord
@@ -7,6 +8,7 @@ from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
+from utils.ui import Paginator
 
 from .utility import format_date
 
@@ -159,6 +161,53 @@ class Emojis(Cog, emoji="😀"):
             embed.set_thumbnail(url=emoji.url)
 
             await ctx.send(embed=embed)
+
+    @_emoji.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def list(self, ctx: Context):
+        """Show list of emojis in the server."""
+
+        try:
+            if ctx.guild and ctx.guild.emojis is not None:
+                emojis = ctx.guild.emojis
+                embeds = []
+
+                chunk_size = 10
+                emoji_chunks = [
+                    emojis[i : i + chunk_size]
+                    for i in range(0, len(emojis), chunk_size)
+                ]
+
+                for i, chunk in enumerate(emoji_chunks, 1):
+                    description = "\n\n".join(
+                        [
+                            f"{emoji} {f'`<a:{emoji.name}:{emoji.id}>`' if emoji.animated else f'`<:{emoji.name}:{emoji.id}>`'}"
+                            for emoji in chunk
+                        ]
+                    )
+
+                    embeds.append(
+                        discord.Embed(
+                            title=f"{ctx.guild.name} Emojis ({len(emojis)})",
+                            description=description,
+                            color=self.bot.color,
+                            timestamp=ctx.message.created_at,
+                        )
+                        .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
+                        .set_footer(text=f"Page {i}/{len(emoji_chunks)}")
+                    )
+
+                if not embeds:
+                    return await ctx.send("No emojis to display.")
+
+                if len(embeds) == 1:
+                    return await ctx.send(embed=embeds[0])
+
+                view = Paginator(ctx, embeds)
+                return await ctx.send(embed=embeds[0], view=view)
+
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
