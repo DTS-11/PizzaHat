@@ -29,7 +29,7 @@ class Admin(Cog, emoji=916988537264570368):
         """Set a staff/mod-role."""
 
         try:
-            val = await self.bot.db.fetchrow("SELECT * FROM staff_role WHERE guild_id = $1", ctx.guild.id)  #type: ignore
+            val = await self.bot.db.fetchrow("SELECT * FROM staff_role WHERE guild_id = $1", ctx.guild.id)  # type: ignore
 
             if val:
                 await ctx.send("Staff role already set.")
