@@ -29,6 +29,11 @@ class Admin(Cog, emoji=916988537264570368):
         """Set a staff/mod-role."""
 
         try:
+            val = await self.bot.db.fetchrow("SELECT * FROM staff_role WHERE guild_id = $1", ctx.guild.id)  #type: ignore
+
+            if val:
+                await ctx.send("Staff role already set.")
+
             await self.bot.db.execute("INSERT INTO staff_role (guild_id, role_id) VALUES ($1, $2)", ctx.guild.id, role.id)  # type: ignore
             await ctx.send(f"{self.bot.yes} Staff role set to {role.name}")
 
