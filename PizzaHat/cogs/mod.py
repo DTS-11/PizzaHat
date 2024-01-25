@@ -787,6 +787,140 @@ class Mod(Cog, emoji=847248846526087239):
         except Exception as e:
             print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
 
+    @commands.group()
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def channel(self, ctx: Context):
+        if ctx.subcommand_passed is None:
+            await ctx.send_help(ctx.command)
+
+    @channel.command(name="create")
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def channel_create(self, ctx: Context, name):
+        """
+        Create a new channel in the server.
+        """
+
+        try:
+            if ctx.guild is not None:
+                await ctx.guild.create_text_channel(name)
+                await ctx.send(f"{self.bot.yes} Channel created successfully!")
+
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+
+    @channel.command(name="delete")
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def channel_delete(self, ctx: Context, channel: discord.TextChannel):
+        """Delete a channel in the server."""
+
+        try:
+            if ctx.guild is not None:
+                await channel.delete()
+                await ctx.send(f"{self.bot.yes} Channel deleted successfully!")
+
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+
+    @channel.command(name="list", aliases=["all"])
+    @commands.guild_only()
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def channel_list(self, ctx: Context):
+        """
+        List all the server channels.
+        """
+
+        try:
+            if ctx.guild is not None:
+                channels = [
+                    channel
+                    for channel in ctx.guild.channels
+                    if not isinstance(channel, discord.CategoryChannel)
+                ]
+                embeds = []
+
+                # Group channels by category
+                channels_by_category = {}
+                channels_without_category = []
+
+                for channel in channels:
+                    if isinstance(channel, discord.TextChannel) and channel.category:
+                        category_id = str(channel.category.id)
+                        if category_id not in channels_by_category:
+                            channels_by_category[category_id] = {
+                                "category": channel.category,
+                                "channels": [],
+                            }
+                        channels_by_category[category_id]["channels"].append(channel)
+                    else:
+                        channels_without_category.append(channel)
+
+                # Create embed for channels without categories
+                if channels_without_category:
+                    description = "".join(
+                        [
+                            f"```asciidoc\nNo category\n\t{channel.name} :: {channel.type} :: {channel.id}\n```"
+                            for channel in channels_without_category
+                        ]
+                    )
+
+                    embeds.append(
+                        discord.Embed(
+                            title=f"{ctx.guild.name} Channels ({len(channels)})",
+                            description=description,
+                            color=self.bot.color,
+                            timestamp=ctx.message.created_at,
+                        )
+                        .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
+                        .set_footer(text=f"Page 1/{len(channels_by_category) + 1}")
+                    )
+
+                # Create embeds for channels with categories
+                total_category_pages = len(channels_by_category)
+                category_page_count = 1 if channels_without_category else 0
+
+                for i, category_info in enumerate(
+                    channels_by_category.values(), category_page_count + 1
+                ):
+                    category = category_info["category"]
+                    category_name = category.name if category else "No category"
+                    category_id = category.id if category else "No category"
+
+                    description = "".join(
+                        [
+                            f"```asciidoc\n{category_name} :: '{category_id}'\n\t{channel.name} :: {channel.type} :: {channel.id}\n```"
+                            for channel in category_info["channels"]
+                        ]
+                    )
+
+                    embeds.append(
+                        discord.Embed(
+                            title=f"{ctx.guild.name} Channels ({len(channels)})",
+                            description=description,
+                            color=self.bot.color,
+                            timestamp=ctx.message.created_at,
+                        )
+                        .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
+                        .set_footer(text=f"Page {i}/{total_category_pages + 1}")
+                    )
+
+                if not embeds:
+                    return await ctx.send("No channels to display.")
+
+                if len(embeds) == 1:
+                    return await ctx.send(embed=embeds[0])
+
+                view = Paginator(ctx, embeds)
+                return await ctx.send(embed=embeds[0], view=view)
+
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
