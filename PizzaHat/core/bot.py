@@ -1,15 +1,12 @@
 import datetime
-# import os
 import sys
 import traceback
 
 import aiohttp
 import discord
-# import wavelink
 from discord.ext import commands
 from discord.ext.commands import CommandError, Context
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
-# from discord_together import DiscordTogether
 
 INITIAL_EXTENSIONS = [
     # 'cogs.activities',

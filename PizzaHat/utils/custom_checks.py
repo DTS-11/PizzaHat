@@ -12,6 +12,7 @@ class UserNotStaff(commands.CheckFailure):
 
 def server_staff_role():
     """Check if the server has a staff role set."""
+
     def predicate(ctx: Context):
         role_id = ctx.bot.db.fetchval("SELECT role_id FROM staff_role WHERE guild_id=$1", ctx.guild.id)  # type: ignore
         staff_role = ctx.guild.get_role(role_id)  # type: ignore
@@ -27,6 +28,7 @@ def server_staff_role():
 
 def user_is_staff():
     """Check if the user has a staff role."""
+
     def predicate(ctx: Context):
         role_id = ctx.bot.db.fetchval("SELECT role_id FROM staff_role WHERE guild_id=$1", ctx.guild.id)  # type: ignore
 
