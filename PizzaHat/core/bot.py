@@ -1,16 +1,15 @@
 import datetime
-import os
+# import os
 import sys
 import traceback
 
 import aiohttp
 import discord
-import wavelink
+# import wavelink
 from discord.ext import commands
 from discord.ext.commands import CommandError, Context
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
-from discord_together import DiscordTogether
-
+# from discord_together import DiscordTogether
 
 INITIAL_EXTENSIONS = [
     # 'cogs.activities',
@@ -24,7 +23,7 @@ INITIAL_EXTENSIONS = [
     # 'cogs.music',
     "cogs.poll",
     "cogs.tags",
-    # 'cogs.tickets',
+    "cogs.tickets",
     "cogs.utility",
 ]
 
@@ -86,47 +85,8 @@ class PizzaHat(commands.Bot):
         if not hasattr(self, "uptime"):
             self.uptime = datetime.datetime.utcnow()
 
-        self.togetherControl = await DiscordTogether(os.getenv("TOKEN"), debug=True)  # type: ignore
+        # self.togetherControl = await DiscordTogether(os.getenv("TOKEN"), debug=True)  # type: ignore
         print(f"Logged in as {self.user}")
-
-    async def on_wavelink_node_ready(self, node: wavelink.Node):
-        print(f"Node: {node.identifier} is ready.")
-
-    async def on_wavelink_track_end(
-        self, player: wavelink.Player, track: wavelink.Track, reason: str
-    ):
-        ctx = player.ctx  # type: ignore
-        vc: player = ctx.voice_client  # type: ignore
-
-        track.info["requester"] = ctx.author
-        wavelink_track = wavelink.Track(track.id, track.info)
-
-        if vc.loop:
-            return await vc.play(track)
-
-        try:
-            next_song = vc.queue.get()
-            await vc.play(next_song)
-
-            em = discord.Embed(color=self.color)
-            em.add_field(
-                name="▶ Now playing",
-                value=f"[{next_song.title}]({next_song.uri})",
-                inline=False,
-            )
-            em.add_field(
-                name="⌛ Song Duration",
-                value=str(datetime.timedelta(seconds=next_song.duration)),
-                inline=False,
-            )
-            em.add_field(name="👥 Requested by", value=wavelink_track, inline=False)
-            em.add_field(name="🎵 Song by", value=next_song.author, inline=False)
-            em.set_thumbnail(url=vc.source.thumbnail)
-
-            await ctx.send(embed=em)
-
-        except wavelink.errors.QueueEmpty:
-            pass
 
     async def setup_hook(self) -> None:
         self.bot_app_info = await self.application_info()
@@ -166,6 +126,45 @@ class PizzaHat(commands.Bot):
             f"Loaded all cogs.\nSuccess: {success}, Fail: {fail}\nDone! ({success+fail}/{total})"
         )
         print("=========================")
+
+    # async def on_wavelink_node_ready(self, node: wavelink.Node):
+    #     print(f"Node: {node.identifier} is ready.")
+
+    # async def on_wavelink_track_end(
+    #     self, player: wavelink.Player, track: wavelink.Track, reason: str
+    # ):
+    #     ctx = player.ctx  # type: ignore
+    #     vc: player = ctx.voice_client  # type: ignore
+
+    #     track.info["requester"] = ctx.author
+    #     wavelink_track = wavelink.Track(track.id, track.info)
+
+    #     if vc.loop:
+    #         return await vc.play(track)
+
+    #     try:
+    #         next_song = vc.queue.get()
+    #         await vc.play(next_song)
+
+    #         em = discord.Embed(color=self.color)
+    #         em.add_field(
+    #             name="▶ Now playing",
+    #             value=f"[{next_song.title}]({next_song.uri})",
+    #             inline=False,
+    #         )
+    #         em.add_field(
+    #             name="⌛ Song Duration",
+    #             value=str(datetime.timedelta(seconds=next_song.duration)),
+    #             inline=False,
+    #         )
+    #         em.add_field(name="👥 Requested by", value=wavelink_track, inline=False)
+    #         em.add_field(name="🎵 Song by", value=next_song.author, inline=False)
+    #         em.set_thumbnail(url=vc.source.thumbnail)
+
+    #         await ctx.send(embed=em)
+
+    #     except wavelink.errors.QueueEmpty:
+    #         pass
 
     async def on_command_error(self, ctx: Context, error: CommandError) -> None:
         if isinstance(error, commands.CommandNotFound):
