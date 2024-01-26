@@ -1,8 +1,11 @@
 import datetime
+import logging
 import sys
 import traceback
+from logging.config import dictConfig
 
 import aiohttp
+import core.database as db
 import discord
 from discord.ext import commands
 from discord.ext.commands import CommandError, Context
@@ -30,6 +33,51 @@ SUB_EXTENSIONS = [
     "utils.help",
 ]
 
+LOGGING_CONFIG = {
+    "version": 1,
+    "disabled_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "%(levelname)-10s - %(asctime)s - %(module)-15s : %(message)s",
+        },
+        "standard": {
+            "format": "%(levelname)-10s - %(name)-15s : %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        },
+        "console2": {
+            "level": "WARNING",
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        },
+        "file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "formatter": "verbose",
+            "filename": "bot.log",
+            "mode": "w",
+        },
+    },
+    "loggers": {
+        "bot": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "discord": {
+            "handlers": ["console2", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
+
+dictConfig(LOGGING_CONFIG)
 
 description = """
 I'm PizzaHat, a bot made by DTS#5976 to provide some epic server utilities.
@@ -82,13 +130,17 @@ class PizzaHat(commands.Bot):
         if not hasattr(self, "uptime"):
             self.uptime = datetime.datetime.utcnow()
 
-        # self.togetherControl = await DiscordTogether(os.getenv("TOKEN"), debug=True)  # type: ignore
         print(f"Logged in as {self.user}")
+        # self.togetherControl = await DiscordTogether(os.getenv("TOKEN"), debug=True)  # type: ignore
 
     async def setup_hook(self) -> None:
         self.bot_app_info = await self.application_info()
         self.owner_id = self.bot_app_info.owner.id
 
+        # Create DB connection
+        self.db = await db.create_db_pool()
+
+        # Loading cogs...
         success = fail = 0
         total = len(INITIAL_EXTENSIONS + SUB_EXTENSIONS)
 
