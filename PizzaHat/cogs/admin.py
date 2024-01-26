@@ -3,7 +3,7 @@ from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
-from utils.custom_checks import user_is_staff
+from utils.custom_checks import server_staff_role, user_is_staff
 
 from .tickets import TicketView
 
@@ -15,6 +15,7 @@ class Admin(Cog, emoji=916988537264570368):
         self.bot: PizzaHat = bot
 
     @user_is_staff()
+    @server_staff_role()
     @commands.group(invoke_without_command=True, aliases=["setup"])
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
@@ -24,6 +25,7 @@ class Admin(Cog, emoji=916988537264570368):
             await ctx.send_help(ctx.command)
 
     @user_is_staff()
+    @server_staff_role()
     @set.command(aliases=["modrole"])
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
@@ -43,6 +45,7 @@ class Admin(Cog, emoji=916988537264570368):
             print(e)
 
     @user_is_staff()
+    @server_staff_role()
     @set.command(aliases=["log"])
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
@@ -62,6 +65,7 @@ class Admin(Cog, emoji=916988537264570368):
             print(e)
 
     @user_is_staff()
+    @server_staff_role()
     @set.command(aliases=["ticket"])
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
@@ -85,6 +89,7 @@ class Admin(Cog, emoji=916988537264570368):
         await ctx.message.add_reaction(self.bot.yes)
 
     @user_is_staff()
+    @server_staff_role()
     @commands.group(invoke_without_command=True)
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
@@ -94,6 +99,7 @@ class Admin(Cog, emoji=916988537264570368):
             await ctx.send_help(ctx.command)
 
     @user_is_staff()
+    @server_staff_role()
     @commands.command(aliases=["am"])
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
