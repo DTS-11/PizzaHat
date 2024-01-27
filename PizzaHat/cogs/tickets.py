@@ -11,11 +11,12 @@ from discord.ext.commands import Context
 class TicketView(ui.View):
     def __init__(self, bot):
         self.bot = bot
+        self.thread_id = None
         super().__init__(timeout=None)
 
-    async def get_staff_role(self, guild_id: int):
-        await self.bot.db.fetchval(
-            "SELECT role FROM staff_role WHERE guild_id=$1", guild_id
+    async def get_staff_role(self, guild_id: int) -> int:
+        return await self.bot.db.fetchval(
+            "SELECT role_id FROM staff_role WHERE guild_id=$1", guild_id
         )
 
     @ui.button(
@@ -23,44 +24,48 @@ class TicketView(ui.View):
     )
     async def create_ticket(self, interaction: Interaction, button: ui.Button):
         await interaction.response.send_message(
-            "Please wait while your ticket is being processed...", ephemeral=True
+            content="Please wait while your ticket is being processed...",
+            ephemeral=True,
         )
 
-        if interaction.guild is not None:
-            overwrites = {
-                interaction.guild.default_role: discord.PermissionOverwrite(
-                    read_messages=False
-                ),
-                interaction.guild.me: discord.PermissionOverwrite(read_messages=True),
-                interaction.guild.get_role(self.get_staff_role(interaction.guild.id)): discord.PermissionOverwrite(read_messages=True),  # type: ignore
-            }
+        thread = await interaction.channel.create_thread(  # type: ignore
+            name=f"{interaction.user}-ticket",
+            reason=f"Ticket created by {interaction.user}",
+            invitable=False,
+        )
 
-            channel = await interaction.guild.create_text_channel(
-                name=f"{interaction.user.name}-{interaction.user.id}",
-                overwrites=overwrites,  # type: ignore
-            )
+        self.thread_id = thread.id
+        staff_role = interaction.guild.get_role(await self.get_staff_role(interaction.guild.id))  # type: ignore
 
-            await interaction.response.edit_message(
-                content=f"Ticket created! {channel.mention}"
-            )
+        await interaction.response.edit_message(
+            content="Ticket created!", ephemeral=True, delete_after=10
+        )
 
-            em = discord.Embed(
-                title="Ticket Created!",
-                description=f"{interaction.user.mention} created a ticket.",
-                color=0x456DD4,
-            )
-            await channel.send(embed=em, view=TicketSettings())
+        em = discord.Embed(
+            title="Ticket created!",
+            description=f"{interaction.user.mention} `[{interaction.user}]` created a ticket.",
+            color=self.bot.color,
+        )
+        em.set_footer(text=interaction.user, icon_url=interaction.user.avatar.url)  # type: ignore
+        await thread.send(content=staff_role.mention, embed=em, view=TicketSettings())  # type: ignore
 
 
 class TicketSettings(ui.View):
-    def __init__(self):
+    def __init__(self, ticket_view: TicketView):
+        self.ticket_view = ticket_view
         super().__init__(timeout=None)
 
     @ui.button(label="Close", style=ButtonStyle.red, custom_id="close_ticket_btn")
     async def close_ticket(self, interaction: Interaction, button: ui.Button):
         await interaction.response.send_message("Closing ticket...")
         await asyncio.sleep(2)
-        await interaction.channel.delete()  # type: ignore
+
+        thread = interaction.guild.get_thread(self.ticket_view.thread_id)  # type: ignore
+
+        if thread:
+            await thread.delete()
+        else:
+            await interaction.followup.send("Unable to find ticket thread!")
 
 
 class Tickets(Cog, emoji="🎟"):
