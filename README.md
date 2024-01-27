@@ -4,8 +4,8 @@ PizzaHat Discord Bot <h1/>
 	
 <h4 align="center"> A multi-purpose bot for your server! <h4/>
   </a><br>
-  <img src="https://img.shields.io/badge/discord.py-2.0_alpha-blue?style=flat" />
-  <img src="https://img.shields.io/badge/Python-3.9-green?style=flat&logo=python" />
+  <img src="https://img.shields.io/badge/discord.py-2.3.2-blue?style=flat" />
+  <img src="https://img.shields.io/badge/Python-3.11-green?style=flat&logo=python" />
   <img src="https://github.com/DTS-11/PizzaHat/actions/workflows/codeql-analysis.yml/badge.svg" />
 </h1>
 	
@@ -17,7 +17,7 @@ PizzaHat Discord Bot <h1/>
 	
 ## <img src="https://cdn.discordapp.com/emojis/800797566471897088.png?size=80" height="30px"> • Features
 
-- 📌 Over 90+ commands! </li> <!-- - 🔼 95%+ uptime. </li> -->
+- 📌 Over 150+ commands! </li> <!-- - 🔼 95%+ uptime. </li> -->
 - 🏓 Low latency. </li>
 - <img src="https://cdn.discordapp.com/emojis/847248846526087239.png?size=80" height="19px"> Powerful moderation. </li>
 - 🚀 Activities. </li>
@@ -28,7 +28,7 @@ PizzaHat Discord Bot <h1/>
 - 📔 Logging system. </li>
 - 🗳 Poll voting system </li>
 - 🏷 Tag system </li>
-<!-- - <img src="https://cdn.discordapp.com/emojis/809170074006192130.png?size=80" height="19px"> Regularly updated and maintained! </li> -->
+- <img src="https://cdn.discordapp.com/emojis/809170074006192130.png?size=80" height="19px"> Updated and maintained! </li>
 	
 ## <img src='https://cdn.discordapp.com/emojis/802615573556363284.png?size=80' height="30px"> • How to contribute?
 
