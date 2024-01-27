@@ -131,7 +131,6 @@ class PizzaHat(commands.Bot):
             self.uptime = datetime.datetime.utcnow()
 
         print(f"Logged in as {self.user}")
-        logging.info(f"Logged in as {self.user}")
         # self.togetherControl = await DiscordTogether(os.getenv("TOKEN"), debug=True)  # type: ignore
 
     async def setup_hook(self) -> None:
