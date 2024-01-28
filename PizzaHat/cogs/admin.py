@@ -85,7 +85,6 @@ class Admin(Cog, emoji=916988537264570368):
 
         view = TicketView(self.bot)
         await channel.send(embed=em, view=view)
-        await view.wait()
         await ctx.message.add_reaction(self.bot.yes)
 
     @user_is_staff()
