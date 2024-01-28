@@ -422,22 +422,31 @@ class Utility(Cog, emoji="🛠️"):
 
         view = View()
 
-        b1 = Button(label="Invite", emoji="✉️", url="https://dsc.gg/pizza-invite")
-        b2 = Button(label="Support", emoji="📨", url="https://discord.gg/WhNVDTF")
+        b1 = Button(
+            label="Invite (admin)", emoji="✉️", url="https://dsc.gg/pizza-invite"
+        )
+        b2 = Button(
+            label="Invite (recommended)",
+            emoji="✉️",
+            url="https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot",
+        )
+        b3 = Button(label="Support", emoji="📨", url="https://discord.gg/WhNVDTF")
 
-        view.add_item(b1).add_item(b2)
+        view.add_item(b1).add_item(b2).add_item(b3)
 
         em = discord.Embed(
             title="🔗 Links",
             description=(
                 "Click on the links below if you cant see the buttons for some reason.\n"
-                "[Invite me](https://dsc.gg/pizza-invite) | "
+                "[Invite (admin)](https://dsc.gg/pizza-invite)\n"
+                "[Invite (recommended)](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot)\n"
                 "[Support](https://discord.gg/WhNVDTF)"
             ),
             color=self.bot.color,
         )
         if self.bot.user and self.bot.user.avatar is not None:
             em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar.url)
+
         em.set_footer(text="Thank you for inviting me! <3")
 
         await ctx.send(embed=em, view=view)
