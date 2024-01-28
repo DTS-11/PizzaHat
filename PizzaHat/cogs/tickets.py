@@ -24,11 +24,15 @@ class TicketView(ui.View):
         thread = await interaction.channel.create_thread(  # type: ignore
             name=f"{interaction.user}-ticket",
             reason=f"Ticket created by {interaction.user}",
-            invitable=False,
+            invitable=False, # type: ignore
         )
         await thread.add_user(interaction.user)
 
-        await interaction.response.send_message(content=f"Ticket created in {thread.mention}", ephemeral=True, delete_after=5)
+        await interaction.response.send_message(
+            content=f"Ticket created in {thread.mention}",
+            ephemeral=True,
+            delete_after=5,
+        )
 
         self.thread_id = thread.id
         staff_role = interaction.guild.get_role(await self.get_staff_role(interaction.guild.id))  # type: ignore
@@ -49,13 +53,27 @@ class TicketSettings(ui.View):
 
     @ui.button(label="Close", style=ButtonStyle.red, custom_id="close_ticket_btn")
     async def close_ticket(self, interaction: Interaction, button: ui.Button):
-        await interaction.response.send_message("Closing ticket...", delete_after=3)
-
         if interaction.guild is not None:
             thread = interaction.guild.get_thread(self.thread_id)
 
             if thread:
                 await thread.edit(archived=True, locked=True)
+                await interaction.response.send_message(
+                    content="Ticket thread has been archived!"
+                )
+            else:
+                await interaction.followup.send("Unable to find ticket thread!")
+
+    @ui.button(label="Reopen", style=ButtonStyle.green, custom_id="reopen_ticket_btn")
+    async def reopen_ticket(self, interaction: Interaction, button: ui.Button):
+        if interaction.guild is not None:
+            thread = interaction.guild.get_thread(self.thread_id)
+
+            if thread:
+                await thread.edit(archived=False, locked=False)
+                await interaction.response.send_message(
+                    content="Ticket thread has been reopened!"
+                )
             else:
                 await interaction.followup.send("Unable to find ticket thread!")
 
