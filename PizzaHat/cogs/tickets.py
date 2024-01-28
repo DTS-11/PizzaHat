@@ -1,5 +1,3 @@
-import asyncio
-
 import discord
 from core.bot import PizzaHat
 from core.cog import Cog
@@ -23,23 +21,17 @@ class TicketView(ui.View):
         emoji="<:ticket_emoji:1004648922158989404>", custom_id="create_ticket_btn"
     )
     async def create_ticket(self, interaction: Interaction, button: ui.Button):
-        await interaction.response.send_message(
-            content="Please wait while your ticket is being processed...",
-            ephemeral=True,
-        )
-
         thread = await interaction.channel.create_thread(  # type: ignore
             name=f"{interaction.user}-ticket",
             reason=f"Ticket created by {interaction.user}",
             invitable=False,
         )
+        await thread.add_user(interaction.user)
+
+        await interaction.response.send_message(content=f"Ticket created in {thread.mention}", ephemeral=True, delete_after=5)
 
         self.thread_id = thread.id
         staff_role = interaction.guild.get_role(await self.get_staff_role(interaction.guild.id))  # type: ignore
-
-        await interaction.response.edit_message(
-            content="Ticket created!", ephemeral=True, delete_after=10
-        )
 
         em = discord.Embed(
             title="Ticket created!",
@@ -47,25 +39,25 @@ class TicketView(ui.View):
             color=self.bot.color,
         )
         em.set_footer(text=interaction.user, icon_url=interaction.user.avatar.url)  # type: ignore
-        await thread.send(content=staff_role.mention, embed=em, view=TicketSettings())  # type: ignore
+        await thread.send(content=f"{staff_role.mention} | {interaction.user.mention}", embed=em, view=TicketSettings(thread.id))  # type: ignore
 
 
 class TicketSettings(ui.View):
-    def __init__(self, ticket_view: TicketView):
-        self.ticket_view = ticket_view
+    def __init__(self, thread_id: int):
+        self.thread_id = thread_id
         super().__init__(timeout=None)
 
     @ui.button(label="Close", style=ButtonStyle.red, custom_id="close_ticket_btn")
     async def close_ticket(self, interaction: Interaction, button: ui.Button):
-        await interaction.response.send_message("Closing ticket...")
-        await asyncio.sleep(2)
+        await interaction.response.send_message("Closing ticket...", delete_after=3)
 
-        thread = interaction.guild.get_thread(self.ticket_view.thread_id)  # type: ignore
+        if interaction.guild is not None:
+            thread = interaction.guild.get_thread(self.thread_id)
 
-        if thread:
-            await thread.delete()
-        else:
-            await interaction.followup.send("Unable to find ticket thread!")
+            if thread:
+                await thread.edit(archived=True, locked=True)
+            else:
+                await interaction.followup.send("Unable to find ticket thread!")
 
 
 class Tickets(Cog, emoji="🎟"):
