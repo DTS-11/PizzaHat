@@ -4,6 +4,8 @@ import discord
 from discord.ext.commands import Context
 
 
+# credits to Nirlep's EpicBot paginator system!
+# https://github.com/Nirlep5252/EpicBot/blob/main/utils/ui.py#L70
 class Paginator(discord.ui.View):
     def __init__(self, ctx: Context, embeds: List[discord.Embed]):
         super().__init__(timeout=180)
