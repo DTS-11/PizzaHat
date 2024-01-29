@@ -9,7 +9,7 @@ from contextlib import redirect_stdout
 from typing import TYPE_CHECKING, Awaitable, Callable, Union
 
 import discord
-from core.bot import PizzaHat
+from core.bot import INITIAL_EXTENSIONS, PizzaHat
 from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
@@ -79,8 +79,8 @@ class Dev(Cog, emoji=833297795761831956):
                     pages.append(text[last:curr])
                     last = curr
                     appd_index = curr
-            if appd_index != len(text) - 1:
-                pages.append(text[last:curr])
+            if appd_index != len(text) - 1:  # type: ignore
+                pages.append(text[last:curr])  # type: ignore
             return list(filter(lambda a: a != "", pages))
 
         color = self.bot.color
@@ -205,6 +205,29 @@ class Dev(Cog, emoji=833297795761831956):
 
         else:
             await ctx.send(fmt)
+
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def botlogs(self, ctx: Context):
+        """Command to show bot logs (bot.log) file in discord itself."""
+
+        f = open("bot.log")
+        await ctx.send(f"```ruby\n{f.read()}\n```")
+
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def reloadall(self, ctx: Context):
+        """Quick way to reload all cogs at once."""
+
+        try:
+            for cog in INITIAL_EXTENSIONS:
+                await self.bot.reload_extension(cog)
+                print(cog, "reloaded")
+
+            await ctx.send("Reloaded all cogs!")
+
+        except Exception as e:
+            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
 
 
 async def setup(bot):
