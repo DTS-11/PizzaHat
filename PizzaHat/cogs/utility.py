@@ -560,8 +560,11 @@ class Utility(Cog, emoji="🛠️"):
         b2 = Button(
             label="DList.gg", url="https://discordlist.gg/bot/860889936914677770/vote"
         )
+        b3 = Button(
+            label="Wumpus.store", url="https://wumpus.store/bot/860889936914677770/vote"
+        )
 
-        view.add_item(b1).add_item(b2)
+        view.add_item(b1).add_item(b2).add_item(b3)
 
         await ctx.send(embed=em, view=view)
 
