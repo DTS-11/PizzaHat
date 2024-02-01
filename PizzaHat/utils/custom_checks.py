@@ -20,7 +20,8 @@ def server_staff_role():
             return True
 
         else:
-            raise NoStaffRoleSet
+            await ctx.send("No staff role set in this server.")
+            raise NoStaffRoleSet()
 
     return commands.check(predicate)
 
@@ -31,10 +32,13 @@ def user_is_staff():
     async def predicate(ctx: Context):
         role_id = await ctx.bot.db.fetchval("SELECT role_id FROM staff_role WHERE guild_id=$1", ctx.guild.id)  # type: ignore
 
-        if role_id in ctx.author.roles:  # type: ignore
+        if role_id in [role.id for role in ctx.author.roles]:  # type: ignore
             return True
 
         else:
-            raise UserNotStaff
+            await ctx.send(
+                "You do not have the required staff role to use this command."
+            )
+            raise UserNotStaff()
 
     return commands.check(predicate)
