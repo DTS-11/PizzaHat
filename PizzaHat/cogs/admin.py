@@ -14,8 +14,8 @@ class Admin(Cog, emoji=916988537264570368):
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
-    @user_is_staff()
     @server_staff_role()
+    @user_is_staff()
     @commands.group(invoke_without_command=True, aliases=["setup"])
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
@@ -24,8 +24,8 @@ class Admin(Cog, emoji=916988537264570368):
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
-    @user_is_staff()
     @server_staff_role()
+    @user_is_staff()
     @set.command(aliases=["modrole"])
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
@@ -44,8 +44,8 @@ class Admin(Cog, emoji=916988537264570368):
             await ctx.send(f"{self.bot.no} Something went wrong...")
             print(e)
 
-    @user_is_staff()
     @server_staff_role()
+    @user_is_staff()
     @set.command(aliases=["log"])
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
@@ -64,8 +64,8 @@ class Admin(Cog, emoji=916988537264570368):
             await ctx.send(f"{self.bot.no} Something went wrong...")
             print(e)
 
-    @user_is_staff()
     @server_staff_role()
+    @user_is_staff()
     @set.command(aliases=["ticket"])
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
@@ -87,8 +87,8 @@ class Admin(Cog, emoji=916988537264570368):
         await channel.send(embed=em, view=view)
         await ctx.message.add_reaction(self.bot.yes)
 
-    @user_is_staff()
     @server_staff_role()
+    @user_is_staff()
     @commands.group(invoke_without_command=True)
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
@@ -97,8 +97,8 @@ class Admin(Cog, emoji=916988537264570368):
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
-    @user_is_staff()
     @server_staff_role()
+    @user_is_staff()
     @commands.command(aliases=["am"])
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
