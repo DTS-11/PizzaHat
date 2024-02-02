@@ -17,16 +17,19 @@ class Admin(Cog, emoji=916988537264570368):
     @server_staff_role()
     @user_is_staff()
     @commands.group(invoke_without_command=True, aliases=["setup"])
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     @commands.cooldown(1, 20, commands.BucketType.user)
     async def set(self, ctx: Context):
+
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
     @server_staff_role()
     @user_is_staff()
     @set.command(aliases=["modrole"])
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -47,6 +50,7 @@ class Admin(Cog, emoji=916988537264570368):
     @server_staff_role()
     @user_is_staff()
     @set.command(aliases=["log"])
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -67,6 +71,7 @@ class Admin(Cog, emoji=916988537264570368):
     @server_staff_role()
     @user_is_staff()
     @set.command(aliases=["ticket"])
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -90,16 +95,19 @@ class Admin(Cog, emoji=916988537264570368):
     @server_staff_role()
     @user_is_staff()
     @commands.group(invoke_without_command=True)
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def enable(self, ctx: Context):
+        
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
     @server_staff_role()
     @user_is_staff()
     @commands.command(aliases=["am"])
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
