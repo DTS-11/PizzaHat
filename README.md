@@ -31,7 +31,13 @@ PizzaHat Discord Bot <h1/>
 	
 ## <img src='https://cdn.discordapp.com/emojis/802615573556363284.png?size=80' height="30px"> • How to contribute?
 
-Please see **[CONTRIBUTING.md](https://github.com/DTS-11/PizzaHat/blob/main/CONTRIBUTING.md)** for more info!
+- Fork the repo.
+- Create a new branch
+- Add features/changes (with proper docs for help)
+- Format code with Black
+- Commit and push the changes
+- Submit pull request
+
 	
 ## <img src="https://cdn.discordapp.com/emojis/802615572080099378.png?size=80" height="30px"> • Self hosting
 
