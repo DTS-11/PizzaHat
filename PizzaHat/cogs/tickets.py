@@ -24,7 +24,7 @@ class TicketView(ui.View):
         thread = await interaction.channel.create_thread(  # type: ignore
             name=f"{interaction.user}-ticket",
             reason=f"Ticket created by {interaction.user}",
-            invitable=False, # type: ignore
+            invitable=False,  # type: ignore
         )
         await thread.add_user(interaction.user)
 
