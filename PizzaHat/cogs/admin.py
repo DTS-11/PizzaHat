@@ -22,6 +22,7 @@ class Admin(Cog, emoji=916988537264570368):
     @commands.bot_has_permissions(manage_guild=True)
     @commands.cooldown(1, 20, commands.BucketType.user)
     async def set(self, ctx: Context):
+        """Use this command to set something up."""
 
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
@@ -100,7 +101,8 @@ class Admin(Cog, emoji=916988537264570368):
     @commands.bot_has_permissions(manage_guild=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def enable(self, ctx: Context):
-        
+        """Use this command to enable something."""
+
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
