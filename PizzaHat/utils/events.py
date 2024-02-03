@@ -2,11 +2,13 @@ import datetime
 import os
 
 import discord
-import requests
-import topgg
+
+# import requests
+# import topgg
 from core.bot import PizzaHat
 from core.cog import Cog
-from discord.ext import tasks
+
+# from discord.ext import tasks
 from dotenv import load_dotenv
 from humanfriendly import format_timespan
 
