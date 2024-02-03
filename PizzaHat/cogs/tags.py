@@ -18,6 +18,7 @@ class Tags(Cog, emoji="🏷"):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def tag(self, ctx: Context):
         """Tag commands."""
+
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
