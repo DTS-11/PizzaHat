@@ -34,7 +34,7 @@ PizzaHat Discord Bot <h1/>
 - Fork the repo.
 - Create a new branch
 - Add features/changes (with proper docs for help)
-- Format code with Black
+- Format code with Black & organise imports by using isort (vscode extension)
 - Commit and push the changes
 - Submit pull request
 
