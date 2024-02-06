@@ -1,3 +1,5 @@
+import random
+
 import discord
 from core.bot import PizzaHat
 from core.cog import Cog
@@ -28,14 +30,9 @@ class TicketView(ui.View):
         )
         await thread.add_user(interaction.user)
 
-        await interaction.response.send_message(
-            content=f"Ticket created in {thread.mention}",
-            ephemeral=True,
-            delete_after=5,
-        )
-
-        self.thread_id = thread.id
         staff_role = interaction.guild.get_role(await self.get_staff_role(interaction.guild.id))  # type: ignore
+        online_staff = [member for member in staff_role.members if member.status in [discord.Status.online, discord.Status.dnd, discord.Status.idle]]  # type: ignore
+        staff_mention = None
 
         em = discord.Embed(
             title="Ticket created!",
@@ -43,7 +40,32 @@ class TicketView(ui.View):
             color=self.bot.color,
         )
         em.set_footer(text=interaction.user, icon_url=interaction.user.avatar.url)  # type: ignore
-        await thread.send(content=f"{staff_role.mention} | {interaction.user.mention}", embed=em, view=TicketSettings(thread.id))  # type: ignore
+
+        if online_staff:
+            random_staff_member = random.choice(online_staff)
+            staff_mention = random_staff_member.mention
+
+            await thread.send(
+                content=f"{staff_mention} | {interaction.user.mention}",
+                embed=em,
+                view=TicketSettings(thread.id),
+            )
+
+        else:
+            await thread.send(
+                content=f"{interaction.user.mention}, Please wait for staff to respond.",
+                embed=em,
+                view=TicketSettings(thread.id),
+            )
+
+        # Send ephemeral follow-up message
+        await interaction.response.send_message(
+            content=f"Ticket created in {thread.mention}",
+            ephemeral=True,
+            delete_after=5,
+        )
+
+        self.thread_id = thread.id
 
 
 class TicketSettings(ui.View):
