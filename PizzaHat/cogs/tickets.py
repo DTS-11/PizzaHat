@@ -23,49 +23,67 @@ class TicketView(ui.View):
         emoji="<:ticket_emoji:1004648922158989404>", custom_id="create_ticket_btn"
     )
     async def create_ticket(self, interaction: Interaction, button: ui.Button):
-        thread = await interaction.channel.create_thread(  # type: ignore
-            name=f"{interaction.user}-ticket",
-            reason=f"Ticket created by {interaction.user}",
-            invitable=False,  # type: ignore
-        )
-        await thread.add_user(interaction.user)
 
-        staff_role = interaction.guild.get_role(await self.get_staff_role(interaction.guild.id))  # type: ignore
-        online_staff = [member for member in staff_role.members if member.status in [discord.Status.online, discord.Status.dnd, discord.Status.idle]]  # type: ignore
-        staff_mention = None
-
-        em = discord.Embed(
-            title="Ticket created!",
-            description=f"{interaction.user.mention} `[{interaction.user}]` created a ticket.",
-            color=self.bot.color,
-        )
-        em.set_footer(text=interaction.user, icon_url=interaction.user.avatar.url)  # type: ignore
-
-        if online_staff:
-            random_staff_member = random.choice(online_staff)
-            staff_mention = random_staff_member.mention
-
-            await thread.send(
-                content=f"{staff_mention} | {interaction.user.mention}",
-                embed=em,
-                view=TicketSettings(thread.id),
+        if interaction.guild is not None:
+            staff_role = interaction.guild.get_role(
+                await self.get_staff_role(interaction.guild.id)
             )
 
-        else:
-            await thread.send(
-                content=f"{interaction.user.mention}, Please wait for staff to respond.",
-                embed=em,
-                view=TicketSettings(thread.id),
-            )
+            if staff_role is not None:
+                online_staff = [
+                    member
+                    for member in staff_role.members
+                    if member.status != discord.Status.offline
+                ]
+                staff_mention = None
 
-        # Send ephemeral follow-up message
-        await interaction.response.send_message(
-            content=f"Ticket created in {thread.mention}",
-            ephemeral=True,
-            delete_after=5,
-        )
+                thread = await interaction.channel.create_thread(  # type: ignore
+                    name=f"{interaction.user}-ticket",
+                    reason=f"Ticket created by {interaction.user}",
+                    invitable=False,  # type: ignore
+                )
+                await thread.add_user(interaction.user)
 
-        self.thread_id = thread.id
+                em = discord.Embed(
+                    title="Ticket created!",
+                    description=f"Welcome {interaction.user.mention} `[{interaction.user}]`. Support team will get back to you shortly.",
+                    color=self.bot.color,
+                    timestamp=interaction.created_at,
+                )
+
+                if interaction.user.avatar is not None:
+                    em.set_footer(
+                        text=interaction.user, icon_url=interaction.user.avatar.url
+                    )
+                else:
+                    em.set_footer(text=interaction.user)
+
+                if online_staff:
+                    random_staff_member = random.choice(online_staff)
+                    staff_mention = random_staff_member.mention
+
+                    await thread.add_user(random_staff_member)
+                    await thread.send(
+                        content=f"{staff_mention} | {interaction.user.mention}",
+                        embed=em,
+                        view=TicketSettings(thread.id),
+                    )
+
+                else:
+                    await thread.send(
+                        content=f"{interaction.user.mention}",
+                        embed=em,
+                        view=TicketSettings(thread.id),
+                    )
+
+                # Send ephemeral follow-up message
+                await interaction.response.send_message(
+                    content=f"Ticket created in {thread.mention}",
+                    ephemeral=True,
+                    delete_after=5,
+                )
+
+                self.thread_id = thread.id
 
 
 class TicketSettings(ui.View):
