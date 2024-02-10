@@ -30,12 +30,13 @@ class TicketView(ui.View):
             )
 
             if staff_role is not None:
-                online_staff = [
-                    member
-                    for member in staff_role.members
-                    if member.status != discord.Status.offline
-                ]
-                staff_mention = None
+                # KEEPING THIS FOR FUTURE (NEED PRESENCE INTENT)
+                # online_staff = [
+                #     member
+                #     for member in staff_role.members
+                #     if member.status != discord.Status.offline
+                # ]
+                # staff_mention = None
 
                 thread = await interaction.channel.create_thread(  # type: ignore
                     name=f"{interaction.user}-ticket",
@@ -58,23 +59,29 @@ class TicketView(ui.View):
                 else:
                     em.set_footer(text=interaction.user)
 
-                if online_staff:
-                    random_staff_member = random.choice(online_staff)
-                    staff_mention = random_staff_member.mention
+                # if online_staff:
+                #     random_staff_member = random.choice(online_staff)
+                #     staff_mention = random_staff_member.mention
 
-                    await thread.add_user(random_staff_member)
-                    await thread.send(
-                        content=f"{staff_mention} | {interaction.user.mention}",
-                        embed=em,
-                        view=TicketSettings(thread.id),
-                    )
+                #     await thread.add_user(random_staff_member)
+                #     await thread.send(
+                #         content=f"{staff_mention} | {interaction.user.mention}",
+                #         embed=em,
+                #         view=TicketSettings(thread.id),
+                #     )
 
-                else:
-                    await thread.send(
-                        content=f"{interaction.user.mention}",
-                        embed=em,
-                        view=TicketSettings(thread.id),
-                    )
+                # else:
+                #     await thread.send(
+                #         content=f"{interaction.user.mention}",
+                #         embed=em,
+                #         view=TicketSettings(thread.id),
+                #     )
+
+                await thread.send(
+                    content=f"{interaction.user.mention}",
+                    embed=em,
+                    view=TicketSettings(thread.id),
+                )
 
                 # Send ephemeral follow-up message
                 await interaction.response.send_message(
