@@ -21,7 +21,7 @@ class Games(Cog, emoji="🎮"):
         """
 
         game = button_games.BetaTictactoe(cross=ctx.author, circle=member)  # type: ignore
-        await game.start(ctx, embed_color=self.bot.color)
+        await game.start(ctx, timeout=300, embed_color=self.bot.color)
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -61,7 +61,7 @@ class Games(Cog, emoji="🎮"):
         """
 
         game = button_games.BetaChess(white=ctx.author, black=member)  # type: ignore
-        await game.start(ctx, embed_color=self.bot.color)
+        await game.start(ctx, timeout=600, embed_color=self.bot.color)
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -71,7 +71,7 @@ class Games(Cog, emoji="🎮"):
         """
 
         game = button_games.BetaWordle()
-        await game.start(ctx, embed_color=self.bot.color)
+        await game.start(ctx, timeout=180, embed_color=self.bot.color)
 
     @commands.command(aliases=["aki"])
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -81,7 +81,7 @@ class Games(Cog, emoji="🎮"):
         """
 
         game = button_games.BetaAkinator()
-        await game.start(ctx, delete_button=True, embed_color=self.bot.color)
+        await game.start(ctx, timeout=300, delete_button=True, embed_color=self.bot.color)
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -101,7 +101,7 @@ class Games(Cog, emoji="🎮"):
         """
 
         game = button_games.BetaConnectFour(red=ctx.author, blue=member)  # type: ignore
-        await game.start(ctx, embed_color=self.bot.color)
+        await game.start(ctx, timeout=300, embed_color=self.bot.color)
 
 
 async def setup(bot):
