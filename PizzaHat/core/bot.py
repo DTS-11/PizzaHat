@@ -12,11 +12,10 @@ from discord.ext.commands import CommandError, Context
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
 
 INITIAL_EXTENSIONS = [
-    # 'cogs.activities',
     "cogs.admin",
     "cogs.dev",
     "cogs.emojis",
-    "cogs.games",
+    # "cogs.games",
     "cogs.images",
     "cogs.meta",
     "cogs.mod",
@@ -102,7 +101,6 @@ class PizzaHat(commands.Bot):
             voice_states=True,
             messages=True,
             reactions=True,
-            presences=True,
             message_content=True,
             auto_moderation=True,
         )
@@ -133,7 +131,6 @@ class PizzaHat(commands.Bot):
             self.uptime = datetime.datetime.utcnow()
 
         print(f"Logged in as {self.user}")
-        # self.togetherControl = await DiscordTogether(os.getenv("TOKEN"), debug=True)  # type: ignore
 
     async def setup_hook(self) -> None:
         self.bot_app_info = await self.application_info()
