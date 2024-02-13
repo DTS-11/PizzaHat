@@ -81,8 +81,10 @@ class Meta(Cog, emoji="😎"):
 
         if not channel.permissions_for(ctx.author).send_messages:  # type: ignore
             return await ctx.message.add_reaction("⚠")
+
         msg = clean_string(msg)
         destination = ctx.message.channel if channel is None else channel
+
         await destination.send(msg)
         return await ctx.message.add_reaction("✅")
 
@@ -234,36 +236,36 @@ class Meta(Cog, emoji="😎"):
 
         if member is ctx.author:
             return await ctx.send("You can't hack yourself.")
-        else:
-            hacking = await ctx.send(f"Hacking {member.name}....")
-            await asyncio.sleep(1.55)
-            await hacking.edit(content="Finding info....")
-            await asyncio.sleep(1.55)
-            await hacking.edit(
-                content=f"Discord email address: {member.name}{random.choice(mails)}"
-            )
-            await asyncio.sleep(2)
-            await hacking.edit(
-                content=f"Password: x2yz{member.name}xxy65{member.discriminator}"
-            )
-            await asyncio.sleep(2)
-            await hacking.edit(content=f"Most used words: {random.choice(used_words)}")
-            await asyncio.sleep(1.55)
-            await hacking.edit(content="IP address: 127.0.0.1:50")
-            await asyncio.sleep(1.55)
-            await hacking.edit(content="Selling information to the government....")
-            await asyncio.sleep(2)
-            await hacking.edit(
-                content=f"Reporting {member.name} to Discord for violating ToS"
-            )
-            await asyncio.sleep(2)
-            await hacking.edit(content="Hacking medical records.....")
-            await asyncio.sleep(1.55)
-            await hacking.edit(
-                content=f"{ctx.author.mention} successfully hacked {member.mention}"
-            )
 
-            await ctx.send("The ultimate, totally real hacking has been completed!")
+        hacking = await ctx.send(f"Hacking {member.name}....")
+        await asyncio.sleep(1.55)
+        await hacking.edit(content="Finding info....")
+        await asyncio.sleep(1.55)
+        await hacking.edit(
+            content=f"Discord email address: {member.name}{random.choice(mails)}"
+        )
+        await asyncio.sleep(2)
+        await hacking.edit(
+            content=f"Password: x2yz{member.name}xxy65{member.discriminator}"
+        )
+        await asyncio.sleep(2)
+        await hacking.edit(content=f"Most used words: {random.choice(used_words)}")
+        await asyncio.sleep(1.55)
+        await hacking.edit(content="IP address: 127.0.0.1:50")
+        await asyncio.sleep(1.55)
+        await hacking.edit(content="Selling information to the government....")
+        await asyncio.sleep(2)
+        await hacking.edit(
+            content=f"Reporting {member.name} to Discord for violating ToS"
+        )
+        await asyncio.sleep(2)
+        await hacking.edit(content="Hacking medical records.....")
+        await asyncio.sleep(1.55)
+        await hacking.edit(
+            content=f"{ctx.author.mention} successfully hacked {member.mention}"
+        )
+
+        await ctx.send("The ultimate, totally real hacking has been completed!")
 
 
 async def setup(bot):
