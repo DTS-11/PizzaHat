@@ -56,7 +56,7 @@ class AutoMod(Cog):
             description=msg.content,
             color=self.bot.fail,  # type: ignore
         )
-        em.set_author(name=msg.author, icon_url=msg.author.avatar.url)
+        em.set_author(name=msg.author, icon_url=msg.author.avatar.url if msg.author.avatar else None)
         em.set_footer(text=f"Message ID: {msg.id} | User ID: {msg.author.id}")
         em.add_field(name="Module", value=module)
 
