@@ -16,7 +16,7 @@ INITIAL_EXTENSIONS = [
     "cogs.dev",
     "cogs.emojis",
     # "cogs.games",
-    "cogs.images",
+    # "cogs.images",
     "cogs.meta",
     "cogs.mod",
     # 'cogs.music',
