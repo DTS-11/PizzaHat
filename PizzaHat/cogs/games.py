@@ -91,7 +91,7 @@ class Games(Cog, emoji="🎮"):
         """
 
         game = button_games.BetaReactionGame()
-        await game.start(ctx, timeout=30, embed_color=self.bot.color)
+        await game.start(ctx, timeout=15, embed_color=self.bot.color)
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
