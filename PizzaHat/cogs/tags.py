@@ -116,7 +116,7 @@ class Tags(Cog, emoji="🏷"):
             color=self.bot.color,
             timestamp=datetime.datetime.utcnow(),
         )
-        em.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar)
+        em.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar if ctx.author.avatar else None)
 
         if data:
             for i in data:

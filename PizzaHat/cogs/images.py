@@ -68,7 +68,8 @@ class Images(Cog, emoji="📷"):
             em = discord.Embed(color=self.bot.color)
             em.set_image(url=await alex_api.birb())
             em.set_footer(
-                text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url
+                text=f"Requested by {ctx.author}",
+                icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
             )
 
             await ctx.send(embed=em)
@@ -85,7 +86,8 @@ class Images(Cog, emoji="📷"):
             em = discord.Embed(color=self.bot.color)
             em.set_image(url=await alex_api.dogs())
             em.set_footer(
-                text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url
+                text=f"Requested by {ctx.author}",
+                icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
             )
 
             await ctx.send(embed=em)
@@ -102,7 +104,8 @@ class Images(Cog, emoji="📷"):
             em = discord.Embed(color=self.bot.color)
             em.set_image(url=await alex_api.cats())
             em.set_footer(
-                text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url
+                text=f"Requested by {ctx.author}",
+                icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
             )
 
             await ctx.send(embed=em)
@@ -119,7 +122,8 @@ class Images(Cog, emoji="📷"):
             em = discord.Embed(color=self.bot.color)
             em.set_image(url=await alex_api.sadcat())
             em.set_footer(
-                text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url
+                text=f"Requested by {ctx.author}",
+                icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
             )
 
             await ctx.send(embed=em)
@@ -136,7 +140,8 @@ class Images(Cog, emoji="📷"):
             em = discord.Embed(color=self.bot.color)
             em.set_image(url=await alex_api.coffee())
             em.set_footer(
-                text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url
+                text=f"Requested by {ctx.author}",
+                icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
             )
 
             await ctx.send(embed=em)

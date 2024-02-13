@@ -34,7 +34,7 @@ Use the dropdown menu to select a category.\n
 
     em.set_thumbnail(url=ctx.bot.user.avatar.url)
     em.set_footer(
-        text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url
+        text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url if ctx.author.avatar else None
     )
 
     return em
@@ -70,7 +70,7 @@ def cmds_list_embed(ctx: commands.Context, mapping):
 
     em.set_thumbnail(url=ctx.bot.user.avatar.url)
     em.set_footer(
-        text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url
+        text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url if ctx.author.avatar else None
     )
 
     for cog, commands_ in mapping.items():

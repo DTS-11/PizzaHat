@@ -158,7 +158,7 @@ class Utility(Cog, emoji="🛠️"):
 
         if ctx.author.avatar is not None:
             em.set_footer(
-                text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url
+                text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url if ctx.author.avatar else None
             )
 
         if member.avatar:

@@ -52,7 +52,7 @@ class TicketView(ui.View):
 
                 if interaction.user.avatar is not None:
                     em.set_footer(
-                        text=interaction.user, icon_url=interaction.user.avatar.url
+                        text=interaction.user, icon_url=interaction.user.avatar.url if interaction.user.avatar else None
                     )
                 else:
                     em.set_footer(text=interaction.user)
