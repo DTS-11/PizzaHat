@@ -237,9 +237,11 @@ class Utility(Cog, emoji="🛠️"):
 
             em.add_field(
                 name="✨ Server Features",
-                value=f"{boosts}\n" + all_features
-                if boosts and features
-                else f"{self.bot.no} None",
+                value=(
+                    f"{boosts}\n" + all_features
+                    if boosts and features
+                    else f"{self.bot.no} None"
+                ),
                 inline=False,
             )
 
@@ -272,8 +274,10 @@ class Utility(Cog, emoji="🛠️"):
         e.add_field(name="Channel name", value=channel.name, inline=False)
         e.add_field(name="Channel ID", value=channel.id, inline=False)
         e.add_field(name="Mention", value=channel.mention, inline=False)
+
         if channel.category is not None:
             e.add_field(name="Category name", value=channel.category.name, inline=False)
+
         e.add_field(
             name="Channel Created", value=format_date(channel.created_at), inline=False
         )
@@ -296,8 +300,10 @@ class Utility(Cog, emoji="🛠️"):
         e.add_field(name="VC ID", value=vc.id, inline=False)
         e.add_field(name="VC bitrate", value=vc.bitrate, inline=False)
         e.add_field(name="Mention", value=vc.mention, inline=False)
+
         if vc.category is not None:
             e.add_field(name="Category name", value=vc.category.name, inline=False)
+
         e.add_field(name="VC Created", value=format_date(vc.created_at), inline=False)
 
         await ctx.send(embed=e)
@@ -444,10 +450,10 @@ class Utility(Cog, emoji="🛠️"):
             ),
             color=self.bot.color,
         )
+        em.set_footer(text="Thank you for inviting me! <3")
+
         if self.bot.user and self.bot.user.avatar is not None:
             em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar.url)
-
-        em.set_footer(text="Thank you for inviting me! <3")
 
         await ctx.send(embed=em, view=view)
 
@@ -491,6 +497,7 @@ class Utility(Cog, emoji="🛠️"):
             name = name.replace("_", " ").title()
             if value:
                 allowed.append(name)
+
             else:
                 denied.append(name)
 
@@ -534,8 +541,10 @@ class Utility(Cog, emoji="🛠️"):
             member = ctx.author  # type: ignore
 
         em = discord.Embed(title=f"Avatar of {member.name}", color=self.bot.color)
+
         if member.avatar is not None:
             em.set_image(url=member.avatar.url)
+
         em.set_footer(text=f"Requested by {ctx.author.name}")
 
         await ctx.send(embed=em)
@@ -552,8 +561,10 @@ class Utility(Cog, emoji="🛠️"):
             description="Click the buttons below to vote!",
             color=self.bot.color,
         )
+
         if self.bot.user and self.bot.user.avatar is not None:
             em.set_thumbnail(url=self.bot.user.avatar.url)
+
         em.set_footer(text="Make sure to leave a nice review too!")
 
         b1 = Button(label="Top.gg", url="https://top.gg/bot/860889936914677770/vote")
@@ -565,7 +576,6 @@ class Utility(Cog, emoji="🛠️"):
         )
 
         view.add_item(b1).add_item(b2).add_item(b3)
-
         await ctx.send(embed=em, view=view)
 
 
