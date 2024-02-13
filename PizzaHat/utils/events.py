@@ -26,7 +26,7 @@ class Events(Cog):
 
     #     bot.loop.create_task(self.update_stats())
 
-    # @tasks.loop(minutes=30)
+    # @tasks.loop(hours=24)
     # async def update_stats(self):
     #     try:
     #         # Top.gg
@@ -50,6 +50,12 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_ready(self):
+
+        await self.bot.db.execute(  # type: ignore
+            """CREATE TABLE IF NOT EXISTS guild_config 
+            (guild_id BIGINT PRIMARY KEY, module TEXT, enabled BOOL)"""
+        )
+
         await self.bot.db.execute(  # type: ignore
             """CREATE TABLE IF NOT EXISTS warnlogs 
             (guild_id BIGINT, user_id BIGINT, warns TEXT[], time NUMERIC[])"""
@@ -75,7 +81,12 @@ class Events(Cog):
             (guild_id BIGINT, tag_name TEXT, content TEXT, creator BIGINT)"""
         )
 
-    async def get_logs_channel(self, guild_id):
+        await self.bot.db.execute(  # type: ignore
+            """CREATE TABLE IF NOT EXISTS starboard 
+            (guild_id BIGINT PRIMARY KEY, channel_id BIGINT, message_id BIGINT, star_count INT, star_emoji TEXT)"""
+        )
+
+    async def get_logs_channel(self, guild_id: int):
         data = await self.bot.db.fetchval("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)  # type: ignore
         if data:
             return self.bot.get_channel(data)
@@ -83,7 +94,8 @@ class Events(Cog):
     # ====== MESSAGE LOGS ======
 
     @Cog.listener()
-    async def on_message(self, msg):
+    async def on_message(self, msg: discord.Message):
+
         if self.bot is None:
             bot_id = self.bot.user.id
 
@@ -96,15 +108,16 @@ class Events(Cog):
             if msg.content in {f"<@{bot_id}>" or f"<@!{bot_id}>"}:
                 em = discord.Embed(color=self.bot.color)
                 em.add_field(
-                    name="<a:wave_animated:783393435242463324> Hello! <a:wave_animated:783393435242463324>",
-                    value=f"I'm {self.bot.user.name}, to get started, my prefix is `p!` or `P!` or <@860889936914677770>",
+                    name="Hello! <a:wave_animated:783393435242463324>",
+                    value=f"I'm {self.bot.user.name}, to get started, my prefix is `p!` or `P!` or <@{bot_id}>",
                 )
 
                 await msg.channel.send(embed=em)
 
     @Cog.listener()
-    async def on_message_edit(self, before, after):
-        channel = await self.get_logs_channel(before.guild.id)
+    async def on_message_edit(self, before: discord.Message, after: discord.Message):
+
+        channel = await self.get_logs_channel(before.guild.id)  # type: ignore
 
         if not channel:
             return
@@ -122,14 +135,18 @@ class Events(Cog):
         )
         em.add_field(name="- Before", value=before.content, inline=False)
         em.add_field(name="+ After", value=after.content, inline=False)
-        em.set_author(name=before.author, icon_url=before.author.avatar.url)
+        em.set_author(
+            name=before.author,
+            icon_url=before.author.avatar.url if before.author.avatar else None,
+        )
         em.set_footer(text=f"User ID: {before.author.id}")
 
         await channel.send(embed=em)  # type: ignore
 
     @Cog.listener()
-    async def on_message_delete(self, msg):
-        channel = await self.get_logs_channel(msg.guild.id)
+    async def on_message_delete(self, msg: discord.Message):
+
+        channel = await self.get_logs_channel(msg.guild.id)  # type: ignore
 
         if not channel:
             return
@@ -143,7 +160,10 @@ class Events(Cog):
             color=self.bot.failed,
             timestamp=msg.created_at,
         )
-        em.set_author(name=msg.author, icon_url=msg.author.avatar.url)
+        em.set_author(
+            name=msg.author,
+            icon_url=msg.author.avatar.url if msg.author.avatar else None,
+        )
         em.set_footer(text=f"User ID: {msg.author.id}")
 
         await channel.send(embed=em)  # type: ignore
@@ -151,7 +171,8 @@ class Events(Cog):
     # ====== MEMBER LOGS ======
 
     @Cog.listener()
-    async def on_member_ban(self, guild, user):
+    async def on_member_ban(self, guild: discord.Guild, user: discord.User):
+
         channel = await self.get_logs_channel(guild.id)
 
         if not channel:
@@ -165,13 +186,14 @@ class Events(Cog):
 
         em.add_field(name="Reason", value=discord.AuditLogAction.ban, inline=False)
 
-        em.set_author(name=user, icon_url=user.avatar.url)
+        em.set_author(name=user, icon_url=user.avatar.url if user.avatar else None)
         em.set_footer(text=f"User ID: {user.id}")
 
         await channel.send(embed=em)  # type: ignore
 
     @Cog.listener()
-    async def on_member_unban(self, guild, user):
+    async def on_member_unban(self, guild: discord.Guild, user: discord.User):
+
         channel = await self.get_logs_channel(guild.id)
 
         if not channel:
@@ -184,14 +206,14 @@ class Events(Cog):
         )
 
         em.add_field(name="Reason", value=discord.AuditLogAction.unban, inline=False)
-
-        em.set_author(name=user, icon_url=user.avatar.url)
+        em.set_author(name=user, icon_url=user.avatar.url if user.avatar else None)
         em.set_footer(text=f"User ID: {user.id}")
 
         await channel.send(embed=em)  # type: ignore
 
     @Cog.listener(name="on_member_update")
-    async def member_role_update(self, before, after):
+    async def member_role_update(self, before: discord.Member, after: discord.Member):
+
         channel = await self.get_logs_channel(before.guild.id)
         roles = []
         role_text = ""
@@ -230,7 +252,9 @@ class Events(Cog):
         await channel.send(embed=em)  # type: ignore
 
     @Cog.listener("on_member_update")
-    async def member_nickname_update(self, before, after):
+    async def member_nickname_update(
+        self, before: discord.Member, after: discord.Member
+    ):
         channel = await self.get_logs_channel(before.guild.id)
 
         if not channel:
@@ -245,7 +269,10 @@ class Events(Cog):
             color=self.bot.color,
             timestamp=datetime.datetime.utcnow(),
         )
-        em.set_author(name=after, icon_url=after.display_avatar.url)
+        em.set_author(
+            name=after,
+            icon_url=after.display_avatar.url if after.display_avatar else None,
+        )
         em.set_footer(text=f"ID: {after.id}")
 
         await channel.send(embed=em)  # type: ignore
@@ -253,7 +280,7 @@ class Events(Cog):
     # ====== ROLE LOGS ======
 
     @Cog.listener()
-    async def on_guild_role_create(self, role):
+    async def on_guild_role_create(self, role: discord.Role):
         channel = await self.get_logs_channel(role.guild.id)
 
         if not channel:
@@ -269,7 +296,7 @@ class Events(Cog):
         await channel.send(embed=em)  # type: ignore
 
     @Cog.listener()
-    async def on_guild_role_delete(self, role):
+    async def on_guild_role_delete(self, role: discord.Role):
         channel = await self.get_logs_channel(role.guild.id)
 
         if not channel:
@@ -287,7 +314,7 @@ class Events(Cog):
         await channel.send(embed=em)  # type: ignore
 
     @Cog.listener(name="on_guild_role_update")
-    async def guild_role_update(self, before, after):
+    async def guild_role_update(self, before: discord.Role, after: discord.Role):
         channel = await self.get_logs_channel(before.guild.id)
 
         if not channel:
@@ -354,8 +381,8 @@ class Events(Cog):
     # ===== GUILD LOGS =====
 
     @Cog.listener("on_guild_update")
-    async def guild_update_log(self, before, after):
-        channel = await self.get_logs_channel(before.guild.id)
+    async def guild_update_log(self, before: discord.Guild, after: discord.Guild):
+        channel = await self.get_logs_channel(before.id)
 
         if not channel:
             return
@@ -366,7 +393,7 @@ class Events(Cog):
             timestamp=datetime.datetime.utcnow(),
         )
 
-        em.set_author(name=after, icon_url=after.icon.url)
+        em.set_author(name=after, icon_url=after.icon.url if after.icon else None)
         em.set_footer(text=f"ID: {after.id}")
 
         if before.afk_channel != after.afk_channel:
@@ -435,13 +462,6 @@ class Events(Cog):
                 inline=False,
             )
 
-        if before.region != after.region:
-            em.add_field(
-                name="Region",
-                value=f"`{before.region}` ➜ `{after.region}`",
-                inline=False,
-            )
-
         if before.rules_channel != after.rules_channel:
             em.add_field(
                 name="Rules channel",
@@ -466,7 +486,7 @@ class Events(Cog):
         await channel.send(embed=em)  # type: ignore
 
     @Cog.listener()
-    async def on_guild_join(self, guild):
+    async def on_guild_join(self, guild: discord.Guild):
         # if len([m for m in guild.members if m.bot]) > len(guild.members) / 2:
         #     try:
         #         await guild.text_channels[0].send(
@@ -486,13 +506,13 @@ class Events(Cog):
         em.add_field(
             name="Bots", value=sum(member.bot for member in guild.members), inline=False
         )
-        em.add_field(name="Owner", value=guild.owner, inline=False)
+        em.add_field(name="Owner", value=f"{guild.owner} ({guild.owner.id})", inline=False)  # type: ignore
 
         channel = self.bot.get_channel(LOG_CHANNEL)
         await channel.send(embed=em)  # type: ignore
 
     @Cog.listener()
-    async def on_guild_remove(self, guild):
+    async def on_guild_remove(self, guild: discord.Guild):
         await self.bot.db.execute("DELETE FROM modlogs WHERE guild_id=$1", guild.id)  # type: ignore
 
         channel = self.bot.get_channel(LOG_CHANNEL)
