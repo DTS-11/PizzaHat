@@ -1,6 +1,5 @@
 import asyncio
 import traceback
-from typing import Union
 
 import discord
 import yarl
@@ -51,6 +50,8 @@ class Emojis(Cog, emoji="😀"):
     @commands.guild_only()
     @commands.has_permissions(manage_emojis=True)
     async def _emoji(self, ctx: Context):
+        """Emoji management commands."""
+
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
@@ -163,6 +164,7 @@ class Emojis(Cog, emoji="😀"):
             await ctx.send(embed=embed)
 
     @_emoji.command()
+    @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def list(self, ctx: Context):
         """Show list of emojis in the server."""
@@ -211,15 +213,16 @@ class Emojis(Cog, emoji="😀"):
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def emojify(
-        self, ctx: Context, emoji: Union[discord.Emoji, discord.PartialEmoji, str]
-    ):
+    async def emojify(self, ctx: Context, emoji: discord.Emoji):
         """Emojify a given emoji."""
 
-        if emoji.url is not None:  # type: ignore
-            await ctx.send(emoji.url)  # type: ignore
-        else:
-            await ctx.send(emoji)  # type: ignore
+        if emoji.url is not None:
+            em = discord.Embed(
+                title=emoji.name, color=self.bot.color, timestamp=ctx.message.created_at
+            )
+            em.set_image(url=emoji.url)
+
+            await ctx.send(embed=em)
 
 
 async def setup(bot):
