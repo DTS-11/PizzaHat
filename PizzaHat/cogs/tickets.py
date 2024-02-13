@@ -1,5 +1,3 @@
-import random
-
 import discord
 from core.bot import PizzaHat
 from core.cog import Cog
@@ -126,6 +124,8 @@ class TicketSettings(ui.View):
 
 
 class Tickets(Cog, emoji="🎟"):
+    """Ticket system."""
+
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
