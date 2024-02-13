@@ -169,6 +169,8 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.group(aliases=["lockdown"])
     @commands.has_permissions(manage_channels=True)
     async def lock(self, ctx: Context):
+        """Lock management commands."""
+        
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
@@ -241,6 +243,8 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.group()
     @commands.has_permissions(manage_channels=True)
     async def unlock(self, ctx: Context):
+        """Unlock management commands."""
+
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
@@ -624,6 +628,8 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     async def role(self, ctx: Context):
+        """Role management commands."""
+
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
@@ -705,14 +711,13 @@ class Mod(Cog, emoji=847248846526087239):
 
         try:
             if ctx.guild is not None:
-                if role not in ctx.guild.roles:
-                    await ctx.guild.create_role(
-                        reason=f"Role created by {ctx.author}",
-                        name=role.name,
-                        color=color,
-                        hoist=hoist,
-                    )
-                    await ctx.send(f"{self.bot.yes} Role created successfully!")
+                await ctx.guild.create_role(
+                    reason=f"Role created by {ctx.author}",
+                    name=role.name,
+                    color=color,
+                    hoist=hoist,
+                )
+                await ctx.send(f"{self.bot.yes} Role created successfully!")
 
         except Exception as e:
             print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
@@ -792,6 +797,8 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def channel(self, ctx: Context):
+        """Channel related commands."""
+
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
