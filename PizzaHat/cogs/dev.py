@@ -1,7 +1,5 @@
 import inspect
 import io
-import os
-import sys
 import textwrap
 import time
 import traceback
@@ -19,10 +17,6 @@ if TYPE_CHECKING:
     from asyncpg import Record
 
 
-def restart_bot():
-    os.execv(sys.executable, ["python"] + sys.argv)
-
-
 class Dev(Cog, emoji=833297795761831956):
     """Developer commands."""
 
@@ -37,14 +31,6 @@ class Dev(Cog, emoji=833297795761831956):
 
         else:
             return content
-
-    @commands.command(hidden=True)
-    @commands.is_owner()
-    async def restart(self, ctx: Context):
-        """Restarts the bot."""
-
-        await ctx.message.add_reaction("✅")
-        restart_bot()
 
     @commands.command(name="eval", hidden=True)
     @commands.is_owner()
