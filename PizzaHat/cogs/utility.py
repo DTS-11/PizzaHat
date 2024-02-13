@@ -453,7 +453,7 @@ class Utility(Cog, emoji="🛠️"):
         em.set_footer(text="Thank you for inviting me! <3")
 
         if self.bot.user and self.bot.user.avatar is not None:
-            em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar.url)
+            em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None)
 
         await ctx.send(embed=em, view=view)
 
@@ -482,7 +482,7 @@ class Utility(Cog, emoji="🛠️"):
         em = discord.Embed(description=f"> {suggestion}", color=self.bot.color)
 
         if ctx.author.avatar is not None:
-            em.set_author(name=ctx.author, icon_url=ctx.author.avatar.url)
+            em.set_author(name=ctx.author, icon_url=ctx.author.avatar.url if ctx.author.avatar else None)
 
         msg = await channel.send(embed=em)  # type: ignore
         await msg.add_reaction("👍")
