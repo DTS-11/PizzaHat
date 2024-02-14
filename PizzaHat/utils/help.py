@@ -22,19 +22,20 @@ Use the dropdown menu to select a category.\n
 
     em.add_field(
         name="Support Server",
-        value="For more help, consider joining the official server over at https://discord.gg/WhNVDTF",
+        value="For more help, consider joining the official server over by [clicking here](https://discord.gg/WhNVDTF)",
         inline=False,
     )
     em.add_field(name="About me", value=ctx.bot.description, inline=False)
     em.add_field(
         name="🔗 Links",
-        value="**[Invite me](https://dsc.gg/pizza-invite)** • **[Vote](https://top.gg/bot/860889936914677770/vote)**",
+        value="**[Invite me](https://dsc.gg/pizza-invite)** • **[Vote](https://wumpus.store/bot/860889936914677770/vote)**",
         inline=False,
     )
 
     em.set_thumbnail(url=ctx.bot.user.avatar.url)
     em.set_footer(
-        text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url if ctx.author.avatar else None
+        text=f"Requested by {ctx.author}",
+        icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
     )
 
     return em
@@ -70,7 +71,8 @@ def cmds_list_embed(ctx: commands.Context, mapping):
 
     em.set_thumbnail(url=ctx.bot.user.avatar.url)
     em.set_footer(
-        text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url if ctx.author.avatar else None
+        text=f"Requested by {ctx.author}",
+        icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
     )
 
     for cog, commands_ in mapping.items():
@@ -94,7 +96,6 @@ class HelpDropdown(ui.Select):
     def __init__(self, mapping: dict, ctx: commands.Context):
         self.cog_mapping = mapping
         self.ctx = ctx
-
         options = []
 
         for cog, _ in mapping.items():
@@ -146,7 +147,7 @@ class HelpView(ui.View):
             return True
 
         await interaction.response.send_message(
-            "Not your help command ._.", ephemeral=True
+            content="Not your help command ._.", ephemeral=True
         )
 
     @ui.button(label="Home", emoji="🏠", style=ButtonStyle.blurple)
