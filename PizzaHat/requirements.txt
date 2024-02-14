@@ -8,7 +8,6 @@ pyparsing
 python-dotenv
 typing
 typing-extensions
-asyncdagpi
 requests
 humanfriendly
 numpy
@@ -16,6 +15,5 @@ jishaku
 psutil
 # topggpy
 emojis
-alexflipnote.py
 
 git+https://github.com/Tom-the-Bomb/Discord-Games.git
