@@ -1,8 +1,8 @@
 <h1 align="center">
-    <img src="https://github.com/DTS-11/PizzaHat/blob/main/assets/bot-logo.png" width="300" height="300"/> <br>
+    <img src="./assets/bot-logo.png" width="300" height="300"/> <br>
 PizzaHat Discord Bot <h1/>
 	
-<h4 align="center"> A multi-purpose bot for your server! <h4/>
+<h4 align="center"> Your ultimate Discord companion! <h4/>
   </a><br>
   <img src="https://img.shields.io/badge/discord.py-2.3.2-blue?style=flat" />
   <img src="https://img.shields.io/badge/Python-3.11-green?style=flat&logo=python" />
@@ -17,12 +17,12 @@ PizzaHat Discord Bot <h1/>
 	
 ## <img src="https://cdn.discordapp.com/emojis/800797566471897088.png?size=80" height="30px"> • Features
 
-- 📌 Over 150+ commands! </li> <!-- - 🔼 95%+ uptime. </li> -->
+- 📌 Over 150+ commands! </li>
+- 🔼 95%+ uptime. </li>
 - 🏓 Low latency. </li>
-- <img src="https://cdn.discordapp.com/emojis/847248846526087239.png?size=80" height="19px"> Powerful moderation. </li> <!-- - 🚀 Activities. </li> -->
+- <img src="https://cdn.discordapp.com/emojis/847248846526087239.png?size=80" height="19px"> Powerful moderation. </li>
 - 🥳 Fun commands. </li>
 - ⚒️ Utility commands. </li>
-- 📷 Image manipulation commands. </li> <!-- - 🎵 Music commands. </li> -->
 - 📔 Logging system. </li>
 - 🗳 Poll voting system </li>
 - 🏷 Tag system </li>
@@ -64,7 +64,6 @@ Create a `.env` file with the following format
 ```
 TOKEN = your_bot_token
 PG_URL = postgresql_connection_url
-DAGPI = dagpi_token
 ```
 Create a `config.py` file in the `utils` directory
 ```py
