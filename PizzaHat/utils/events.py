@@ -50,12 +50,7 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_ready(self):
-
-        await self.bot.db.execute(  # type: ignore
-            """CREATE TABLE IF NOT EXISTS guild_config 
-            (guild_id BIGINT PRIMARY KEY, module TEXT, enabled BOOL)"""
-        )
-
+        
         await self.bot.db.execute(  # type: ignore
             """CREATE TABLE IF NOT EXISTS warnlogs 
             (guild_id BIGINT, user_id BIGINT, warns TEXT[], time NUMERIC[])"""
@@ -246,7 +241,7 @@ class Events(Cog):
             color=self.bot.color,
             timestamp=datetime.datetime.utcnow(),
         )
-        em.set_author(name=after, icon_url=after.display_avatar.url)
+        em.set_author(name=after, icon_url=after.display_avatar.url if after.display_avatar else None)
         em.set_footer(text=f"ID: {after.id}")
 
         await channel.send(embed=em)  # type: ignore
