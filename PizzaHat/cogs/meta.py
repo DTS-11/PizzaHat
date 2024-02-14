@@ -2,13 +2,13 @@ import asyncio
 import random
 import re
 import time
-import unicodedata
 
 import discord
 from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
+from discord.ui import Button, View
 from TagScriptEngine import Interpreter, block
 
 
@@ -29,26 +29,6 @@ class Meta(Cog, emoji="😎"):
             block.RangeBlock(),
         ]
         self.engine = Interpreter(blocks)
-
-    @commands.command()
-    @commands.cooldown(1, 3, commands.BucketType.user)
-    async def charinfo(self, ctx: Context, *, characters: str):
-        """Shows you information about a number of characters.
-        Only up to 15 characters at a time.
-        """
-
-        if len(characters) > 15:
-            await ctx.send("Too many characters ({}/15)".format(len(characters)))
-            return
-
-        fmt = "`\\U{0:>08}`: {1} - {2} \N{EM DASH}"
-
-        def to_string(c):
-            digit = format(ord(c), "x")
-            name = unicodedata.name(c, "Name not found.")
-            return fmt.format(digit, name, c)
-
-        await ctx.send("\n".join(map(to_string, characters)))
 
     @commands.command(name="credits")
     @commands.cooldown(1, 3, commands.BucketType.user)
@@ -266,6 +246,110 @@ class Meta(Cog, emoji="😎"):
         )
 
         await ctx.send("The ultimate, totally real hacking has been completed!")
+
+    @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def clap(self, ctx: Context, *, text: str):
+        """👏 makes 👏 text 👏 look 👏 like 👏 this 👏"""
+
+        text_lst = text.split()
+        await ctx.send("👏 " + " ".join([f"{x} 👏" for x in text_lst]))
+
+    @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def space(self, ctx: Context, char: str, *, text: str):
+        """Replaces spaces with specified character."""
+
+        await ctx.send(text.replace(" ", char))
+
+    @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def coinflip(self, ctx: Context):
+        """Flips a coin."""
+
+        em = discord.Embed(
+            title=f"{ctx.author.name} flipped a coin and got {random.choice(['heads', 'tails'])}!",
+            color=discord.Color.random(),
+        )
+
+        await ctx.send(embed=em)
+
+    @commands.command(name="invite")
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def invite_cmd(self, ctx: Context):
+        """Gives invite of bot."""
+
+        view = View()
+
+        b1 = Button(
+            label="Invite (admin)", emoji="✉️", url="https://dsc.gg/pizza-invite"
+        )
+        b2 = Button(
+            label="Invite (recommended)",
+            emoji="✉️",
+            url="https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot",
+        )
+        b3 = Button(label="Support", emoji="📨", url="https://discord.gg/WhNVDTF")
+
+        view.add_item(b1).add_item(b2).add_item(b3)
+
+        em = discord.Embed(
+            title="🔗 Links",
+            description=(
+                "Click on the links below if you cant see the buttons for some reason.\n"
+                "[Invite (admin)](https://dsc.gg/pizza-invite)\n"
+                "[Invite (recommended)](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot)\n"
+                "[Support](https://discord.gg/WhNVDTF)"
+            ),
+            color=self.bot.color,
+        )
+        em.set_footer(text="Thank you for inviting me! <3")
+
+        if self.bot.user is not None:
+            em.set_author(
+                name=self.bot.user.name,
+                icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None,
+            )
+
+        await ctx.send(embed=em, view=view)
+
+    @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def support(self, ctx: Context):
+        """Gives link to support server"""
+
+        await ctx.send(
+            "Do you want help? Join the support server now!\nhttps://discord.gg/WhNVDTF"
+        )
+
+    @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def vote(self, ctx):
+        """Vote for the bot."""
+
+        view = View()
+
+        em = discord.Embed(
+            title="Vote for me",
+            description="Click the buttons below to vote!",
+            color=self.bot.color,
+        )
+
+        if self.bot.user and self.bot.user.avatar is not None:
+            em.set_thumbnail(url=self.bot.user.avatar.url)
+
+        em.set_footer(text="Make sure to leave a nice review too!")
+
+        b1 = Button(label="Top.gg", url="https://top.gg/bot/860889936914677770/vote")
+        b2 = Button(
+            label="DList.gg", url="https://discordlist.gg/bot/860889936914677770/vote"
+        )
+        b3 = Button(
+            label="Wumpus.store", url="https://wumpus.store/bot/860889936914677770/vote"
+        )
+
+        view.add_item(b1).add_item(b2).add_item(b3)
+        await ctx.send(embed=em, view=view)
 
 
 async def setup(bot):

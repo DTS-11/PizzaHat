@@ -1,5 +1,7 @@
 import datetime
 import time
+import unicodedata
+from typing import Optional, Union
 
 import discord
 import psutil
@@ -7,8 +9,6 @@ from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
-from discord.ui import Button, View
-from typing import Union, Optional
 
 start_time = time.time()
 
@@ -20,7 +20,7 @@ def format_date(dt: datetime.datetime):
 
 
 class Utility(Cog, emoji="🛠️"):
-    """Utility commands which makes your discord experience smooth!"""
+    """Utility commands that makes your Discord experience better!"""
 
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
@@ -112,7 +112,7 @@ class Utility(Cog, emoji="🛠️"):
 
                 await ctx.send(embed=em)
 
-    @commands.command(aliases=["whois", "ui"])
+    @commands.command(aliases=["whois"])
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
     async def userinfo(self, ctx: Context, member: discord.Member = None):  # type: ignore
@@ -158,7 +158,8 @@ class Utility(Cog, emoji="🛠️"):
 
         if ctx.author.avatar is not None:
             em.set_footer(
-                text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url if ctx.author.avatar else None
+                text=f"Requested by {ctx.author}",
+                icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
             )
 
         if member.avatar:
@@ -171,7 +172,7 @@ class Utility(Cog, emoji="🛠️"):
 
         await ctx.send(embed=em)
 
-    @commands.command(aliases=["si"])
+    @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
     async def serverinfo(self, ctx: Context):
@@ -257,7 +258,7 @@ class Utility(Cog, emoji="🛠️"):
 
             await ctx.send(embed=em)
 
-    @commands.command(aliases=["ci"])
+    @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
     async def channelinfo(self, ctx: Context, *, channel: discord.TextChannel = None):  # type: ignore
@@ -289,7 +290,7 @@ class Utility(Cog, emoji="🛠️"):
 
         await ctx.send(embed=e)
 
-    @commands.command(aliases=["vi"])
+    @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
     async def vcinfo(self, ctx: Context, vc: discord.VoiceChannel):
@@ -308,7 +309,7 @@ class Utility(Cog, emoji="🛠️"):
 
         await ctx.send(embed=e)
 
-    @commands.command(aliases=["ri"])
+    @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.guild_only()
     async def roleinfo(self, ctx: Context, role: discord.Role):
@@ -421,51 +422,6 @@ class Utility(Cog, emoji="🛠️"):
 
         await ctx.send(embed=em)
 
-    @commands.command(name="invite")
-    @commands.cooldown(1, 3, commands.BucketType.user)
-    async def invite_cmd(self, ctx: Context):
-        """Gives invite of bot."""
-
-        view = View()
-
-        b1 = Button(
-            label="Invite (admin)", emoji="✉️", url="https://dsc.gg/pizza-invite"
-        )
-        b2 = Button(
-            label="Invite (recommended)",
-            emoji="✉️",
-            url="https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot",
-        )
-        b3 = Button(label="Support", emoji="📨", url="https://discord.gg/WhNVDTF")
-
-        view.add_item(b1).add_item(b2).add_item(b3)
-
-        em = discord.Embed(
-            title="🔗 Links",
-            description=(
-                "Click on the links below if you cant see the buttons for some reason.\n"
-                "[Invite (admin)](https://dsc.gg/pizza-invite)\n"
-                "[Invite (recommended)](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot)\n"
-                "[Support](https://discord.gg/WhNVDTF)"
-            ),
-            color=self.bot.color,
-        )
-        em.set_footer(text="Thank you for inviting me! <3")
-
-        if self.bot.user and self.bot.user.avatar is not None:
-            em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None)
-
-        await ctx.send(embed=em, view=view)
-
-    @commands.command()
-    @commands.cooldown(1, 3, commands.BucketType.user)
-    async def support(self, ctx: Context):
-        """Gives link to support server"""
-
-        await ctx.send(
-            "Do you want help? Join the support server now!\nhttps://discord.gg/WhNVDTF"
-        )
-
     @commands.command()
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def suggest(self, ctx: Context, *, suggestion):
@@ -479,10 +435,18 @@ class Utility(Cog, emoji="🛠️"):
         )
         channel = self.bot.get_channel(798259756803817545)
 
-        em = discord.Embed(description=f"> {suggestion}", color=self.bot.color)
+        em = discord.Embed(
+            title="New Suggestion",
+            description=f"> {suggestion}",
+            color=self.bot.success,
+            timestamp=ctx.message.created_at,
+        )
 
         if ctx.author.avatar is not None:
-            em.set_author(name=ctx.author, icon_url=ctx.author.avatar.url if ctx.author.avatar else None)
+            em.set_author(
+                name=ctx.author,
+                icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
+            )
 
         msg = await channel.send(embed=em)  # type: ignore
         await msg.add_reaction("👍")
@@ -551,32 +515,23 @@ class Utility(Cog, emoji="🛠️"):
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def vote(self, ctx):
-        """Vote for the bot."""
+    async def charinfo(self, ctx: Context, *, characters: str):
+        """Shows you information about a number of characters.
+        Only up to 15 characters at a time.
+        """
 
-        view = View()
+        if len(characters) > 15:
+            await ctx.send("Too many characters ({}/15)".format(len(characters)))
+            return
 
-        em = discord.Embed(
-            title="Vote for me",
-            description="Click the buttons below to vote!",
-            color=self.bot.color,
-        )
+        fmt = "`\\U{0:>08}`: {1} - {2} \N{EM DASH}"
 
-        if self.bot.user and self.bot.user.avatar is not None:
-            em.set_thumbnail(url=self.bot.user.avatar.url)
+        def to_string(c):
+            digit = format(ord(c), "x")
+            name = unicodedata.name(c, "Name not found.")
+            return fmt.format(digit, name, c)
 
-        em.set_footer(text="Make sure to leave a nice review too!")
-
-        b1 = Button(label="Top.gg", url="https://top.gg/bot/860889936914677770/vote")
-        b2 = Button(
-            label="DList.gg", url="https://discordlist.gg/bot/860889936914677770/vote"
-        )
-        b3 = Button(
-            label="Wumpus.store", url="https://wumpus.store/bot/860889936914677770/vote"
-        )
-
-        view.add_item(b1).add_item(b2).add_item(b3)
-        await ctx.send(embed=em, view=view)
+        await ctx.send("\n".join(map(to_string, characters)))
 
 
 async def setup(bot):
