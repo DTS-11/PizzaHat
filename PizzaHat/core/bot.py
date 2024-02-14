@@ -15,8 +15,7 @@ INITIAL_EXTENSIONS = [
     "cogs.admin",
     "cogs.dev",
     "cogs.emojis",
-    # "cogs.games",
-    # "cogs.images",
+    "cogs.games",
     "cogs.meta",
     "cogs.mod",
     "cogs.polls",
@@ -123,7 +122,6 @@ class PizzaHat(commands.Bot):
         self.color = 0x456DD4
         self.success = discord.Color.green()
         self.failed = discord.Color.red()
-        self.modules = ["AutoMod", "Starboard", "Tags", "Tickets"]
         self.session = aiohttp.ClientSession()
 
     async def on_ready(self):
