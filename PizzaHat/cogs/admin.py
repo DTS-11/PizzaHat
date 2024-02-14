@@ -3,7 +3,7 @@ from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
-from utils.custom_checks import server_staff_role, user_is_staff
+from utils.custom_checks import server_staff_role
 
 from .tickets import TicketView
 
@@ -86,23 +86,12 @@ class Admin(Cog, emoji=916988537264570368):
         await channel.send(embed=em, view=view)
         await ctx.message.add_reaction(self.bot.yes)
 
-    @commands.group(invoke_without_command=True)
+    @commands.command(name="automod-enable", aliases=["am"])
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
-    async def enable(self, ctx: Context):
-        """Use this command to enable something."""
-
-        if ctx.subcommand_passed is None:
-            await ctx.send_help(ctx.command)
-
-    @commands.command(aliases=["am"])
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild=True)
-    @commands.bot_has_permissions(manage_guild=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def automod(self, ctx: Context):
+    async def automod_enable(self, ctx: Context):
         """
         Enables auto-mod in the server.
         """
@@ -110,6 +99,24 @@ class Admin(Cog, emoji=916988537264570368):
         try:
             await self.bot.db.execute("INSERT INTO automod (guild_id, enabled) VALUES ($1, $2)", ctx.guild.id, True)  # type: ignore
             await ctx.send(f"{self.bot.yes} Auto-mod enabled.")
+
+        except Exception as e:
+            await ctx.send(f"{self.bot.no} Something went wrong...")
+            print(e)
+
+    @commands.command(name="automod-disable", aliases=["am"])
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    @commands.bot_has_permissions(manage_guild=True)
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    async def automod_disable(self, ctx: Context):
+        """
+        Disables auto-mod in the server.
+        """
+
+        try:
+            await self.bot.db.execute("DELETE FROM automod WHERE guild_id=$1", ctx.guild.id)  # type: ignore
+            await ctx.send(f"{self.bot.yes} Auto-mod disabled.")
 
         except Exception as e:
             await ctx.send(f"{self.bot.no} Something went wrong...")
