@@ -93,6 +93,8 @@ Note:
 
 - We do not provide support for self-hosting. If you are unable to self host PizzaHat by yourself, just use the bot itself which we put lot's of work into.
 
+- You also CANNOT USE self-hosted version commercially (ie: public bot or using this code for money).
+
 - You CANNOT USE PizzaHat's name, logo in your bot.
 
 - You MUST give credits to the repository and to the contributors.
