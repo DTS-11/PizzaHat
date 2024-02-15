@@ -78,7 +78,7 @@ class Events(Cog):
 
         await self.bot.db.execute(  # type: ignore
             """CREATE TABLE IF NOT EXISTS starboard 
-            (guild_id BIGINT PRIMARY KEY, channel_id BIGINT, message_id BIGINT, star_count INT, star_emoji TEXT)"""
+            (guild_id BIGINT PRIMARY KEY, channel_id BIGINT, message_id BIGINT, star_count INT DEFAULT 10, star_emoji TEXT DEFAULT "⭐")"""
         )
 
     async def get_logs_channel(self, guild_id: int):
