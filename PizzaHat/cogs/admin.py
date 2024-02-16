@@ -86,7 +86,7 @@ class Admin(Cog, emoji=916988537264570368):
         await channel.send(embed=em, view=view)
         await ctx.message.add_reaction(self.bot.yes)
 
-    @commands.command(name="automod-enable", aliases=["am"])
+    @commands.command(name="automod-enable")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
@@ -104,7 +104,7 @@ class Admin(Cog, emoji=916988537264570368):
             await ctx.send(f"{self.bot.no} Something went wrong...")
             print(e)
 
-    @commands.command(name="automod-disable", aliases=["am"])
+    @commands.command(name="automod-disable")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
