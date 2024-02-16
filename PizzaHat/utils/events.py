@@ -23,8 +23,14 @@ class Events(Cog):
 
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
+        # bot.loop.create_task(self.update_stats())
 
-    #     bot.loop.create_task(self.update_stats())
+    async def get_logs_channel(self, guild_id: int):
+        """Returns channel id & fetches the channel set for guild logs."""
+
+        data = await self.bot.db.fetchval("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)  # type: ignore
+        if data:
+            return self.bot.get_channel(data)
 
     # @tasks.loop(hours=24)
     # async def update_stats(self):
@@ -50,7 +56,7 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_ready(self):
-        
+
         await self.bot.db.execute(  # type: ignore
             """CREATE TABLE IF NOT EXISTS warnlogs 
             (guild_id BIGINT, user_id BIGINT, warns TEXT[], time NUMERIC[])"""
@@ -78,20 +84,15 @@ class Events(Cog):
 
         await self.bot.db.execute(  # type: ignore
             """CREATE TABLE IF NOT EXISTS starboard 
-            (guild_id BIGINT PRIMARY KEY, channel_id BIGINT, message_id BIGINT, star_count INT DEFAULT 10, star_emoji TEXT DEFAULT "⭐")"""
+            (guild_id BIGINT PRIMARY KEY, channel_id BIGINT, message_id BIGINT, star_count INT DEFAULT 10)"""
         )
-
-    async def get_logs_channel(self, guild_id: int):
-        data = await self.bot.db.fetchval("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)  # type: ignore
-        if data:
-            return self.bot.get_channel(data)
 
     # ====== MESSAGE LOGS ======
 
     @Cog.listener()
     async def on_message(self, msg: discord.Message):
 
-        if self.bot is None:
+        if self.bot and self.bot.user is not None:
             bot_id = self.bot.user.id
 
             if msg.author.bot:
@@ -104,7 +105,7 @@ class Events(Cog):
                 em = discord.Embed(color=self.bot.color)
                 em.add_field(
                     name="Hello! <a:wave_animated:783393435242463324>",
-                    value=f"I'm {self.bot.user.name}, to get started, my prefix is `p!` or `P!` or <@{bot_id}>",
+                    value=f"I'm {self.bot.user.name} — Your Ultimate Discord Companion 🍕.\nTo get started, my prefix is `p!` or `P!` or <@{bot_id}>",
                 )
 
                 await msg.channel.send(embed=em)
@@ -241,7 +242,10 @@ class Events(Cog):
             color=self.bot.color,
             timestamp=datetime.datetime.utcnow(),
         )
-        em.set_author(name=after, icon_url=after.display_avatar.url if after.display_avatar else None)
+        em.set_author(
+            name=after,
+            icon_url=after.display_avatar.url if after.display_avatar else None,
+        )
         em.set_footer(text=f"ID: {after.id}")
 
         await channel.send(embed=em)  # type: ignore
