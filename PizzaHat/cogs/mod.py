@@ -63,6 +63,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.command(aliases=["mn"])
     @commands.guild_only()
     @commands.has_permissions(manage_nicknames=True)
+    @commands.bot_has_permissions(manage_nicknames=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def modnick(self, ctx: Context, member: discord.Member):
         """
@@ -83,6 +84,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.command(aliases=["sn"])
     @commands.guild_only()
     @commands.has_permissions(manage_nicknames=True)
+    @commands.bot_has_permissions(manage_nicknames=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def setnick(self, ctx: Context, member: discord.Member, *, nick):
         """
@@ -105,6 +107,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_nicknames=True)
+    @commands.bot_has_permissions(manage_nicknames=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def decancer(self, ctx: Context, member: discord.Member):
         """
@@ -136,6 +139,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.command(aliases=["sm"])
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def slowmode(self, ctx: Context, seconds: int = None):  # type: ignore
         """
@@ -167,15 +171,25 @@ class Mod(Cog, emoji=847248846526087239):
             )
 
     @commands.group(aliases=["lockdown"])
+    @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     async def lock(self, ctx: Context):
-        """Lock management commands."""
-        
+        """
+        Lock management commands.
+
+        In order for this to work, the bot must have Manage Channels permissions.
+
+        To use this command, you must have Manage Channels permission.
+        """
+
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
     @lock.command(name="channel")
+    @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def lock_channel(self, ctx: Context, role: discord.Role = None, channel: discord.TextChannel = None):  # type: ignore
         """
@@ -212,6 +226,7 @@ class Mod(Cog, emoji=847248846526087239):
     @lock.command(name="server")
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def lock_server(self, ctx: Context, role: discord.Role = None):  # type: ignore
         """
@@ -241,9 +256,17 @@ class Mod(Cog, emoji=847248846526087239):
             await ctx.send(embed=em)
 
     @commands.group()
+    @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     async def unlock(self, ctx: Context):
-        """Unlock management commands."""
+        """
+        Unlock management commands.
+
+        In order for this to work, the bot must have Manage Channels permissions.
+
+        To use this command, you must have Manage Channels permission.
+        """
 
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
@@ -251,6 +274,7 @@ class Mod(Cog, emoji=847248846526087239):
     @unlock.command(name="channel")
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def unlock_channel(self, ctx: Context, role: discord.Role = None, channel: discord.TextChannel = None):  # type: ignore
         """
@@ -287,6 +311,7 @@ class Mod(Cog, emoji=847248846526087239):
     @unlock.command(name="server")
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def unlock_server(self, ctx: Context, role: discord.Role = None):  # type: ignore
         """
@@ -323,6 +348,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def hide(self, ctx: Context, role: discord.Role = None, channel: discord.TextChannel = None):  # type: ignore
         """
@@ -346,6 +372,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def expose(self, ctx: Context, role: discord.Role = None, channel: discord.TextChannel = None):  # type: ignore
         """
@@ -369,6 +396,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.command(aliases=["purge"])
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def clear(self, ctx: Context, amount: int = 100):
         """
@@ -399,6 +427,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def cleanup(self, ctx: Context, amount: int = 100):
         """
@@ -430,6 +459,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(kick_members=True)
+    @commands.bot_has_permissions(kick_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def kick(self, ctx: Context, member: discord.Member, *, reason=None):
         """
@@ -453,6 +483,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.command(aliases=["b"])
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def ban(
         self, ctx: Context, member: typing.Union[discord.Member, int], *, reason=None
@@ -486,6 +517,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.command(aliases=["mb"])
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def massban(
         self, ctx: Context, members: commands.Greedy[discord.Member], *, reason=None
@@ -517,6 +549,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.command(aliases=["sb"])
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def softban(self, ctx: Context, member: discord.Member, *, reason=None):
         """Soft bans a member from the server.
@@ -544,6 +577,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.command(aliases=["ub"])
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def unban(self, ctx: Context, id: int):
         """
@@ -570,6 +604,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.command(aliases=["mute"])
     @commands.guild_only()
     @commands.has_permissions(moderate_members=True)
+    @commands.bot_has_permissions(moderate_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def timeout(
         self, ctx: Context, member: discord.Member, duration, *, reason=None
@@ -601,9 +636,10 @@ class Mod(Cog, emoji=847248846526087239):
         except Exception as e:
             print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
 
-    @commands.command()
+    @commands.command(aliases=["untimeout"])
     @commands.guild_only()
     @commands.has_permissions(moderate_members=True)
+    @commands.bot_has_permissions(moderate_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def unmute(self, ctx: Context, member: discord.Member, *, reason=None):
         """
@@ -627,8 +663,15 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.group()
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
     async def role(self, ctx: Context):
-        """Role management commands."""
+        """
+        Role management commands.
+
+        In order for this to work, the bot must have Manage Roles permissions.
+
+        To use this command, you must have Manage Roles permission.
+        """
 
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
@@ -636,6 +679,7 @@ class Mod(Cog, emoji=847248846526087239):
     @role.command(name="add")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def role_add(self, ctx: Context, user: discord.Member, *, role: discord.Role):
         """
@@ -662,6 +706,7 @@ class Mod(Cog, emoji=847248846526087239):
     @role.command(name="remove")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def role_remove(
         self, ctx: Context, user: discord.Member, *, role: discord.Role
@@ -692,6 +737,7 @@ class Mod(Cog, emoji=847248846526087239):
     @role.command(name="create")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def role_create(
         self,
@@ -725,6 +771,7 @@ class Mod(Cog, emoji=847248846526087239):
     @role.command(name="delete")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def role_delete(self, ctx: Context, *, role: discord.Role):
         """
@@ -744,7 +791,7 @@ class Mod(Cog, emoji=847248846526087239):
         except Exception as e:
             print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
 
-    @role.command(aliases=["list", "all"])
+    @role.command(name="list", aliases=["all"])
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def role_list(self, ctx: Context):
@@ -795,9 +842,16 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.group()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def channel(self, ctx: Context):
-        """Channel related commands."""
+        """
+        Channel related commands.
+
+        In order for this to work, the bot must have Manage Channels permissions.
+
+        To use this command, you must have Manage Channels permission.
+        """
 
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
@@ -805,10 +859,15 @@ class Mod(Cog, emoji=847248846526087239):
     @channel.command(name="create")
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def channel_create(self, ctx: Context, name):
         """
         Create a new channel in the server.
+
+        In order for this to work, the bot must have Manage Channels permissions.
+
+        To use this command, you must have Manage Channels permission.
         """
 
         try:
@@ -822,9 +881,16 @@ class Mod(Cog, emoji=847248846526087239):
     @channel.command(name="delete")
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def channel_delete(self, ctx: Context, channel: discord.TextChannel):
-        """Delete a channel in the server."""
+        """
+        Delete a channel in the server.
+
+        In order for this to work, the bot must have Manage Channels permissions.
+
+        To use this command, you must have Manage Channels permission.
+        """
 
         try:
             if ctx.guild is not None:
