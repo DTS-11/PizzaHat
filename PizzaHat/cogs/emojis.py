@@ -49,8 +49,15 @@ class Emojis(Cog, emoji="😀"):
     @commands.group(name="emoji")
     @commands.guild_only()
     @commands.has_permissions(manage_emojis=True)
+    @commands.bot_has_permissions(manage_emojis=True)
     async def _emoji(self, ctx: Context):
-        """Emoji management commands."""
+        """
+        Emoji management commands.
+
+        In order for this to work, the bot must have Manage Emojis permissions.
+
+        To use this command, you must have Manage Emojis permission.
+        """
 
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
@@ -59,6 +66,7 @@ class Emojis(Cog, emoji="😀"):
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_emojis=True)
+    @commands.bot_has_permissions(manage_emojis=True)
     async def create(self, ctx: Context, emoji: EmojiURL, name):
         """
         Creates an emoji for the server under the given name.
@@ -104,6 +112,7 @@ class Emojis(Cog, emoji="😀"):
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_emojis=True)
+    @commands.bot_has_permissions(manage_emojis=True)
     async def delete(self, ctx: Context, emoji: discord.Emoji):
         """
         Deletes an emoji from the server.
@@ -163,10 +172,10 @@ class Emojis(Cog, emoji="😀"):
 
             await ctx.send(embed=embed)
 
-    @_emoji.command()
+    @_emoji.command(name="list", aliases=["all"])
     @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def list(self, ctx: Context):
+    async def emoji_list(self, ctx: Context):
         """Show list of emojis in the server."""
 
         try:
