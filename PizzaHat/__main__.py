@@ -1,8 +1,8 @@
 import os
 
+import core.bot as bot_core
 from core.bot import PizzaHat
 from dotenv import load_dotenv
-import core.bot as bot_core
 
 load_dotenv()
 
