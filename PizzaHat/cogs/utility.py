@@ -27,7 +27,7 @@ class Utility(Cog, emoji="🛠️"):
         self.process = psutil.Process()
 
     @commands.command(aliases=["latency"])
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def ping(self, ctx: Context):
         """Shows latency of bot."""
 
@@ -42,7 +42,7 @@ class Utility(Cog, emoji="🛠️"):
         )
 
     @commands.command()
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def badges(self, ctx: Context, member: discord.Member = None):  # type: ignore
         """
         Shows different badges of a user.
@@ -68,7 +68,7 @@ class Utility(Cog, emoji="🛠️"):
             if member is None:
                 member = ctx.author  # type: ignore
 
-            if member.id == self.bot.owner.id:
+            if self.bot.is_owner(member):
                 badges.append("<:developer:833297795761831956> Developer of PizzaHat")
 
             for roles in member.roles:
@@ -113,7 +113,7 @@ class Utility(Cog, emoji="🛠️"):
                 await ctx.send(embed=em)
 
     @commands.command(aliases=["whois"])
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.guild_only()
     async def userinfo(self, ctx: Context, member: discord.Member = None):  # type: ignore
         """
@@ -136,44 +136,48 @@ class Utility(Cog, emoji="🛠️"):
             else ("No roles")
         )
 
-        em = discord.Embed(color=member.color, timestamp=ctx.message.created_at)
-        em.set_author(name=member)
-
-        em.add_field(name="User ID", value=member.id, inline=False)
-        em.add_field(name="Display Name", value=member.display_name, inline=False)
-        em.add_field(name="Created", value=format_date(member.created_at), inline=False)
+        em = discord.Embed(
+            title="User Information",
+            color=member.color,
+            timestamp=ctx.message.created_at,
+        )
+        em.description = f"""
+    > **Username:** {member}
+    > **Display Name:** {member.display_name}
+    > **Created:** {format_date(member.created_at)}
+    > **ID:** {member.id}
+    {f"> **[User Icon]({member.avatar.url})**" if member.avatar else ""}
+    """
 
         em.add_field(
             name="Joined",
             value=format_date(member.joined_at),  # type: ignore
             inline=False,
         )
+        em.set_thumbnail(
+            url=(
+                member.avatar.url
+                if member.avatar
+                else "https://logos-world.net/wp-content/uploads/2020/12/Discord-Logo.png"
+            )
+        )
+
         em.add_field(name="Roles", value=", ".join(uroles) + user_roles, inline=False)
 
         if member.bot:
             em.add_field(name="Member Bot", value=f"{self.bot.yes} Yes", inline=False)
-
         else:
             em.add_field(name="Member bot", value=f"{self.bot.no} No", inline=False)
 
-        if ctx.author.avatar is not None:
-            em.set_footer(
-                text=f"Requested by {ctx.author}",
-                icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
-            )
-
-        if member.avatar:
-            em.set_thumbnail(url=member.avatar.url)
-
-        else:
-            em.set_thumbnail(
-                url="https://logos-world.net/wp-content/uploads/2020/12/Discord-Logo.png"
-            )
+        em.set_footer(
+            text=f"Requested by {ctx.author}",
+            icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
+        )
 
         await ctx.send(embed=em)
 
     @commands.command()
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.guild_only()
     async def serverinfo(self, ctx: Context):
         """Shows various info about the server."""
@@ -195,11 +199,21 @@ class Utility(Cog, emoji="🛠️"):
             boosts = f"<:booster:983684380134371339> {ctx.guild.premium_subscription_count} Boosts ({boost_level})"
 
             em = discord.Embed(title=ctx.guild.name, color=self.bot.color)
+            em.set_thumbnail(
+                url=(
+                    ctx.guild.icon.url
+                    if ctx.guild.icon
+                    else "https://logos-world.net/wp-content/uploads/2020/12/Discord-Logo.png"
+                )
+            )
+            em.set_footer(text=f"Created at: {formatted_date(ctx.guild.created_at)}")
+
             if ctx.guild.owner is not None:
                 em.description = f"""
-    **Owner:** {ctx.guild.owner.mention} `[{ctx.guild.owner}]`
-    **Description:** {ctx.guild.description if ctx.guild.description else "N/A"}
-    **ID:** {ctx.guild.id}
+    > **Owner:** {ctx.guild.owner.mention} `[{ctx.guild.owner}]`
+    > **Description:** {ctx.guild.description if ctx.guild.description else "N/A"}
+    > **ID:** {ctx.guild.id}
+    {f"> **[Guild Icon]({ctx.guild.icon.url})**" if ctx.guild.icon else ""}
     """
 
             em.add_field(
@@ -246,20 +260,10 @@ class Utility(Cog, emoji="🛠️"):
                 inline=False,
             )
 
-            if ctx.guild.icon:
-                em.set_thumbnail(url=ctx.guild.icon.url)
-
-            else:
-                em.set_thumbnail(
-                    url="https://logos-world.net/wp-content/uploads/2020/12/Discord-Logo.png"
-                )
-
-            em.set_footer(text=f"Created at: {formatted_date(ctx.guild.created_at)}")
-
             await ctx.send(embed=em)
 
     @commands.command()
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.guild_only()
     async def channelinfo(self, ctx: Context, *, channel: discord.TextChannel = None):  # type: ignore
         """
@@ -291,7 +295,7 @@ class Utility(Cog, emoji="🛠️"):
         await ctx.send(embed=e)
 
     @commands.command()
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.guild_only()
     async def vcinfo(self, ctx: Context, vc: discord.VoiceChannel):
         """Shows info about a voice channel."""
@@ -310,7 +314,7 @@ class Utility(Cog, emoji="🛠️"):
         await ctx.send(embed=e)
 
     @commands.command()
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.guild_only()
     async def roleinfo(self, ctx: Context, role: discord.Role):
         """
@@ -357,7 +361,7 @@ class Utility(Cog, emoji="🛠️"):
         return fmt.format(d=days, h=hours, m=minutes, s=seconds)
 
     @commands.command(aliases=["stats"])
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def about(self, ctx: Context):
         """Tells you information about the bot itself."""
 
@@ -470,7 +474,7 @@ class Utility(Cog, emoji="🛠️"):
         await ctx.send(embed=e)
 
     @commands.command(aliases=["perms"])
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def permissions(self, ctx: Context, *, member: discord.Member = None):  # type: ignore
         """Shows a member's permissions.
         If used in DM's, shows your permissions in a DM channel."""
@@ -483,7 +487,7 @@ class Utility(Cog, emoji="🛠️"):
         await self.say_permissions(ctx, member, channel)
 
     @commands.command(aliases=["botperms"])
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def botpermissions(self, ctx: Context):
         """Shows the bot's permissions."""
 
@@ -494,7 +498,7 @@ class Utility(Cog, emoji="🛠️"):
             await self.say_permissions(ctx, member, channel)
 
     @commands.command(aliases=["av"])
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def avatar(self, ctx: Context, member: Optional[Union[discord.Member, discord.User]]):  # type: ignore
         """
         Displays a user's avatar
@@ -514,7 +518,7 @@ class Utility(Cog, emoji="🛠️"):
         await ctx.send(embed=em)
 
     @commands.command()
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def charinfo(self, ctx: Context, *, characters: str):
         """Shows you information about a number of characters.
         Only up to 15 characters at a time.
