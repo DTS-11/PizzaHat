@@ -25,7 +25,7 @@ INITIAL_EXTENSIONS = [
 ]
 
 SUB_EXTENSIONS = [
-    "utils.automod",
+    # "utils.automod",
     "utils.events",
     "utils.help",
 ]
@@ -77,7 +77,7 @@ LOGGING_CONFIG = {
 dictConfig(LOGGING_CONFIG)
 
 description = """
-I'm PizzaHat, a bot made by DTS#5976 to provide some epic server utilities.
+I'm PizzaHat — Your Ultimate Discord Companion 🍕, a bot made by @itsdts.
 I have features such as moderation, utiltity, games and more!
 
 I'm also open source. You can see my code on [GitHub](https://github.com/DTS-11/PizzaHat)
@@ -85,7 +85,6 @@ I'm also open source. You can see my code on [GitHub](https://github.com/DTS-11/
 
 
 class PizzaHat(commands.Bot):
-    bot_app_info: discord.AppInfo
 
     def __init__(self):
         allowed_mentions = discord.AllowedMentions(
@@ -131,9 +130,6 @@ class PizzaHat(commands.Bot):
         print(f"Logged in as {self.user}")
 
     async def setup_hook(self) -> None:
-        self.bot_app_info = await self.application_info()
-        self.owner_id = self.bot_app_info.owner.id
-
         # Create DB connection
         self.db = await db.create_db_pool()
 
@@ -180,15 +176,15 @@ class PizzaHat(commands.Bot):
         elif isinstance(error, commands.NotOwner):
             pass
 
-        if isinstance(error, commands.NoPrivateMessage):
+        elif isinstance(error, commands.NoPrivateMessage):
             await ctx.author.send("This command cannot be used in private messages.")
 
         elif isinstance(error, commands.DisabledCommand):
-            await ctx.author.send("Sorry. This command is disabled and cannot be used.")
+            await ctx.send("Sorry. This command is disabled and cannot be used.")
 
         elif isinstance(error, commands.BotMissingPermissions):
             if error.missing_permissions[0] == "send_messages":
-                return
+                return await ctx.message.add_reaction(self.no)
 
             await ctx.send(
                 "I am missing **{}** permissions.".format(
@@ -231,7 +227,3 @@ class PizzaHat(commands.Bot):
                 )
 
                 await ctx.send(embed=em)
-
-    @property
-    def owner(self) -> discord.User:
-        return self.bot_app_info.owner
