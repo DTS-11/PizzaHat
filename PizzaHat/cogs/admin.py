@@ -18,9 +18,15 @@ class Admin(Cog, emoji=916988537264570368):
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
-    @commands.cooldown(1, 20, commands.BucketType.user)
+    @commands.cooldown(1, 60, commands.BucketType.user)
     async def set(self, ctx: Context):
-        """Use this command to set something up."""
+        """
+        Use this command to set something up.
+
+        In order for this to work, the bot must have Manage Server permissions.
+
+        To use this command, you must have Manage Server permission.
+        """
 
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
@@ -29,11 +35,15 @@ class Admin(Cog, emoji=916988537264570368):
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, 60, commands.BucketType.user)
     async def staffrole(self, ctx: Context, role: discord.Role):
         """
         Set a staff/mod-role.
         To replace the role, simply run this command again.
+
+        In order for this to work, the bot must have Manage Server permissions.
+
+        To use this command, you must have Manage Server permission.
         """
 
         try:
@@ -48,11 +58,15 @@ class Admin(Cog, emoji=916988537264570368):
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, 60, commands.BucketType.user)
     async def logs(self, ctx: Context, channel: discord.TextChannel):
         """
         Set a mod-log channel.
         To replace a log channel, simply run this command again.
+
+        In order for this to work, the bot must have Manage Server permissions.
+
+        To use this command, you must have Manage Server permission.
         """
 
         try:
@@ -68,11 +82,14 @@ class Admin(Cog, emoji=916988537264570368):
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, 60, commands.BucketType.user)
     async def tickets(self, ctx: Context, channel: discord.TextChannel):
         """
-        Set up the Tickets system in the server by
-        sending the `Create Ticket` message.
+        Set up the Tickets system in the server by sending the `Create Ticket` message.
+
+        In order for this to work, the bot must have Manage Server permissions.
+
+        To use this command, you must have Manage Server permission.
         """
 
         em = discord.Embed(
@@ -85,42 +102,6 @@ class Admin(Cog, emoji=916988537264570368):
         view = TicketView(self.bot)
         await channel.send(embed=em, view=view)
         await ctx.message.add_reaction(self.bot.yes)
-
-    @commands.command(name="automod-enable")
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild=True)
-    @commands.bot_has_permissions(manage_guild=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def automod_enable(self, ctx: Context):
-        """
-        Enables auto-mod in the server.
-        """
-
-        try:
-            await self.bot.db.execute("INSERT INTO automod (guild_id, enabled) VALUES ($1, $2)", ctx.guild.id, True)  # type: ignore
-            await ctx.send(f"{self.bot.yes} Auto-mod enabled.")
-
-        except Exception as e:
-            await ctx.send(f"{self.bot.no} Something went wrong...")
-            print(e)
-
-    @commands.command(name="automod-disable")
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild=True)
-    @commands.bot_has_permissions(manage_guild=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def automod_disable(self, ctx: Context):
-        """
-        Disables auto-mod in the server.
-        """
-
-        try:
-            await self.bot.db.execute("DELETE FROM automod WHERE guild_id=$1", ctx.guild.id)  # type: ignore
-            await ctx.send(f"{self.bot.yes} Auto-mod disabled.")
-
-        except Exception as e:
-            await ctx.send(f"{self.bot.no} Something went wrong...")
-            print(e)
 
 
 async def setup(bot):
