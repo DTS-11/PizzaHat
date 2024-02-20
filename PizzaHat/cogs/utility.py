@@ -442,7 +442,7 @@ class Utility(Cog, emoji="🛠️"):
         em = discord.Embed(
             title="New Suggestion",
             description=f"> {suggestion}",
-            color=self.bot.success,
+            color=discord.Color.green(),
             timestamp=ctx.message.created_at,
         )
 

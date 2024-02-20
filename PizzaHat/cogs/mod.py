@@ -250,7 +250,7 @@ class Mod(Cog, emoji=847248846526087239):
             em = discord.Embed(
                 title=f"{self.bot.yes} Server Locked",
                 description=f"The server has been locked by a staff member. You are **not muted**.",
-                color=self.bot.success,
+                color=discord.Color.green(),
             )
 
             await ctx.send(embed=em)
@@ -340,7 +340,7 @@ class Mod(Cog, emoji=847248846526087239):
             em = discord.Embed(
                 title=f"{self.bot.yes} Server Unlocked",
                 description=f"The server has been unlocked.",
-                color=self.bot.success,
+                color=discord.Color.green(),
             )
 
             await ctx.send(embed=em)
@@ -1029,7 +1029,7 @@ class Mod(Cog, emoji=847248846526087239):
                 em = discord.Embed(
                     title=f"{self.bot.yes} Warned User",
                     description=f"Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}",
-                    color=self.bot.success,
+                    color=discord.Color.green(),
                     timestamp=datetime.datetime.utcnow(),
                 )
 
@@ -1055,7 +1055,7 @@ class Mod(Cog, emoji=847248846526087239):
             em = discord.Embed(
                 title=f"Warnings of {member.name}",
                 description=f"{self.bot.yes} This user has no warns!",
-                color=self.bot.success,
+                color=discord.Color.green(),
                 timestamp=datetime.datetime.utcnow(),
             )
             em.set_thumbnail(url=member.avatar.url)

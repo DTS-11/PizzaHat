@@ -38,7 +38,7 @@ class Meta(Cog, emoji="😎"):
         if self.bot.user and self.bot.user.avatar is not None:
             em = discord.Embed(
                 title="Credits",
-                color=self.bot.success,
+                color=discord.Color.green(),
                 timestamp=ctx.message.created_at,
             )
             em.set_thumbnail(url=self.bot.user.avatar.url)
