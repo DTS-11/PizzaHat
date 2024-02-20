@@ -98,6 +98,7 @@ class PizzaHat(commands.Bot):
             voice_states=True,
             messages=True,
             reactions=True,
+            integrations=True,
             message_content=True,
             auto_moderation=True,
         )
@@ -119,8 +120,6 @@ class PizzaHat(commands.Bot):
         self.yes = "<:yes:813819712953647206>"
         self.no = "<:no:829841023445631017>"
         self.color = 0x456DD4
-        self.success = discord.Color.green()
-        self.failed = discord.Color.red()
         self.session = aiohttp.ClientSession()
 
     async def on_ready(self):
