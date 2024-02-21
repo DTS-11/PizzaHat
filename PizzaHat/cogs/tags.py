@@ -15,7 +15,6 @@ class Tags(Cog, emoji="🏷"):
 
     @commands.group()
     @commands.guild_only()
-    @commands.cooldown(1, 5, commands.BucketType.user)
     async def tag(self, ctx: Context):
         """Tag commands."""
 

@@ -843,7 +843,6 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
     async def channel(self, ctx: Context):
         """
         Channel related commands.

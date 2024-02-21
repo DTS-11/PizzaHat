@@ -18,7 +18,6 @@ class Admin(Cog, emoji=916988537264570368):
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
-    @commands.cooldown(1, 60, commands.BucketType.user)
     async def set(self, ctx: Context):
         """
         Use this command to set something up.
