@@ -19,7 +19,15 @@ class Mod(Cog, emoji=847248846526087239):
         self.bot: PizzaHat = bot
 
     async def warn_log(self, guild_id, user_id):
-        data = await self.bot.db.fetchrow("SELECT * FROM warnlogs WHERE guild_id=$1 AND user_id=$2", guild_id, user_id)  # type: ignore
+        data = (
+            await self.bot.db.fetchrow(
+                "SELECT * FROM warnlogs WHERE guild_id=$1 AND user_id=$2",
+                guild_id,
+                user_id,
+            )
+            if self.bot.db
+            else None
+        )
 
         if not data:
             print("No data")
@@ -31,7 +39,17 @@ class Mod(Cog, emoji=847248846526087239):
         data = await self.warn_log(guild_id, user_id)
 
         if data == []:
-            await self.bot.db.execute("INSERT INTO warnlogs (guild_id, user_id, warns, time) VALUES ($1, $2, $3, $4)", guild_id, user_id, [reason], [time])  # type: ignore
+            (
+                await self.bot.db.execute(
+                    "INSERT INTO warnlogs (guild_id, user_id, warns, time) VALUES ($1, $2, $3, $4)",
+                    guild_id,
+                    user_id,
+                    [reason],
+                    [time],
+                )
+                if self.bot.db
+                else None
+            )
             return
 
         if data is not None:
@@ -46,7 +64,17 @@ class Mod(Cog, emoji=847248846526087239):
                 warns.append(reason)
                 times.append(time)
 
-            await self.bot.db.execute("UPDATE warnlogs SET time = $1, warns = $2 WHERE guild_id = $3 AND user_id = $4", times, warns, guild_id, user_id)  # type: ignore
+            (
+                await self.bot.db.execute(
+                    "UPDATE warnlogs SET time = $1, warns = $2 WHERE guild_id = $3 AND user_id = $4",
+                    times,
+                    warns,
+                    guild_id,
+                    user_id,
+                )
+                if self.bot.db
+                else None
+            )
 
     async def delete_warn(self, guild_id, user_id, index):
         data = await self.warn_log(guild_id, user_id)
@@ -55,10 +83,28 @@ class Mod(Cog, emoji=847248846526087239):
             if len(data[2]) >= 1:
                 data[2].remove(data[2][index])
                 data[3].remove(data[3][index])
-                return await self.bot.db.execute("UPDATE warnlogs SET warns = $1, time = $2 WHERE guild_id = $3 AND user_id = $4", data[2], data[3], guild_id, user_id)  # type: ignore
+                return (
+                    await self.bot.db.execute(
+                        "UPDATE warnlogs SET warns = $1, time = $2 WHERE guild_id = $3 AND user_id = $4",
+                        data[2],
+                        data[3],
+                        guild_id,
+                        user_id,
+                    )
+                    if self.bot.db
+                    else None
+                )
 
             else:
-                await self.bot.db.execute("DELETE FROM warnlogs WHERE guild_id = $1 AND user_id = $2", guild_id, user_id)  # type: ignore
+                (
+                    await self.bot.db.execute(
+                        "DELETE FROM warnlogs WHERE guild_id = $1 AND user_id = $2",
+                        guild_id,
+                        user_id,
+                    )
+                    if self.bot.db
+                    else None
+                )
 
     @commands.command(aliases=["mn"])
     @commands.guild_only()

@@ -21,7 +21,6 @@ class TicketView(ui.View):
         emoji="<:ticket_emoji:1004648922158989404>", custom_id="create_ticket_btn"
     )
     async def create_ticket(self, interaction: Interaction, button: ui.Button):
-
         if interaction.guild is not None:
             staff_role = interaction.guild.get_role(
                 await self.get_staff_role(interaction.guild.id)
@@ -52,7 +51,10 @@ class TicketView(ui.View):
 
                 if interaction.user.avatar is not None:
                     em.set_footer(
-                        text=interaction.user, icon_url=interaction.user.avatar.url if interaction.user.avatar else None
+                        text=interaction.user,
+                        icon_url=interaction.user.avatar.url
+                        if interaction.user.avatar
+                        else None,
                     )
                 else:
                     em.set_footer(text=interaction.user)
