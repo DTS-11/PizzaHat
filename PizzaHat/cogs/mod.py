@@ -18,94 +18,6 @@ class Mod(Cog, emoji=847248846526087239):
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
-    async def warn_log(self, guild_id, user_id):
-        data = (
-            await self.bot.db.fetchrow(
-                "SELECT * FROM warnlogs WHERE guild_id=$1 AND user_id=$2",
-                guild_id,
-                user_id,
-            )
-            if self.bot.db
-            else None
-        )
-
-        if not data:
-            print("No data")
-
-        else:
-            return data
-
-    async def warn_entry(self, guild_id, user_id, reason, time):
-        data = await self.warn_log(guild_id, user_id)
-
-        if data == []:
-            (
-                await self.bot.db.execute(
-                    "INSERT INTO warnlogs (guild_id, user_id, warns, time) VALUES ($1, $2, $3, $4)",
-                    guild_id,
-                    user_id,
-                    [reason],
-                    [time],
-                )
-                if self.bot.db
-                else None
-            )
-            return
-
-        if data is not None:
-            warns = data[2]
-            times = data[3]
-
-            if not warns:
-                warns = [reason]
-                times = [time]
-
-            else:
-                warns.append(reason)
-                times.append(time)
-
-            (
-                await self.bot.db.execute(
-                    "UPDATE warnlogs SET time = $1, warns = $2 WHERE guild_id = $3 AND user_id = $4",
-                    times,
-                    warns,
-                    guild_id,
-                    user_id,
-                )
-                if self.bot.db
-                else None
-            )
-
-    async def delete_warn(self, guild_id, user_id, index):
-        data = await self.warn_log(guild_id, user_id)
-
-        if data is not None:
-            if len(data[2]) >= 1:
-                data[2].remove(data[2][index])
-                data[3].remove(data[3][index])
-                return (
-                    await self.bot.db.execute(
-                        "UPDATE warnlogs SET warns = $1, time = $2 WHERE guild_id = $3 AND user_id = $4",
-                        data[2],
-                        data[3],
-                        guild_id,
-                        user_id,
-                    )
-                    if self.bot.db
-                    else None
-                )
-
-            else:
-                (
-                    await self.bot.db.execute(
-                        "DELETE FROM warnlogs WHERE guild_id = $1 AND user_id = $2",
-                        guild_id,
-                        user_id,
-                    )
-                    if self.bot.db
-                    else None
-                )
-
     @commands.command(aliases=["mn"])
     @commands.guild_only()
     @commands.has_permissions(manage_nicknames=True)
@@ -1064,11 +976,16 @@ class Mod(Cog, emoji=847248846526087239):
                             "You cant warn someone that has higher or same role heirarchy."
                         )
 
-                await self.warn_entry(
-                    ctx.guild.id,
-                    member.id,
-                    reason,
-                    float(ctx.message.created_at.timestamp()),
+                (
+                    await self.bot.db.execute(
+                        "INSERT INTO warnlogs (guild_id, user_id, mod_id, reason) VALUES ($1, $2, $3, $4)",
+                        ctx.guild.id,
+                        member.id,
+                        ctx.author.id,
+                        reason,
+                    )
+                    if self.bot.db
+                    else None
                 )
 
                 em = discord.Embed(
@@ -1077,6 +994,11 @@ class Mod(Cog, emoji=847248846526087239):
                     color=discord.Color.green(),
                     timestamp=datetime.datetime.utcnow(),
                 )
+                em.set_author(
+                    name=ctx.author,
+                    url=ctx.author.avatar.url if ctx.author.avatar else None,
+                )
+                em.set_thumbnail(url=member.avatar.url if member.avatar else None)
 
                 await ctx.send(embed=em)
 
@@ -1092,42 +1014,52 @@ class Mod(Cog, emoji=847248846526087239):
         If no user is given, the bot sends your warnings.
         """
 
-        if member is None:
-            member = ctx.author  # type: ignore
+        member = member or ctx.author
 
-        if ctx.guild and member.avatar is not None:
-            data = await self.warn_log(ctx.guild.id, member.id)
+        if ctx.guild is not None:
+            records = (
+                await self.bot.db.fetch(
+                    "SELECT * FROM warnlogs WHERE user_id = $1 AND guild_id = $2",
+                    member.id,
+                    ctx.guild.id,
+                )
+                if self.bot.db
+                else None
+            )
+
             em = discord.Embed(
-                title=f"Warnings of {member.name}",
-                description=f"{self.bot.yes} This user has no warns!",
-                color=discord.Color.green(),
+                title="",
+                description="",
                 timestamp=datetime.datetime.utcnow(),
             )
-            em.set_thumbnail(url=member.avatar.url)
+            em.set_thumbnail(url=member.avatar.url if member.avatar else None)
 
-            if not data:
+            if not records:
+                em.title = f"Warnings of {member.name}"
+                em.description = "✨ This user has no warns!"
+                em.color = discord.Color.green()
+
                 return await ctx.send(embed=em)
 
-            if not len(data[2]):
-                return await ctx.send(embed=em)
-
-            for i in range(len(data[2])):
-                reason = data[2][i]
-
-                em = discord.Embed(
-                    title=f"Warnings of {member.name} | {len(data[2])} warns",
-                    description=f"Reason: {reason}\nWarn ID: `{data[3][i]}`",
-                    color=self.bot.color,
-                    timestamp=datetime.datetime.utcnow(),
+            else:
+                warning_list = "\n".join(
+                    [
+                        f"**ID:** {record['id']}\n**Reason:** {record['reason']}\n**Moderator:** {ctx.guild.get_member(record['mod_id'])}\n"
+                        for record in records
+                    ]
                 )
 
-            await ctx.send(embed=em)
+                em.title = f"Warnings of {member.name} | {len(records)} warns"
+                em.description = warning_list
+                em.color = self.bot.color
+
+                return await ctx.send(embed=em)
 
     @commands.command(aliases=["delwarn"])
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def deletewarn(self, ctx: Context, member: discord.Member, warn_id: float):
+    async def deletewarn(self, ctx: Context, member: discord.Member, warn_id: int):
         """
         Deletes a warn of the user with warn ID.
 
@@ -1135,20 +1067,26 @@ class Mod(Cog, emoji=847248846526087239):
         """
 
         try:
-            if ctx.guild is not None:
-                data = await self.warn_log(ctx.guild.id, member.id)
-                if data == []:
-                    return await ctx.send(f"{self.bot.no} This user has no warns!")
+            result = (
+                await self.bot.db.execute(
+                    "DELETE FROM warnlogs WHERE id = $1 AND user_id = $2 AND guild_id = $3",
+                    warn_id,
+                    member.id,
+                    ctx.guild.id,
+                )
+                if self.bot.db and ctx.guild
+                else None
+            )
 
-                if data[2] and warn_id in data[3]:  # type: ignore
-                    index = data[3].index(warn_id)  # type: ignore
-                    await self.delete_warn(ctx.guild.id, member.id, index)
-                    return await ctx.send(f"{self.bot.yes} Warn entry deleted!")
+            if result == "DELETE 0":
+                await ctx.send(
+                    f"{self.bot.no} Warn ID: `{warn_id}` not found for {member}."
+                )
 
-                else:
-                    return await ctx.send(
-                        f"{self.bot.no} No warn entry found for this user."
-                    )
+            else:
+                await ctx.send(
+                    f"{self.bot.yes} Warn ID `{warn_id}` for {member} has been deleted."
+                )
 
         except Exception as e:
             print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
