@@ -20,6 +20,7 @@ class TicketView(ui.View):
     @ui.button(
         emoji="<:ticket_emoji:1004648922158989404>", custom_id="create_ticket_btn"
     )
+    @commands.bot_has_permissions(create_private_threads=True)
     async def create_ticket(self, interaction: Interaction, button: ui.Button):
         if interaction.guild is not None:
             staff_role = interaction.guild.get_role(
@@ -27,14 +28,6 @@ class TicketView(ui.View):
             )
 
             if staff_role is not None:
-                # KEEPING THIS FOR FUTURE (NEED PRESENCE INTENT)
-                # online_staff = [
-                #     member
-                #     for member in staff_role.members
-                #     if member.status != discord.Status.offline
-                # ]
-                # staff_mention = None
-
                 thread = await interaction.channel.create_thread(  # type: ignore
                     name=f"{interaction.user}-ticket",
                     reason=f"Ticket created by {interaction.user}",
@@ -48,48 +41,13 @@ class TicketView(ui.View):
                     color=self.bot.color,
                     timestamp=interaction.created_at,
                 )
-
-                if interaction.user.avatar is not None:
-                    em.set_footer(
-                        text=interaction.user,
-                        icon_url=interaction.user.avatar.url
-                        if interaction.user.avatar
-                        else None,
-                    )
-                else:
-                    em.set_footer(text=interaction.user)
-
-                # if online_staff:
-                #     random_staff_member = random.choice(online_staff)
-                #     staff_mention = random_staff_member.mention
-
-                #     await thread.add_user(random_staff_member)
-                #     await thread.send(
-                #         content=f"{staff_mention} | {interaction.user.mention}",
-                #         embed=em,
-                #         view=TicketSettings(thread.id),
-                #     )
-
-                # else:
-                #     await thread.send(
-                #         content=f"{interaction.user.mention}",
-                #         embed=em,
-                #         view=TicketSettings(thread.id),
-                #     )
+                em.set_footer(text=interaction.user, icon_url=interaction.user.avatar.url if interaction.user.avatar else None)
 
                 await thread.send(
                     content=f"{interaction.user.mention}",
                     embed=em,
                     view=TicketSettings(thread.id),
                 )
-
-                # Send ephemeral follow-up message
-                await interaction.response.send_message(
-                    content=f"Ticket created in {thread.mention}",
-                    ephemeral=True,
-                    delete_after=5,
-                )
-
                 self.thread_id = thread.id
 
 
@@ -104,10 +62,10 @@ class TicketSettings(ui.View):
             thread = interaction.guild.get_thread(self.thread_id)
 
             if thread:
-                await thread.edit(archived=True, locked=True)
                 await interaction.response.send_message(
                     content="Ticket thread has been archived!"
                 )
+                await thread.edit(archived=True, locked=True)
             else:
                 await interaction.followup.send("Unable to find ticket thread!")
 
