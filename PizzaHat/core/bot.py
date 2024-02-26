@@ -2,6 +2,7 @@ import datetime
 import logging
 import sys
 import traceback
+from importlib import import_module
 from logging.config import dictConfig
 
 import aiohttp
@@ -77,7 +78,7 @@ LOGGING_CONFIG = {
 dictConfig(LOGGING_CONFIG)
 
 description = """
-I'm PizzaHat — Your Ultimate Discord Companion 🍕, a bot made by @itsdts.
+I'm PizzaHat — Your Ultimate Discord Companion, a bot made by @itsdts.
 I have features such as moderation, utiltity, games and more!
 
 I'm also open source. You can see my code on [GitHub](https://github.com/DTS-11/PizzaHat)
@@ -85,7 +86,6 @@ I'm also open source. You can see my code on [GitHub](https://github.com/DTS-11/
 
 
 class PizzaHat(commands.Bot):
-
     def __init__(self):
         allowed_mentions = discord.AllowedMentions(
             roles=False, everyone=False, users=True
@@ -122,15 +122,18 @@ class PizzaHat(commands.Bot):
         self.color = 0x456DD4
         self.session = aiohttp.ClientSession()
 
-    async def on_ready(self):
+    async def setup_hook(self) -> None:
         if not hasattr(self, "uptime"):
             self.uptime = datetime.datetime.utcnow()
 
         print(f"Logged in as {self.user}")
 
-    async def setup_hook(self) -> None:
         # Create DB connection
         self.db = await db.create_db_pool()
+
+        # Make the tickets view persistent
+        ticket_view = import_module("cogs.tickets").TicketView(self)
+        self.add_view(ticket_view)
 
         # Loading cogs...
         success = fail = 0
