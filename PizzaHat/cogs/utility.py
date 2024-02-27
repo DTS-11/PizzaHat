@@ -51,22 +51,20 @@ class Utility(Cog, emoji="🛠️"):
         This command can be only used in the support server.
         """
 
-        # thanks to Dominik#3040 for helping me out with this command.
-        if ctx.guild.id != 764049436275114004:  # type: ignore
+        # thanks to .ddominik (Dominik#3040) for helping me out with this command.
+        if ctx.guild.id != 764049436275114004 if ctx.guild else None:
             return await ctx.send(
                 "This command can be only used in the support server.\nhttps://discord.gg/WhNVDTF"
             )
 
         badges = []
+        member = member or ctx.author
 
         if ctx.guild is not None:
             staff_role = ctx.guild.get_role(849669358316683284)
             partner_role = ctx.guild.get_role(972071921791410188)
             booster_role = ctx.guild.get_role(782258520791449600)
             contrib_role = ctx.guild.get_role(950785470286163988)
-
-            if member is None:
-                member = ctx.author  # type: ignore
 
             if self.bot.is_owner(member):
                 badges.append("<:developer:833297795761831956> Developer of PizzaHat")
@@ -112,7 +110,7 @@ class Utility(Cog, emoji="🛠️"):
 
                 await ctx.send(embed=em)
 
-    @commands.command(aliases=["whois"])
+    @commands.command()
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.guild_only()
     async def userinfo(self, ctx: Context, member: discord.Member = None):  # type: ignore
@@ -121,11 +119,35 @@ class Utility(Cog, emoji="🛠️"):
         If no user is given, returns info about yourself.
         """
 
-        if member is None:
-            member = ctx.author  # type: ignore
-
+        member = member or ctx.author
         uroles = [role.mention for role in member.roles if not role.is_default()]
         uroles.reverse()
+
+        user_badges_flags = {
+            "hypesquad_bravery": "<:bravery:876078067548835850>",
+            "hypesquad_balance": "<:balance:876078067297173534>",
+            "hypesquad_brilliance": "<:brilliance:876078066848366662>",
+            "hypesquad": "<:hypesquad:876081552826728459>",
+            "partner": "<:partner:916988537033875468>",
+            "verified_bot_developer": "<:developer:833297795761831956>",
+            "active_developer": "<:activedev:1211600070819192922>",
+            "bug_hunter_lvl_1": "<:bug_hunter_lvl1:876079074693480508> ",
+            "bug_hunter_lvl_2": "<:bug_hunter_lvl2:876079074647371796>",
+            "early_supporter": "<:supporter:843936375941103646>",
+            "staff": "<:staff:916988537264570368>",
+            "discord_certified_moderator": "<:certified_mod_badge:1211597953433862144>",
+        }
+        misc_flags_descriptions = {
+            "team_user": "Application Team User",
+            "system": "System User",
+            "spammer": "Spammer",
+            "verified_bot": "Verified Bot",
+            "bot_http_interactions": "HTTP Interactions Bot",
+        }
+
+        set_flags = {flag for flag, value in member.public_flags if value}
+        subset_flags = set_flags & user_badges_flags.keys()
+        badges = [user_badges_flags[flag] for flag in subset_flags]
 
         if len(uroles) > 15:
             uroles = [f"{', '.join(uroles[:10])} (+{len(member.roles) - 11})"]
@@ -163,11 +185,28 @@ class Utility(Cog, emoji="🛠️"):
         )
 
         em.add_field(name="Roles", value=", ".join(uroles) + user_roles, inline=False)
+        em.add_field(
+            name="Member Bot",
+            value=f"{self.bot.yes} Yes" if member.bot else f"{self.bot.no} No",
+            inline=False,
+        )
 
-        if member.bot:
-            em.add_field(name="Member Bot", value=f"{self.bot.yes} Yes", inline=False)
-        else:
-            em.add_field(name="Member bot", value=f"{self.bot.no} No", inline=False)
+        if ctx.guild is not None:
+            if ctx.guild.owner_id == member.id:
+                badges.append("<:owner:1211601449885110303>")
+
+            elif (
+                isinstance(member, discord.Member) and member.premium_since is not None
+            ):
+                em.add_field(
+                    name="Boosted",
+                    value=format_date(member.premium_since),
+                    inline=False,
+                )
+                badges.append("<:booster:983684380134371339>")
+
+        if badges:
+            em.add_field(name="Badges", value=" ".join(badges), inline=False)
 
         em.set_footer(
             text=f"Requested by {ctx.author}",
@@ -479,10 +518,8 @@ class Utility(Cog, emoji="🛠️"):
         """Shows a member's permissions.
         If used in DM's, shows your permissions in a DM channel."""
 
+        member = member or ctx.author
         channel = ctx.message.channel
-
-        if member is None:
-            member = ctx.author  # type: ignore
 
         await self.say_permissions(ctx, member, channel)
 
