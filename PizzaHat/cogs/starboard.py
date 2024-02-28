@@ -39,7 +39,7 @@ class Starboard(Cog, emoji="⭐"):
         try:
             (
                 await self.bot.db.execute(
-                    "INSERT INTO starboard (guild_id, channel_id) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET channel_id=$2",
+                    "INSERT INTO star_config (guild_id, channel_id) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET channel_id=$2",
                     ctx.guild.id,
                     channel.id,
                 )
@@ -72,7 +72,7 @@ class Starboard(Cog, emoji="⭐"):
 
             (
                 await self.bot.db.execute(
-                    "INSERT INTO starboard (guild_id, star_count) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET star_count=$2",
+                    "INSERT INTO star_config (guild_id, star_count) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET star_count=$2",
                     ctx.guild.id,
                     count,
                 )
@@ -105,7 +105,7 @@ class Starboard(Cog, emoji="⭐"):
 
             (
                 await self.bot.db.execute(
-                    "INSERT INTO starboard (guild_id, self_star) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET self_star=$2",
+                    "INSERT INTO star_config (guild_id, self_star) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET self_star=$2",
                     ctx.guild.id,
                     enable,
                 )
