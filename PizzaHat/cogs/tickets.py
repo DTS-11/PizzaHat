@@ -41,7 +41,12 @@ class TicketView(ui.View):
                     color=self.bot.color,
                     timestamp=interaction.created_at,
                 )
-                em.set_footer(text=interaction.user, icon_url=interaction.user.avatar.url if interaction.user.avatar else None)
+                em.set_footer(
+                    text=interaction.user,
+                    icon_url=interaction.user.avatar.url
+                    if interaction.user.avatar
+                    else None,
+                )
 
                 await thread.send(
                     content=f"{interaction.user.mention}",
