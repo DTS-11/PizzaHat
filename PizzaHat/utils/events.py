@@ -1,14 +1,10 @@
 import datetime
 import os
+from typing import List
 
 import discord
-
-# import requests
-# import topgg
 from core.bot import PizzaHat
 from core.cog import Cog
-
-# from discord.ext import tasks
 from dotenv import load_dotenv
 from humanfriendly import format_timespan
 
@@ -26,11 +22,13 @@ class Events(Cog):
         # bot.loop.create_task(self.update_stats())
 
     async def get_logs_channel(self, guild_id: int):
-        """Returns channel id & fetches the channel set for guild logs."""
-
-        data = await self.bot.db.fetchval("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)  # type: ignore
-        if data:
-            return self.bot.get_channel(data)
+        return (
+            await self.bot.db.fetchval(
+                "SELECT channel_id FROM modlogs WHERE guild_id = $1", guild_id
+            )
+            if self.bot.db
+            else None
+        )
 
     # @tasks.loop(hours=24)
     # async def update_stats(self):
@@ -56,42 +54,46 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_ready(self):
+        if self.bot.db is not None:
+            await self.bot.db.execute(
+                """CREATE TABLE IF NOT EXISTS warnlogs 
+                (id SERIAL PRIMARY KEY, guild_id BIGINT, user_id BIGINT, mod_id BIGINT, reason TEXT)"""
+            )
 
-        await self.bot.db.execute(  # type: ignore
-            """CREATE TABLE IF NOT EXISTS warnlogs 
-            (guild_id BIGINT, user_id BIGINT, warns TEXT[], time NUMERIC[])"""
-        )
+            await self.bot.db.execute(
+                """CREATE TABLE IF NOT EXISTS modlogs 
+                (guild_id BIGINT PRIMARY KEY, channel_id BIGINT)"""
+            )
 
-        await self.bot.db.execute(  # type: ignore
-            """CREATE TABLE IF NOT EXISTS modlogs 
-            (guild_id BIGINT PRIMARY KEY, channel_id BIGINT)"""
-        )
+            await self.bot.db.execute(
+                """CREATE TABLE IF NOT EXISTS automod 
+                (guild_id BIGINT PRIMARY KEY, enabled BOOL)"""
+            )
 
-        await self.bot.db.execute(  # type: ignore
-            """CREATE TABLE IF NOT EXISTS automod 
-            (guild_id BIGINT PRIMARY KEY, enabled BOOL)"""
-        )
+            await self.bot.db.execute(
+                """CREATE TABLE IF NOT EXISTS staff_role 
+                (guild_id BIGINT PRIMARY KEY, role_id BIGINT)"""
+            )
 
-        await self.bot.db.execute(  # type: ignore
-            """CREATE TABLE IF NOT EXISTS staff_role 
-            (guild_id BIGINT PRIMARY KEY, role_id BIGINT)"""
-        )
+            await self.bot.db.execute(
+                """CREATE TABLE IF NOT EXISTS tags 
+                (guild_id BIGINT PRIMARY KEY, tag_name TEXT, content TEXT, creator BIGINT)"""
+            )
 
-        await self.bot.db.execute(  # type: ignore
-            """CREATE TABLE IF NOT EXISTS tags 
-            (guild_id BIGINT, tag_name TEXT, content TEXT, creator BIGINT)"""
-        )
+            await self.bot.db.execute(
+                """CREATE TABLE IF NOT EXISTS star_config 
+                (guild_id BIGINT PRIMARY KEY, channel_id BIGINT, star_count INT DEFAULT 5, self_star BOOL DEFAULT true)"""
+            )
 
-        await self.bot.db.execute(  # type: ignore
-            """CREATE TABLE IF NOT EXISTS starboard 
-            (guild_id BIGINT PRIMARY KEY, channel_id BIGINT, message_id BIGINT, star_count INT DEFAULT 10)"""
-        )
+            await self.bot.db.execute(
+                """CREATE TABLE IF NOT EXISTS star_info 
+                (guild_id BIGINT, user_msg_id BIGINT, bot_msg_id BIGINT)"""
+            )
 
     # ====== MESSAGE LOGS ======
 
     @Cog.listener()
     async def on_message(self, msg: discord.Message):
-
         if self.bot and self.bot.user is not None:
             bot_id = self.bot.user.id
 
@@ -105,15 +107,14 @@ class Events(Cog):
                 em = discord.Embed(color=self.bot.color)
                 em.add_field(
                     name="Hello! <a:wave_animated:783393435242463324>",
-                    value=f"I'm {self.bot.user.name} — Your Ultimate Discord Companion 🍕.\nTo get started, my prefix is `p!` or `P!` or <@{bot_id}>",
+                    value=f"I'm {self.bot.user.name} — Your Ultimate Discord Companion.\nTo get started, my prefix is `p!` or `P!` or <@{bot_id}>",
                 )
 
                 await msg.channel.send(embed=em)
 
     @Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
-
-        channel = await self.get_logs_channel(before.guild.id)  # type: ignore
+        channel = await self.get_logs_channel(before.guild.id) if before.guild else None
 
         if not channel:
             return
@@ -126,8 +127,8 @@ class Events(Cog):
 
         em = discord.Embed(
             title=f"Message edited in #{before.channel}",
-            color=self.bot.success,
-            timestamp=before.created_at,
+            color=discord.Color.green(),
+            timestamp=datetime.datetime.utcnow(),
         )
         em.add_field(name="- Before", value=before.content, inline=False)
         em.add_field(name="+ After", value=after.content, inline=False)
@@ -141,8 +142,7 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_message_delete(self, msg: discord.Message):
-
-        channel = await self.get_logs_channel(msg.guild.id)  # type: ignore
+        channel = await self.get_logs_channel(msg.guild.id) if msg.guild else None
 
         if not channel:
             return
@@ -153,8 +153,8 @@ class Events(Cog):
         em = discord.Embed(
             title=f"Message deleted in #{msg.channel}",
             description=msg.content,
-            color=self.bot.failed,
-            timestamp=msg.created_at,
+            color=discord.Color.red(),
+            timestamp=datetime.datetime.utcnow(),
         )
         em.set_author(
             name=msg.author,
@@ -164,11 +164,33 @@ class Events(Cog):
 
         await channel.send(embed=em)  # type: ignore
 
+    @Cog.listener()
+    async def on_bulk_message_delete(self, msgs: List[discord.Message]):
+        channel = (
+            await self.get_logs_channel(msgs[0].guild.id) if msgs[0].guild else None
+        )
+
+        if not channel:
+            return
+
+        em = discord.Embed(
+            title="Bulk message deleted",
+            description=f"**{len(msgs)}** messages deleted in {msgs[0].channel}",
+            color=discord.Color.red(),
+            timestamp=datetime.datetime.utcnow(),
+        )
+        em.set_author(
+            name=msgs[0].author,
+            icon_url=msgs[0].author.avatar.url if msgs[0].author.avatar else None,
+        )
+        em.set_footer(text=f"User ID: {msgs[0].author.id}")
+
+        await channel.send(embed=em)
+
     # ====== MEMBER LOGS ======
 
     @Cog.listener()
     async def on_member_ban(self, guild: discord.Guild, user: discord.User):
-
         channel = await self.get_logs_channel(guild.id)
 
         if not channel:
@@ -176,7 +198,7 @@ class Events(Cog):
 
         em = discord.Embed(
             title="Member banned",
-            color=self.bot.failed,
+            color=discord.Color.red(),
             timestamp=datetime.datetime.utcnow(),
         )
 
@@ -185,11 +207,10 @@ class Events(Cog):
         em.set_author(name=user, icon_url=user.avatar.url if user.avatar else None)
         em.set_footer(text=f"User ID: {user.id}")
 
-        await channel.send(embed=em)  # type: ignore
+        await channel.send(embed=em)
 
     @Cog.listener()
     async def on_member_unban(self, guild: discord.Guild, user: discord.User):
-
         channel = await self.get_logs_channel(guild.id)
 
         if not channel:
@@ -197,7 +218,7 @@ class Events(Cog):
 
         em = discord.Embed(
             title="Member unbanned",
-            color=self.bot.success,
+            color=discord.Color.green(),
             timestamp=datetime.datetime.utcnow(),
         )
 
@@ -205,11 +226,10 @@ class Events(Cog):
         em.set_author(name=user, icon_url=user.avatar.url if user.avatar else None)
         em.set_footer(text=f"User ID: {user.id}")
 
-        await channel.send(embed=em)  # type: ignore
+        await channel.send(embed=em)
 
     @Cog.listener(name="on_member_update")
     async def member_role_update(self, before: discord.Member, after: discord.Member):
-
         channel = await self.get_logs_channel(before.guild.id)
         roles = []
         role_text = ""
@@ -248,9 +268,9 @@ class Events(Cog):
         )
         em.set_footer(text=f"ID: {after.id}")
 
-        await channel.send(embed=em)  # type: ignore
+        await channel.send(embed=em)
 
-    @Cog.listener("on_member_update")
+    @Cog.listener(name="on_member_update")
     async def member_nickname_update(
         self, before: discord.Member, after: discord.Member
     ):
@@ -274,7 +294,7 @@ class Events(Cog):
         )
         em.set_footer(text=f"ID: {after.id}")
 
-        await channel.send(embed=em)  # type: ignore
+        await channel.send(embed=em)
 
     # ====== ROLE LOGS ======
 
@@ -286,13 +306,15 @@ class Events(Cog):
             return
 
         em = discord.Embed(
-            title="New role created", color=self.bot.success, timestamp=role.created_at
+            title="New role created",
+            color=discord.Color.green(),
+            timestamp=datetime.datetime.utcnow(),
         )
         em.add_field(name="Name", value=role.name, inline=False)
         em.add_field(name="Color", value=role.color, inline=False)
         em.set_footer(text=f"Role ID: {role.id}")
 
-        await channel.send(embed=em)  # type: ignore
+        await channel.send(embed=em)
 
     @Cog.listener()
     async def on_guild_role_delete(self, role: discord.Role):
@@ -303,14 +325,14 @@ class Events(Cog):
 
         em = discord.Embed(
             title="Role deleted",
-            color=self.bot.failed,
+            color=discord.Color.red(),
             timestamp=datetime.datetime.utcnow(),
         )
         em.add_field(name="Name", value=role.name, inline=False)
         em.add_field(name="Color", value=role.color, inline=False)
         em.set_footer(text=f"Role ID: {role.id}")
 
-        await channel.send(embed=em)  # type: ignore
+        await channel.send(embed=em)
 
     @Cog.listener(name="on_guild_role_update")
     async def guild_role_update(self, before: discord.Role, after: discord.Role):
@@ -323,7 +345,9 @@ class Events(Cog):
             return
 
         em = discord.Embed(
-            title="Role updated", color=self.bot.color, timestamp=after.created_at
+            title="Role updated",
+            color=self.bot.color,
+            timestamp=datetime.datetime.utcnow(),
         )
 
         if before.name != after.name:
@@ -375,11 +399,11 @@ class Events(Cog):
 
         em.set_footer(text=f"Role ID: {before.id}")
 
-        await channel.send(embed=em)  # type: ignore
+        await channel.send(embed=em)
 
     # ===== GUILD LOGS =====
 
-    @Cog.listener("on_guild_update")
+    @Cog.listener(name="on_guild_update")
     async def guild_update_log(self, before: discord.Guild, after: discord.Guild):
         channel = await self.get_logs_channel(before.id)
 
@@ -482,7 +506,7 @@ class Events(Cog):
                 inline=False,
             )
 
-        await channel.send(embed=em)  # type: ignore
+        await channel.send(embed=em)
 
     @Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
@@ -495,7 +519,7 @@ class Events(Cog):
         #     except:
         #         pass
 
-        em = discord.Embed(title="Guild Joined", color=self.bot.success)
+        em = discord.Embed(title="Guild Joined", color=discord.Color.green())
         em.add_field(name="Guild", value=guild.name, inline=False)
         em.add_field(
             name="Members",
@@ -505,17 +529,123 @@ class Events(Cog):
         em.add_field(
             name="Bots", value=sum(member.bot for member in guild.members), inline=False
         )
-        em.add_field(name="Owner", value=f"{guild.owner} ({guild.owner.id})", inline=False)  # type: ignore
+        (
+            em.add_field(
+                name="Owner", value=f"{guild.owner} ({guild.owner.id})", inline=False
+            )
+            if guild and guild.owner
+            else None
+        )
 
         channel = self.bot.get_channel(LOG_CHANNEL)
         await channel.send(embed=em)  # type: ignore
 
     @Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild):
-        await self.bot.db.execute("DELETE FROM modlogs WHERE guild_id=$1", guild.id)  # type: ignore
+        (
+            await self.bot.db.execute("DELETE FROM modlogs WHERE guild_id=$1", guild.id)
+            if self.bot.db
+            else None
+        )
 
         channel = self.bot.get_channel(LOG_CHANNEL)
         await channel.send(f"Left {guild.name}")  # type: ignore
+
+    # ====== GUILD INTEGRATION EVENTS ======
+
+    @Cog.listener()
+    async def on_integration_create(self, integration: discord.Integration):
+        channel = await self.get_logs_channel(integration.guild.id)
+
+        if not channel:
+            return
+
+        em = discord.Embed(
+            title="Integration Created",
+            color=discord.Color.green(),
+            timestamp=datetime.datetime.utcnow(),
+        )
+
+        em.description = f"""
+    > **ID:** {integration.id}
+    > **Name:** {integration.name}
+    > **Type:** {integration.type}
+    > **Enabled**: {integration.enabled}
+    > **Created by:** {integration.user}
+    """
+
+        em.set_footer(
+            text=integration.user,
+            icon_url=(
+                integration.user.avatar.url
+                if integration.user and integration.user.avatar
+                else None
+            ),
+        )
+
+        await channel.send(embed=em)
+
+    @Cog.listener()
+    async def on_integration_update(self, integration: discord.Integration):
+        channel = await self.get_logs_channel(integration.guild.id)
+
+        if not channel:
+            return
+
+        em = discord.Embed(
+            title="Integration Updated",
+            color=discord.Color.orange(),
+            timestamp=datetime.datetime.utcnow(),
+        )
+
+        em.description = f"""
+    > **ID:** {integration.id}
+    > **Name:** {integration.name}
+    > **Type:** {integration.type}
+    > **Enabled**: {integration.enabled}
+    > **Created by:** {integration.user}
+    """
+
+        em.set_footer(
+            text=integration.user,
+            icon_url=(
+                integration.user.avatar.url
+                if integration.user and integration.user.avatar
+                else None
+            ),
+        )
+
+        await channel.send(embed=em)
+
+    @Cog.listener()
+    async def on_raw_integration_delete(
+        self, payload: discord.RawIntegrationDeleteEvent
+    ):
+        guild = self.bot.get_guild(payload.guild_id)
+        channel = await self.get_logs_channel(payload.guild_id)
+
+        if not channel:
+            return
+
+        em = discord.Embed(
+            title="Integration Deleted",
+            color=discord.Color.red(),
+            timestamp=datetime.datetime.utcnow(),
+        )
+
+        em.description = f"""
+    > **Integration ID:** {payload.integration_id}
+    > **Application ID:** {payload.application_id}
+    > **Guild ID:** {payload.guild_id}
+    """
+
+        if guild:
+            em.set_footer(
+                text=guild.name,
+                icon_url=(guild.icon.url if guild.icon else None),
+            )
+
+        await channel.send(embed=em)
 
 
 async def setup(bot):
