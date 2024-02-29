@@ -46,8 +46,13 @@ class Admin(Cog, emoji=916988537264570368):
         """
 
         try:
-            await self.bot.db.execute("INSERT INTO staff_role (guild_id, role_id) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET role_id=$2", ctx.guild.id, role.id)  # type: ignore
-            await ctx.send(f"{self.bot.yes} Staff role set to {role.name}")
+            if self.bot.db and ctx.guild is not None:
+                await self.bot.db.execute(
+                    "INSERT INTO staff_role (guild_id, role_id) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET role_id=$2",
+                    ctx.guild.id,
+                    role.id,
+                )
+                await ctx.send(f"{self.bot.yes} Staff role set to {role.name}")
 
         except Exception as e:
             await ctx.send(f"{self.bot.no} Something went wrong...")
@@ -69,8 +74,13 @@ class Admin(Cog, emoji=916988537264570368):
         """
 
         try:
-            await self.bot.db.execute("INSERT INTO modlogs (guild_id, channel_id) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET channel_id=$2", ctx.guild.id, channel.id)  # type: ignore
-            await ctx.send(f"{self.bot.yes} Mod-logs channel set to {channel}")
+            if self.bot.db and ctx.guild is not None:
+                await self.bot.db.execute(
+                    "INSERT INTO modlogs (guild_id, channel_id) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET channel_id=$2",
+                    ctx.guild.id,
+                    channel.id,
+                )
+                await ctx.send(f"{self.bot.yes} Mod-logs channel set to {channel}")
 
         except Exception as e:
             await ctx.send(f"{self.bot.no} Something went wrong...")
