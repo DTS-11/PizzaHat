@@ -1,4 +1,5 @@
 import discord
+from async_lru import alru_cache
 from core.bot import PizzaHat
 from core.cog import Cog
 from discord import ButtonStyle, Interaction, ui
@@ -12,6 +13,7 @@ class TicketView(ui.View):
         self.thread_id = None
         super().__init__(timeout=None)
 
+    @alru_cache()
     async def get_staff_role(self, guild_id: int) -> int:
         return await self.bot.db.fetchval(
             "SELECT role_id FROM staff_role WHERE guild_id=$1", guild_id
@@ -43,9 +45,9 @@ class TicketView(ui.View):
                 )
                 em.set_footer(
                     text=interaction.user,
-                    icon_url=interaction.user.avatar.url
-                    if interaction.user.avatar
-                    else None,
+                    icon_url=(
+                        interaction.user.avatar.url if interaction.user.avatar else None
+                    ),
                 )
 
                 await thread.send(
@@ -71,19 +73,6 @@ class TicketSettings(ui.View):
                     content="Ticket thread has been archived!"
                 )
                 await thread.edit(archived=True, locked=True)
-            else:
-                await interaction.followup.send("Unable to find ticket thread!")
-
-    @ui.button(label="Reopen", style=ButtonStyle.green, custom_id="reopen_ticket_btn")
-    async def reopen_ticket(self, interaction: Interaction, button: ui.Button):
-        if interaction.guild is not None:
-            thread = interaction.guild.get_thread(self.thread_id)
-
-            if thread:
-                await thread.edit(archived=False, locked=False)
-                await interaction.response.send_message(
-                    content="Ticket thread has been reopened!"
-                )
             else:
                 await interaction.followup.send("Unable to find ticket thread!")
 
