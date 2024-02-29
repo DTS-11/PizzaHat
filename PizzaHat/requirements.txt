@@ -15,5 +15,6 @@ jishaku
 psutil
 # topggpy
 emojis
+async-lru
 
 git+https://github.com/Tom-the-Bomb/Discord-Games.git
