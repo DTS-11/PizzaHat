@@ -1,6 +1,6 @@
 import datetime
 import os
-from typing import List
+from typing import List, Union
 
 import discord
 from core.bot import PizzaHat
@@ -24,9 +24,29 @@ class Events(Cog):
     async def get_logs_channel(self, guild_id: int):
         return (
             await self.bot.db.fetchval(
-                "SELECT channel_id FROM modlogs WHERE guild_id = $1", guild_id
+                "SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id
             )
             if self.bot.db
+            else None
+        )
+
+    async def get_starboard_config(self, guild_id: int) -> Union[dict, None]:
+        data = (
+            await self.bot.db.fetchrow(
+                "SELECT channel_id, star_count, self_star FROM star_config WHERE guild_id=$1",
+                guild_id,
+            )
+            if self.bot.db
+            else None
+        )
+
+        return (
+            {
+                "channel_id": data["channel_id"],
+                "star_count": data["star_count"],
+                "self_star": data["self_star"],
+            }
+            if data
             else None
         )
 
@@ -87,7 +107,7 @@ class Events(Cog):
 
             await self.bot.db.execute(
                 """CREATE TABLE IF NOT EXISTS star_info 
-                (guild_id BIGINT, user_msg_id BIGINT, bot_msg_id BIGINT)"""
+                (guild_id BIGINT, user_msg_id BIGINT PRIMARY KEY, bot_msg_id BIGINT)"""
             )
 
     # ====== MESSAGE LOGS ======
@@ -128,7 +148,7 @@ class Events(Cog):
         em = discord.Embed(
             title=f"Message edited in #{before.channel}",
             color=discord.Color.green(),
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=datetime.datetime.now(),
         )
         em.add_field(name="- Before", value=before.content, inline=False)
         em.add_field(name="+ After", value=after.content, inline=False)
@@ -138,7 +158,7 @@ class Events(Cog):
         )
         em.set_footer(text=f"User ID: {before.author.id}")
 
-        await channel.send(embed=em)  # type: ignore
+        await channel.send(embed=em)
 
     @Cog.listener()
     async def on_message_delete(self, msg: discord.Message):
@@ -154,7 +174,7 @@ class Events(Cog):
             title=f"Message deleted in #{msg.channel}",
             description=msg.content,
             color=discord.Color.red(),
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=datetime.datetime.now(),
         )
         em.set_author(
             name=msg.author,
@@ -162,7 +182,7 @@ class Events(Cog):
         )
         em.set_footer(text=f"User ID: {msg.author.id}")
 
-        await channel.send(embed=em)  # type: ignore
+        await channel.send(embed=em)
 
     @Cog.listener()
     async def on_bulk_message_delete(self, msgs: List[discord.Message]):
@@ -177,7 +197,7 @@ class Events(Cog):
             title="Bulk message deleted",
             description=f"**{len(msgs)}** messages deleted in {msgs[0].channel}",
             color=discord.Color.red(),
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=datetime.datetime.now(),
         )
         em.set_author(
             name=msgs[0].author,
@@ -199,7 +219,7 @@ class Events(Cog):
         em = discord.Embed(
             title="Member banned",
             color=discord.Color.red(),
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=datetime.datetime.now(),
         )
 
         em.add_field(name="Reason", value=discord.AuditLogAction.ban, inline=False)
@@ -219,7 +239,7 @@ class Events(Cog):
         em = discord.Embed(
             title="Member unbanned",
             color=discord.Color.green(),
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=datetime.datetime.now(),
         )
 
         em.add_field(name="Reason", value=discord.AuditLogAction.unban, inline=False)
@@ -260,7 +280,7 @@ class Events(Cog):
             f"{'added to' if len(before.roles) < len(after.roles) else 'removed from'} "
             f"{after.mention}",
             color=self.bot.color,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=datetime.datetime.now(),
         )
         em.set_author(
             name=after,
@@ -286,7 +306,7 @@ class Events(Cog):
             title="Nickname updated",
             description=f"`{before.nick}` ➜ `{after.nick}`",
             color=self.bot.color,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=datetime.datetime.now(),
         )
         em.set_author(
             name=after,
@@ -308,7 +328,7 @@ class Events(Cog):
         em = discord.Embed(
             title="New role created",
             color=discord.Color.green(),
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=datetime.datetime.now(),
         )
         em.add_field(name="Name", value=role.name, inline=False)
         em.add_field(name="Color", value=role.color, inline=False)
@@ -326,7 +346,7 @@ class Events(Cog):
         em = discord.Embed(
             title="Role deleted",
             color=discord.Color.red(),
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=datetime.datetime.now(),
         )
         em.add_field(name="Name", value=role.name, inline=False)
         em.add_field(name="Color", value=role.color, inline=False)
@@ -347,7 +367,7 @@ class Events(Cog):
         em = discord.Embed(
             title="Role updated",
             color=self.bot.color,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=datetime.datetime.now(),
         )
 
         if before.name != after.name:
@@ -413,7 +433,7 @@ class Events(Cog):
         em = discord.Embed(
             title="Server updated",
             color=self.bot.color,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=datetime.datetime.now(),
         )
 
         em.set_author(name=after, icon_url=after.icon.url if after.icon else None)
@@ -563,7 +583,7 @@ class Events(Cog):
         em = discord.Embed(
             title="Integration Created",
             color=discord.Color.green(),
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=datetime.datetime.now(),
         )
 
         em.description = f"""
@@ -595,7 +615,7 @@ class Events(Cog):
         em = discord.Embed(
             title="Integration Updated",
             color=discord.Color.orange(),
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=datetime.datetime.now(),
         )
 
         em.description = f"""
@@ -630,7 +650,7 @@ class Events(Cog):
         em = discord.Embed(
             title="Integration Deleted",
             color=discord.Color.red(),
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=datetime.datetime.now(),
         )
 
         em.description = f"""
@@ -646,6 +666,104 @@ class Events(Cog):
             )
 
         await channel.send(embed=em)
+
+    # ====== REACTION EVENTS ======
+
+    @Cog.listener(name="on_raw_reaction_add")
+    async def starboard_reaction_add(self, payload: discord.RawReactionActionEvent):
+        guild = self.bot.get_guild(payload.guild_id) if payload.guild_id else None
+        channel = guild.get_channel(payload.channel_id) if guild else None
+        message = await channel.fetch_message(payload.message_id)  # type: ignore
+
+        if message.author.bot or payload.emoji.name != "⭐":
+            return
+
+        starboard_config = await self.get_starboard_config(guild.id) if guild else None
+
+        if starboard_config is not None:
+            star_channel = (
+                guild.get_channel(starboard_config["channel_id"]) if guild else None
+            )
+
+            if not star_channel:
+                return
+
+            star_count = starboard_config["star_count"]
+            self_star = starboard_config["self_star"]
+
+            for reaction in message.reactions:
+                if reaction.emoji == "⭐" and reaction.count >= star_count:
+                    if not self_star:
+                        if message.author == payload.member:
+                            return await message.remove_reaction(payload.emoji, payload.member)  # type: ignore
+
+                    em = discord.Embed(
+                        description=message.content,
+                        color=discord.Color.blurple(),
+                        timestamp=datetime.datetime.now(),
+                    )
+                    em.set_footer(text=f"Message ID: {message.id}")
+
+                    em.add_field(
+                        name="Source",
+                        value=f"[Jump to message!]({message.jump_url})",
+                        inline=False,
+                    )
+
+                    for sticker in message.stickers:
+                        em.add_field(
+                            name=f"Sticker: `{sticker.name}`",
+                            value=f"ID: [`{sticker.id}`]({sticker.url})",
+                        )
+                    if len(message.stickers) == 1:
+                        em.set_thumbnail(url=message.stickers[0].url)
+
+                    em.set_author(
+                        name=message.author.name,
+                        icon_url=(
+                            message.author.avatar.url if message.author.avatar else None
+                        ),
+                    )
+                    em.set_image(
+                        url=(
+                            message.attachments[0].url if message.attachments else None
+                        )
+                    )
+
+                    try:
+                        em_id = (
+                            await self.bot.db.fetchval(
+                                "SELECT bot_msg_id FROM star_info WHERE guild_id=$1 AND user_msg_id=$2",
+                                guild.id,
+                                payload.message_id,
+                            )
+                            if self.bot.db and guild
+                            else None
+                        )
+
+                        if em_id is not None:
+                            star_embed = await star_channel.fetch_message(em_id)  # type: ignore
+                            await star_embed.edit(content=f"⭐ **{reaction.count}** | {channel.mention}", embed=em)  # type: ignore
+
+                        else:
+                            star_embed = await star_channel.send(content=f"⭐ **{reaction.count}** | {channel.mention}", embed=em)  # type: ignore
+                        (
+                            await self.bot.db.execute(
+                                "INSERT INTO star_info (guild_id, user_msg_id, bot_msg_id) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT star_info_pkey DO NOTHING",
+                                guild.id,
+                                payload.message_id,
+                                star_embed.id,
+                            )
+                            if guild and self.bot.db
+                            else None
+                        )
+
+                    except discord.NotFound:
+                        pass
+                    except discord.Forbidden:
+                        pass
+                    except Exception as e:
+                        print(f"Error in starboard reaction add: {e}")
 
 
 async def setup(bot):
