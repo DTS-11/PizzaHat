@@ -1,3 +1,4 @@
+import chat_exporter
 import discord
 from async_lru import alru_cache
 from core.bot import PizzaHat
@@ -63,7 +64,12 @@ class TicketSettings(ui.View):
         self.thread_id = thread_id
         super().__init__(timeout=None)
 
-    @ui.button(label="Close", style=ButtonStyle.red, custom_id="close_ticket_btn")
+    @ui.button(
+        label="Close Ticket",
+        emoji="🔐",
+        style=ButtonStyle.red,
+        custom_id="close_ticket_btn",
+    )
     async def close_ticket(self, interaction: Interaction, button: ui.Button):
         if interaction.guild is not None:
             thread = interaction.guild.get_thread(self.thread_id)
@@ -74,7 +80,25 @@ class TicketSettings(ui.View):
                 )
                 await thread.edit(archived=True, locked=True)
             else:
-                await interaction.followup.send("Unable to find ticket thread!")
+                await interaction.followup.send(content="Unable to find ticket thread!")
+
+    @ui.button(
+        label="Transcript",
+        emoji="📝",
+        style=ButtonStyle.blurple,
+        custom_id="ticket_transcript_btn",
+    )
+    async def ticket_transcript(self, interaction: Interaction, button: ui.Button):
+        if interaction.guild is not None:
+            thread = interaction.guild.get_thread(self.thread_id)
+
+            if thread:
+                msg = await chat_exporter.quick_export(thread)  # type: ignore
+                await chat_exporter.quick_link(thread, msg)
+            else:
+                await interaction.followup.send(
+                    content="Unable to generate transcript for this ticket."
+                )
 
 
 class Tickets(Cog, emoji="🎟"):
