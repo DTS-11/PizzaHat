@@ -992,7 +992,7 @@ class Mod(Cog, emoji=847248846526087239):
                     title=f"{self.bot.yes} Warned User",
                     description=f"Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}",
                     color=discord.Color.green(),
-                    timestamp=datetime.datetime.utcnow(),
+                    timestamp=datetime.datetime.now(),
                 )
                 em.set_author(
                     name=ctx.author,
@@ -1030,7 +1030,7 @@ class Mod(Cog, emoji=847248846526087239):
             em = discord.Embed(
                 title="",
                 description="",
-                timestamp=datetime.datetime.utcnow(),
+                timestamp=datetime.datetime.now(),
             )
             em.set_thumbnail(url=member.avatar.url if member.avatar else None)
 

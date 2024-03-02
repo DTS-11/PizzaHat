@@ -144,7 +144,7 @@ class Tags(Cog, emoji="🏷"):
                 title=tag,
                 description="",
                 color=self.bot.color,
-                timestamp=datetime.datetime.utcnow(),
+                timestamp=datetime.datetime.now(),
             )
             em.set_author(
                 name=ctx.author.display_name,
