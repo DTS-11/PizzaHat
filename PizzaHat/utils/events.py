@@ -3,6 +3,8 @@ import os
 from typing import List, Union
 
 import discord
+from async_lru import alru_cache
+from cogs.utility import format_date
 from core.bot import PizzaHat
 from core.cog import Cog
 from dotenv import load_dotenv
@@ -21,7 +23,8 @@ class Events(Cog):
         self.bot: PizzaHat = bot
         # bot.loop.create_task(self.update_stats())
 
-    async def get_logs_channel(self, guild_id: int):
+    @alru_cache()
+    async def get_logs_channel(self, guild_id: int) -> Union[discord.TextChannel, None]:
         return (
             await self.bot.db.fetchval(
                 "SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id
@@ -30,6 +33,7 @@ class Events(Cog):
             else None
         )
 
+    @alru_cache()
     async def get_starboard_config(self, guild_id: int) -> Union[dict, None]:
         data = (
             await self.bot.db.fetchrow(
@@ -529,6 +533,124 @@ class Events(Cog):
         await channel.send(embed=em)
 
     @Cog.listener()
+    async def on_guild_emojis_update(
+        self, guild: discord.Guild, before: discord.Emoji, after: discord.Emoji
+    ):
+        channel = await self.get_logs_channel(guild.id)
+
+        if not channel:
+            return
+
+        em = discord.Embed(
+            title="Emoji Updated",
+            color=discord.Color.orange(),
+            timestamp=datetime.datetime.now(),
+        )
+        em.description = f"""
+    > **Emoji ID:** {before.id}
+    > **Guild ID:** {guild.id}
+    > **Created by:** {before.user}
+    > **Created at:** {format_date(before.created_at)}
+    > **URL:** [Click here]({before.url})
+        """
+
+        if before.name != after.name:
+            em.add_field(
+                name="Name", value=f"{before.name} ➜ {after.name}", inline=False
+            )
+
+        if before.animated != after.animated:
+            em.add_field(
+                name="Animated",
+                value=f"{before.animated} ➜ {after.animated}",
+                inline=False,
+            )
+
+        if before.available != after.available:
+            em.add_field(
+                name="Available",
+                value=f"{before.available} ➜ {after.available}",
+                inline=False,
+            )
+
+        if before.is_usable() != after.is_usable():
+            em.add_field(
+                name="Usable",
+                value=f"{before.is_usable()} ➜ {after.is_usable()}",
+                inline=False,
+            )
+
+        if before.managed != after.managed:
+            em.add_field(
+                name="Managed",
+                value=f"{before.managed} ➜ {after.managed}",
+                inline=False,
+            )
+
+        if before.require_colons != after.require_colons:
+            em.add_field(
+                name="Colons Required",
+                value=f"{before.require_colons} ➜ {after.require_colons}",
+                inline=False,
+            )
+
+        await channel.send(embed=em)
+
+    @Cog.listener()
+    async def on_guild_stickers_update(
+        self,
+        guild: discord.Guild,
+        before: discord.GuildSticker,
+        after: discord.GuildSticker,
+    ):
+        channel = await self.get_logs_channel(guild.id)
+
+        if not channel:
+            return
+
+        em = discord.Embed(
+            title="Sticker Updated",
+            color=discord.Color.orange(),
+            timestamp=datetime.datetime.now(),
+        )
+        em.description = f"""
+    > **Sticker ID:** {before.id}
+    > **Guild ID:** {guild.id}
+    > **Format:** {after.format}
+    > **Created by:** {before.user}
+    > **Created at:** {format_date(before.created_at)}
+    > **URL:** [Click here]({before.url})
+        """
+
+        if before.name != after.name:
+            em.add_field(
+                name="Name", value=f"{before.name} ➜ {after.name}", inline=False
+            )
+
+        if before.description != after.description:
+            em.add_field(
+                name="Description",
+                value=f"{before.description} ➜ {after.description}",
+                inline=False,
+            )
+
+        if before.available != after.available:
+            em.add_field(
+                name="Available",
+                value=f"{before.available} ➜ {after.available}",
+                inline=False,
+            )
+
+        if before.emoji != after.emoji:
+            em.add_field(
+                name="Emoji",
+                value=f"{before.emoji} ➜ {after.emoji}",
+                inline=False,
+            )
+
+        await channel.send(embed=em)
+
+    @Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
         # if len([m for m in guild.members if m.bot]) > len(guild.members) / 2:
         #     try:
@@ -667,6 +789,110 @@ class Events(Cog):
 
         await channel.send(embed=em)
 
+    # ====== GUILD AUTOMOD LOGS ======
+    @Cog.listener()
+    async def on_automod_rule_create(self, rule: discord.AutoModRule):
+        channel = await self.get_logs_channel(rule.guild.id)
+
+        if not channel:
+            return
+
+        em = discord.Embed(
+            title="New Automod Rule Created",
+            color=discord.Color.green(),
+            timestamp=datetime.datetime.now(),
+        )
+        em.description = f"""
+    **Name and ID:** {rule.name} ({rule.id})
+    **Creator:** {rule.creator} ({rule.creator_id})
+    **Trigger(s):** {rule.trigger}
+    **Action(s):** {rule.actions}
+    **Enabled:** {rule.enabled}
+    **Ignored Channels:** {rule.exempt_channels}
+    **Ignored Roles:** {rule.exempt_roles}
+        """
+
+        em.set_thumbnail(url=rule.guild.icon.url if rule.guild.icon else None)
+        await channel.send(embed=em)
+
+    @Cog.listener()
+    async def on_automod_rule_update(self, rule: discord.AutoModRule):
+        channel = await self.get_logs_channel(rule.guild.id)
+
+        if not channel:
+            return
+
+        em = discord.Embed(
+            title="New Automod Rule Updated",
+            color=discord.Color.orange(),
+            timestamp=datetime.datetime.now(),
+        )
+        em.description = f"""
+    **Name and ID:** {rule.name} ({rule.id})
+    **Creator:** {rule.creator} ({rule.creator_id})
+    **Trigger(s):** {rule.trigger}
+    **Action(s):** {rule.actions}
+    **Enabled:** {rule.enabled}
+    **Ignored Channels:** {rule.exempt_channels}
+    **Ignored Roles:** {rule.exempt_roles}
+        """
+
+        em.set_thumbnail(url=rule.guild.icon.url if rule.guild.icon else None)
+        await channel.send(embed=em)
+
+    @Cog.listener()
+    async def on_automod_rule_delete(self, rule: discord.AutoModRule):
+        channel = await self.get_logs_channel(rule.guild.id)
+
+        if not channel:
+            return
+
+        em = discord.Embed(
+            title="New Automod Rule Deleted",
+            color=discord.Color.red(),
+            timestamp=datetime.datetime.now(),
+        )
+        em.description = f"""
+    **Name and ID:** {rule.name} ({rule.id})
+    **Creator:** {rule.creator} ({rule.creator_id})
+    **Trigger(s):** {rule.trigger}
+    **Action(s):** {rule.actions}
+    **Enabled:** {rule.enabled}
+    **Ignored Channels:** {rule.exempt_channels}
+    **Ignored Roles:** {rule.exempt_roles}
+        """
+
+        em.set_thumbnail(url=rule.guild.icon.url if rule.guild.icon else None)
+        await channel.send(embed=em)
+
+    @Cog.listener()
+    async def on_automod_action(self, execution: discord.AutoModAction):
+        channel = await self.get_logs_channel(execution.guild_id)
+
+        if not channel:
+            return
+
+        em = discord.Embed(
+            title="Automod Action Taken",
+            color=discord.Color.red(),
+            timestamp=datetime.datetime.now(),
+        )
+        em.description = f"""
+    **Action:** {execution.action}
+    **Rule Trigger Type:** {execution.rule_trigger_type}
+    **User:** {execution.member} ({execution.user_id})
+    **Channel:** {execution.channel} ({execution.channel_id})
+    **Message Content:** {execution.content}
+    **Matched Keyword:** {execution.matched_keyword}
+    **Matched Content:** {execution.matched_content}
+    **System Alert Message ID:** {execution.alert_system_message_id}
+    **Message ID:** {execution.message_id}
+    **Rule ID:** {execution.rule_id}
+        """
+
+        em.set_thumbnail(url=execution.guild.icon.url if execution.guild.icon else None)
+        await channel.send(embed=em)
+
     # ====== REACTION EVENTS ======
 
     @Cog.listener(name="on_raw_reaction_add")
@@ -692,7 +918,7 @@ class Events(Cog):
             self_star = starboard_config["self_star"]
 
             for reaction in message.reactions:
-                if reaction.emoji == "⭐" and reaction.count >= star_count:
+                if reaction.count >= star_count:
                     if not self_star:
                         if message.author == payload.member:
                             return await message.remove_reaction(payload.emoji, payload.member)  # type: ignore
@@ -764,6 +990,120 @@ class Events(Cog):
                         pass
                     except Exception as e:
                         print(f"Error in starboard reaction add: {e}")
+
+    @Cog.listener(name="on_raw_reaction_remove")
+    async def starboard_reaction_remove(self, payload: discord.RawReactionActionEvent):
+        guild = self.bot.get_guild(payload.guild_id) if payload.guild_id else None
+        channel = guild.get_channel(payload.channel_id) if guild else None
+        message = await channel.fetch_message(payload.message_id)  # type: ignore
+
+        if message.author.bot or payload.emoji.name != "⭐":
+            return
+
+        starboard_config = await self.get_starboard_config(guild.id) if guild else None
+
+        if starboard_config is not None:
+            star_channel = (
+                guild.get_channel(starboard_config["channel_id"]) if guild else None
+            )
+
+            if not star_channel:
+                return
+
+            star_count = starboard_config["star_count"]
+            self_star = starboard_config["self_star"]
+
+            em_id = (
+                await self.bot.db.fetchval(
+                    "SELECT bot_msg_id FROM star_info WHERE guild_id=$1 AND user_msg_id=$2",
+                    guild.id,
+                    payload.message_id,
+                )
+                if self.bot.db and guild
+                else None
+            )
+
+            try:
+                for reaction in message.reactions:
+                    if reaction.count == 0:
+                        msg = await star_channel.fetch_message(em_id)  # type:ignore
+                        await msg.delete()
+                        (
+                            await self.bot.db.execute(
+                                "DELETE FROM star_info WHERE guild_id=$1 AND bot_msg_id=$2",
+                                guild.id,
+                                em_id,
+                            )
+                            if self.bot.db and guild
+                            else None
+                        )
+
+                    elif reaction.count < star_count:
+                        if not self_star:
+                            if message.author == payload.member:
+                                return await message.remove_reaction(payload.emoji, payload.member)  # type: ignore
+
+                        star_embed = await star_channel.fetch_message(em_id)  # type: ignore
+                        await star_embed.edit(content=f"⭐ **{reaction.count}** | {channel.mention}")  # type: ignore
+
+            except discord.NotFound:
+                pass
+            except discord.Forbidden:
+                pass
+            except Exception as e:
+                print(f"Error in starboard reaction remove: {e}")
+
+    @Cog.listener(name="on_message_delete")
+    async def starred_msg_delete(self, msg: discord.Message):
+        guild = msg.guild
+        starboard_config = await self.get_starboard_config(guild.id) if guild else None
+        star_info = (
+            await self.bot.db.fetchrow(
+                "SELECT user_msg_id, bot_msg_id FROM star_info WHERE guild_id=$1",
+                guild.id,
+            )
+            if self.bot.db and guild
+            else None
+        )
+
+        if starboard_config is not None:
+            star_channel = (
+                guild.get_channel(starboard_config["channel_id"]) if guild else None
+            )
+
+            if not star_channel:
+                return
+
+            if star_info is not None:
+                try:
+                    em_id = (
+                        await self.bot.db.fetchval(
+                            "SELECT bot_msg_id FROM star_info WHERE guild_id=$1 AND user_msg_id=$2",
+                            guild.id,
+                            msg.id,
+                        )
+                        if self.bot.db and guild
+                        else None
+                    )
+
+                    star_embed = await star_channel.fetch_message(em_id)  # type: ignore
+                    await star_embed.delete()
+                    (
+                        await self.bot.db.execute(
+                            "DELETE FROM star_info WHERE guild_id=$1 AND bot_msg_id=$2",
+                            guild.id,
+                            em_id,
+                        )
+                        if self.bot.db and guild
+                        else None
+                    )
+
+                except discord.NotFound:
+                    pass
+                except discord.Forbidden:
+                    pass
+                except Exception as e:
+                    print(f"Error in starboard msg delete event: {e}")
 
 
 async def setup(bot):
