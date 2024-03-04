@@ -1,6 +1,6 @@
 import datetime
 import re
-import urllib
+from urllib import parse
 
 import discord
 import emojis
@@ -35,13 +35,25 @@ class AutoMod(Cog):
         )
 
     async def get_logs_channel(self, guild_id: int):
-        data = await self.bot.db.fetchval("SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id)  # type: ignore
-        if data:
+        data = (
+            await self.bot.db.fetchval(
+                "SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id
+            )
+            if self.bot.db
+            else None
+        )
+        if data is not None:
             return self.bot.get_channel(data)
 
     async def check_if_am_is_enabled(self, guild_id: int):
-        data = await self.bot.db.fetchval("SELECT enabled FROM automod WHERE guild_id=$1", guild_id)  # type: ignore
-        if data:
+        data = (
+            await self.bot.db.fetchval(
+                "SELECT enabled FROM automod WHERE guild_id=$1", guild_id
+            )
+            if self.bot.db
+            else None
+        )
+        if data is not None:
             return data
 
     @Cog.listener()
@@ -54,9 +66,12 @@ class AutoMod(Cog):
         em = discord.Embed(
             title="⚠ Auto-Mod Triggered",
             description=msg.content,
-            color=self.bot.fail,  # type: ignore
+            color=discord.Color.red(),
         )
-        em.set_author(name=msg.author, icon_url=msg.author.avatar.url if msg.author.avatar else None)
+        em.set_author(
+            name=msg.author,
+            icon_url=msg.author.avatar.url if msg.author.avatar else None,
+        )
         em.set_footer(text=f"Message ID: {msg.id} | User ID: {msg.author.id}")
         em.add_field(name="Module", value=module)
 
@@ -64,13 +79,16 @@ class AutoMod(Cog):
 
     @Cog.listener()
     async def on_message(self, msg: discord.Message):
+        am_enabled_guild = await self.check_if_am_is_enabled(msg.guild.id)
+
         if msg.author.bot or msg.content == "" or not msg.guild:
             return
 
         if self.mod_perms(msg):
             return
 
-        # am_enabled_guild = await self.check_if_am_is_enabled(msg.guild.id)
+        if not am_enabled_guild:
+            return
 
     async def banned_words(self, msg: discord.Message):
         banned_words = BANNED_WORDS.copy()
@@ -79,7 +97,6 @@ class AutoMod(Cog):
             if word in msg.content.lower():
                 try:
                     await msg.delete()
-
                 except Exception:
                     pass
 
@@ -98,7 +115,6 @@ class AutoMod(Cog):
         if msg.content.isupper():
             try:
                 await msg.delete()
-
             except Exception:
                 pass
 
@@ -127,7 +143,13 @@ class AutoMod(Cog):
 
     async def message_spam(self, msg: discord.Message):
         def _check(m):
-            return m.author == msg.author and (datetime.utcnow() - m.created_at.replace(tzinfo=None)).seconds < 7  # type: ignore
+            return (
+                m.author == msg.author
+                and (
+                    datetime.datetime.utcnow() - m.created_at.replace(tzinfo=None)
+                ).seconds
+                < 7
+            )
 
         h = list(filter(lambda m: _check(m), self.bot.cached_messages))
 
@@ -198,7 +220,7 @@ class AutoMod(Cog):
         return False
 
     async def zalgo_text(self, msg: discord.Message):
-        x = self.zalgo_regex.search(urllib.parse.quote(msg.content.encode("utf-8")))  # type: ignore
+        x = self.zalgo_regex.search(parse.quote(msg.content.encode("utf-8")))
         if x:
             await msg.delete()
             await msg.channel.send(
