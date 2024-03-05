@@ -18,6 +18,32 @@ def clean_string(string):
     return string
 
 
+class PressFView(View):
+    def __init__(self, user):
+        self.users: list = [user]
+        super().__init__(timeout=180)
+
+    @discord.ui.button(
+        emoji="<:f_key:802611136361005097>", style=discord.ButtonStyle.blurple
+    )
+    async def pressf(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id in self.users:
+            return await interaction.response.send_message(
+                content="You have already paid your respects!", ephemeral=True
+            )
+
+        if isinstance(interaction.channel, discord.TextChannel):
+            self.users.append(interaction.user.id)
+            await interaction.channel.send(
+                content=f"{interaction.user} has paid their respects."
+            )
+
+    async def on_timeout(self) -> None:
+        del (
+            self.users
+        )  # delete the list of users after timeout to prevent excess usage of memory
+
+
 class Meta(Cog, emoji="😎"):
     """Miscellaneous commands."""
 
@@ -350,6 +376,24 @@ class Meta(Cog, emoji="😎"):
 
         view.add_item(b1).add_item(b2).add_item(b3)
         await ctx.send(embed=em, view=view)
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.cooldown(1, 30, commands.BucketType.user)
+    async def pressf(self, ctx: Context, *, obj: str):
+        """Pay respect to something by pressing the F button."""
+
+        em = discord.Embed(
+            description=f"It's time to pay respect for **{obj}**",
+            color=self.bot.color,
+            timestamp=ctx.message.created_at,
+        )
+        em.set_footer(
+            text=ctx.author,
+            icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
+        )
+
+        await ctx.send(embed=em, view=PressFView(ctx.author))
 
 
 async def setup(bot):
