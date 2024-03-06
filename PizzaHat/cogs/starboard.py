@@ -52,7 +52,7 @@ class Starboard(Cog, emoji="⭐"):
 
         except Exception as e:
             await ctx.send(f"{self.bot.no} Something went wrong...")
-            print(e)
+            print(f"Error in starboard channel cmd: {e}")
 
     @star.command(name="count", aliases=["limit"])
     @commands.guild_only()
@@ -83,7 +83,7 @@ class Starboard(Cog, emoji="⭐"):
 
         except Exception as e:
             await ctx.send(f"{self.bot.no} Something went wrong...")
-            print(e)
+            print(f"Error in starboard count cmd: {e}")
 
     @star.command(name="self")
     @commands.guild_only()
@@ -118,7 +118,7 @@ class Starboard(Cog, emoji="⭐"):
 
         except Exception as e:
             await ctx.send(f"{self.bot.no} Something went wrong...")
-            print(e)
+            print(f"Error in starboard self-star cmd: {e}")
 
 
 async def setup(bot):

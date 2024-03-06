@@ -56,7 +56,7 @@ class Admin(Cog, emoji=916988537264570368):
 
         except Exception as e:
             await ctx.send(f"{self.bot.no} Something went wrong...")
-            print(e)
+            print(f"Error in set staffrole cmd: {e}")
 
     @set.command(aliases=["log"])
     @commands.guild_only()
@@ -84,7 +84,7 @@ class Admin(Cog, emoji=916988537264570368):
 
         except Exception as e:
             await ctx.send(f"{self.bot.no} Something went wrong...")
-            print(e)
+            print(f"Error in set logs cmd: {e}")
 
     @server_staff_role()
     @set.command(aliases=["ticket"])
