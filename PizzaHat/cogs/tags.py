@@ -36,39 +36,35 @@ class Tags(Cog, emoji="🏷"):
         To use this command, you must have Manage Messages permission.
         """
 
-        try:
-            if len(name) > 50:
-                return await ctx.send(
-                    f"{self.bot.no} Tag name length cannot exceed 50 characters!"
-                )
+        if len(name) > 50:
+            return await ctx.send(
+                f"{self.bot.no} Tag name length cannot exceed 50 characters!"
+            )
 
-            data = (
-                await self.bot.db.fetchrow(
-                    "SELECT * FROM tags WHERE guild_id=$1", ctx.guild.id
+        data = (
+            await self.bot.db.fetchrow(
+                "SELECT * FROM tags WHERE guild_id=$1", ctx.guild.id
+            )
+            if self.bot.db and ctx.guild
+            else None
+        )
+
+        if data is None or data[1] != name:
+            (
+                await self.bot.db.execute(
+                    "INSERT INTO tags (guild_id, tag_name, content, creator) VALUES ($1, $2, $3, $4)",
+                    ctx.guild.id,
+                    name,
+                    content,
+                    ctx.author.id,
                 )
                 if self.bot.db and ctx.guild
                 else None
             )
+            await ctx.send(f"{self.bot.yes} Tag created successfully!")
 
-            if data is None or data[1] != name:
-                (
-                    await self.bot.db.execute(
-                        "INSERT INTO tags (guild_id, tag_name, content, creator) VALUES ($1, $2, $3, $4)",
-                        ctx.guild.id,
-                        name,
-                        content,
-                        ctx.author.id,
-                    )
-                    if self.bot.db and ctx.guild
-                    else None
-                )
-                await ctx.send(f"{self.bot.yes} Tag created successfully!")
-
-            elif data[1] == name:
-                await ctx.send(f"{self.bot.no} Tag with this name already exists!")
-
-        except Exception as e:
-            print(e)
+        elif data[1] == name:
+            await ctx.send(f"{self.bot.no} Tag with this name already exists!")
 
     @tag.command(name="delete", aliases=["remove", "del"])
     @commands.guild_only()
