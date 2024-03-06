@@ -3,7 +3,9 @@ import re
 from urllib import parse
 
 import discord
+from typing import Union
 import emojis
+from async_lru import alru_cache
 from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
@@ -29,11 +31,12 @@ class AutoMod(Cog):
                 or p.ban_members
                 or p.manage_guild
                 or p.administrator
-                or m.author == m.guild.owner
+                or m.author == m.guild.owner  # type: ignore
             )
             else False
         )
 
+    @alru_cache()
     async def get_logs_channel(self, guild_id: int):
         data = (
             await self.bot.db.fetchval(
@@ -45,7 +48,8 @@ class AutoMod(Cog):
         if data is not None:
             return self.bot.get_channel(data)
 
-    async def check_if_am_is_enabled(self, guild_id: int):
+    @alru_cache()
+    async def check_if_am_is_enabled(self, guild_id: int) -> Union[bool, None]:
         data = (
             await self.bot.db.fetchval(
                 "SELECT enabled FROM automod WHERE guild_id=$1", guild_id
@@ -167,7 +171,7 @@ class AutoMod(Cog):
     async def invites(self, msg: discord.Message, m: dict) -> bool:
         invite_match = self.invite_regex.findall(msg.content)
 
-        if invite_match:
+        if invite_match and msg.guild is not None:
             for e in invite_match:
                 try:
                     invite = await self.bot.fetch_invite(e[-1])
@@ -176,14 +180,15 @@ class AutoMod(Cog):
                     pass
 
                 else:
-                    if not invite.guild.id == msg.guild.id:
-                        await msg.delete()
-                        await msg.channel.send(
-                            f"{msg.author.mention}, No invite links.",
-                            delete_after=5,
-                            allowed_mentions=self.mentions,  # type: ignore
-                        )
-                        return True
+                    if invite.guild is not None:
+                        if not invite.guild.id == msg.guild.id:
+                            await msg.delete()
+                            await msg.channel.send(
+                                f"{msg.author.mention}, No invite links.",
+                                delete_after=5,
+                                allowed_mentions=self.mentions,  # type: ignore
+                            )
+                            return True
         return False
 
     async def mass_mentions(self, msg: discord.Message):
