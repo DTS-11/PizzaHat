@@ -135,9 +135,10 @@ class AutoModeration(Cog, emoji=1207259153437949953):
         self.bot: PizzaHat = bot
 
     @commands.group(invoke_without_command=True)
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
-    async def automod(self, ctx: commands.Context):
+    async def automod(self, ctx: Context):
         """
         Automod configuration commands.
 
@@ -209,7 +210,7 @@ class AutoModeration(Cog, emoji=1207259153437949953):
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
-    async def automod_antislur(self, ctx: commands.Context):
+    async def automod_antislur(self, ctx: Context):
         """
         Create an automod rule for antislurs in the server.
 
