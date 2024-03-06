@@ -79,7 +79,8 @@ class AutoMod(Cog):
 
     @Cog.listener()
     async def on_message(self, msg: discord.Message):
-        am_enabled_guild = await self.check_if_am_is_enabled(msg.guild.id)
+        if msg.guild is not None:
+            am_enabled_guild = await self.check_if_am_is_enabled(msg.guild.id)
 
         if msg.author.bot or msg.content == "" or not msg.guild:
             return
