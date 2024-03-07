@@ -80,6 +80,11 @@ class Events(Cog):
     async def on_ready(self):
         if self.bot.db is not None:
             await self.bot.db.execute(
+                """CREATE TABLE IF NOT EXISTS afk 
+                (guild_id BIGINT, user_id BIGINT, reason TEXT)"""
+            )
+
+            await self.bot.db.execute(
                 """CREATE TABLE IF NOT EXISTS warnlogs 
                 (id SERIAL PRIMARY KEY, guild_id BIGINT, user_id BIGINT, mod_id BIGINT, reason TEXT)"""
             )
@@ -91,7 +96,12 @@ class Events(Cog):
 
             await self.bot.db.execute(
                 """CREATE TABLE IF NOT EXISTS automod 
-                (guild_id BIGINT PRIMARY KEY, enabled BOOL)"""
+                (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT false)"""
+            )
+
+            await self.bot.db.execute(
+                """CREATE TABLE IF NOT EXISTS antialt 
+                (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT false, min_age INT, restricted_role BIGINT, level INT)"""
             )
 
             await self.bot.db.execute(
@@ -893,7 +903,7 @@ class Events(Cog):
         em.set_thumbnail(url=execution.guild.icon.url if execution.guild.icon else None)
         await channel.send(embed=em)
 
-    # ====== REACTION EVENTS ======
+    # ====== STARBOARD REACTION EVENTS ======
 
     @Cog.listener(name="on_raw_reaction_add")
     async def starboard_reaction_add(self, payload: discord.RawReactionActionEvent):
@@ -1104,6 +1114,38 @@ class Events(Cog):
                     pass
                 except Exception as e:
                     print(f"Error in starboard msg delete event: {e}")
+
+    # ====== MEMBER PING - AFK EVENT ======
+    @Cog.listener(name="on_message")
+    async def member_ping_in_afk(self, msg: discord.Message):
+        data = (
+            await self.bot.db.fetch(
+                "SELECT user_id, reason FROM afk WHERE guild_id=$1", msg.guild.id
+            )
+            if self.bot.db and msg.guild
+            else None
+        )
+
+        if data is not None:
+            user = await msg.guild.fetch_member(data[0]) if msg.guild else None
+            reason = data[1]
+
+            em = discord.Embed(
+                title="Member AFK",
+                description=f"{user} is AFK\n**Reason:** {reason}",
+                color=discord.Color.og_blurple(),
+                timestamp=msg.created_at,
+            )
+            em.set_author(
+                name=user, url=user.avatar.url if user and user.avatar else None
+            )
+            em.set_footer(
+                text=msg.author,
+                icon_url=msg.author.avatar.url if msg.author.avatar else None,
+            )
+
+            if isinstance(msg.channel, discord.TextChannel):
+                await msg.channel.send(embed=em)
 
 
 async def setup(bot):
