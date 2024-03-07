@@ -56,6 +56,29 @@ class Meta(Cog, emoji="😎"):
         ]
         self.engine = Interpreter(blocks)
 
+    @commands.command()
+    @commands.guild_only()
+    @commands.cooldown(1, 60, commands.BucketType.user)
+    async def afk(self, ctx: Context, reason: str):
+        """Set an afk status."""
+
+        try:
+            (
+                await self.bot.db.execute(
+                    "INSERT INTO afk (guild_id, user_id, reason) VALUES ($1, $2, $3)",
+                    ctx.guild.id,
+                    ctx.author.id,
+                    reason,
+                )
+                if self.bot.db and ctx.guild
+                else None
+            )
+            await ctx.send(f"{self.bot.yes} AFK status set successfully.")
+
+        except Exception as e:
+            await ctx.send(f"{self.bot.no} Something went wrong...")
+            print(f"Error in afk cmd: {e}")
+
     @commands.command(name="credits")
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def _credits(self, ctx: Context):
