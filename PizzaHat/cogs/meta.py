@@ -331,7 +331,7 @@ class Meta(Cog, emoji="😎"):
         view = View()
 
         b1 = Button(
-            label="Invite (admin)", emoji="✉️", url="https://dsc.gg/pizza-invite"
+            label="Invite (admin)", emoji="✉️", url="https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=8&scope=bot"
         )
         b2 = Button(
             label="Invite (recommended)",
@@ -346,7 +346,7 @@ class Meta(Cog, emoji="😎"):
             title="🔗 Links",
             description=(
                 "Click on the links below if you cant see the buttons for some reason.\n"
-                "[Invite (admin)](https://dsc.gg/pizza-invite)\n"
+                "[Invite (admin)](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=8&scope=bot)\n"
                 "[Invite (recommended)](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot)\n"
                 "[Support](https://discord.gg/WhNVDTF)"
             ),
