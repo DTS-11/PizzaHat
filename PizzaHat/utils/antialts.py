@@ -15,7 +15,7 @@ def datetime_to_sec(t: datetime.datetime):
     )
 
 
-class AntiAlts(commands.Cog):
+class AntiAltsConfig(commands.Cog):
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
@@ -102,4 +102,4 @@ class AntiAlts(commands.Cog):
 
 
 async def setup(bot):
-    await bot.add_cog(AntiAlts(bot))
+    await bot.add_cog(AntiAltsConfig(bot))

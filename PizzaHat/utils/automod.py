@@ -13,7 +13,7 @@ from discord.ext import commands
 from .config import BANNED_WORDS
 
 
-class AutoMod(Cog):
+class AutoModConfig(Cog):
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
         self.mentions = bot.allowed_mentions
@@ -239,4 +239,4 @@ class AutoMod(Cog):
 
 
 async def setup(bot):
-    await bot.add_cog(AutoMod(bot))
+    await bot.add_cog(AutoModConfig(bot))

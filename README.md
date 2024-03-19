@@ -68,7 +68,8 @@ PG_URL = postgresql_connection_url
 Create a `config.py` file in the `utils` directory
 ```py
 COG_EXCEPTIONS = [
-    "AutoMod",
+    "AntiAltsConfig",
+    "AutoModConfig",
     "Dev",
     "Events",
     "Help",
