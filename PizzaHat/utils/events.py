@@ -1173,7 +1173,6 @@ class Events(Cog):
                         icon_url=msg.author.avatar.url if msg.author.avatar else None,
                     )
 
-                    # if isinstance(msg.channel, discord.TextChannel):
                     await msg.channel.send(embed=em)
 
 
