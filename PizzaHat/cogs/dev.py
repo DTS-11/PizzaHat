@@ -1,5 +1,6 @@
 import inspect
 import io
+import os
 import textwrap
 import time
 import traceback
@@ -197,7 +198,7 @@ class Dev(Cog, emoji=833297795761831956):
     async def botlogs(self, ctx: Context):
         """Command to show bot logs (bot.log) file in discord itself."""
 
-        f = open("bot.log")
+        f = open("bot.log", "r")
         await ctx.send(f"```ruby\n{f.read()}\n```")
 
     @commands.command(hidden=True)
@@ -205,15 +206,28 @@ class Dev(Cog, emoji=833297795761831956):
     async def reloadall(self, ctx: Context):
         """Quick way to reload all cogs at once."""
 
-        try:
-            for cog in INITIAL_EXTENSIONS:
-                await self.bot.reload_extension(cog)
-                print(cog, "reloaded")
+        for cog in INITIAL_EXTENSIONS:
+            await self.bot.reload_extension(cog)
+            print(cog, "reloaded")
 
-            await ctx.send("Reloaded all cogs!")
+        await ctx.send("Reloaded all cogs!")
 
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def update_config(self, ctx: Context):
+        """Update the config file by uploading the attachment."""
+
+        if not ctx.message.attachments:
+            return await ctx.send(f"{self.bot.no} No file attached.")
+
+        attachment = ctx.message.attachments[0]
+        file_path = os.path.join(os.getcwd(), "utils/config.py")
+
+        if not attachment.filename.endswith(".py"):
+            return await ctx.send(f"{self.bot.no} Not a Python config file.")
+
+        await attachment.save(file_path) # type: ignore
+        await ctx.send(f"{self.bot.yes} Config file updated successfully!")
 
 
 async def setup(bot):
