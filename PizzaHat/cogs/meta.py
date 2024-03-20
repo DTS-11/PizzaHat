@@ -59,10 +59,39 @@ class Meta(Cog, emoji="😎"):
     @commands.command()
     @commands.guild_only()
     @commands.cooldown(1, 60, commands.BucketType.user)
-    async def afk(self, ctx: Context, reason: str):
+    async def afk(self, ctx: Context, *, reason: str):
         """Set an afk status."""
 
-        try:
+        if not ctx.guild:
+            return
+
+        data = (
+            await self.bot.db.fetch(
+                "SELECT reason FROM afk WHERE guild_id=$1 AND user_id=$2",
+                ctx.guild.id,
+                ctx.author.id,
+            )
+            if self.bot.db
+            else None
+        )
+
+        if data:
+            if data[0] == reason:
+                return await ctx.send("You are already AFK with the same reason.")
+
+            (
+                await self.bot.db.execute(
+                    "UPDATE afk SET reason=$1 WHERE guild_id=$2 AND user_id=$3",
+                    reason,
+                    ctx.guild.id,
+                    ctx.author.id,
+                )
+                if self.bot.db
+                else None
+            )
+            return await ctx.send(f"{self.bot.yes} AFK status updated successfully.")
+
+        else:
             (
                 await self.bot.db.execute(
                     "INSERT INTO afk (guild_id, user_id, reason) VALUES ($1, $2, $3)",
@@ -73,11 +102,7 @@ class Meta(Cog, emoji="😎"):
                 if self.bot.db and ctx.guild
                 else None
             )
-            await ctx.send(f"{self.bot.yes} AFK status set successfully.")
-
-        except Exception as e:
-            await ctx.send(f"{self.bot.no} Something went wrong...")
-            print(f"Error in afk cmd: {e}")
+            return await ctx.send(f"{self.bot.yes} AFK status set successfully.")
 
     @commands.command(name="credits")
     @commands.cooldown(1, 3, commands.BucketType.user)
@@ -331,7 +356,9 @@ class Meta(Cog, emoji="😎"):
         view = View()
 
         b1 = Button(
-            label="Invite (admin)", emoji="✉️", url="https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=8&scope=bot"
+            label="Invite (admin)",
+            emoji="✉️",
+            url="https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=8&scope=bot",
         )
         b2 = Button(
             label="Invite (recommended)",
