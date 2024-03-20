@@ -1006,8 +1006,19 @@ class Events(Cog):
         guild = self.bot.get_guild(payload.guild_id) if payload.guild_id else None
         channel = guild.get_channel(payload.channel_id) if guild else None
         message = await channel.fetch_message(payload.message_id)  # type: ignore
+        emoji = discord.utils.get(message.reactions, emoji="⭐")
 
-        if message.author.bot or payload.emoji.name != "⭐":
+        em_id = (
+            await self.bot.db.fetchval(
+                "SELECT bot_msg_id FROM star_info WHERE guild_id=$1 AND user_msg_id=$2",
+                guild.id,
+                payload.message_id,
+            )
+            if self.bot.db and guild
+            else None
+        )
+
+        if message.author.bot:
             return
 
         starboard_config = await self.get_starboard_config(guild.id) if guild else None
@@ -1020,35 +1031,26 @@ class Events(Cog):
             if not star_channel:
                 return
 
+            if not emoji:
+                msg = await star_channel.fetch_message(em_id)  # type:ignore
+                await msg.delete()
+                (
+                    await self.bot.db.execute(
+                        "DELETE FROM star_info WHERE guild_id=$1 AND bot_msg_id=$2",
+                        guild.id,
+                        em_id,
+                    )
+                    if self.bot.db and guild
+                    else None
+                )
+                return
+
             star_count = starboard_config["star_count"]
             self_star = starboard_config["self_star"]
 
-            em_id = (
-                await self.bot.db.fetchval(
-                    "SELECT bot_msg_id FROM star_info WHERE guild_id=$1 AND user_msg_id=$2",
-                    guild.id,
-                    payload.message_id,
-                )
-                if self.bot.db and guild
-                else None
-            )
-
             try:
                 for reaction in message.reactions:
-                    if reaction.count == 0:
-                        msg = await star_channel.fetch_message(em_id)  # type:ignore
-                        await msg.delete()
-                        (
-                            await self.bot.db.execute(
-                                "DELETE FROM star_info WHERE guild_id=$1 AND bot_msg_id=$2",
-                                guild.id,
-                                em_id,
-                            )
-                            if self.bot.db and guild
-                            else None
-                        )
-
-                    elif reaction.count < star_count:
+                    if reaction.count < star_count:
                         if not self_star:
                             if message.author == payload.member:
                                 return await message.remove_reaction(payload.emoji, payload.member)  # type: ignore
@@ -1056,10 +1058,10 @@ class Events(Cog):
                         star_embed = await star_channel.fetch_message(em_id)  # type: ignore
                         await star_embed.edit(content=f"⭐ **{reaction.count}** | {channel.mention}")  # type: ignore
 
-            except discord.NotFound:
-                pass
-            except discord.Forbidden:
-                pass
+            # except discord.NotFound:
+            #     pass
+            # except discord.Forbidden:
+            #     pass
             except Exception as e:
                 print(f"Error in starboard reaction remove: {e}")
 
@@ -1118,34 +1120,61 @@ class Events(Cog):
     # ====== MEMBER PING - AFK EVENT ======
     @Cog.listener(name="on_message")
     async def member_ping_in_afk(self, msg: discord.Message):
+        if msg.author.bot or not msg.guild:
+            return
+
         data = (
             await self.bot.db.fetch(
-                "SELECT user_id, reason FROM afk WHERE guild_id=$1", msg.guild.id
+                "SELECT reason FROM afk WHERE guild_id=$1 AND user_id=$2", msg.guild.id, msg.author.id
             )
-            if self.bot.db and msg.guild
+            if self.bot.db
             else None
         )
 
-        if data is not None:
-            user = await msg.guild.fetch_member(data[0]) if msg.guild else None
-            reason = data[1]
-
-            em = discord.Embed(
-                title="Member AFK",
-                description=f"{user} is AFK\n**Reason:** {reason}",
-                color=discord.Color.og_blurple(),
-                timestamp=msg.created_at,
+        if data:
+            (
+                await self.bot.db.execute(
+                    "DELETE FROM afk WHERE user_id=$1 AND guild_id=$2",
+                    msg.author.id,
+                    msg.guild.id,
+                )
+                if self.bot.db
+                else None
             )
-            em.set_author(
-                name=user, url=user.avatar.url if user and user.avatar else None
-            )
-            em.set_footer(
-                text=msg.author,
-                icon_url=msg.author.avatar.url if msg.author.avatar else None,
+            return await msg.channel.send(
+                f"Welcome back {msg.author.mention}.\nI have removed your AFK status."
             )
 
-            if isinstance(msg.channel, discord.TextChannel):
-                await msg.channel.send(embed=em)
+        if msg.mentions:
+            for mention in msg.mentions:
+                d2 = (
+                    await self.bot.db.fetch(
+                        "SELECT reason FROM afk WHERE guild_id=$1 AND user_id=$2",
+                        msg.guild.id,
+                        mention.id,
+                    )
+                    if self.bot.db
+                    else None
+                )
+
+                if d2 and mention.id != msg.author.id:
+                    em = discord.Embed(
+                        title="Member AFK",
+                        description=f"{mention.name} is AFK\n**Reason:** {d2[0]['reason']}",
+                        color=discord.Color.og_blurple(),
+                        timestamp=msg.created_at,
+                    )
+                    em.set_author(
+                        name=mention.name,
+                        icon_url=mention.avatar.url if mention.avatar else None,
+                    )
+                    em.set_footer(
+                        text=msg.author,
+                        icon_url=msg.author.avatar.url if msg.author.avatar else None,
+                    )
+
+                    # if isinstance(msg.channel, discord.TextChannel):
+                    await msg.channel.send(embed=em)
 
 
 async def setup(bot):
