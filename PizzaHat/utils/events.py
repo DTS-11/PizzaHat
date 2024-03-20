@@ -1125,7 +1125,9 @@ class Events(Cog):
 
         data = (
             await self.bot.db.fetch(
-                "SELECT reason FROM afk WHERE guild_id=$1 AND user_id=$2", msg.guild.id, msg.author.id
+                "SELECT reason FROM afk WHERE guild_id=$1 AND user_id=$2",
+                msg.guild.id,
+                msg.author.id,
             )
             if self.bot.db
             else None
