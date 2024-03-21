@@ -13,22 +13,26 @@ from discord.ext.commands import CommandError, Context
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
 
 INITIAL_EXTENSIONS = [
-    "cogs.admin",
+    # "cogs.antialt",
+    "cogs.automod",
     "cogs.dev",
     "cogs.emojis",
     "cogs.games",
     "cogs.meta",
     "cogs.mod",
     "cogs.polls",
+    # "cogs.starboard",
     "cogs.tags",
     "cogs.tickets",
     "cogs.utility",
 ]
 
 SUB_EXTENSIONS = [
-    # "utils.automod",
-    "utils.events",
-    "utils.help",
+    "cogs_hidden.antialts",
+    "cogs_hidden.automod",
+    "cogs_hidden.events",
+    "cogs_hidden.guild_logs",
+    "cogs_hidden.help",
 ]
 
 LOGGING_CONFIG = {
@@ -78,7 +82,7 @@ LOGGING_CONFIG = {
 dictConfig(LOGGING_CONFIG)
 
 description = """
-I'm PizzaHat — Your Ultimate Discord Companion, a bot made by @itsdts.
+I'm PizzaHat —— Your Ultimate Discord Companion, a bot made by @itsdts.
 I have features such as moderation, utiltity, games and more!
 
 I'm also open source. You can see my code on [GitHub](https://github.com/DTS-11/PizzaHat)
@@ -92,13 +96,15 @@ class PizzaHat(commands.Bot):
         )
         intents = discord.Intents(
             guilds=True,
-            members=True,
-            bans=True,
             emojis=True,
-            voice_states=True,
+            invites=True,
+            members=True,
             messages=True,
+            webhooks=True,
             reactions=True,
+            moderation=True,
             integrations=True,
+            voice_states=True,
             message_content=True,
             auto_moderation=True,
         )
@@ -125,8 +131,6 @@ class PizzaHat(commands.Bot):
     async def setup_hook(self) -> None:
         if not hasattr(self, "uptime"):
             self.uptime = datetime.datetime.utcnow()
-
-        print(f"Logged in as {self.user}")
 
         # Create DB connection
         self.db = await db.create_db_pool()
@@ -169,6 +173,8 @@ class PizzaHat(commands.Bot):
         print(
             f"Loaded all cogs.\nSuccess: {success}, Fail: {fail}\nDone! ({success+fail}/{total})"
         )
+        print()
+        print(f"Logged in as {self.user}")
         print("=========================")
 
     async def on_command_error(self, ctx: Context, error: CommandError) -> None:
@@ -229,3 +235,8 @@ class PizzaHat(commands.Bot):
                 )
 
                 await ctx.send(embed=em)
+
+        elif isinstance(error, commands.CommandOnCooldown):
+            await ctx.send(
+                "Whoopsie! This command needs a timeout. Hang tight while it takes a siesta. 😴⏳"
+            )
