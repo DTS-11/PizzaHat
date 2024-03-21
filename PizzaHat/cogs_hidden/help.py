@@ -3,8 +3,7 @@ from core.bot import PizzaHat
 from core.cog import Cog
 from discord import ButtonStyle, Interaction, ui
 from discord.ext import commands
-
-from .config import COG_EXCEPTIONS
+from utils.config import COG_EXCEPTIONS
 
 
 def bot_help_embed(ctx: commands.Context):

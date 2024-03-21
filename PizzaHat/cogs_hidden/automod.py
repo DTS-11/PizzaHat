@@ -1,16 +1,15 @@
 import datetime
 import re
+from typing import Union
 from urllib import parse
 
 import discord
-from typing import Union
 import emojis
 from async_lru import alru_cache
 from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
-
-from .config import BANNED_WORDS
+from utils.config import BANNED_WORDS
 
 
 class AutoModConfig(Cog):
