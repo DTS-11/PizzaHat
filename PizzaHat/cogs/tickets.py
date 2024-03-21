@@ -32,7 +32,7 @@ class TicketView(ui.View):
 
             if staff_role is not None:
                 thread = await interaction.channel.create_thread(  # type: ignore
-                    name=f"{interaction.user}-ticket",
+                    name=f"ticket-{interaction.user}",
                     reason=f"Ticket created by {interaction.user}",
                     invitable=False,  # type: ignore
                 )
