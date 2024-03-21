@@ -39,7 +39,7 @@ class AutoModConfig(Cog):
     async def get_logs_channel(self, guild_id: int):
         data = (
             await self.bot.db.fetchval(
-                "SELECT channel_id FROM modlogs WHERE guild_id=$1", guild_id
+                "SELECT channel_id FROM guild_logs WHERE guild_id=$1", guild_id
             )
             if self.bot.db
             else None

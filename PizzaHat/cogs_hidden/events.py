@@ -149,7 +149,9 @@ class Events(Cog):
     @Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild):
         (
-            await self.bot.db.execute("DELETE FROM modlogs WHERE guild_id=$1", guild.id)
+            await self.bot.db.execute(
+                "DELETE FROM guild_logs WHERE guild_id=$1", guild.id
+            )
             if self.bot.db
             else None
         )
