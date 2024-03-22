@@ -2,6 +2,7 @@ import datetime
 import traceback
 import typing
 import uuid
+from typing import List
 
 import discord
 import humanfriendly
@@ -17,6 +18,130 @@ class Mod(Cog, emoji=847248846526087239):
 
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.cooldown(2, 60, commands.BucketType.user)
+    @commands.has_permissions(manage_guild=True)
+    async def logs(self, ctx: Context, channel: discord.TextChannel):
+        """
+        Set a guild log channel.
+        To replace the log channel, simply run this command again.
+
+        In order for this to work, the bot must have Manage Server permissions.
+
+        To use this command, you must have Manage Server permission.
+        """
+
+        if not ctx.guild or self.bot.db is None:
+            return
+
+        await self.bot.db.execute(
+            "INSERT INTO guild_logs (guild_id, channel_id) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET channel_id=$2",
+            ctx.guild.id,
+            channel.id,
+        )
+        await ctx.send(f"{self.bot.yes} Guild logs channel set to {channel}")
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.has_permissions(manage_guild=True)
+    async def logconfig(self, ctx: Context, *log_modules: str):
+        """
+        Choose what all events the bot needs to log.
+
+        **Available Modules**
+        `All:` Log everything
+        `Automod:` Log every automod action
+        `Messages:` Log every message edits/deletions
+        `Member:` Log every member updates
+        `Mod:` Log every moderation action
+        `Guild:` Log every guild updates
+        `Roles:` Log every guild role updates
+        `Invites:` Log every invite creations/updates/deletions
+        `Integrations:` Log every integration creations/updates/deletions
+        `Voice:` Log every voice state updates
+
+        **Usage**
+        `1.` `p!logconfig messages mod ...`
+        `2.` `p!logconfig all`
+        """
+
+        if not ctx.guild or self.bot.db is None:
+            return
+
+        available_modules = [
+            "all",
+            "automod",
+            "messages",
+            "member",
+            "mod",
+            "guild",
+            "roles",
+            "invites",
+            "integrations",
+            "voice",
+        ]
+
+        for module in log_modules:
+            if module.lower() not in available_modules:
+                em = discord.Embed(
+                    title="Incorrect module",
+                    description=f"{module} is not an available module.",
+                    color=discord.Color.red(),
+                    timestamp=ctx.message.created_at,
+                )
+                em.add_field(
+                    name="Available Modules",
+                    value=", ".join(available_modules),
+                    inline=False,
+                )
+                return await ctx.send(embed=em)
+
+        # Remove duplicates and convert all modules to lowercase
+        lowercase_modules: List[str] = list(
+            set(module.lower() for module in log_modules)
+        )
+
+        # If "all" is chosen, remove other modules
+        if "all" in lowercase_modules:
+            lowercase_modules = ["all"]
+            removed_modules = available_modules[:-1]  # Exclude "all"
+        else:
+            # Determine removed modules
+            existing_modules = await self.bot.db.fetchval(
+                "SELECT module FROM logs_config WHERE guild_id = $1", ctx.guild.id
+            )
+            if existing_modules:
+                existing_modules = set(existing_modules)
+                removed_modules = [
+                    module
+                    for module in existing_modules
+                    if module not in lowercase_modules
+                ]
+            else:
+                removed_modules = []
+
+        # Update log configurations
+        await self.bot.db.execute(
+            "UPDATE logs_config SET module = $2 WHERE guild_id = $1",
+            ctx.guild.id,
+            lowercase_modules,
+        )
+
+        # Send confirmation message
+        enabled_modules = ", ".join(lowercase_modules)
+        confirmation_msg = f"{self.bot.yes} Logging enabled for: {enabled_modules}."
+        await ctx.send(confirmation_msg)
+
+        # Send confirmation message for disabled modules
+        if removed_modules:
+            disabled_modules = ", ".join(removed_modules)
+            disabled_confirmation_msg = (
+                f"{self.bot.no} Logging disabled for: {disabled_modules}."
+            )
+            await ctx.send(disabled_confirmation_msg)
 
     @commands.command(aliases=["mn"])
     @commands.guild_only()
