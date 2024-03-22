@@ -18,12 +18,15 @@ PizzaHat Discord Bot <h1/>
 ## <img src="https://cdn.discordapp.com/emojis/800797566471897088.png?size=80" height="30px"> • Features
 
 - 📌 Over 150+ commands! </li>
-- 🔼 95%+ uptime. </li>
+- 🔼 99% uptime. </li>
 - 🏓 Low latency. </li>
 - <img src="https://cdn.discordapp.com/emojis/847248846526087239.png?size=80" height="19px"> Powerful moderation. </li>
 - 🥳 Fun commands. </li>
+- 🎮 Fun games. </li>
 - ⚒️ Utility commands. </li>
-- 📔 Logging system. </li>
+- 😎 Emoji management. </li>
+- 📔 Advanced logging system. </li>
+- 🌟 Starboard system. </li>
 - 🗳 Poll voting system </li>
 - 🏷 Tag system </li>
 - 🎟 Ticket system </li>
