@@ -15,19 +15,19 @@ def bot_help_embed(ctx: commands.Context):
     em.description = """
 Hello, welcome to the help page!\n\n
 Use `help [command]` for more info on a command.\n
-Use `help [category]` for more info on a command.\n
+Use `help [category]` for more info on a category.\n
 Use the dropdown menu to select a category.\n
         """
 
+    em.add_field(name="About me", value=ctx.bot.description, inline=False)
     em.add_field(
         name="Support Server",
         value="For more help, consider joining the official server over by [clicking here](https://discord.gg/WhNVDTF)",
         inline=False,
     )
-    em.add_field(name="About me", value=ctx.bot.description, inline=False)
     em.add_field(
         name="🔗 Links",
-        value="**[Invite me](https://dsc.gg/pizza-invite)** • **[Vote](https://wumpus.store/bot/860889936914677770/vote)**",
+        value="**[Invite me](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot)** • **[Vote](https://wumpus.store/bot/860889936914677770/vote)**",
         inline=False,
     )
 
@@ -41,23 +41,23 @@ Use the dropdown menu to select a category.\n
 
 
 def cog_help_embed(cog):
-    desc = cog.full_description if cog.full_description else None
+    desc = cog.description if cog.description else None
     title = cog.qualified_name
 
     em = discord.Embed(
-        title=f"{title} Commands",
-        description=(
-            f"{desc}\n\n" "```ml\n<> Required Argument | [] Optional Argument\n```"
-        ),
+        title=f"{title}",
+        description=(desc or "No description...")
+        + "\n\n```ml\n<> Required Argument | [] Optional Argument\n```",
         color=discord.Color.blue(),
     )
+    em.set_thumbnail(url=cog.emoji.url)
+    em.set_footer(text="Use help [command] for more info.")
 
     for x in sorted(cog.get_commands(), key=lambda c: c.name):
         cmd_help = x.short_doc if x.short_doc else x.help
         em.add_field(name=f"{x.name} {x.signature}", value=cmd_help, inline=False)
 
     em.set_footer(text="Use help [command] for more info.")
-
     return em
 
 
@@ -186,11 +186,12 @@ class MyHelp(commands.HelpCommand):
         view = HelpView(mapping, ctx)
         view.message = await ctx.send(embed=bot_help_embed(ctx), view=view)  # type: ignore
 
-    async def send_command_help(self, command):
+    async def send_command_help(self, command: commands.Command):
         signature = self.get_command_signature(command)
         embed = discord.Embed(
             title=signature,
-            description=command.help or "No help found...",
+            description=(command.help or "No help found...")
+            + "\n\n```ml\n<> Required Argument | [] Optional Argument\n```",
             color=discord.Color.blue(),
         )
 
@@ -213,10 +214,11 @@ class MyHelp(commands.HelpCommand):
 
         await self.send(embed=embed)
 
-    async def send_help_embed(self, title, description, commands):
+    async def send_help_embed(self, title: str, description: str | None, commands):
         embed = discord.Embed(
             title=title,
-            description=description or "No help found...",
+            description=(description or "No help found...")
+            + "\n\n```ml\n<> Required Argument | [] Optional Argument\n```",
             color=discord.Color.blue(),
         )
 
@@ -230,11 +232,11 @@ class MyHelp(commands.HelpCommand):
 
         await self.send(embed=embed)
 
-    async def send_group_help(self, group):
+    async def send_group_help(self, group: commands.Group):
         title = self.get_command_signature(group)
         await self.send_help_embed(title, group.help, group.commands)
 
-    async def send_cog_help(self, cog):
+    async def send_cog_help(self, cog: Cog):
         await self.send(embed=cog_help_embed(cog))
 
     async def send_error_message(self, error):
