@@ -1155,33 +1155,38 @@ class Mod(Cog, emoji=847248846526087239):
                 else None
             )
 
-            em = discord.Embed(
-                title="",
-                description="",
-                timestamp=datetime.datetime.now(),
-            )
-            em.set_thumbnail(url=member.avatar.url if member.avatar else None)
-
             if not records:
-                em.title = f"Warnings of {member.name}"
-                em.description = "✨ This user has no warns!"
-                em.color = discord.Color.green()
-
+                em = discord.Embed(
+                    title=f"Warnings of {member.name}",
+                    description="✨ This user has no warns!",
+                    color=discord.Color.green(),
+                    timestamp=datetime.datetime.now(),
+                )
+                em.set_thumbnail(url=member.avatar.url if member.avatar else None)
                 return await ctx.send(embed=em)
 
             else:
-                warning_list = "\n".join(
-                    [
-                        f"**ID:** {record['id']}\n**Reason:** {record['reason']}\n**Moderator:** {ctx.guild.get_member(record['mod_id'])}\n"
-                        for record in records
-                    ]
-                )
+                embeds = []
+                warning_list = [
+                    f"**ID:** {record['id']}\n**Reason:** {record['reason']}\n**Moderator:** {ctx.guild.get_member(record['mod_id'])}\n"
+                    for record in records
+                ]
+                chunks = [
+                    warning_list[i : i + 5] for i in range(0, len(warning_list), 5)
+                ]
 
-                em.title = f"Warnings of {member.name} | {len(records)} warns"
-                em.description = warning_list
-                em.color = self.bot.color
+                for chunk in chunks:
+                    em = discord.Embed(
+                        title=f"Warnings of {member.name} | {len(records)} warns",
+                        description="\n".join(chunk),
+                        color=self.bot.color,
+                        timestamp=datetime.datetime.now(),
+                    )
+                    em.set_thumbnail(url=member.avatar.url if member.avatar else None)
+                    embeds.append(em)
 
-                return await ctx.send(embed=em)
+                paginator = Paginator(ctx, embeds)
+                return await ctx.send(embed=embeds[0], view=paginator)
 
     @commands.command(aliases=["delwarn"])
     @commands.guild_only()
