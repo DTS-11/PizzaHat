@@ -17,8 +17,8 @@ INITIAL_EXTENSIONS = [
     "cogs.automod",
     "cogs.dev",
     "cogs.emojis",
+    "cogs.fun",
     "cogs.games",
-    "cogs.meta",
     "cogs.mod",
     "cogs.polls",
     # "cogs.starboard",
@@ -238,5 +238,6 @@ class PizzaHat(commands.Bot):
 
         elif isinstance(error, commands.CommandOnCooldown):
             await ctx.send(
-                "Whoopsie! This command needs a timeout. Hang tight while it takes a siesta. 😴⏳"
+                f"Whoopsie! This command needs a timeout. Hang tight while it takes a siesta. 😴⏳\nTry again after `{error.retry_after:.0f}s`",
+                delete_after=5,
             )
