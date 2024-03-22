@@ -492,8 +492,6 @@ class Utility(Cog, emoji=916988537264570368):
             )
 
         msg = await channel.send(embed=em)  # type: ignore
-        await msg.add_reaction("👍")
-        await msg.add_reaction("👎")
 
     # show perms
     async def say_permissions(self, ctx: Context, member, channel):
