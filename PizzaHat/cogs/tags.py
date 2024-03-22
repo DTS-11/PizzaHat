@@ -116,7 +116,7 @@ class Tags(Cog, emoji=916988536656367626):
 
             if data:
                 for i in data:
-                    em.description += f"<:join_arrow:946077216297590836> {i[0]}\n"  # type: ignore
+                    em.description += f"<:P_Arrow:1220768725414969429> {i[0]}\n"  # type: ignore
 
                 await ctx.send(embed=em)
 
