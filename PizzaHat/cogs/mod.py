@@ -42,6 +42,9 @@ class Mod(Cog, emoji=847248846526087239):
             channel.id,
         )
         await ctx.send(f"{self.bot.yes} Guild logs channel set to {channel}")
+        await ctx.send(
+            "Default logging config set to `all`. Please use the `logconfig` command to change the logging configs."
+        )
 
     @commands.command()
     @commands.guild_only()
