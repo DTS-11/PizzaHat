@@ -19,7 +19,7 @@ def format_date(dt: datetime.datetime):
     return f"<t:{int(dt.timestamp())}>"
 
 
-class Utility(Cog, emoji="🛠️"):
+class Utility(Cog, emoji=916988537264570368):
     """Utility commands that makes your Discord experience better!"""
 
     def __init__(self, bot: PizzaHat):

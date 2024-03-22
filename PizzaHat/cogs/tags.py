@@ -7,7 +7,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 
 
-class Tags(Cog, emoji="🏷"):
+class Tags(Cog, emoji=916988536656367626):
     """Commands to fetch something by a tag name."""
 
     def __init__(self, bot: PizzaHat):
