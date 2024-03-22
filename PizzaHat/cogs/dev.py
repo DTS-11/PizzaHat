@@ -226,7 +226,7 @@ class Dev(Cog, emoji=833297795761831956):
         if not attachment.filename.endswith(".py"):
             return await ctx.send(f"{self.bot.no} Not a Python config file.")
 
-        await attachment.save(file_path) # type: ignore
+        await attachment.save(file_path)  # type: ignore
         await ctx.send(f"{self.bot.yes} Config file updated successfully!")
 
 

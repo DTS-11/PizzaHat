@@ -5,7 +5,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 
 
-class Starboard(Cog, emoji="⭐"):
+class Starboard(Cog, emoji=1220673915576389692):
     """A starboard system to upvote messages."""
 
     def __init__(self, bot: PizzaHat):

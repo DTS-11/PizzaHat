@@ -40,7 +40,7 @@ class EmojiURL:
             return cls(animated=partial.animated, url=str(partial.url))
 
 
-class Emojis(Cog, emoji="😀"):
+class Emojis(Cog, emoji=1220671125709918228):
     """Emoji management commands."""
 
     def __init__(self, bot: PizzaHat):

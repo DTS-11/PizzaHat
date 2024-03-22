@@ -14,9 +14,7 @@ class TicketView(ui.View):
         self.thread_id = None
         super().__init__(timeout=None)
 
-    @ui.button(
-        emoji="<:ticket_emoji:1004648922158989404>", custom_id="create_ticket_btn"
-    )
+    @ui.button(emoji="<:P_ticket:1220678462839197756>", custom_id="create_ticket_btn")
     @commands.bot_has_permissions(create_private_threads=True)
     async def create_ticket(self, interaction: Interaction, button: ui.Button):
         if not interaction.guild:
@@ -90,7 +88,7 @@ class TicketSettings(ui.View):
                 )
 
 
-class Tickets(Cog, emoji="🎟"):
+class Tickets(Cog, emoji=1220678462839197756):
     """Button ticket system for support and help!"""
 
     def __init__(self, bot: PizzaHat):
@@ -112,7 +110,7 @@ class Tickets(Cog, emoji="🎟"):
 
         em = discord.Embed(
             title="Create a ticket!",
-            description="Click <:ticket_emoji:1004648922158989404> to create/open a new ticket.",
+            description="Click <:P_ticket:1220678462839197756> to create/open a new ticket.",
             color=discord.Color.gold(),
         )
         em.set_thumbnail(url="https://i.imgur.com/mOTlTBy.png")

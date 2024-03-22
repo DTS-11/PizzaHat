@@ -11,7 +11,7 @@ def to_keycap(c):
     return "\N{KEYCAP TEN}" if c == 10 else str(c) + "\u20e3"
 
 
-class Polls(Cog, emoji="🗳"):
+class Polls(Cog, emoji=1220668765952278568):
     """Poll voting system."""
 
     def __init__(self, bot: PizzaHat):
