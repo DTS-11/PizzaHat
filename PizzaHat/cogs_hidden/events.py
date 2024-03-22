@@ -65,6 +65,26 @@ class Events(Cog):
     #         print(e)
 
     @Cog.listener()
+    async def on_message(self, msg: discord.Message):
+        if self.bot and self.bot.user is not None:
+            bot_id = self.bot.user.id
+
+            if msg.author.bot:
+                return
+
+            if self.bot.user == msg.author:
+                return
+
+            if msg.content in {f"<@{bot_id}>" or f"<@!{bot_id}>"}:
+                em = discord.Embed(color=self.bot.color)
+                em.add_field(
+                    name="Hello! <a:wave_animated:783393435242463324>",
+                    value=f"I'm {self.bot.user.name} — Your Ultimate Discord Companion.\nTo get started, my prefix is `p!` or `P!` or <@{bot_id}>",
+                )
+
+                await msg.channel.send(embed=em)
+
+    @Cog.listener()
     async def on_ready(self):
         if self.bot.db is not None:
             await self.bot.db.execute(
@@ -79,7 +99,7 @@ class Events(Cog):
 
             await self.bot.db.execute(
                 """CREATE TABLE IF NOT EXISTS logs_config 
-                (guild_id BIGINT PRIMARY KEY, module TEXT[])"""
+                (guild_id BIGINT PRIMARY KEY, module TEXT[] DEFAULT ARRAY['all'])"""
             )
 
             await self.bot.db.execute(
