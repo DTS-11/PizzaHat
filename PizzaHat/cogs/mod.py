@@ -27,10 +27,6 @@ class Mod(Cog, emoji=847248846526087239):
         """
         Set a guild log channel.
         To replace the log channel, simply run this command again.
-
-        In order for this to work, the bot must have Manage Server permissions.
-
-        To use this command, you must have Manage Server permission.
         """
 
         if not ctx.guild or self.bot.db is None:
@@ -154,10 +150,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def modnick(self, ctx: Context, member: discord.Member):
         """
         Sets a random moderated nickname.
-
-        In order for this to work, the bot must have Manage Nicknames permissions.
-
-        To use this command, you must have Manage Nicknames permission.
         """
         try:
             nick = f"Moderated Nickname {uuid.uuid4()}"[:24]
@@ -175,10 +167,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def setnick(self, ctx: Context, member: discord.Member, *, nick):
         """
         Sets a custom nickname.
-
-        In order for this to work, the bot must have Manage Nicknames permissions.
-
-        To use this command, you must have Manage Nicknames permission.
         """
 
         try:
@@ -198,10 +186,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def decancer(self, ctx: Context, member: discord.Member):
         """
         Removes special characters and renames the member as "Moderated Nickname"
-
-        In order for this to work, the bot must have Manage Nicknames permissions.
-
-        To use this command, you must have Manage Nicknames permission.
         """
 
         characters = "!@#$%^&*()_+-=.,/?;:[]{}`~\"'\\|<>"
@@ -231,10 +215,6 @@ class Mod(Cog, emoji=847248846526087239):
         """
         Change the slow-mode in the current channel.
         If no values are given, the bot returns slowmode of the current channel.
-
-        In order for this to work, the bot must have Manage Messages permissions.
-
-        To use this command, you must have Manage Messages permission.
         """
 
         if ctx.channel is discord.DMChannel:
@@ -263,10 +243,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def lock(self, ctx: Context):
         """
         Lock management commands.
-
-        In order for this to work, the bot must have Manage Channels permissions.
-
-        To use this command, you must have Manage Channels permission.
         """
 
         if ctx.subcommand_passed is None:
@@ -283,10 +259,6 @@ class Mod(Cog, emoji=847248846526087239):
         If role is not given, the bot takes the default role of the guild which is @everyone.
 
         Example: `p!lock channel [@role] [#channel]`
-
-        In order for this to work, the bot must have Manage Channels permissions.
-
-        To use this command, you must have Manage Channels permission.
         """
 
         if ctx.guild is not None:
@@ -318,10 +290,6 @@ class Mod(Cog, emoji=847248846526087239):
         """
         Locks the whole server with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
-
-        In order for this to work, the bot must have Manage Channels permissions.
-
-        To use this command, you must have Manage Channels permission.
         """
 
         if ctx.guild is not None:
@@ -348,10 +316,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def unlock(self, ctx: Context):
         """
         Unlock management commands.
-
-        In order for this to work, the bot must have Manage Channels permissions.
-
-        To use this command, you must have Manage Channels permission.
         """
 
         if ctx.subcommand_passed is None:
@@ -368,10 +332,6 @@ class Mod(Cog, emoji=847248846526087239):
         If role is not given, the bot takes the default role of the guild which is @everyone.
 
         Example: `p!unlock channel [@role] [#channel]`
-
-        In order for this to work, the bot must have Manage Channels permissions.
-
-        To use this command, you must have Manage Channels permission.
         """
 
         if ctx.guild is not None:
@@ -403,10 +363,6 @@ class Mod(Cog, emoji=847248846526087239):
         """
         Unlocks the whole server with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
-
-        In order for this to work, the bot must have Manage Channels permissions.
-
-        To use this command, you must have Manage Channels permission.
         """
 
         if ctx.guild is not None:
@@ -439,10 +395,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def hide(self, ctx: Context, role: discord.Role = None, channel: discord.TextChannel = None):  # type: ignore
         """
         Hides a channel from a given role or @everyone.
-
-        In order for this to work, the bot must have Manage Channels permissions.
-
-        To use this command, you must have Manage Channels permission.
         """
 
         if ctx.guild is not None:
@@ -463,10 +415,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def expose(self, ctx: Context, role: discord.Role = None, channel: discord.TextChannel = None):  # type: ignore
         """
         Exposes a channel from a given role or @everyone.
-
-        In order for this to work, the bot must have Manage Channels permissions.
-
-        To use this command, you must have Manage Channels permission.
         """
 
         if ctx.guild is not None:
@@ -488,10 +436,6 @@ class Mod(Cog, emoji=847248846526087239):
         """
         Deletes certain amount of messages in the current channel.
         If no amount is given, it deletes upto 100 messages.
-
-        In order for this to work, the bot must have Manage Messages permissions.
-
-        To use this command, you must have Manage Messages permission.
         """
 
         if ctx.channel is discord.DMChannel:
@@ -519,10 +463,6 @@ class Mod(Cog, emoji=847248846526087239):
         """
         Cleans up bot's messages in the current channel.
         If no amount is given, it deletes upto 100 messages.
-
-        In order for this to work, the bot must have Manage Messages permissions.
-
-        To use this command, you must have Manage Messages permission.
         """
 
         def is_bot(m):
@@ -550,10 +490,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def kick(self, ctx: Context, member: discord.Member, *, reason=None):
         """
         Kicks a member from the server.
-
-        In order for this to work, the bot must have Kick Members permissions.
-
-        To use this command, you must have Kick Members permission.
         """
 
         try:
@@ -577,10 +513,6 @@ class Mod(Cog, emoji=847248846526087239):
         """
         Bans a member whether or not the member is in the server.
         You can ban the member using their ID or my mentioning them.
-
-        In order for this to work, the bot must have Ban Members permissions.
-
-        To use this command, you must have Ban Members permission.
         """
 
         try:
@@ -611,10 +543,6 @@ class Mod(Cog, emoji=847248846526087239):
         """
         Mass bans multiple members from the server.
         You can only ban users, who are in the server.
-
-        In order for this to work, the bot must have Ban Members permissions.
-
-        To use this command, you must have Ban Members permission.
         """
 
         try:
@@ -643,10 +571,6 @@ class Mod(Cog, emoji=847248846526087239):
         A softban is basically banning the member from the server but
         then unbanning the member as well. This allows you to essentially
         kick the member while removing their messages.
-
-        In order for this to work, the bot must have Ban Members permissions.
-
-        To use this command, you must have Ban Members permission.
         """
 
         try:
@@ -668,10 +592,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def unban(self, ctx: Context, id: int):
         """
         Unbans a member from the server using their ID.
-
-        In order for this to work, the bot must have Ban Members permissions.
-
-        To use this command, you must have Ban Members permission.
         """
 
         try:
@@ -699,10 +619,6 @@ class Mod(Cog, emoji=847248846526087239):
         Mutes or timeouts a member for specific time.
         Maximum duration of timeout: 28 days (API limitation)
         Use 5m for 5 mins, 1h for 1 hour etc...
-
-        In order for this to work, the bot must have Moderate Members permissions.
-
-        To use this command, you must have Moderate Members permission.
         """
 
         try:
@@ -730,10 +646,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def unmute(self, ctx: Context, member: discord.Member, *, reason=None):
         """
         Unmutes or removes a member from timeout.
-
-        In order for this to work, the bot must have Moderate Members permissions.
-
-        To use this command, you must have Moderate Members permission.
         """
 
         try:
@@ -753,10 +665,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def role(self, ctx: Context):
         """
         Role management commands.
-
-        In order for this to work, the bot must have Manage Roles permissions.
-
-        To use this command, you must have Manage Roles permission.
         """
 
         if ctx.subcommand_passed is None:
@@ -770,10 +678,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def role_add(self, ctx: Context, user: discord.Member, *, role: discord.Role):
         """
         Assign role to a user.
-
-        In order for this to work, the bot must have Manage Roles permissions.
-
-        To use this command, you must have Manage Roles permission.
         """
 
         try:
@@ -799,10 +703,6 @@ class Mod(Cog, emoji=847248846526087239):
     ):
         """
         Remove role from a user.
-
-        In order for this to work, the bot must have Manage Roles permissions.
-
-        To use this command, you must have Manage Roles permission.
         """
 
         try:
@@ -835,10 +735,6 @@ class Mod(Cog, emoji=847248846526087239):
     ):
         """
         Create a new role in the server with given color and hoist options.
-
-        In order for this to work, the bot must have Manage Roles permissions.
-
-        To use this command, you must have Manage Roles permission.
         """
 
         try:
@@ -862,10 +758,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def role_delete(self, ctx: Context, *, role: discord.Role):
         """
         Delete an already existing role in the server.
-
-        In order for this to work, the bot must have Manage Roles permissions.
-
-        To use this command, you must have Manage Roles permission.
         """
 
         try:
@@ -932,10 +824,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def channel(self, ctx: Context):
         """
         Channel related commands.
-
-        In order for this to work, the bot must have Manage Channels permissions.
-
-        To use this command, you must have Manage Channels permission.
         """
 
         if ctx.subcommand_passed is None:
@@ -949,10 +837,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def channel_create(self, ctx: Context, name):
         """
         Create a new channel in the server.
-
-        In order for this to work, the bot must have Manage Channels permissions.
-
-        To use this command, you must have Manage Channels permission.
         """
 
         try:
@@ -971,10 +855,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def channel_delete(self, ctx: Context, channel: discord.TextChannel):
         """
         Delete a channel in the server.
-
-        In order for this to work, the bot must have Manage Channels permissions.
-
-        To use this command, you must have Manage Channels permission.
         """
 
         try:
@@ -1086,8 +966,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def warn(self, ctx: Context, member: discord.Member, *, reason=None):
         """
         Warns a user.
-
-        To use this command, you must have Manage Messages permission.
         """
 
         if reason is None:
@@ -1195,8 +1073,6 @@ class Mod(Cog, emoji=847248846526087239):
     async def deletewarn(self, ctx: Context, member: discord.Member, warn_id: int):
         """
         Deletes a warn of the user with warn ID.
-
-        To use this command, you must have Manage Messages permission.
         """
 
         try:

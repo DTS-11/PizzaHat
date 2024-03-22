@@ -17,8 +17,6 @@ class Starboard(Cog, emoji=1220673915576389692):
     async def star(self, ctx: Context):
         """
         Starboard commands.
-
-        To use this command, you need Manage Server permission.
         """
 
         if ctx.subcommand_passed is None:
@@ -32,8 +30,6 @@ class Starboard(Cog, emoji=1220673915576389692):
         """
         Set the starboard channel.
         To replace this channel, simply run this command again.
-
-        To use this command, you need Manage Server permission.
         """
 
         try:
@@ -62,8 +58,6 @@ class Starboard(Cog, emoji=1220673915576389692):
         """
         Set the starboard star count.
         Default count is set to 5. Maximum limit is 100.
-
-        To use this command, you need Manage Server permission.
         """
 
         try:
@@ -93,8 +87,6 @@ class Starboard(Cog, emoji=1220673915576389692):
         """
         Toggle self star.
         Accepts true/false values. Defaults to True.
-
-        To use this command, you need Manage Server permission.
         """
 
         try:

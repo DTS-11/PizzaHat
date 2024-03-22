@@ -29,12 +29,7 @@ class Tags(Cog, emoji=916988536656367626):
     async def tag_create(self, ctx: Context, name: str, *, content: str):
         """
         Creates a new tag with given name.
-
-        Example: `p!tag create new_tag this is the content`
-
-        In order for this to work, the bot must have Manage Messages permissions.
-
-        To use this command, you must have Manage Messages permission.
+        Put quotes around the name if you want it to have multiple words.
         """
 
         if len(name) > 50:
@@ -76,10 +71,6 @@ class Tags(Cog, emoji=916988536656367626):
         Delete an existing tag using tag name.
 
         Example: `p!tag delete new_tag`
-
-        In order for this to work, the bot must have Manage Messages permissions.
-
-        To use this command, you must have Manage Messages permission.
         """
 
         if self.bot.db and ctx.guild is not None:
@@ -184,10 +175,6 @@ class Tags(Cog, emoji=916988536656367626):
         Edit the content of an existing tag.
 
         Example: `p!tag edit new_tag`
-
-        In order for this to work, the bot must have Manage Messages permissions.
-
-        To use this command, you must have Manage Messages permission.
         """
 
         if self.bot.db and ctx.guild:

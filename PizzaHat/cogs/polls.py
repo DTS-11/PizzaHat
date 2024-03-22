@@ -25,8 +25,6 @@ class Polls(Cog, emoji=1220668765952278568):
         """
         Separate questions and answers by either `|` or `,`
         Supports up to 10 choices.
-
-        To use this command, you must have Manage Messages permission.
         """
 
         if "|" in questions_and_choices:
@@ -91,8 +89,6 @@ class Polls(Cog, emoji=1220668765952278568):
         """
         Quick and easy yes/no poll
         For advanced poll, see `poll` command.
-
-        To use this command, you must have Manage Messages permission.
         """
 
         msg = await ctx.send(
@@ -121,8 +117,6 @@ class Polls(Cog, emoji=1220668765952278568):
         """
         Separate questions and answers by `|` or `,`
         At least two answers required.
-
-        To use this command, you must have Manage Messages permission.
         """
 
         if "|" in question_and_choices:

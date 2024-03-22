@@ -102,10 +102,6 @@ class Tickets(Cog, emoji=1220678462839197756):
     async def ticket(self, ctx: Context, channel: discord.TextChannel):
         """
         Set up the Ticket system in the server by sending the `Create Ticket` message.
-
-        In order for this to work, the bot must have Manage Server permissions.
-
-        To use this command, you must have Manage Server permission.
         """
 
         em = discord.Embed(

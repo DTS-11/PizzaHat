@@ -53,10 +53,6 @@ class Emojis(Cog, emoji=1220671125709918228):
     async def _emoji(self, ctx: Context):
         """
         Emoji management commands.
-
-        In order for this to work, the bot must have Manage Emojis permissions.
-
-        To use this command, you must have Manage Emojis permission.
         """
 
         if ctx.subcommand_passed is None:
@@ -70,10 +66,6 @@ class Emojis(Cog, emoji=1220671125709918228):
     async def create(self, ctx: Context, emoji: EmojiURL, name):
         """
         Creates an emoji for the server under the given name.
-
-        In order for this to work, the bot must have Manage Emojis permissions.
-
-        To use this command, you must have Manage Emojis permission.
         """
 
         if ctx.guild is not None:
@@ -116,10 +108,6 @@ class Emojis(Cog, emoji=1220671125709918228):
     async def delete(self, ctx: Context, emoji: discord.Emoji):
         """
         Deletes an emoji from the server.
-
-        In order for this to work, the bot must have Manage Emojis permissions.
-
-        To use this command, you must have Manage Emojis permission.
         """
 
         await emoji.delete(reason=f"Action done by {ctx.author}")

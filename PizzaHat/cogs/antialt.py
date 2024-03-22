@@ -116,10 +116,6 @@ class AntiAlts(Cog, emoji=1211597953433862144):
     ):
         """
         Setup anti-alt in your server.
-
-        In order for this to work, the bot must have Manage Server permissions.
-
-        To use this command, you must have Manage Server permission.
         """
 
         if ctx.guild:

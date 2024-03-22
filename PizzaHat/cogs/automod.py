@@ -141,8 +141,6 @@ class AutoModeration(Cog, emoji=1207259153437949953):
     async def automod(self, ctx: Context):
         """
         Automod configuration commands.
-
-        To use this command, you need Manage Server permission.
         """
 
         if ctx.subcommand_passed is None:
@@ -156,10 +154,6 @@ class AutoModeration(Cog, emoji=1207259153437949953):
     async def automod_enable(self, ctx: Context):
         """
         Enables bot auto-mod in the server.
-
-        In order for this to work, the bot must have Manage Server permissions.
-
-        To use this command, you must have Manage Server permission.
         """
 
         try:
@@ -186,10 +180,6 @@ class AutoModeration(Cog, emoji=1207259153437949953):
     async def automod_disable(self, ctx: Context):
         """
         Disables bot auto-mod in the server.
-
-        In order for this to work, the bot must have Manage Server permissions.
-
-        To use this command, you must have Manage Server permission.
         """
 
         try:
@@ -213,10 +203,6 @@ class AutoModeration(Cog, emoji=1207259153437949953):
     async def automod_antislur(self, ctx: Context):
         """
         Create an automod rule for antislurs in the server.
-
-        In order for this to work, the bot must have Manage Server permission.
-
-        To use this command, you need Manage Server permission.
         """
 
         # @....command(...)
