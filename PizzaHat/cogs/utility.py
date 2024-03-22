@@ -66,7 +66,7 @@ class Utility(Cog, emoji="🛠️"):
             booster_role = ctx.guild.get_role(782258520791449600)
             contrib_role = ctx.guild.get_role(950785470286163988)
 
-            if self.bot.is_owner(member):
+            if member.id in self.bot.owner_ids:  # type: ignore
                 badges.append("<:developer:833297795761831956> Developer of PizzaHat")
 
             for roles in member.roles:
