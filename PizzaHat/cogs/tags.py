@@ -5,6 +5,7 @@ from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
+from utils.ui import Paginator
 
 
 class Tags(Cog, emoji=916988536656367626):
@@ -109,16 +110,32 @@ class Tags(Cog, emoji=916988536656367626):
             data = await self.bot.db.fetch(
                 "SELECT tag_name FROM tags WHERE guild_id=$1", ctx.guild.id
             )
-            em = discord.Embed(
-                description="",
-                color=self.bot.color,
-            )
 
             if data:
-                for i in data:
-                    em.description += f"<:P_Arrow:1220768725414969429> {i[0]}\n"  # type: ignore
+                if len(data) > 10:
+                    embeds = []
+                    chunks = [data[i : i + 10] for i in range(0, len(data), 10)]
 
-                await ctx.send(embed=em)
+                    for chunk in chunks:
+                        em = discord.Embed(
+                            description="",
+                            color=self.bot.color,
+                        )
+                        for i in chunk:
+                            em.description += f"<:P_Arrow:1220768725414969429> {i[0]}\n"  # type: ignore
+                        embeds.append(em)
+
+                    paginator = Paginator(ctx, embeds)
+                    await ctx.send(embed=embeds[0], view=paginator)
+
+                else:
+                    em = discord.Embed(
+                        description="",
+                        color=self.bot.color,
+                    )
+                    for i in data:
+                        em.description += f"<:P_Arrow:1220768725414969429> {i[0]}\n"  # type: ignore
+                    await ctx.send(embed=em)
 
             else:
                 await ctx.send("No tags found.")
