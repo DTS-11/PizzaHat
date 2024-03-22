@@ -343,6 +343,9 @@ class Events(Cog):
 
     @Cog.listener(name="on_message_delete")
     async def starred_msg_delete(self, msg: discord.Message):
+        if msg.author.bot:
+            return
+
         guild = msg.guild
         starboard_config = await self.get_starboard_config(guild.id) if guild else None
         star_info = (
