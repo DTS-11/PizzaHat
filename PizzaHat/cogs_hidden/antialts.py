@@ -48,7 +48,7 @@ class AntiAltsConfig(commands.Cog):
 
         if self.bot.db is not None:
             data = await self.bot.db.fetch(
-                "SELECT min_acc_age, restricted_role, level FROM antialt WHERE guild_id=$1",
+                "SELECT min_age, restricted_role, level FROM antialt WHERE guild_id=$1",
                 member.guild.id,
             )
 
