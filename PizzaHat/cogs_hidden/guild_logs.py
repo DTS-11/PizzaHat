@@ -646,6 +646,150 @@ class GuildLogs(Cog):
 
             await channel.send(embed=em)
 
+    # ====== GUILD CHANNEL UPDATES  ======
+
+    @Cog.listener()
+    async def on_guild_channel_create(self, channel: discord.abc.GuildChannel):
+        channel = await self.get_logs_channel(channel.guild.id)  # type: ignore
+        should_log_all = await self.check_log_enabled(channel.guild.id, "all")
+        should_log_guild = await self.check_log_enabled(channel.guild.id, "guild")
+
+        if not channel:
+            return
+
+        if should_log_all or should_log_guild:
+            em = discord.Embed(
+                description=f"**Channel created:** `#{channel.name}`",
+                color=self.bot.color,
+                timestamp=channel.created_at,
+            )
+            em.set_author(
+                name=channel.guild,
+                icon_url=(
+                    channel.guild.icon.url
+                    if channel.guild.icon is not None
+                    else "https://cdn.discordapp.com/embed/avatars/1.png"
+                ),
+            )
+            em.set_footer(text=f"ID: {channel.id}")
+
+            if isinstance(channel, discord.TextChannel):
+                await channel.send(embed=em)
+
+    @Cog.listener()
+    async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
+        channel = await self.get_logs_channel(channel.guild.id)  # type: ignore
+        should_log_all = await self.check_log_enabled(channel.guild.id, "all")
+        should_log_guild = await self.check_log_enabled(channel.guild.id, "guild")
+
+        if not channel:
+            return
+
+        if should_log_all or should_log_guild:
+            em = discord.Embed(
+                description=f"**Channel created:** `#{channel.name}`",
+                color=self.bot.color,
+                timestamp=channel.created_at,
+            )
+            em.set_author(
+                name=channel.guild,
+                icon_url=(
+                    channel.guild.icon.url
+                    if channel.guild.icon is not None
+                    else "https://cdn.discordapp.com/embed/avatars/1.png"
+                ),
+            )
+            em.set_footer(text=f"ID: {channel.id}")
+
+            if isinstance(channel, discord.TextChannel):
+                await channel.send(embed=em)
+
+    @Cog.listener()
+    async def on_guild_channel_update(self, before, after):
+        if before.position - after.position in [1, -1]:
+            return
+
+        channel = await self.get_logs_channel(before.guild.id)
+        should_log_all = await self.check_log_enabled(before.guild.id, "all")
+        should_log_guild = await self.check_log_enabled(before.guild.id, "guild")
+
+        if not channel:
+            return
+
+        if should_log_all or should_log_guild:
+            em = discord.Embed(
+                description=f"**Channel updated: {after.mention}**",
+                color=self.bot.color,
+                timestamp=datetime.datetime.now(),
+            )
+            em.set_author(
+                name=after.guild,
+                icon_url=(
+                    after.guild.icon.url
+                    if after.guild.icon is not None
+                    else "https://cdn.discordapp.com/embed/avatars/1.png"
+                ),
+            )
+            em.set_footer(text=f"ID: {after.id}")
+
+            if before.name != after.name:
+                em.add_field(
+                    name="Name:",
+                    value=f"`{before.name}` ➜ `{after.name}`",
+                    inline=False,
+                )
+            if before.category != after.category:
+                em.add_field(
+                    name="Category:",
+                    value=f"`{before.category}` ➜ `{after.category}`",
+                    inline=False,
+                )
+            if before.permissions_synced != after.permissions_synced:
+                em.add_field(
+                    name="Permissions Synced:",
+                    value=f"`{before.permissions_synced}` ➜ `{after.permissions_synced}`",
+                    inline=False,
+                )
+            if before.position != after.position:
+                em.add_field(
+                    name="Position changed:",
+                    value=f"`{before.position}` ➜ `{after.position}`",
+                    inline=False,
+                )
+            if isinstance(before, discord.TextChannel) and before.topic != after.topic:
+                em.add_field(
+                    name="Topic updated:",
+                    value=f"```{before.topic}``` ➜ ```{after.topic}```",
+                    inline=False,
+                )
+            if (
+                isinstance(before, discord.TextChannel)
+                and before.slowmode_delay != after.slowmode_delay
+            ):
+                em.add_field(
+                    name="Slowmode changed:",
+                    value=f"`{format_timespan(before.slowmode_delay)}` ➜ `{format_timespan(after.slowmode_delay)}`",
+                    inline=False,
+                )
+            if (
+                isinstance(before, discord.TextChannel)
+                and before.is_nsfw() != after.is_nsfw()
+            ):
+                em.add_field(
+                    name="NSFW channel:",
+                    value=f"`{before.is_nsfw()}` ➜ `{after.is_nsfw()}`",
+                    inline=False,
+                )
+            if (
+                isinstance(before, discord.TextChannel)
+                and before.is_news() != after.is_news()
+            ):
+                em.add_field(
+                    name="Announcement channel:",
+                    value=f"`{before.is_news()}` ➜ `{after.is_news()}`",
+                    inline=False,
+                )
+
     # ====== GUILD INTEGRATION EVENTS ======
 
     @Cog.listener()
