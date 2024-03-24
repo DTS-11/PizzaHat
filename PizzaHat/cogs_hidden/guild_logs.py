@@ -6,6 +6,7 @@ from async_lru import alru_cache
 from cogs.utility import format_date
 from core.bot import PizzaHat
 from core.cog import Cog
+from discord.utils import escape_markdown
 from humanfriendly import format_timespan
 
 
@@ -945,6 +946,77 @@ class GuildLogs(Cog):
                 )
             em.set_footer(text=f"ID: {invite.id}")
 
+            await channel.send(embed=em)
+
+    # ====== MEMBER JOIN/LEAVE LGOS ======
+
+    @Cog.listener(name="on_member_join")
+    async def send_join_log(self, member: discord.Member):
+        channel = await self.get_logs_channel(self, member.guild.id)
+        should_log_all = await self.check_log_enabled(member.guild.id, "all")
+        should_log_joins = await self.check_log_enabled(member.guild.id, "joins")
+
+        if not channel:
+            return
+
+        if should_log_all or should_log_joins:
+            em = discord.Embed(
+                description=f"{member.mention} {escape_markdown(str(member))}",
+                color=self.bot.color,
+                timestamp=member.joined_at,
+            )
+            em.set_author(
+                name="Member Joined!",
+                icon_url=member.avatar.url if member.avatar else None,
+            )
+            em.set_footer(text=f"ID: {member.id}")
+            em.set_thumbnail(url=member.avatar.url if member.avatar else None)
+            em.add_field(
+                name="Account Age",
+                value=format_timespan(
+                    (
+                        datetime.datetime.now(datetime.timezone.utc)
+                        - member.created_at.replace(tzinfo=None)
+                    ).total_seconds()
+                ),
+                inline=False,
+            )
+
+            await channel.send(embed=em)
+
+    @Cog.listener(name="on_member_leave")
+    async def send_leave_log(self, member: discord.Member):
+        channel = await self.get_logs_channel(member.guild.id)
+        should_log_all = await self.check_log_enabled(member.guild.id, "all")
+        should_log_joins = await self.check_log_enabled(member.guild.id, "joins")
+
+        if not channel:
+            return
+
+        if should_log_all or should_log_joins:
+            em = discord.Embed(
+                description=f"{member.mention} {escape_markdown(str(member))}",
+                color=self.bot.color,
+                timestamp=datetime.datetime.now(),
+            )
+            em.set_author(
+                name="Member Left!",
+                icon_url=member.avatar.url if member.avatar else None,
+            )
+            em.set_footer(text=f"ID: {member.id}")
+            em.set_thumbnail(url=member.avatar.url if member.avatar else None)
+
+            roles = ""
+            for role in member.roles[::-1]:
+                if len(roles) > 500:
+                    roles += "and more roles..."
+                    break
+                if str(role) != "@everyone":
+                    roles += f"{role.mention} "
+            if len(roles) == 0:
+                roles = "No roles."
+
+            em.add_field(name="Roles:", value=roles, inline=False)
             await channel.send(embed=em)
 
 
