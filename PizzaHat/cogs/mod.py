@@ -53,13 +53,14 @@ class Mod(Cog, emoji=847248846526087239):
         **Available Modules**
         `All:` Log everything
         `Automod:` Log every automod action
-        `Messages:` Log every message edits/deletions
-        `Member:` Log every member updates
-        `Mod:` Log every moderation action
         `Guild:` Log every guild updates
-        `Roles:` Log every guild role updates
-        `Invites:` Log every invite creations/updates/deletions
         `Integrations:` Log every integration creations/updates/deletions
+        `Invites:` Log every invite creations/deletions
+        `Joins:` Log every member joins/leaves
+        `Member:` Log every member updates
+        `Messages:` Log every message edits/deletions
+        `Mod:` Log every moderation action
+        `Roles:` Log every guild role updates
         `Voice:` Log every voice state updates
 
         **Usage**
@@ -73,13 +74,14 @@ class Mod(Cog, emoji=847248846526087239):
         available_modules = [
             "all",
             "automod",
-            "messages",
-            "member",
-            "mod",
             "guild",
-            "roles",
-            "invites",
             "integrations",
+            "invites",
+            "joins",
+            "member",
+            "messages",
+            "mod",
+            "roles",
             "voice",
         ]
 
