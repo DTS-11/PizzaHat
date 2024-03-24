@@ -379,7 +379,7 @@ class Utility(Cog, emoji=916988537264570368):
         await ctx.send(embed=e)
 
     def get_bot_uptime(self, *, brief=False):
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         delta = now - self.bot.uptime
         hours, remainder = divmod(int(delta.total_seconds()), 3600)
         minutes, seconds = divmod(remainder, 60)

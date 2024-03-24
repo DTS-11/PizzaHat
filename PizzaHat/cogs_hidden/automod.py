@@ -150,7 +150,8 @@ class AutoModConfig(Cog):
             return (
                 m.author == msg.author
                 and (
-                    datetime.datetime.utcnow() - m.created_at.replace(tzinfo=None)
+                    datetime.datetime.now(datetime.timezone.utc)
+                    - m.created_at.replace(tzinfo=None)
                 ).seconds
                 < 7
             )

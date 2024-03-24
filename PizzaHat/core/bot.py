@@ -130,10 +130,11 @@ class PizzaHat(commands.Bot):
 
     async def setup_hook(self) -> None:
         if not hasattr(self, "uptime"):
-            self.uptime = datetime.datetime.utcnow()
+            self.uptime = datetime.datetime.now(datetime.timezone.utc)
 
         # Create DB connection
-        self.db = await db.create_db_pool()
+        if db is not None:
+            self.db = await db.create_db_pool()
 
         # Make the tickets view persistent
         ticket_view = import_module("cogs.tickets").TicketView(self)

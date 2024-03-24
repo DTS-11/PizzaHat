@@ -60,7 +60,8 @@ class AntiAltsConfig(commands.Cog):
 
         delv = (
             (
-                datetime.datetime.utcnow() - member.created_at.replace(tzinfo=None)
+                datetime.datetime.now(datetime.timezone.utc)
+                - member.created_at.replace(tzinfo=None)
             ).total_seconds()
         ) / (60 * 60 * 24)
         if delv >= data[0]:
