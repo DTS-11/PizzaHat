@@ -875,6 +875,78 @@ class GuildLogs(Cog):
             )
             await channel.send(embed=em)
 
+    # ====== GUILD INVITE LOGS ======
+
+    @Cog.listener()
+    async def on_invite_create(self, invite: discord.Invite):
+        if invite.guild is None:
+            return
+
+        channel = await self.get_logs_channel(invite.guild.id)
+        should_log_all = await self.check_log_enabled(invite.guild.id, "all")
+        should_log_invites = await self.check_log_enabled(invite.guild.id, "invites")
+
+        if not channel:
+            return
+
+        if should_log_all or should_log_invites:
+            em = discord.Embed(
+                title="Invite Created",
+                color=discord.Color.green(),
+                timestamp=invite.created_at,
+            )
+            em.add_field(name="Invite Code", value=invite.code, inline=False)
+            em.add_field(name="Created By", value=invite.inviter, inline=False)
+            em.add_field(name="Invite Expiry", value=invite.expires_at, inline=False)
+            em.add_field(name="Invite Channel", value=invite.channel, inline=False)
+            em.add_field(
+                name="Max Invite Uses",
+                value="Unlimited" if invite.max_uses == 0 else invite.max_uses,
+                inline=False,
+            )
+
+            if invite.inviter:
+                em.set_author(
+                    name=invite.inviter,
+                    icon_url=(
+                        invite.inviter.avatar.url if invite.inviter.avatar else None
+                    ),
+                )
+            em.set_footer(text=f"ID: {invite.id}")
+
+            await channel.send(embed=em)
+
+    @Cog.listener()
+    async def on_invite_delete(self, invite: discord.Invite):
+        if invite.guild is None:
+            return
+
+        channel = await self.get_logs_channel(invite.guild.id)
+        should_log_all = await self.check_log_enabled(invite.guild.id, "all")
+        should_log_invites = await self.check_log_enabled(invite.guild.id, "invites")
+
+        if not channel:
+            return
+
+        if should_log_all or should_log_invites:
+            em = discord.Embed(
+                title="Invite Deleted",
+                color=discord.Color.red(),
+                timestamp=datetime.datetime.now(),
+            )
+            em.description = f"> **Invite Code:** {invite.code}"
+
+            if invite.inviter:
+                em.set_author(
+                    name=invite.inviter,
+                    icon_url=(
+                        invite.inviter.avatar.url if invite.inviter.avatar else None
+                    ),
+                )
+            em.set_footer(text=f"ID: {invite.id}")
+
+            await channel.send(embed=em)
+
 
 async def setup(bot):
     await bot.add_cog(GuildLogs(bot))
