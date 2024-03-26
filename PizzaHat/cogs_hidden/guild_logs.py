@@ -1096,7 +1096,7 @@ class GuildLogs(Cog):
 
     @Cog.listener(name="on_member_join")
     async def send_join_log(self, member: discord.Member):
-        channel = await self.get_logs_channel(self, member.guild.id)
+        channel = await self.get_logs_channel(member.guild.id)
         should_log_all = await self.check_log_enabled(member.guild.id, "all")
         should_log_joins = await self.check_log_enabled(member.guild.id, "joins")
 
