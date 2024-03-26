@@ -1,8 +1,7 @@
 import datetime
 import traceback
-import typing
 import uuid
-from typing import List
+from typing import List, Union
 
 import discord
 import humanfriendly
@@ -166,7 +165,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_permissions(manage_nicknames=True)
     @commands.bot_has_permissions(manage_nicknames=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def setnick(self, ctx: Context, member: discord.Member, *, nick):
+    async def setnick(self, ctx: Context, member: discord.Member, *, nick: str):
         """
         Sets a custom nickname.
         """
@@ -213,7 +212,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def slowmode(self, ctx: Context, seconds: int = None):  # type: ignore
+    async def slowmode(self, ctx: Context, seconds: int | None):
         """
         Change the slow-mode in the current channel.
         If no values are given, the bot returns slowmode of the current channel.
@@ -222,21 +221,30 @@ class Mod(Cog, emoji=847248846526087239):
         if ctx.channel is discord.DMChannel:
             return await ctx.send("Slow-mode cannot be checked/added.")
 
-        if seconds is None:
-            seconds = ctx.channel.slowmode_delay  # type: ignore
-            await ctx.send(f"The slowmode in this channel is `{seconds}` seconds")
+        if isinstance(
+            ctx.channel,
+            Union[
+                discord.TextChannel,
+                discord.StageChannel,
+                discord.ForumChannel,
+                discord.Thread,
+            ],
+        ):
+            if seconds is None:
+                seconds = ctx.channel.slowmode_delay
+                await ctx.send(f"The slowmode in this channel is `{seconds}` seconds")
 
-        elif seconds == 0:
-            await ctx.channel.edit(slowmode_delay=0)  # type: ignore
-            await ctx.send(
-                f"{self.bot.yes} Slow-mode set to none in this channel. Chat goes brrrr...."
-            )
+            elif seconds == 0:
+                await ctx.channel.edit(slowmode_delay=0)
+                await ctx.send(
+                    f"{self.bot.yes} Slow-mode set to none in this channel. Chat goes brrrr...."
+                )
 
-        else:
-            await ctx.channel.edit(slowmode_delay=seconds)  # type: ignore
-            await ctx.send(
-                f"{self.bot.yes} Slow-mode in this channel changed to `{seconds}` seconds!"
-            )
+            else:
+                await ctx.channel.edit(slowmode_delay=seconds)
+                await ctx.send(
+                    f"{self.bot.yes} Slow-mode in this channel changed to `{seconds}` seconds!"
+                )
 
     @commands.group(aliases=["lockdown"])
     @commands.guild_only()
@@ -288,7 +296,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def lock_server(self, ctx: Context, role: discord.Role = None):  # type: ignore
+    async def lock_server(self, ctx: Context, role: discord.Role | None):
         """
         Locks the whole server with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
@@ -361,7 +369,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def unlock_server(self, ctx: Context, role: discord.Role = None):  # type: ignore
+    async def unlock_server(self, ctx: Context, role: discord.Role | None):
         """
         Unlocks the whole server with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
@@ -467,7 +475,7 @@ class Mod(Cog, emoji=847248846526087239):
         If no amount is given, it deletes upto 100 messages.
         """
 
-        def is_bot(m):
+        def is_bot(m: discord.Message):
             return m.author == self.bot.user
 
         if ctx.channel is discord.DMChannel:
@@ -479,30 +487,35 @@ class Mod(Cog, emoji=847248846526087239):
             )
 
         else:
-            await ctx.channel.purge(limit=amount, check=is_bot)  # type: ignore
-            await ctx.send(
-                f"{self.bot.yes} {amount} messages cleared", delete_after=2.5
-            )
+            if isinstance(
+                ctx.channel,
+                Union[
+                    discord.TextChannel,
+                    discord.StageChannel,
+                    discord.ForumChannel,
+                    discord.Thread,
+                ],
+            ):
+                await ctx.channel.purge(limit=amount, check=is_bot)
+                await ctx.send(
+                    f"{self.bot.yes} {amount} messages cleared", delete_after=2.5
+                )
 
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def kick(self, ctx: Context, member: discord.Member, *, reason=None):
+    async def kick(self, ctx: Context, member: discord.Member, *, reason: str | None):
         """
         Kicks a member from the server.
         """
 
-        try:
-            if reason is None:
-                reason = f"No reason provided.\nKicked by {ctx.author}"
+        if reason is None:
+            reason = f"No reason provided.\nKicked by {ctx.author}"
 
-            await member.kick(reason=reason)
-            await ctx.send(f"{self.bot.yes} Kicked `{member}`")
-
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+        await member.kick(reason=reason)
+        await ctx.send(f"{self.bot.yes} Kicked `{member}`")
 
     @commands.command(aliases=["b"])
     @commands.guild_only()
@@ -510,29 +523,25 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(ban_members=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def ban(
-        self, ctx: Context, member: typing.Union[discord.Member, int], *, reason=None
+        self, ctx: Context, member: Union[discord.Member, int], *, reason: str | None
     ):
         """
         Bans a member whether or not the member is in the server.
         You can ban the member using their ID or my mentioning them.
         """
 
-        try:
-            if reason is None:
-                reason = f"No reason provided\nBanned by {ctx.author}"
+        if reason is None:
+            reason = reason or f"Banned by {ctx.author} (ID: {ctx.author.id})"
 
-            if ctx.guild is not None:
-                if isinstance(member, int):
-                    await ctx.guild.ban(discord.Object(id=member), reason=f"{reason}")
-                    user = await self.bot.fetch_user(member)
-                    await ctx.send(f"{self.bot.yes} Banned `{user}`")
+        if ctx.guild is not None:
+            if isinstance(member, int):
+                await ctx.guild.ban(discord.Object(id=member), reason=f"{reason}")
+                user = await self.bot.fetch_user(member)
+                await ctx.send(f"{self.bot.yes} Banned `{user}`")
 
-                else:
-                    await member.ban(reason=f"{reason}", delete_message_days=0)
-                    await ctx.send(f"{self.bot.yes} Banned `{member}`")
-
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+            else:
+                await member.ban(reason=f"{reason}", delete_message_days=0)
+                await ctx.send(f"{self.bot.yes} Banned `{member}`")
 
     @commands.command(aliases=["mb"])
     @commands.guild_only()
@@ -540,34 +549,36 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(ban_members=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def massban(
-        self, ctx: Context, members: commands.Greedy[discord.Member], *, reason=None
+        self,
+        ctx: Context,
+        members: commands.Greedy[discord.Member],
+        *,
+        reason: str | None,
     ):
         """
         Mass bans multiple members from the server.
         You can only ban users, who are in the server.
         """
 
-        try:
-            if reason is None:
-                reason = f"No reason provided\nBanned by {ctx.author}"
+        if reason is None:
+            reason = f"Banned by {ctx.author} (ID: {ctx.author.id})"
 
-            if not len(members):
-                await ctx.send("One or more required arguments are missing.")
+        if not len(members):
+            await ctx.send("One or more required arguments are missing.")
 
-            else:
-                for target in members:
-                    await target.ban(reason=reason, delete_message_days=0)
-                    await ctx.send(f"{self.bot.yes} Banned `{target}`")
-
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+        else:
+            for target in members:
+                await target.ban(reason=reason, delete_message_days=0)
+                await ctx.send(f"{self.bot.yes} Banned `{target}`")
 
     @commands.command(aliases=["sb"])
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def softban(self, ctx: Context, member: discord.Member, *, reason=None):
+    async def softban(
+        self, ctx: Context, member: discord.Member, *, reason: str | None
+    ):
         """Soft bans a member from the server.
 
         A softban is basically banning the member from the server but
@@ -575,16 +586,15 @@ class Mod(Cog, emoji=847248846526087239):
         kick the member while removing their messages.
         """
 
-        try:
-            if reason is None:
-                reason = f"No reason given.\nBanned by {ctx.author}"
+        if not ctx.guild:
+            return
 
-            await ctx.guild.ban(member, reason)  # type: ignore
-            await ctx.guild.unban(member, reason)  # type: ignore
-            await ctx.send(f"{self.bot.yes} Sucessfully soft-banned {member}.")
+        if reason is None:
+            reason = f"Banned by {ctx.author} (ID: {ctx.author.id})"
 
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+        await ctx.guild.ban(member, reason=reason)
+        await ctx.guild.unban(member, reason=reason)
+        await ctx.send(f"{self.bot.yes} Sucessfully soft-banned {member}.")
 
     @commands.command(aliases=["ub"])
     @commands.guild_only()
@@ -600,7 +610,8 @@ class Mod(Cog, emoji=847248846526087239):
             if ctx.guild is not None:
                 user = self.bot.get_user(id)
                 await ctx.guild.unban(
-                    discord.Object(id=id), reason=f"Unbanned by {ctx.author}"
+                    discord.Object(id=id),
+                    reason=f"Unbanned by {ctx.author} (ID: {ctx.author.id})",
                 )
                 await ctx.send(f"{self.bot.yes} Unbanned `{user}`")
 
@@ -615,7 +626,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(moderate_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def timeout(
-        self, ctx: Context, member: discord.Member, duration, *, reason=None
+        self, ctx: Context, member: discord.Member, duration, *, reason: str | None
     ):
         """
         Mutes or timeouts a member for specific time.
@@ -623,42 +634,34 @@ class Mod(Cog, emoji=847248846526087239):
         Use 5m for 5 mins, 1h for 1 hour etc...
         """
 
-        try:
-            if reason is None:
-                reason = f"Action done by {ctx.author}"
+        if reason is None:
+            reason = f"Action done by {ctx.author}"
 
-            humanly_duration = humanfriendly.parse_timespan(duration)
+        humanly_duration = humanfriendly.parse_timespan(duration)
 
-            await member.timeout(
-                discord.utils.utcnow() + datetime.timedelta(seconds=humanly_duration),
-                reason=reason,
-            )
-            await ctx.send(
-                f"{self.bot.yes} {member} has been timed out for {duration}.\nReason: {reason}"
-            )
-
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+        await member.timeout(
+            discord.utils.utcnow() + datetime.timedelta(seconds=humanly_duration),
+            reason=reason,
+        )
+        await ctx.send(
+            f"{self.bot.yes} {member} has been timed out for {duration}.\nReason: {reason}"
+        )
 
     @commands.command(aliases=["untimeout"])
     @commands.guild_only()
     @commands.has_permissions(moderate_members=True)
     @commands.bot_has_permissions(moderate_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def unmute(self, ctx: Context, member: discord.Member, *, reason=None):
+    async def unmute(self, ctx: Context, member: discord.Member, *, reason: str | None):
         """
         Unmutes or removes a member from timeout.
         """
 
-        try:
-            if reason is None:
-                reason = f"Action done by {ctx.author}"
+        if reason is None:
+            reason = f"Action done by {ctx.author}"
 
-            await member.timeout(None, reason=reason)
-            await ctx.send(f"{self.bot.yes} {member} has been unmuted!")
-
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+        await member.timeout(None, reason=reason)
+        await ctx.send(f"{self.bot.yes} {member} has been unmuted!")
 
     @commands.group()
     @commands.guild_only()
@@ -707,20 +710,14 @@ class Mod(Cog, emoji=847248846526087239):
         Remove role from a user.
         """
 
-        try:
-            if role in user.roles:
-                await user.remove_roles(role)
-                await ctx.send(
-                    f"{self.bot.yes} Successfully removed `{role.name}` from {user}"
-                )
+        if role in user.roles:
+            await user.remove_roles(role)
+            await ctx.send(
+                f"{self.bot.yes} Successfully removed `{role.name}` from {user}"
+            )
 
-            else:
-                await ctx.send(
-                    f"{self.bot.no} {user} does not have `{role.name}` role."
-                )
-
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+        else:
+            await ctx.send(f"{self.bot.no} {user} does not have `{role.name}` role.")
 
     @role.command(name="create")
     @commands.guild_only()
@@ -762,14 +759,10 @@ class Mod(Cog, emoji=847248846526087239):
         Delete an already existing role in the server.
         """
 
-        try:
-            if ctx.guild is not None:
-                if role in ctx.guild.roles:
-                    await role.delete()
-                    await ctx.send(f"{self.bot.yes} Role deleted successfully!")
-
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+        if ctx.guild is not None:
+            if role in ctx.guild.roles:
+                await role.delete()
+                await ctx.send(f"{self.bot.yes} Role deleted successfully!")
 
     @role.command(name="list", aliases=["all"])
     @commands.guild_only()
@@ -779,45 +772,38 @@ class Mod(Cog, emoji=847248846526087239):
         List all the server roles.
         """
 
-        try:
-            if ctx.guild is not None:
-                roles = sorted(ctx.guild.roles, key=lambda x: x.position, reverse=True)
-                embeds = []
+        if ctx.guild is not None:
+            roles = sorted(ctx.guild.roles, key=lambda x: x.position, reverse=True)
+            embeds = []
 
-                chunk_size = 10
-                role_chunks = [
-                    roles[i : i + chunk_size] for i in range(0, len(roles), chunk_size)
-                ]
+            chunk_size = 10
+            role_chunks = [
+                roles[i : i + chunk_size] for i in range(0, len(roles), chunk_size)
+            ]
 
-                for i, chunk in enumerate(role_chunks, 1):
-                    description = "\n\n".join(
-                        [
-                            f"{role.mention} `({role.id})` • {role.name}"
-                            for role in chunk
-                        ]
+            for i, chunk in enumerate(role_chunks, 1):
+                description = "\n\n".join(
+                    [f"{role.mention} `({role.id})` • {role.name}" for role in chunk]
+                )
+                embeds.append(
+                    discord.Embed(
+                        title=f"{ctx.guild.name} Roles ({len(roles)})",
+                        description=description,
+                        color=self.bot.color,
+                        timestamp=ctx.message.created_at,
                     )
-                    embeds.append(
-                        discord.Embed(
-                            title=f"{ctx.guild.name} Roles ({len(roles)})",
-                            description=description,
-                            color=self.bot.color,
-                            timestamp=ctx.message.created_at,
-                        )
-                        .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
-                        .set_footer(text=f"Page {i}/{len(role_chunks)}")
-                    )
+                    .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
+                    .set_footer(text=f"Page {i}/{len(role_chunks)}")
+                )
 
-                if not embeds:
-                    return await ctx.send("No roles to display.")
+            if not embeds:
+                return await ctx.send("No roles to display.")
 
-                if len(embeds) == 1:
-                    return await ctx.send(embed=embeds[0])
+            if len(embeds) == 1:
+                return await ctx.send(embed=embeds[0])
 
-                view = Paginator(ctx, embeds)
-                return await ctx.send(embed=embeds[0], view=view)
-
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+            view = Paginator(ctx, embeds)
+            return await ctx.send(embed=embeds[0], view=view)
 
     @commands.group()
     @commands.guild_only()
@@ -836,18 +822,14 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def channel_create(self, ctx: Context, name):
+    async def channel_create(self, ctx: Context, name: str):
         """
         Create a new channel in the server.
         """
 
-        try:
-            if ctx.guild is not None:
-                await ctx.guild.create_text_channel(name)
-                await ctx.send(f"{self.bot.yes} Channel created successfully!")
-
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+        if ctx.guild is not None:
+            await ctx.guild.create_text_channel(name)
+            await ctx.send(f"{self.bot.yes} Channel created successfully!")
 
     @channel.command(name="delete")
     @commands.guild_only()
@@ -859,13 +841,9 @@ class Mod(Cog, emoji=847248846526087239):
         Delete a channel in the server.
         """
 
-        try:
-            if ctx.guild is not None:
-                await channel.delete()
-                await ctx.send(f"{self.bot.yes} Channel deleted successfully!")
-
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+        if ctx.guild is not None:
+            await channel.delete()
+            await ctx.send(f"{self.bot.yes} Channel deleted successfully!")
 
     @channel.command(name="list", aliases=["all"])
     @commands.guild_only()
@@ -875,97 +853,93 @@ class Mod(Cog, emoji=847248846526087239):
         List all the server channels.
         """
 
-        try:
-            if ctx.guild is not None:
-                channels = [
-                    channel
-                    for channel in ctx.guild.channels
-                    if not isinstance(channel, discord.CategoryChannel)
-                ]
-                embeds = []
+        if ctx.guild is not None:
+            channels = [
+                channel
+                for channel in ctx.guild.channels
+                if not isinstance(channel, discord.CategoryChannel)
+            ]
+            embeds = []
 
-                # Group channels by category
-                channels_by_category = {}
-                channels_without_category = []
+            # Group channels by category
+            channels_by_category = {}
+            channels_without_category = []
 
-                for channel in channels:
-                    if isinstance(channel, discord.TextChannel) and channel.category:
-                        category_id = str(channel.category.id)
-                        if category_id not in channels_by_category:
-                            channels_by_category[category_id] = {
-                                "category": channel.category,
-                                "channels": [],
-                            }
-                        channels_by_category[category_id]["channels"].append(channel)
-                    else:
-                        channels_without_category.append(channel)
+            for channel in channels:
+                if isinstance(channel, discord.TextChannel) and channel.category:
+                    category_id = str(channel.category.id)
+                    if category_id not in channels_by_category:
+                        channels_by_category[category_id] = {
+                            "category": channel.category,
+                            "channels": [],
+                        }
+                    channels_by_category[category_id]["channels"].append(channel)
+                else:
+                    channels_without_category.append(channel)
 
-                # Create embed for channels without categories
-                if channels_without_category:
-                    description = "".join(
-                        [
-                            f"```asciidoc\nNo category\n\t{channel.name} :: {channel.type} :: {channel.id}\n```"
-                            for channel in channels_without_category
-                        ]
+            # Create embed for channels without categories
+            if channels_without_category:
+                description = "".join(
+                    [
+                        f"```asciidoc\nNo category\n\t{channel.name} :: {channel.type} :: {channel.id}\n```"
+                        for channel in channels_without_category
+                    ]
+                )
+
+                embeds.append(
+                    discord.Embed(
+                        title=f"{ctx.guild.name} Channels ({len(channels)})",
+                        description=description,
+                        color=self.bot.color,
+                        timestamp=ctx.message.created_at,
                     )
+                    .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
+                    .set_footer(text=f"Page 1/{len(channels_by_category) + 1}")
+                )
 
-                    embeds.append(
-                        discord.Embed(
-                            title=f"{ctx.guild.name} Channels ({len(channels)})",
-                            description=description,
-                            color=self.bot.color,
-                            timestamp=ctx.message.created_at,
-                        )
-                        .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
-                        .set_footer(text=f"Page 1/{len(channels_by_category) + 1}")
+            # Create embeds for channels with categories
+            total_category_pages = len(channels_by_category)
+            category_page_count = 1 if channels_without_category else 0
+
+            for i, category_info in enumerate(
+                channels_by_category.values(), category_page_count + 1
+            ):
+                category = category_info["category"]
+                category_name = category.name if category else "No category"
+                category_id = category.id if category else "No category"
+
+                description = "".join(
+                    [
+                        f"```asciidoc\n{category_name} :: '{category_id}'\n\t{channel.name} :: {channel.type} :: {channel.id}\n```"
+                        for channel in category_info["channels"]
+                    ]
+                )
+
+                embeds.append(
+                    discord.Embed(
+                        title=f"{ctx.guild.name} Channels ({len(channels)})",
+                        description=description,
+                        color=self.bot.color,
+                        timestamp=ctx.message.created_at,
                     )
+                    .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
+                    .set_footer(text=f"Page {i}/{total_category_pages + 1}")
+                )
 
-                # Create embeds for channels with categories
-                total_category_pages = len(channels_by_category)
-                category_page_count = 1 if channels_without_category else 0
+            if not embeds:
+                return await ctx.send("No channels to display.")
 
-                for i, category_info in enumerate(
-                    channels_by_category.values(), category_page_count + 1
-                ):
-                    category = category_info["category"]
-                    category_name = category.name if category else "No category"
-                    category_id = category.id if category else "No category"
+            if len(embeds) == 1:
+                return await ctx.send(embed=embeds[0])
 
-                    description = "".join(
-                        [
-                            f"```asciidoc\n{category_name} :: '{category_id}'\n\t{channel.name} :: {channel.type} :: {channel.id}\n```"
-                            for channel in category_info["channels"]
-                        ]
-                    )
-
-                    embeds.append(
-                        discord.Embed(
-                            title=f"{ctx.guild.name} Channels ({len(channels)})",
-                            description=description,
-                            color=self.bot.color,
-                            timestamp=ctx.message.created_at,
-                        )
-                        .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
-                        .set_footer(text=f"Page {i}/{total_category_pages + 1}")
-                    )
-
-                if not embeds:
-                    return await ctx.send("No channels to display.")
-
-                if len(embeds) == 1:
-                    return await ctx.send(embed=embeds[0])
-
-                view = Paginator(ctx, embeds)
-                return await ctx.send(embed=embeds[0], view=view)
-
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+            view = Paginator(ctx, embeds)
+            return await ctx.send(embed=embeds[0], view=view)
 
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def warn(self, ctx: Context, member: discord.Member, *, reason=None):
+    async def warn(self, ctx: Context, member: discord.Member, *, reason: str | None):
         """
         Warns a user.
         """
@@ -973,45 +947,41 @@ class Mod(Cog, emoji=847248846526087239):
         if reason is None:
             reason = f"No reason given.\nWarned done by {ctx.author}"
 
-        try:
-            if ctx.guild is not None:
-                if member == ctx.author or member == self.bot.user:
-                    return await ctx.send("You cant warn yourself or the bot.")
+        if ctx.guild is not None:
+            if member == ctx.author or member == self.bot.user:
+                return await ctx.send("You cant warn yourself or the bot.")
 
-                if not ctx.author.top_role.position == member.top_role.position:  # type: ignore
-                    if not ctx.author.top_role.position > member.top_role.position:  # type: ignore
-                        return await ctx.send(
-                            "You cant warn someone that has higher or same role heirarchy."
-                        )
-
-                (
-                    await self.bot.db.execute(
-                        "INSERT INTO warnlogs (guild_id, user_id, mod_id, reason) VALUES ($1, $2, $3, $4)",
-                        ctx.guild.id,
-                        member.id,
-                        ctx.author.id,
-                        reason,
+            if not ctx.author.top_role.position == member.top_role.position:  # type: ignore
+                if not ctx.author.top_role.position > member.top_role.position:  # type: ignore
+                    return await ctx.send(
+                        "You cant warn someone that has higher or same role heirarchy."
                     )
-                    if self.bot.db
-                    else None
-                )
 
-                em = discord.Embed(
-                    title=f"{self.bot.yes} Warned User",
-                    description=f"Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}",
-                    color=discord.Color.green(),
-                    timestamp=datetime.datetime.now(),
+            (
+                await self.bot.db.execute(
+                    "INSERT INTO warnlogs (guild_id, user_id, mod_id, reason) VALUES ($1, $2, $3, $4)",
+                    ctx.guild.id,
+                    member.id,
+                    ctx.author.id,
+                    reason,
                 )
-                em.set_author(
-                    name=ctx.author,
-                    url=ctx.author.avatar.url if ctx.author.avatar else None,
-                )
-                em.set_thumbnail(url=member.avatar.url if member.avatar else None)
+                if self.bot.db
+                else None
+            )
 
-                await ctx.send(embed=em)
+            em = discord.Embed(
+                title=f"{self.bot.yes} Warned User",
+                description=f"Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}",
+                color=discord.Color.green(),
+                timestamp=datetime.datetime.now(),
+            )
+            em.set_author(
+                name=ctx.author,
+                url=ctx.author.avatar.url if ctx.author.avatar else None,
+            )
+            em.set_thumbnail(url=member.avatar.url if member.avatar else None)
 
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+            await ctx.send(embed=em)
 
     @commands.command(aliases=["warns"])
     @commands.guild_only()
@@ -1077,30 +1047,26 @@ class Mod(Cog, emoji=847248846526087239):
         Deletes a warn of the user with warn ID.
         """
 
-        try:
-            result = (
-                await self.bot.db.execute(
-                    "DELETE FROM warnlogs WHERE id = $1 AND user_id = $2 AND guild_id = $3",
-                    warn_id,
-                    member.id,
-                    ctx.guild.id,
-                )
-                if self.bot.db and ctx.guild
-                else None
+        result = (
+            await self.bot.db.execute(
+                "DELETE FROM warnlogs WHERE id = $1 AND user_id = $2 AND guild_id = $3",
+                warn_id,
+                member.id,
+                ctx.guild.id,
+            )
+            if self.bot.db and ctx.guild
+            else None
+        )
+
+        if result == "DELETE 0":
+            await ctx.send(
+                f"{self.bot.no} Warn ID: `{warn_id}` not found for {member}."
             )
 
-            if result == "DELETE 0":
-                await ctx.send(
-                    f"{self.bot.no} Warn ID: `{warn_id}` not found for {member}."
-                )
-
-            else:
-                await ctx.send(
-                    f"{self.bot.yes} Warn ID `{warn_id}` for {member} has been deleted."
-                )
-
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+        else:
+            await ctx.send(
+                f"{self.bot.yes} Warn ID `{warn_id}` for {member} has been deleted."
+            )
 
 
 async def setup(bot):
