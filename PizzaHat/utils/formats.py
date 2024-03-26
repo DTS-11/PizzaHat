@@ -73,7 +73,7 @@ class TabularData:
         return "\n".join(to_draw)
 
 
-def format_dt(dt: datetime.datetime, style: Optional[str] = None) -> str:
+def format_dt(dt: datetime.datetime, style: Optional[str] | None) -> str:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=datetime.timezone.utc)
 

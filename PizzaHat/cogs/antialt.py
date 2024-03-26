@@ -111,7 +111,7 @@ class AntiAlts(Cog, emoji=1211597953433862144):
     async def antialt(
         self,
         ctx: Context,
-        config: str = None,  # type: ignore
+        config: str | None,
         setting: Union[discord.Role, str, int] = None,  # type: ignore
     ):
         """
