@@ -1,5 +1,4 @@
 import asyncio
-import traceback
 
 import discord
 import yarl
@@ -166,47 +165,42 @@ class Emojis(Cog, emoji=1220671125709918228):
     async def emoji_list(self, ctx: Context):
         """Show list of emojis in the server."""
 
-        try:
-            if ctx.guild and ctx.guild.emojis is not None:
-                emojis = ctx.guild.emojis
-                embeds = []
+        if ctx.guild and ctx.guild.emojis is not None:
+            emojis = ctx.guild.emojis
+            embeds = []
 
-                chunk_size = 10
-                emoji_chunks = [
-                    emojis[i : i + chunk_size]
-                    for i in range(0, len(emojis), chunk_size)
-                ]
+            chunk_size = 10
+            emoji_chunks = [
+                emojis[i : i + chunk_size] for i in range(0, len(emojis), chunk_size)
+            ]
 
-                for i, chunk in enumerate(emoji_chunks, 1):
-                    description = "\n\n".join(
-                        [
-                            f"{emoji} {f'`<a:{emoji.name}:{emoji.id}>`' if emoji.animated else f'`<:{emoji.name}:{emoji.id}>`'}"
-                            for emoji in chunk
-                        ]
+            for i, chunk in enumerate(emoji_chunks, 1):
+                description = "\n\n".join(
+                    [
+                        f"{emoji} {f'`<a:{emoji.name}:{emoji.id}>`' if emoji.animated else f'`<:{emoji.name}:{emoji.id}>`'}"
+                        for emoji in chunk
+                    ]
+                )
+
+                embeds.append(
+                    discord.Embed(
+                        title=f"{ctx.guild.name} Emojis ({len(emojis)})",
+                        description=description,
+                        color=self.bot.color,
+                        timestamp=ctx.message.created_at,
                     )
+                    .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
+                    .set_footer(text=f"Page {i}/{len(emoji_chunks)}")
+                )
 
-                    embeds.append(
-                        discord.Embed(
-                            title=f"{ctx.guild.name} Emojis ({len(emojis)})",
-                            description=description,
-                            color=self.bot.color,
-                            timestamp=ctx.message.created_at,
-                        )
-                        .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
-                        .set_footer(text=f"Page {i}/{len(emoji_chunks)}")
-                    )
+            if not embeds:
+                return await ctx.send("No emojis to display.")
 
-                if not embeds:
-                    return await ctx.send("No emojis to display.")
+            if len(embeds) == 1:
+                return await ctx.send(embed=embeds[0])
 
-                if len(embeds) == 1:
-                    return await ctx.send(embed=embeds[0])
-
-                view = Paginator(ctx, embeds)
-                return await ctx.send(embed=embeds[0], view=view)
-
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+            view = Paginator(ctx, embeds)
+            return await ctx.send(embed=embeds[0], view=view)
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
@@ -214,12 +208,8 @@ class Emojis(Cog, emoji=1220671125709918228):
         """Emojify a given emoji."""
 
         if emoji.url is not None:
-            em = discord.Embed(
-                title=emoji.name, color=self.bot.color, timestamp=ctx.message.created_at
-            )
-            em.set_image(url=emoji.url)
-
-            await ctx.send(embed=em)
+            if isinstance(emoji, discord.Emoji):
+                await ctx.send(emoji.url)
 
 
 async def setup(bot):
