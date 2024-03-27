@@ -94,14 +94,14 @@ class Tickets(Cog, emoji=1220678462839197756):
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
-    @commands.command(aliases=["tickets"])
+    @commands.command()
     @commands.guild_only()
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
+    @commands.has_permissions(manage_threads=True)
+    @commands.bot_has_permissions(manage_threads=True)
     @commands.cooldown(1, 60, commands.BucketType.user)
-    async def ticket(self, ctx: Context, channel: discord.TextChannel):
+    async def tsetup(self, ctx: Context, channel: discord.TextChannel):
         """
-        Set up the Ticket system in the server by sending the `Create Ticket` message.
+        Setup the Ticket system in the server by sending the `Create Ticket` message.
         """
 
         em = discord.Embed(
@@ -114,6 +114,70 @@ class Tickets(Cog, emoji=1220678462839197756):
         view = TicketView(self.bot)
         await channel.send(embed=em, view=view)
         await ctx.message.add_reaction(self.bot.yes)
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_threads=True)
+    @commands.bot_has_permissions(manage_threads=True)
+    @commands.cooldown(1, 60, commands.BucketType.user)
+    async def tadd(self, ctx: Context, user: discord.Member):
+        """Adds a user to the current ticket thread."""
+
+        if isinstance(ctx.channel, discord.Thread):
+            await ctx.channel.add_user(user)
+            await ctx.send(f"{self.bot.yes} Added {user.mention} to the ticket.")
+
+        else:
+            await ctx.send(f"{self.bot.no} You can only add people to a ticket thread.")
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_threads=True)
+    @commands.bot_has_permissions(manage_threads=True)
+    @commands.cooldown(1, 60, commands.BucketType.user)
+    async def tremove(self, ctx: Context, user: discord.Member):
+        """Removes a user from the current ticket thread."""
+
+        if isinstance(ctx.channel, discord.Thread):
+            await ctx.channel.remove_user(user)
+            await ctx.send(f"{self.bot.yes} Removed {user.mention} to the ticket.")
+
+        else:
+            await ctx.send(
+                f"{self.bot.no} You can only remove people from a ticket thread."
+            )
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_threads=True)
+    @commands.bot_has_permissions(manage_threads=True)
+    @commands.cooldown(1, 60, commands.BucketType.user)
+    async def tclose(self, ctx: Context):
+        """Archives and locks the current ticket thread."""
+
+        if isinstance(ctx.channel, discord.Thread):
+            await ctx.send(f"{self.bot.yes} Closed the ticket.")
+            await ctx.channel.edit(archived=True, locked=True)
+
+        else:
+            await ctx.send(
+                f"{self.bot.no} You can only close tickets from ticket threads."
+            )
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_threads=True)
+    @commands.bot_has_permissions(manage_threads=True)
+    @commands.cooldown(1, 60, commands.BucketType.user)
+    async def trename(self, ctx: Context, name: str):
+        """Rename the current ticket thread."""
+
+        if isinstance(ctx.channel, discord.Thread):
+            await ctx.channel.edit(name=name)
+            await ctx.send(f"{self.bot.yes} Renamed the ticket thread to `{name}`")
+
+        else:
+            await ctx.send(f"{self.bot.no} You can only rename ticket threads.")
 
 
 async def setup(bot):
