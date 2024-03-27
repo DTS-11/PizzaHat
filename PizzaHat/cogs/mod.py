@@ -685,18 +685,14 @@ class Mod(Cog, emoji=847248846526087239):
         Assign role to a user.
         """
 
-        try:
-            if role not in user.roles:
-                await user.add_roles(role)
-                await ctx.send(
-                    f"{self.bot.yes} Successfully added `{role.name}` to {user}"
-                )
+        if role not in user.roles:
+            await user.add_roles(role)
+            await ctx.send(
+                f"{self.bot.yes} Successfully added `{role.name}` to {user}"
+            )
 
-            else:
-                await ctx.send(f"{self.bot.no} {user} already has `{role.name}` role.")
-
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+        else:
+            await ctx.send(f"{self.bot.no} {user} already has `{role.name}` role.")
 
     @role.command(name="remove")
     @commands.guild_only()
@@ -736,18 +732,14 @@ class Mod(Cog, emoji=847248846526087239):
         Create a new role in the server with given color and hoist options.
         """
 
-        try:
-            if ctx.guild is not None:
-                await ctx.guild.create_role(
-                    reason=f"Role created by {ctx.author}",
-                    name=role.name,
-                    color=color,
-                    hoist=hoist,
-                )
-                await ctx.send(f"{self.bot.yes} Role created successfully!")
-
-        except Exception as e:
-            print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+        if ctx.guild is not None:
+            await ctx.guild.create_role(
+                reason=f"Role created by {ctx.author}",
+                name=role.name,
+                color=color,
+                hoist=hoist,
+            )
+            await ctx.send(f"{self.bot.yes} Role created successfully!")
 
     @role.command(name="delete")
     @commands.guild_only()

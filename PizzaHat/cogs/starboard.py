@@ -32,23 +32,16 @@ class Starboard(Cog, emoji=1220673915576389692):
         To replace this channel, simply run this command again.
         """
 
-        try:
-            (
-                await self.bot.db.execute(
-                    "INSERT INTO star_config (guild_id, channel_id) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET channel_id=$2",
-                    ctx.guild.id,
-                    channel.id,
-                )
-                if self.bot.db and ctx.guild
-                else None
+        (
+            await self.bot.db.execute(
+                "INSERT INTO star_config (guild_id, channel_id) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET channel_id=$2",
+                ctx.guild.id,
+                channel.id,
             )
-            await ctx.send(
-                f"{self.bot.yes} Starboard channel set to {channel.mention}."
-            )
-
-        except Exception as e:
-            await ctx.send(f"{self.bot.no} Something went wrong...")
-            print(f"Error in starboard channel cmd: {e}")
+            if self.bot.db and ctx.guild
+            else None
+        )
+        await ctx.send(f"{self.bot.yes} Starboard channel set to {channel.mention}.")
 
     @star.command(name="count", aliases=["limit"])
     @commands.guild_only()
@@ -60,24 +53,22 @@ class Starboard(Cog, emoji=1220673915576389692):
         Default count is set to 5. Maximum limit is 100.
         """
 
-        try:
-            if count > 100:
-                return await ctx.send(f"{self.bot.no} Maximum limit is 100.")
+        if count > 100:
+            return await ctx.send(f"{self.bot.no} Maximum limit is 100.")
 
-            (
-                await self.bot.db.execute(
-                    "INSERT INTO star_config (guild_id, star_count) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET star_count=$2",
-                    ctx.guild.id,
-                    count,
-                )
-                if self.bot.db and ctx.guild
-                else None
+        if count == 0:
+            return await ctx.send(f"{self.bot.no} Star count cannot be 0.")
+
+        (
+            await self.bot.db.execute(
+                "INSERT INTO star_config (guild_id, star_count) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET star_count=$2",
+                ctx.guild.id,
+                count,
             )
-            await ctx.send(f"{self.bot.yes} Starboard star count set to `{count}`.")
-
-        except Exception as e:
-            await ctx.send(f"{self.bot.no} Something went wrong...")
-            print(f"Error in starboard count cmd: {e}")
+            if self.bot.db and ctx.guild
+            else None
+        )
+        await ctx.send(f"{self.bot.yes} Starboard star count set to `{count}`.")
 
     @star.command(name="self")
     @commands.guild_only()
@@ -89,28 +80,23 @@ class Starboard(Cog, emoji=1220673915576389692):
         Accepts true/false values. Defaults to True.
         """
 
-        try:
-            if enable not in (True, False):
-                return await ctx.send(
-                    f"{self.bot.no} Please enter a valid value. Accepts `true` or `false`."
-                )
-
-            (
-                await self.bot.db.execute(
-                    "INSERT INTO star_config (guild_id, self_star) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET self_star=$2",
-                    ctx.guild.id,
-                    enable,
-                )
-                if self.bot.db and ctx.guild
-                else None
-            )
-            await ctx.send(
-                f"{self.bot.yes} Starboard self-star set to `{'true' if enable else 'false'}`."
+        if enable not in (True, False):
+            return await ctx.send(
+                f"{self.bot.no} Please enter a valid value. Accepts `true` or `false`."
             )
 
-        except Exception as e:
-            await ctx.send(f"{self.bot.no} Something went wrong...")
-            print(f"Error in starboard self-star cmd: {e}")
+        (
+            await self.bot.db.execute(
+                "INSERT INTO star_config (guild_id, self_star) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET self_star=$2",
+                ctx.guild.id,
+                enable,
+            )
+            if self.bot.db and ctx.guild
+            else None
+        )
+        await ctx.send(
+            f"{self.bot.yes} Starboard self-star set to `{'true' if enable else 'false'}`."
+        )
 
 
 async def setup(bot):
