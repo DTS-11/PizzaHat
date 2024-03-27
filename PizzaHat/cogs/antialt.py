@@ -289,7 +289,7 @@ class AntiAlts(Cog, emoji=1211597953433862144):
                     content=f"""
             **Setup complete**
 
-            Here are you settings:
+            Here are your settings:
 
             - Level: `{view.level}`
             - Minimum account age: {min_account_age} days.
