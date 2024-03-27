@@ -65,26 +65,6 @@ class Events(Cog):
     #         print(e)
 
     @Cog.listener()
-    async def on_message(self, msg: discord.Message):
-        if self.bot and self.bot.user is not None:
-            bot_id = self.bot.user.id
-
-            if msg.author.bot:
-                return
-
-            if self.bot.user == msg.author:
-                return
-
-            if msg.content in {f"<@{bot_id}>" or f"<@!{bot_id}>"}:
-                em = discord.Embed(color=self.bot.color)
-                em.add_field(
-                    name="Hello! <a:wave_animated:783393435242463324>",
-                    value=f"I'm {self.bot.user.name} — Your Ultimate Discord Companion.\nTo get started, my prefix is `p!` or `P!` or <@{bot_id}>",
-                )
-
-                await msg.channel.send(embed=em)
-
-    @Cog.listener()
     async def on_ready(self):
         if self.bot.db is not None:
             await self.bot.db.execute(
@@ -132,6 +112,28 @@ class Events(Cog):
                 (guild_id BIGINT, user_msg_id BIGINT PRIMARY KEY, bot_msg_id BIGINT)"""
             )
 
+    # ====== BOT PING MSG ======
+
+    @Cog.listener()
+    async def on_message(self, msg: discord.Message):
+        if self.bot and self.bot.user is not None:
+            bot_id = self.bot.user.id
+
+            if msg.author.bot:
+                return
+
+            if self.bot.user == msg.author:
+                return
+
+            if msg.content in {f"<@{bot_id}>" or f"<@!{bot_id}>"}:
+                em = discord.Embed(color=self.bot.color)
+                em.add_field(
+                    name="Hello! <a:wave_animated:783393435242463324>",
+                    value=f"I'm {self.bot.user.name} — Your Ultimate Discord Companion.\nTo get started, my prefix is `p!` or `P!` or <@{bot_id}>",
+                )
+
+                await msg.channel.send(embed=em)
+
     # ====== BOT GUILD JOIN/LEAVE ======
 
     @Cog.listener()
@@ -145,8 +147,14 @@ class Events(Cog):
         #     except:
         #         pass
 
-        em = discord.Embed(title="Guild Joined", color=discord.Color.green())
-        em.add_field(name="Guild", value=guild.name, inline=False)
+        em = discord.Embed(
+            title="Guild Joined",
+            color=discord.Color.green(),
+            timestamp=datetime.datetime.now(),
+        )
+        em.set_author(name=guild.name, icon_url=guild.icon.url if guild.icon else None)
+
+        em.add_field(name="Guild Name", value=guild.name, inline=False)
         em.add_field(
             name="Members",
             value=len([m for m in guild.members if not m.bot]),
@@ -159,8 +167,8 @@ class Events(Cog):
             em.add_field(
                 name="Owner", value=f"{guild.owner} ({guild.owner.id})", inline=False
             )
-            if guild and guild.owner
-            else None
+            if guild.owner
+            else "N/A"
         )
 
         channel = self.bot.get_channel(LOG_CHANNEL)
@@ -168,16 +176,24 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild):
+        em = discord.Embed(
+            title="Guild Left",
+            color=discord.Color.red(),
+            timestamp=datetime.datetime.now(),
+        )
+        em.set_author(name=guild.name, icon_url=guild.icon.url if guild.icon else None)
+
+        em.add_field(name="Guild Name", value=guild.name, inline=False)
         (
-            await self.bot.db.execute(
-                "DELETE FROM guild_logs WHERE guild_id=$1", guild.id
+            em.add_field(
+                name="Owner", value=f"{guild.owner} ({guild.owner.id})", inline=False
             )
-            if self.bot.db
-            else None
+            if guild.owner
+            else "N/A"
         )
 
         channel = self.bot.get_channel(LOG_CHANNEL)
-        await channel.send(f"Left {guild.name}")  # type: ignore
+        await channel.send(embed=em)  # type: ignore
 
     # ====== STARBOARD REACTION EVENTS ======
 
