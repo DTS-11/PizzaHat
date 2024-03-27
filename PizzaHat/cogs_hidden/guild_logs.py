@@ -650,11 +650,11 @@ class GuildLogs(Cog):
 
     @Cog.listener()
     async def on_guild_channel_create(self, channel: discord.abc.GuildChannel):
-        channel = await self.get_logs_channel(channel.guild.id)  # type: ignore
+        log_channel = await self.get_logs_channel(channel.guild.id)
         should_log_all = await self.check_log_enabled(channel.guild.id, "all")
         should_log_guild = await self.check_log_enabled(channel.guild.id, "guild")
 
-        if not channel:
+        if not log_channel:
             return
 
         if should_log_all or should_log_guild:
@@ -673,16 +673,16 @@ class GuildLogs(Cog):
             )
             em.set_footer(text=f"ID: {channel.id}")
 
-            if isinstance(channel, discord.TextChannel):
-                await channel.send(embed=em)
+            if isinstance(log_channel, discord.TextChannel):
+                await log_channel.send(embed=em)
 
     @Cog.listener()
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
-        channel = await self.get_logs_channel(channel.guild.id)  # type: ignore
+        log_channel = await self.get_logs_channel(channel.guild.id)
         should_log_all = await self.check_log_enabled(channel.guild.id, "all")
         should_log_guild = await self.check_log_enabled(channel.guild.id, "guild")
 
-        if not channel:
+        if not log_channel:
             return
 
         if should_log_all or should_log_guild:
@@ -701,8 +701,8 @@ class GuildLogs(Cog):
             )
             em.set_footer(text=f"ID: {channel.id}")
 
-            if isinstance(channel, discord.TextChannel):
-                await channel.send(embed=em)
+            if isinstance(log_channel, discord.TextChannel):
+                await log_channel.send(embed=em)
 
     @Cog.listener()
     async def on_guild_channel_update(self, before, after):
