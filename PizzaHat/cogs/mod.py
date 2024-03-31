@@ -505,7 +505,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def kick(self, ctx: Context, member: discord.Member, *, reason: str | None):
         """
         Kicks a member from the server.
@@ -516,6 +516,33 @@ class Mod(Cog, emoji=847248846526087239):
 
         await member.kick(reason=reason)
         await ctx.send(f"{self.bot.yes} Kicked `{member}`")
+
+    @commands.command(aliases=["mk"])
+    @commands.guild_only()
+    @commands.has_permissions(kick_members=True)
+    @commands.bot_has_permissions(kick_members=True)
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    async def masskick(
+        self,
+        ctx: Context,
+        members: commands.Greedy[discord.Member],
+        *,
+        reason: str | None,
+    ):
+        """
+        Kick multiple members from the server.
+        You can only kick users who are in the server.
+        """
+
+        if reason is None:
+            reason = reason or f"Kicked by {ctx.author} (ID: {ctx.author.id})"
+
+        if not len(members):
+            return await ctx.send("One or more required arguments are missing.")
+
+        for member in members:
+            await member.kick(reason=reason)
+        await ctx.send(f"{self.bot.yes} Kicked {len(members)} members")
 
     @commands.command(aliases=["b"])
     @commands.guild_only()
@@ -564,7 +591,7 @@ class Mod(Cog, emoji=847248846526087239):
             reason = f"Banned by {ctx.author} (ID: {ctx.author.id})"
 
         if not len(members):
-            await ctx.send("One or more required arguments are missing.")
+            return await ctx.send("One or more required arguments are missing.")
 
         else:
             for target in members:
@@ -687,9 +714,7 @@ class Mod(Cog, emoji=847248846526087239):
 
         if role not in user.roles:
             await user.add_roles(role)
-            await ctx.send(
-                f"{self.bot.yes} Successfully added `{role.name}` to {user}"
-            )
+            await ctx.send(f"{self.bot.yes} Successfully added `{role.name}` to {user}")
 
         else:
             await ctx.send(f"{self.bot.no} {user} already has `{role.name}` role.")
