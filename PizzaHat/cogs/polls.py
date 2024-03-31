@@ -109,43 +109,6 @@ class Polls(Cog, emoji=1220668765952278568):
         await msg.add_reaction(yes_thumb)
         await msg.add_reaction(no_thumb)
 
-    @commands.command()
-    @commands.guild_only()
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.has_permissions(manage_messages=True)
-    async def strawpoll(self, ctx: Context, *, question_and_choices: str):
-        """
-        Separate questions and answers by `|` or `,`
-        At least two answers required.
-        """
-
-        if "|" in question_and_choices:
-            delimiter = "|"
-
-        else:
-            delimiter = ","
-
-        question_and_choices = question_and_choices.split(delimiter)  # type: ignore
-
-        if len(question_and_choices) == 1:
-            return await ctx.send("Not enough choices supplied")
-
-        elif len(question_and_choices) >= 31:
-            return await ctx.send("Too many choices")
-
-        question, *choices = question_and_choices
-        choices = [x.lstrip() for x in choices]
-        header = {"Content-Type": "application/json"}
-        payload = {"title": question, "options": choices, "multi": False}
-
-        async with self.bot.session.post(
-            "https://www.strawpoll.me/api/v2/polls", headers=header, json=payload
-        ) as r:
-            data = await r.json()
-        id = data["id"]
-
-        await ctx.send(f"http://www.strawpoll.me/{id}")
-
 
 async def setup(bot):
     await bot.add_cog(Polls(bot))
