@@ -235,6 +235,7 @@ class PizzaHat(commands.Bot):
                     color=discord.Color.og_blurple(),
                 )
 
+                ctx.command.reset_cooldown(ctx)
                 await ctx.send(embed=em)
 
         elif isinstance(error, commands.CommandOnCooldown):
