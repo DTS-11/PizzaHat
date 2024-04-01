@@ -951,6 +951,23 @@ class Mod(Cog, emoji=847248846526087239):
             view = Paginator(ctx, embeds)
             return await ctx.send(embed=embeds[0], view=view)
 
+    @channel.command(name="topic")
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def channel_topic(self, ctx: Context, *, text: str):
+        """Change the current channel's topic."""
+
+        if isinstance(ctx.channel, Union[discord.TextChannel, discord.ForumChannel]):
+            await ctx.channel.edit(topic=text)
+            await ctx.send(f"{self.bot.yes} Channel topic changed successfully!")
+
+        else:
+            await ctx.send(
+                f"{self.bot.no} You can only change the topic of text/forum channels."
+            )
+
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
