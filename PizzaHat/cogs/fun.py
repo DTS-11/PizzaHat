@@ -1,6 +1,7 @@
 import asyncio
 import random
 import re
+import string
 import time
 
 import discord
@@ -270,56 +271,96 @@ class Fun(Cog, emoji=802615573556363284):
         await ctx.send(embed=em)
 
     @commands.command()
-    @commands.cooldown(1, 25, commands.BucketType.user)
+    @commands.cooldown(1, 30, commands.BucketType.user)
     async def hack(self, ctx: Context, member: discord.Member):
         """Hack someone and get their details."""
 
         used_words = [
-            "Nerd",
-            "Sucker",
-            "Noob",
-            "Sup",
-            "Yo",
-            "Wassup",
-            "Nab",
-            "Nub",
-            "fool",
-            "stupid",
+            "Goofball",
+            "Nitwit",
+            "Dingbat",
+            "Nincompoop",
+            "Blockhead",
+            "Doofus",
+            "Buffoon",
+            "Knucklehead",
+            "Numbskull",
+            "Dunderhead",
+            "Lamebrain",
+            "Bonehead",
+            "Dipstick",
+            "Dork",
+            "Schmuck",
+            "Jackass",
+            "Muttonhead",
+            "Halfwit",
+            "Twit",
+            "Bozo",
+            "Peabrain",
+            "Lummox",
+            "Sap",
+            "Mook",
+            "Wally",
         ]
-        mails = ["@gmail.com", "@hotmail.com", "@yahoo.com"]
+
+        mails = [
+            "@gmail.com",
+            "@hotmail.com",
+            "@yahoo.com",
+            "@icloud.com",
+            "@outlook.com",
+        ]
 
         if member is ctx.author:
-            return await ctx.send("You can't hack yourself.")
+            ctx.command.reset_cooldown(ctx)  # type: ignore
+            return await ctx.send("You can't hack yourself bruh ._.")
 
-        hacking = await ctx.send(f"Hacking {member.name}....")
-        await asyncio.sleep(1.55)
-        await hacking.edit(content="Finding info....")
-        await asyncio.sleep(1.55)
+        if member.bot:
+            ctx.command.reset_cooldown(ctx)  # type: ignore
+            return await ctx.send("You can't hack a bot ._.")
+
+        random_things = ""
+
+        for _ in range(3):
+            random_things += (
+                random.choice(string.ascii_letters)
+                + random.choice(string.digits)
+                + random.choice(string.punctuation)
+                + random.choice(string.octdigits)
+                + random.choice(string.hexdigits)
+            )
+
+        hacking = await ctx.send(f"Hacking {member.name}...")
+        await asyncio.sleep(1.50)
+        await hacking.edit(content="Finding exclusive information...")
+        await asyncio.sleep(1.50)
         await hacking.edit(
             content=f"Discord email address: {member.name}{random.choice(mails)}"
         )
         await asyncio.sleep(2)
         await hacking.edit(
-            content=f"Password: x2yz{member.name}xxy65{member.discriminator}"
+            content=f"Password: {member.name}{''.join(random.sample(random_things, len(random_things)))}"
         )
         await asyncio.sleep(2)
-        await hacking.edit(content=f"Most used words: {random.choice(used_words)}")
-        await asyncio.sleep(1.55)
-        await hacking.edit(content="IP address: 127.0.0.1:50")
-        await asyncio.sleep(1.55)
-        await hacking.edit(content="Selling information to the government....")
+        await hacking.edit(content=f"Most used word: {random.choice(used_words)}")
+        await asyncio.sleep(1.50)
+        await hacking.edit(content="IP address: 192.168.255.1")
+        await asyncio.sleep(1.50)
+        await hacking.edit(content="Selling information to the government...")
         await asyncio.sleep(2)
+        await hacking.edit(content="Hacking medical records...")
+        await asyncio.sleep(1.50)
         await hacking.edit(
             content=f"Reporting {member.name} to Discord for violating ToS"
         )
         await asyncio.sleep(2)
-        await hacking.edit(content="Hacking medical records.....")
-        await asyncio.sleep(1.55)
         await hacking.edit(
             content=f"{ctx.author.mention} successfully hacked {member.mention}"
         )
 
-        await ctx.send("The ultimate, totally real hacking has been completed!")
+        await ctx.send(
+            "The ultimate, totally real hacking has been completed!",
+        )
 
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
