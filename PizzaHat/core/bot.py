@@ -20,7 +20,6 @@ INITIAL_EXTENSIONS = [
     "cogs.fun",
     "cogs.games",
     "cogs.mod",
-    "cogs.polls",
     # "cogs.starboard",
     "cogs.tags",
     "cogs.tickets",
