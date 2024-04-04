@@ -8,6 +8,8 @@ from core.bot import PizzaHat
 from core.cog import Cog
 from discord.utils import escape_markdown
 from humanfriendly import format_timespan
+import asyncio
+
 
 
 class GuildLogs(Cog):
@@ -40,11 +42,12 @@ class GuildLogs(Cog):
 
     # ====== MESSAGE LOGS ======
 
-    @Cog.listener()
-    async def on_message_edit(self, before: discord.Message, after: discord.Message):
-        if not before.guild or not after.guild:
-            return
+@Cog.listener()
+async def on_message_edit(self, before: discord.Message, after: discord.Message):
+    if not before.guild or not after.guild:
+        return
 
+    try:
         channel = await self.get_logs_channel(before.guild.id)
         should_log_all = await self.check_log_enabled(before.guild.id, "all")
         should_log_messages = await self.check_log_enabled(before.guild.id, "messages")
@@ -73,6 +76,16 @@ class GuildLogs(Cog):
             em.set_footer(text=f"User ID: {before.author.id}")
 
             await channel.send(embed=em)
+    
+    except asyncio.TimeoutError:
+        # Retry logic: wait for a short period and then retry
+        await asyncio.sleep(1)
+        await self.on_message_edit(before, after)  # Retry the operation
+    
+    except Exception as e:
+        # Handle other exceptions
+        print(f"An error occurred: {e}")
+
 
     @Cog.listener()
     async def on_message_delete(self, msg: discord.Message):
