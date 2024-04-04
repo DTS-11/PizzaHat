@@ -12,6 +12,7 @@ requests
 humanfriendly
 numpy
 jishaku
+pillow
 psutil
 # topggpy
 emojis
