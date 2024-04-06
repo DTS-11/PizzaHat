@@ -45,34 +45,25 @@ class GuildLogs(Cog):
         if not before.guild or not after.guild:
             return
 
+    try:
         channel = await self.get_logs_channel(before.guild.id)
         should_log_all = await self.check_log_enabled(before.guild.id, "all")
         should_log_messages = await self.check_log_enabled(before.guild.id, "messages")
 
-        if not channel:
-            return
-
-        if before.author.bot:
-            return
-
-        if before.content == after.content:
-            return
-
         if should_log_all or should_log_messages:
-            em = discord.Embed(
-                title=f"Message edited in #{before.channel}",
-                color=discord.Color.green(),
-                timestamp=datetime.datetime.now(),
-            )
-            em.add_field(name="- Before", value=before.content, inline=False)
-            em.add_field(name="+ After", value=after.content, inline=False)
-            em.set_author(
-                name=before.author,
-                icon_url=before.author.avatar.url if before.author.avatar else None,
-            )
+            em = discord.Embed(title="Message Edited", color=discord.Color.gold(), timestamp=after.edited_at)
+            em.add_field(name="Before", value=before.content or "No content", inline=False)
+            em.add_field(name="After", value=after.content or "No content", inline=False)
+            em.set_author(name=after.author, icon_url=after.author.avatar_url)
             em.set_footer(text=f"User ID: {before.author.id}")
-
             await channel.send(embed=em)
+
+    except asyncio.TimeoutError:
+        await asyncio.sleep(1)
+        await self.on_message_edit(before, after)
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
     @Cog.listener()
     async def on_message_delete(self, msg: discord.Message):
