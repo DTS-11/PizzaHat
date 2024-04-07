@@ -35,8 +35,9 @@ class GuildLogs(Cog):
                     return True
                 elif module_type.lower() in modules:
                     return True
-            else:
-                return False
+            return False
+        else:
+            return False
 
     # ====== MESSAGE LOGS ======
 
