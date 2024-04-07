@@ -24,19 +24,19 @@ class GuildLogs(Cog):
             )
 
     @alru_cache()
-    async def check_log_enabled(
-        self, guild_id: int, module_type: str
-    ) -> Union[bool, None]:
+    async def check_log_enabled(self, guild_id: int, module_type: str) -> bool:
         if self.bot.db is not None:
             modules = await self.bot.db.fetchval(
                 "SELECT module FROM logs_config WHERE guild_id=$1", guild_id
             )
-            if modules is not None:
+
+            if modules:
                 if "all" in modules:
                     return True
                 elif module_type.lower() in modules:
                     return True
-        return False
+            else:
+                return False
 
     # ====== MESSAGE LOGS ======
 
