@@ -35,7 +35,13 @@ class Mod(Cog, emoji=847248846526087239):
             ctx.guild.id,
             channel.id,
         )
-        await ctx.send(f"{self.bot.yes} Guild logs channel set to {channel}")
+        await self.bot.db.execute(
+            "INSERT INTO logs_config (guild_id, module) VALUES ($1, $2)",
+            ctx.guild.id,
+            ["all"],
+        )
+
+        await ctx.send(f"{self.bot.yes} Guild logs channel set to {channel.mention}")
         await ctx.send(
             "Default logging config set to `all`. Please use the `logconfig` command to change the logging configs."
         )
