@@ -19,9 +19,19 @@ class GuildLogs(Cog):
     @alru_cache()
     async def get_logs_channel(self, guild_id: int) -> Union[discord.TextChannel, None]:
         if self.bot.db is not None:
-            return await self.bot.db.fetchval(
+            data = await self.bot.db.fetchval(
                 "SELECT channel_id FROM guild_logs WHERE guild_id=$1", guild_id
             )
+            guild = self.bot.get_guild(guild_id)
+
+            if not guild:
+                return
+
+            channel = await guild.fetch_channel(data)
+            assert isinstance(
+                channel, discord.TextChannel
+            ), "channel will always be a textchannel"
+            return channel
 
     @alru_cache()
     async def check_log_enabled(self, guild_id: int, module_type: str) -> bool:
