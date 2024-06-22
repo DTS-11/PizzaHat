@@ -415,7 +415,7 @@ class Fun(Cog, emoji=802615573556363284):
             description=(
                 "Click on the links below if you cant see the buttons for some reason.\n"
                 "[Invite (admin)](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=8&scope=bot)\n"
-                "[Invite (recommended)](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot)\n"
+                "[Invite (recommended)](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=590845699288311&scope=bot)\n"
                 "[Support](https://discord.gg/WhNVDTF)"
             ),
             color=self.bot.color,

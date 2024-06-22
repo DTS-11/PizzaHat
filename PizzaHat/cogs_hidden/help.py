@@ -27,7 +27,7 @@ Use the dropdown menu to select a category.\n
     )
     em.add_field(
         name="🔗 Links",
-        value="**[Invite me](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot)** • **[Vote](https://wumpus.store/bot/860889936914677770/vote)**",
+        value="**[Invite me](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=590845699288311&scope=bot)** • **[Vote](https://wumpus.store/bot/860889936914677770/vote)**",
         inline=False,
     )
 
