@@ -201,6 +201,10 @@ class Events(Cog):
     async def starboard_reaction_add(self, payload: discord.RawReactionActionEvent):
         guild = self.bot.get_guild(payload.guild_id) if payload.guild_id else None
         channel = guild.get_channel(payload.channel_id) if guild else None
+
+        if not channel:
+            return
+
         message = await channel.fetch_message(payload.message_id)  # type: ignore
 
         if message.author.bot or payload.emoji.name != "⭐":
