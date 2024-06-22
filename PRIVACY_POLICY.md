@@ -6,14 +6,14 @@ This Privacy Policy ("Policy") explains how information about You is collected, 
 
 By using the Bot you understand that we can collect data about you or your servers from Discord:
 - Message content and total messages sent for moderation and message logging
-- Usernames, avatars, and discriminators
+- Usernames and avatars
 - Guild information (Roles, Channels, Members)
 
 This data is used to provide features setup in servers you are in.
 
 ## Data Deletion
 
-You can request us to remove any data tied to you by creating a ticket in our server or using the built-in commands.
+You can request us to remove any data tied to you by creating a ticket in our server.
 
 ## Links to other sites
 
