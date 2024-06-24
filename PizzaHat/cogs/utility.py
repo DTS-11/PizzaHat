@@ -1,5 +1,4 @@
 import datetime
-import shlex
 import time
 import unicodedata
 from typing import Optional, Union
@@ -10,6 +9,7 @@ from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
+from discord.ui import Modal, Select, TextInput, View
 
 start_time = time.time()
 
@@ -20,8 +20,78 @@ def format_date(dt: datetime.datetime):
     return f"<t:{int(dt.timestamp())}>"
 
 
-def to_keycap(c):
-    return "\N{KEYCAP TEN}" if c == 10 else str(c) + "\u20e3"
+# def to_keycap(c):
+#     return "\N{KEYCAP TEN}" if c == 10 else str(c) + "\u20e3"
+
+
+class PollOptionsModal(Modal):
+    def __init__(self, cog, question, duration, channel, message, count, multiple):
+        super().__init__(title="Add Poll Options")
+        self.cog = cog
+        self.question = question
+        self.duration = duration
+        self.channel = channel
+        self.message = message
+        self.option_inputs = []
+
+        for i in range(count):
+            option_input = TextInput(
+                label=f"Option {i + 1}", placeholder=f"Enter option {i + 1}"
+            )
+            self.option_inputs.append(option_input)
+            self.add_item(option_input)
+
+        self.multiple = multiple
+
+    async def on_submit(self, interaction: discord.Interaction):
+        options = [input.value for input in self.option_inputs if input.value.strip()]
+        if not options:
+            await interaction.response.send_message(
+                "Please enter at least one option.", ephemeral=True
+            )
+            return
+
+        poll_obj = discord.Poll(
+            question=self.question, duration=self.duration, multiple=self.multiple
+        )
+
+        for option in options:
+            poll_obj.add_answer(text=option)
+
+        await self.channel.send(poll=poll_obj)
+        self.option_inputs.clear()
+
+        async def end_poll_callback(interaction: discord.Interaction):
+            try:
+                await poll_obj.end()
+                await interaction.response.send_message(
+                    content="Poll ended.", ephemeral=True
+                )
+            except discord.HTTPException:
+                await interaction.response.send_message(
+                    content="Unable to end the poll. It might have already ended.",
+                    ephemeral=True,
+                )
+            except discord.ClientException:
+                await interaction.response.send_message(
+                    content="Unable to end the poll because it has no attached message.",
+                    ephemeral=True,
+                )
+
+        end_poll_view = View()
+        end_poll_btn = discord.ui.Button(
+            label="End Poll", style=discord.ButtonStyle.red
+        )
+        end_poll_btn.callback = end_poll_callback
+        end_poll_view.add_item(end_poll_btn)
+
+        new_embed = discord.Embed(
+            title="Poll Created",
+            description="The poll has been successfully created.",
+            color=discord.Color.green(),
+            timestamp=datetime.datetime.now(),
+        )
+        await self.message.edit(embed=new_embed, view=end_poll_view)
 
 
 class Utility(Cog, emoji=916988537264570368):
@@ -115,69 +185,137 @@ class Utility(Cog, emoji=916988537264570368):
 
                 await ctx.send(embed=em)
 
+    # @commands.command()
+    # @commands.guild_only()
+    # @commands.cooldown(1, 5, commands.BucketType.user)
+    # @commands.has_permissions(manage_messages=True)
+    # async def poll(self, ctx: Context, *, questions_and_choices: str):
+    #     """
+    #     Separate questions and answers by either `|` or `,`
+    #     Supports up to 10 choices.
+    #     """
+
+    #     if "|" in questions_and_choices:
+    #         delimiter = "|"
+
+    #     elif "," in questions_and_choices:
+    #         delimiter = ","
+
+    #     else:
+    #         delimiter = None
+
+    #     if delimiter is not None:
+    #         questions_and_choices = questions_and_choices.split(delimiter)  # type: ignore
+
+    #     else:
+    #         questions_and_choices = shlex.split(questions_and_choices)  # type: ignore
+
+    #     if len(questions_and_choices) < 3:
+    #         return await ctx.send("Need at least 1 question with 2 choices.")
+
+    #     elif len(questions_and_choices) > 11:
+    #         return await ctx.send("You can only have up to 10 choices.")
+
+    #     perms = ctx.channel.permissions_for(ctx.guild.me)  # type: ignore
+    #     if not (perms.read_message_history or perms.add_reactions):
+    #         return await ctx.send(
+    #             "I need `Read Message History` and `Add Reactions` permissions."
+    #         )
+
+    #     question = questions_and_choices[0]
+    #     choices = [
+    #         (to_keycap(e), v) for e, v in enumerate(questions_and_choices[1:], 1)
+    #     ]
+
+    #     try:
+    #         await ctx.message.delete()
+
+    #     except:
+    #         pass
+
+    #     fmt = "{0} asks: {1}\n\n{2}"
+    #     answer = "\n".join("%s: %s" % t for t in choices)
+
+    #     e = discord.Embed(
+    #         description=fmt.format(
+    #             ctx.message.author,
+    #             question.replace("@", "@\u200b"),
+    #             answer.replace("@", "@\u200b"),
+    #         ),
+    #         color=discord.Color.green(),
+    #     )
+
+    #     poll = await ctx.send(embed=e)
+    #     for emoji, _ in choices:
+    #         await poll.add_reaction(emoji)
+
     @commands.command()
     @commands.guild_only()
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.has_permissions(manage_messages=True)
-    async def poll(self, ctx: Context, *, questions_and_choices: str):
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.has_permissions(create_polls=True)
+    @commands.bot_has_permissions(create_polls=True)
+    async def poll(self, ctx: commands.Context, duration: int, *, question: str, channel: discord.abc.Messageable = None):  # type: ignore
         """
-        Separate questions and answers by either `|` or `,`
-        Supports up to 10 choices.
+        Use Discord's Poll feature to create a poll!
+        Supports up to 10 choices and duration must be in hours (API limitation)
         """
 
-        if "|" in questions_and_choices:
-            delimiter = "|"
+        if not ctx.guild:
+            return
 
-        elif "," in questions_and_choices:
-            delimiter = ","
-
-        else:
-            delimiter = None
-
-        if delimiter is not None:
-            questions_and_choices = questions_and_choices.split(delimiter)  # type: ignore
-
-        else:
-            questions_and_choices = shlex.split(questions_and_choices)  # type: ignore
-
-        if len(questions_and_choices) < 3:
-            return await ctx.send("Need at least 1 question with 2 choices.")
-
-        elif len(questions_and_choices) > 11:
-            return await ctx.send("You can only have up to 10 choices.")
-
-        perms = ctx.channel.permissions_for(ctx.guild.me)  # type: ignore
-        if not (perms.read_message_history or perms.add_reactions):
-            return await ctx.send(
-                "I need `Read Message History` and `Add Reactions` permissions."
-            )
-
-        question = questions_and_choices[0]
-        choices = [
-            (to_keycap(e), v) for e, v in enumerate(questions_and_choices[1:], 1)
-        ]
+        if channel is None:
+            channel = ctx.channel
 
         try:
-            await ctx.message.delete()
+            duration_timedelta = datetime.timedelta(hours=duration)
+            if duration < 1:
+                return await ctx.send(
+                    f"{self.bot.no} Duration must be at least 1 hour."
+                )
 
-        except:
-            pass
+        except ValueError as e:
+            print(f"Error in poll duration: {e}")
+            return await ctx.send(
+                f"{self.bot.no} Something went wrong while parsing the duration."
+            )
 
-        fmt = "{0} asks: {1}\n\n{2}"
-        answer = "\n".join("%s: %s" % t for t in choices)
+        add_options_view = View()
 
-        e = discord.Embed(
-            description=fmt.format(
-                ctx.message.author,
-                question.replace("@", "@\u200b"),
-                answer.replace("@", "@\u200b"),
-            ),
-            color=discord.Color.green(),
+        async def select_callback(interaction: discord.Interaction):
+            selected_value = int(select_menu.values[0])
+            modal = PollOptionsModal(
+                self,
+                question,
+                duration_timedelta,
+                channel,
+                msg,
+                count=selected_value,
+                multiple=(selected_value > 1),
+            )
+            await interaction.response.send_modal(modal)
+            add_options_view.clear_items()
+
+        select_menu = Select(
+            placeholder="Select the number of options",
+            options=[
+                discord.SelectOption(label=str(i), value=str(i)) for i in range(1, 11)
+            ],
+            custom_id="poll_options_select",
         )
+        select_menu.callback = select_callback
+        add_options_view.add_item(select_menu)
 
-        poll = await ctx.send(embed=e)
-        for emoji, _ in choices:
-            await poll.add_reaction(emoji)
+        em = discord.Embed(
+            title="Configure Choices",
+            description="Please select whether members can choose multiple options or just one.",
+            color=discord.Color.orange(),
+            timestamp=ctx.message.created_at,
+        )
+        em.set_author(
+            name=ctx.author,
+            icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
+        )
+        msg = await ctx.send(embed=em, view=add_options_view)
 
     @commands.command()
     @commands.guild_only()
