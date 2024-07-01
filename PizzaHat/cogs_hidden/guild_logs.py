@@ -24,7 +24,7 @@ class GuildLogs(Cog):
             )
             guild = self.bot.get_guild(guild_id)
 
-            if not guild:
+            if not guild or not data:
                 return
 
             channel = await guild.fetch_channel(data)
