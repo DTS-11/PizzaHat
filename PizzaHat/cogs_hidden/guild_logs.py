@@ -102,7 +102,7 @@ class GuildLogs(Cog):
 
         if should_log_all or should_log_messages:
             em = discord.Embed(
-                title=f"Message deleted in #{msg.channel}",
+                title=f"Message Deleted in #{msg.channel}",
                 description=msg.content,
                 color=discord.Color.red(),
                 timestamp=datetime.datetime.now(),
@@ -129,7 +129,7 @@ class GuildLogs(Cog):
 
         if should_log_all or should_log_messages:
             em = discord.Embed(
-                title="Bulk message deleted",
+                title="Bulk Message Deleted",
                 description=f"**{len(msgs)}** messages deleted in {msgs[0].channel}",
                 color=discord.Color.red(),
                 timestamp=datetime.datetime.now(),
@@ -155,7 +155,7 @@ class GuildLogs(Cog):
 
         if should_log_all or should_log_mod:
             em = discord.Embed(
-                title="Member banned",
+                title="Member Banned",
                 color=discord.Color.red(),
                 timestamp=datetime.datetime.now(),
             )
@@ -178,7 +178,7 @@ class GuildLogs(Cog):
 
         if should_log_all or should_log_mod:
             em = discord.Embed(
-                title="Member unbanned",
+                title="Member Unbanned",
                 color=discord.Color.green(),
                 timestamp=datetime.datetime.now(),
             )
@@ -216,7 +216,7 @@ class GuildLogs(Cog):
                     roles.append(e)
 
         for h in roles:
-            role_text += f"`{h.name}`, "
+            role_text += f"{h.mention} "
         role_text = role_text[:-2]
 
         if should_log_all or should_log_member:
@@ -252,9 +252,9 @@ class GuildLogs(Cog):
 
         if should_log_all or should_log_member:
             em = discord.Embed(
-                title="Nickname updated",
+                title="Nickname Updated",
                 description=f"`{before.nick}` ➜ `{after.nick}`",
-                color=self.bot.color,
+                color=discord.Color.orange(),
                 timestamp=datetime.datetime.now(),
             )
             em.set_author(
@@ -319,7 +319,8 @@ class GuildLogs(Cog):
 
         if should_log_all or should_log_role:
             em = discord.Embed(
-                title="New role created",
+                title="Role Created",
+                description=role.mention,
                 color=discord.Color.green(),
                 timestamp=datetime.datetime.now(),
             )
@@ -340,7 +341,7 @@ class GuildLogs(Cog):
 
         if should_log_all or should_log_role:
             em = discord.Embed(
-                title="Role deleted",
+                title="Role Deleted",
                 color=discord.Color.red(),
                 timestamp=datetime.datetime.now(),
             )
@@ -364,8 +365,9 @@ class GuildLogs(Cog):
 
         if should_log_all or should_log_role:
             em = discord.Embed(
-                title="Role updated",
-                color=self.bot.color,
+                title="Role Updated",
+                description=after.mention,
+                color=discord.Color.orange(),
                 timestamp=datetime.datetime.now(),
             )
 
@@ -434,8 +436,8 @@ class GuildLogs(Cog):
 
         if should_log_all or should_log_guild:
             em = discord.Embed(
-                title="Server updated",
-                color=self.bot.color,
+                title="Server Updated",
+                color=discord.Color.orange(),
                 timestamp=datetime.datetime.now(),
             )
 
@@ -458,7 +460,7 @@ class GuildLogs(Cog):
 
             if before.banner != after.banner:
                 em.add_field(
-                    name="Banner updated!",
+                    name="Banner Updated!",
                     value=f"{'`None`' if before.banner is None else '[`Before`]('+str(before.banner.url)+')'} ➜ {'`None`' if after.banner is None else '[`After`]('+str(after.banner.url)+')'}",
                     inline=False,
                 )
@@ -505,28 +507,28 @@ class GuildLogs(Cog):
 
             if before.public_updates_channel != after.public_updates_channel:
                 em.add_field(
-                    name="New community updates channel",
+                    name="New Community Updates Channel",
                     value=f"`{before.public_updates_channel}` ➜ `{after.public_updates_channel}`",
                     inline=False,
                 )
 
             if before.rules_channel != after.rules_channel:
                 em.add_field(
-                    name="Rules channel",
+                    name="Rules Channel",
                     value=f"`{before.rules_channel}` ➜ `{after.rules_channel}`",
                     inline=False,
                 )
 
             if before.splash != after.splash:
                 em.add_field(
-                    name="Invite splash banner",
+                    name="Invite Splash Banner",
                     value=f"{'`None`' if before.splash is None else '[`Before`]('+str(before.splash.url)+')'} ➜ {'`None`' if after.splash is None else '[`After`]('+str(after.splash.url)+')'}",
                     inline=False,
                 )
 
             if before.system_channel != after.system_channel:
                 em.add_field(
-                    name="System channel",
+                    name="System Channel",
                     value=f"`{before.system_channel}` ➜ `{after.system_channel}`",
                     inline=False,
                 )
@@ -670,8 +672,9 @@ class GuildLogs(Cog):
 
         if should_log_all or should_log_guild:
             em = discord.Embed(
-                description=f"**Channel created:** `#{channel.name}`",
-                color=self.bot.color,
+                title="Channel Created",
+                description=channel.mention,
+                color=discord.Color.green(),
                 timestamp=channel.created_at,
             )
             em.set_author(
@@ -698,8 +701,9 @@ class GuildLogs(Cog):
 
         if should_log_all or should_log_guild:
             em = discord.Embed(
-                description=f"**Channel created:** `#{channel.name}`",
-                color=self.bot.color,
+                title="Channel Deleted",
+                description=f"`#{channel.name}`",
+                color=discord.Color.red(),
                 timestamp=channel.created_at,
             )
             em.set_author(
@@ -729,8 +733,9 @@ class GuildLogs(Cog):
 
         if should_log_all or should_log_guild:
             em = discord.Embed(
-                description=f"**Channel updated: {after.mention}**",
-                color=self.bot.color,
+                title="Channel Updated",
+                description=after.mention,
+                color=discord.Color.orange(),
                 timestamp=datetime.datetime.now(),
             )
             em.set_author(
@@ -763,13 +768,13 @@ class GuildLogs(Cog):
                 )
             if before.position != after.position:
                 em.add_field(
-                    name="Position changed:",
+                    name="Position Changed:",
                     value=f"`{before.position}` ➜ `{after.position}`",
                     inline=False,
                 )
             if isinstance(before, discord.TextChannel) and before.topic != after.topic:
                 em.add_field(
-                    name="Topic updated:",
+                    name="Topic Updated:",
                     value=f"```{before.topic}``` ➜ ```{after.topic}```",
                     inline=False,
                 )
@@ -778,7 +783,7 @@ class GuildLogs(Cog):
                 and before.slowmode_delay != after.slowmode_delay
             ):
                 em.add_field(
-                    name="Slowmode changed:",
+                    name="Slowmode Changed:",
                     value=f"`{format_timespan(before.slowmode_delay)}` ➜ `{format_timespan(after.slowmode_delay)}`",
                     inline=False,
                 )
@@ -787,7 +792,7 @@ class GuildLogs(Cog):
                 and before.is_nsfw() != after.is_nsfw()
             ):
                 em.add_field(
-                    name="NSFW channel:",
+                    name="NSFW Channel:",
                     value=f"`{before.is_nsfw()}` ➜ `{after.is_nsfw()}`",
                     inline=False,
                 )
@@ -796,7 +801,7 @@ class GuildLogs(Cog):
                 and before.is_news() != after.is_news()
             ):
                 em.add_field(
-                    name="Announcement channel:",
+                    name="Announcement Channel:",
                     value=f"`{before.is_news()}` ➜ `{after.is_news()}`",
                     inline=False,
                 )
@@ -1117,7 +1122,7 @@ class GuildLogs(Cog):
         if should_log_all or should_log_joins:
             em = discord.Embed(
                 description=f"{member.mention} {escape_markdown(str(member))}",
-                color=self.bot.color,
+                color=discord.Color.green(),
                 timestamp=member.joined_at,
             )
             em.set_author(
@@ -1151,7 +1156,7 @@ class GuildLogs(Cog):
         if should_log_all or should_log_joins:
             em = discord.Embed(
                 description=f"{member.mention} {escape_markdown(str(member))}",
-                color=self.bot.color,
+                color=discord.Color.red(),
                 timestamp=datetime.datetime.now(),
             )
             em.set_author(
