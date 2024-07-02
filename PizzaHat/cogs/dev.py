@@ -206,10 +206,10 @@ class Dev(Cog, emoji=833297795761831956):
     async def reloadall(self, ctx: Context):
         """Quick way to reload all cogs at once."""
 
-        for cog in INITIAL_EXTENSIONS:
+        for cog, subcog in INITIAL_EXTENSIONS, SUB_EXTENSIONS:
             await self.bot.reload_extension(cog)
-        for cog in SUB_EXTENSIONS:
-            await self.bot.reload_extension(cog)
+            await self.bot.reload_extension(subcog)
+            await self.bot.reload_extension("jishaku")
         else:
             await ctx.send("Reloaded all cogs!")
 
