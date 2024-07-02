@@ -214,20 +214,20 @@ class Dev(Cog, emoji=833297795761831956):
 
     @commands.command(hidden=True)
     @commands.is_owner()
-    async def update_config(self, ctx: Context):
-        """Update the config file by uploading the attachment."""
+    async def update_badwords(self, ctx: Context):
+        """Update the bad words file by uploading the attachment."""
 
         if not ctx.message.attachments:
             return await ctx.send(f"{self.bot.no} No file attached.")
 
         attachment = ctx.message.attachments[0]
-        file_path = os.path.join(os.getcwd(), "utils/config.py")
+        file_path = os.path.join(os.getcwd(), "utils/bad_words.py")
 
         if not attachment.filename.endswith(".py"):
-            return await ctx.send(f"{self.bot.no} Not a Python config file.")
+            return await ctx.send(f"{self.bot.no} Not a Python file.")
 
         await attachment.save(file_path)  # type: ignore
-        await ctx.send(f"{self.bot.yes} Config file updated successfully!")
+        await ctx.send(f"{self.bot.yes} Bad words file updated successfully!")
 
 
 async def setup(bot):
