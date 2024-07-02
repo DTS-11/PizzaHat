@@ -701,8 +701,7 @@ class GuildLogs(Cog):
 
         if should_log_all or should_log_guild:
             em = discord.Embed(
-                title="Channel Deleted",
-                description=f"`#{channel.name}`",
+                description=f"> Name: {channel.name}\n> ID: {channel.id}",
                 color=discord.Color.red(),
                 timestamp=channel.created_at,
             )
@@ -715,6 +714,11 @@ class GuildLogs(Cog):
                 ),
             )
             em.set_footer(text=f"ID: {channel.id}")
+
+            if isinstance(channel, discord.CategoryChannel):
+                em.title = "Category Deleted"
+            else:
+                em.title = "Channel Deleted"
 
             if isinstance(log_channel, discord.TextChannel):
                 await log_channel.send(embed=em)
