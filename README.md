@@ -71,18 +71,9 @@ TOKEN = your_bot_token
 PG_URL = postgresql_connection_url
 ```
 
-Create a `config.py` file in the `utils` directory
+Create a `bad_words.py` file in the `utils` directory
 
 ```py
-COG_EXCEPTIONS = [
-    "AntiAltsConfig",
-    "AutoModConfig",
-    "Dev",
-    "Events",
-    "Help",
-    "Jishaku",
-]
-
 BANNED_WORDS = [
   "list of",
   "banned words",
