@@ -153,4 +153,4 @@ dmypy.json
 cython_debug/
 
 # custom
-PizzaHat/utils/config.py
+PizzaHat/utils/bad_words.py
