@@ -9,7 +9,7 @@ from async_lru import alru_cache
 from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
-from utils.config import BANNED_WORDS
+from utils.bad_words import BANNED_WORDS
 
 
 class AutoModConfig(Cog):
