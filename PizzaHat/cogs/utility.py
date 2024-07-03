@@ -63,7 +63,7 @@ class PollOptionsModal(Modal):
         self.option_inputs.clear()
 
         async def end_poll_callback(interaction: discord.Interaction):
-            if interaction.user != self.ctx.user:
+            if interaction.user != self.ctx.author:
                 return await interaction.response.send_message(
                     "Not your interaction ._.", ephemeral=True
                 )
