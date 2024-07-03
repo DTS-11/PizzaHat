@@ -25,8 +25,9 @@ def format_date(dt: datetime.datetime):
 
 
 class PollOptionsModal(Modal):
-    def __init__(self, cog, question, duration, channel, message, count, multiple):
+    def __init__(self, ctx, cog, question, duration, channel, message, count, multiple):
         super().__init__(title="Add Poll Options")
+        self.ctx = ctx
         self.cog = cog
         self.question = question
         self.duration = duration
@@ -62,6 +63,11 @@ class PollOptionsModal(Modal):
         self.option_inputs.clear()
 
         async def end_poll_callback(interaction: discord.Interaction):
+            if interaction.user != self.ctx.user:
+                return await interaction.response.send_message(
+                    "Not your interaction ._.", ephemeral=True
+                )
+
             try:
                 await poll_obj.end()
                 await interaction.response.send_message(
@@ -284,6 +290,7 @@ class Utility(Cog, emoji=916988537264570368):
         async def select_callback(interaction: discord.Interaction):
             selected_value = int(select_menu.values[0])
             modal = PollOptionsModal(
+                ctx,
                 self,
                 question,
                 duration_timedelta,
