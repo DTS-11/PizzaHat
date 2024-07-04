@@ -1,17 +1,11 @@
 import datetime
-import os
 from typing import Union
 
 import discord
 from async_lru import alru_cache
 from core.bot import PizzaHat
 from core.cog import Cog
-from dotenv import load_dotenv
-
-load_dotenv()
-
-LOG_CHANNEL = 980151632199299092
-DLIST_TOKEN = os.getenv("DLIST_AUTH")
+from utils.config import DLIST_TOKEN, LOGS_CHANNEL, TOPGG_TOKEN
 
 
 class Events(Cog):
@@ -47,12 +41,12 @@ class Events(Cog):
     #     try:
     #         # Top.gg
     #         await self.bot.wait_until_ready()
-    #         self.topggpy = topgg.DBLClient(self, os.getenv("DBL_TOKEN"), autopost=True)  # type: ignore
+    #         self.topggpy = topgg.DBLClient(self, TOPGG_TOKEN, autopost=True)  # type: ignore
     #         await self.topggpy.post_guild_count()
     #         print(f"Posted server count: {self.topggpy.guild_count}")
 
     #     except Exception as e:
-    #         print(f"Failed to post server count\n{e.__class__.__name__}: {e}")
+    #         print(e)
 
     #     try:
     #         # DList.gg
@@ -171,7 +165,7 @@ class Events(Cog):
             else "N/A"
         )
 
-        channel = self.bot.get_channel(LOG_CHANNEL)
+        channel = self.bot.get_channel(LOGS_CHANNEL)
         await channel.send(embed=em)  # type: ignore
 
     @Cog.listener()
@@ -192,7 +186,7 @@ class Events(Cog):
             else "N/A"
         )
 
-        channel = self.bot.get_channel(LOG_CHANNEL)
+        channel = self.bot.get_channel(LOGS_CHANNEL)
         await channel.send(embed=em)  # type: ignore
 
     # ====== STARBOARD REACTION EVENTS ======
