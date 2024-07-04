@@ -1,3 +1,6 @@
+from typing import Union
+
+from async_lru import alru_cache
 from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
@@ -9,6 +12,18 @@ class AutoModeration(Cog, emoji=1207259153437949953):
 
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
+
+    @alru_cache()
+    async def check_if_am_is_enabled(self, guild_id: int) -> Union[bool, None]:
+        data = (
+            await self.bot.db.fetchval(
+                "SELECT enabled FROM automod WHERE guild_id=$1", guild_id
+            )
+            if self.bot.db
+            else None
+        )
+        if data is not None:
+            return data
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
