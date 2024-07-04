@@ -36,16 +36,21 @@ class AutoModConfig(Cog):
         )
 
     @alru_cache()
-    async def get_logs_channel(self, guild_id: int):
-        data = (
-            await self.bot.db.fetchval(
+    async def get_logs_channel(self, guild_id: int) -> Union[discord.TextChannel, None]:
+        if self.bot.db is not None:
+            data = await self.bot.db.fetchval(
                 "SELECT channel_id FROM guild_logs WHERE guild_id=$1", guild_id
             )
-            if self.bot.db
-            else None
-        )
-        if data is not None:
-            return self.bot.get_channel(data)
+            guild = self.bot.get_guild(guild_id)
+
+            if not guild or not data:
+                return
+
+            channel = await guild.fetch_channel(data)
+            assert isinstance(
+                channel, discord.TextChannel
+            ), "channel will always be a textchannel"
+            return channel
 
     @alru_cache()
     async def check_if_am_is_enabled(self, guild_id: int) -> Union[bool, None]:
@@ -61,9 +66,13 @@ class AutoModConfig(Cog):
 
     @Cog.listener()
     async def on_automod_trigger(self, msg: discord.Message, module: str):
-        logs_channel = self.bot.get_channel(self.get_logs_channel(msg.guild.id))  # type: ignore
+        if not msg.guild:
+            return
 
-        if not logs_channel:
+        logs_channel = await self.get_logs_channel(msg.guild.id)
+        am_enabled_guild = await self.check_if_am_is_enabled(msg.guild.id)
+
+        if not logs_channel or not am_enabled_guild:
             return
 
         em = discord.Embed(
@@ -78,7 +87,7 @@ class AutoModConfig(Cog):
         em.set_footer(text=f"Message ID: {msg.id} | User ID: {msg.author.id}")
         em.add_field(name="Module", value=module)
 
-        await logs_channel.send(embed=em)  # type: ignore
+        await logs_channel.send(embed=em)
 
     @Cog.listener()
     async def on_message(self, msg: discord.Message):
@@ -146,7 +155,7 @@ class AutoModConfig(Cog):
         return False
 
     async def message_spam(self, msg: discord.Message):
-        def _check(m):
+        def _check(m: discord.Message):
             return (
                 m.author == msg.author
                 and (
@@ -159,12 +168,21 @@ class AutoModConfig(Cog):
         h = list(filter(lambda m: _check(m), self.bot.cached_messages))
 
         if len(h) >= 5:
-            await msg.channel.purge(limit=5, check=_check)  # type: ignore
-            await msg.channel.send(
-                f"{msg.author.mention}, Stop spamming.",
-                delete_after=5,
-                allowed_mentions=self.mentions,  # type: ignore
-            )
+            if isinstance(
+                msg.channel,
+                Union[
+                    discord.TextChannel,
+                    discord.Thread,
+                    discord.VoiceChannel,
+                    discord.StageChannel,
+                ],
+            ):
+                await msg.channel.purge(limit=5, check=_check)
+                await msg.channel.send(
+                    f"{msg.author.mention}, Stop spamming.",
+                    delete_after=5,
+                    allowed_mentions=self.mentions,  # type: ignore
+                )
             return True
         return False
 
