@@ -1,10 +1,7 @@
-import os
 import ssl
 
 import asyncpg
-from dotenv import load_dotenv
-
-load_dotenv()
+from utils.config import PG_URL
 
 
 async def create_db_pool():
@@ -12,4 +9,4 @@ async def create_db_pool():
     ssl_object.check_hostname = False
     ssl_object.verify_mode = ssl.CERT_NONE
 
-    return await asyncpg.create_pool(dsn=os.getenv("PG_URL"), ssl=ssl_object)
+    return await asyncpg.create_pool(dsn=PG_URL, ssl=ssl_object)
