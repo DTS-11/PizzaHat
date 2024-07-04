@@ -21,13 +21,20 @@ class AntiAltsConfig(commands.Cog):
 
     @alru_cache()
     async def get_logs_channel(self, guild_id: int) -> Union[discord.TextChannel, None]:
-        return (
-            await self.bot.db.fetchval(
+        if self.bot.db is not None:
+            data = await self.bot.db.fetchval(
                 "SELECT channel_id FROM guild_logs WHERE guild_id=$1", guild_id
             )
-            if self.bot.db
-            else None
-        )
+            guild = self.bot.get_guild(guild_id)
+
+            if not guild or not data:
+                return
+
+            channel = await guild.fetch_channel(data)
+            assert isinstance(
+                channel, discord.TextChannel
+            ), "channel will always be a textchannel"
+            return channel
 
     @alru_cache()
     async def check_if_aa_is_enabled(self, guild_id: int) -> Union[bool, None]:
@@ -47,15 +54,13 @@ class AntiAltsConfig(commands.Cog):
         logs_channel = await self.get_logs_channel(member.guild.id)
 
         if self.bot.db is not None:
-            data = await self.bot.db.fetch(
-                "SELECT min_age, restricted_role, level FROM antialt WHERE guild_id=$1",
-                member.guild.id,
-            )
+            if aa_enabled_guild:
+                data = await self.bot.db.fetch(
+                    "SELECT min_age, restricted_role, level FROM antialt WHERE guild_id=$1",
+                    member.guild.id,
+                )
 
-        if member.bot:
-            return
-
-        if not aa_enabled_guild:
+        if member.bot or not aa_enabled_guild:
             return
 
         delv = (
@@ -79,7 +84,7 @@ class AntiAltsConfig(commands.Cog):
 
         embed = (
             discord.Embed(
-                title="Alt account detected.",
+                title="Alt Account Detected.",
                 description=f"{member.mention} {discord.utils.escape_markdown(str(member))}\n\n**Account Age:** {account_age}",
                 color=discord.Color.orange(),
                 timestamp=datetime.datetime.now(),
@@ -89,13 +94,13 @@ class AntiAltsConfig(commands.Cog):
         )
 
         if level == 1:
-            await member.add_roles(restricted_role, reason="PizzaHat anti-alt system.")
+            await member.add_roles(restricted_role, reason="PizzaHat Anti-Alt System.")
             action_value = "RESTRICTED"
         elif level == 2:
-            await member.kick(reason="PizzaHat anti-alt system.")
+            await member.kick(reason="PizzaHat Anti-Alt System.")
             action_value = "KICKED"
         else:
-            await member.ban(reason="PizzaHat anti-alt system.")
+            await member.ban(reason="PizzaHat Anti-Alt System.")
             action_value = "BANNED"
 
         embed.add_field(name="Action:", value=action_value, inline=False)
