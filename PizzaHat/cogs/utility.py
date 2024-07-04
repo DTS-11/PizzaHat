@@ -10,6 +10,7 @@ from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Modal, Select, TextInput, View
+from utils.config import BOOSTER_ROLE, CONTRIBUTOR_ROLE, PARTNER_ROLE, STAFF_ROLE
 
 start_time = time.time()
 
@@ -142,10 +143,10 @@ class Utility(Cog, emoji=916988537264570368):
         member = member or ctx.author
 
         if ctx.guild is not None:
-            staff_role = ctx.guild.get_role(849669358316683284)
-            partner_role = ctx.guild.get_role(972071921791410188)
-            booster_role = ctx.guild.get_role(782258520791449600)
-            contrib_role = ctx.guild.get_role(950785470286163988)
+            staff_role = ctx.guild.get_role(STAFF_ROLE)
+            partner_role = ctx.guild.get_role(PARTNER_ROLE)
+            booster_role = ctx.guild.get_role(BOOSTER_ROLE)
+            contrib_role = ctx.guild.get_role(CONTRIBUTOR_ROLE)
 
             if member.id in self.bot.owner_ids:  # type: ignore
                 badges.append("<:developer:833297795761831956> Developer of PizzaHat")

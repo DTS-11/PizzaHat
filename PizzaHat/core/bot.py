@@ -11,6 +11,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import CommandError, Context
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
+from utils.config import REPO_LINK
 
 INITIAL_EXTENSIONS = [
     # "cogs.antialt",
@@ -80,18 +81,18 @@ LOGGING_CONFIG = {
 
 dictConfig(LOGGING_CONFIG)
 
-description = """
+description = f"""
 I'm PizzaHat —— Your Ultimate Discord Companion, a bot made by @itsdts.
 I have features such as moderation, utiltity, games and more!
 
-I'm also open source. You can see my code on [GitHub](https://github.com/DTS-11/PizzaHat)
+I'm also open source. You can see my code on [GitHub]({REPO_LINK})
 """
 
 
 class PizzaHat(commands.Bot):
     def __init__(self):
         allowed_mentions = discord.AllowedMentions(
-            roles=False, everyone=False, users=True
+            roles=False, everyone=False, users=True, replied_user=True
         )
         intents = discord.Intents(
             guilds=True,

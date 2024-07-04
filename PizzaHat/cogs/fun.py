@@ -11,6 +11,14 @@ from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Button, View
 from TagScriptEngine import Interpreter, block
+from utils.config import (
+    ADMIN_INVITE,
+    DLISTGG_VOTE,
+    REG_INVITE,
+    SUPPORT_SERVER,
+    TOPGG_VOTE,
+    WUMPUS_VOTE,
+)
 
 
 def clean_string(string):
@@ -399,14 +407,14 @@ class Fun(Cog, emoji=802615573556363284):
         b1 = Button(
             label="Invite (admin)",
             emoji="✉️",
-            url="https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=8&scope=bot",
+            url=ADMIN_INVITE,
         )
         b2 = Button(
             label="Invite (recommended)",
             emoji="✉️",
-            url="https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot",
+            url=REG_INVITE,
         )
-        b3 = Button(label="Support", emoji="📨", url="https://discord.gg/WhNVDTF")
+        b3 = Button(label="Support", emoji="📨", url=SUPPORT_SERVER)
 
         view.add_item(b1).add_item(b2).add_item(b3)
 
@@ -414,9 +422,9 @@ class Fun(Cog, emoji=802615573556363284):
             title="🔗 Links",
             description=(
                 "Click on the links below if you cant see the buttons for some reason.\n"
-                "[Invite (admin)](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=8&scope=bot)\n"
-                "[Invite (recommended)](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=590845699288311&scope=bot)\n"
-                "[Support](https://discord.gg/WhNVDTF)"
+                f"[Invite (admin)]({ADMIN_INVITE})\n"
+                f"[Invite (recommended)]({REG_INVITE})\n"
+                f"[Support]({SUPPORT_SERVER})"
             ),
             color=self.bot.color,
         )
@@ -436,7 +444,7 @@ class Fun(Cog, emoji=802615573556363284):
         """Gives link to support server"""
 
         await ctx.send(
-            "Do you want help? Join the support server now!\nhttps://discord.gg/WhNVDTF"
+            f"Do you want help? Join the support server now!\n{SUPPORT_SERVER}"
         )
 
     @commands.command()
@@ -457,13 +465,9 @@ class Fun(Cog, emoji=802615573556363284):
 
         em.set_footer(text="Make sure to leave a nice review too!")
 
-        b1 = Button(label="Top.gg", url="https://top.gg/bot/860889936914677770/vote")
-        b2 = Button(
-            label="DList.gg", url="https://discordlist.gg/bot/860889936914677770/vote"
-        )
-        b3 = Button(
-            label="Wumpus.store", url="https://wumpus.store/bot/860889936914677770/vote"
-        )
+        b1 = Button(label="Top.gg", url=TOPGG_VOTE)
+        b2 = Button(label="DList.gg", url=DLISTGG_VOTE)
+        b3 = Button(label="Wumpus.store", url=WUMPUS_VOTE)
 
         view.add_item(b1).add_item(b2).add_item(b3)
         await ctx.send(embed=em, view=view)

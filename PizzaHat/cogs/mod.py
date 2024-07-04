@@ -8,6 +8,7 @@ from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
+from utils.config import ANTIHOIST_CHARS
 from utils.ui import Paginator
 
 
@@ -194,19 +195,17 @@ class Mod(Cog, emoji=847248846526087239):
         Removes special characters and renames the member as "Moderated Nickname"
         """
 
-        characters = "!@#$%^&*()_+-=.,/?;:[]{}`~\"'\\|<>"
-
         try:
             if member.display_name[
                 0
-            ] in characters and not member.display_name.startswith("[AFK] "):
+            ] in ANTIHOIST_CHARS and not member.display_name.startswith("[AFK] "):
                 await member.edit(
                     nick="Moderated Nickname",
                     reason=f"Decancered member (req. by: {ctx.author}).",
                 )
                 await ctx.send(f"{self.bot.yes} Successfully decancered {member}")
 
-            if characters not in member.display_name[0]:
+            if ANTIHOIST_CHARS not in member.display_name[0]:
                 await ctx.send("No special characters found.")
 
         except discord.HTTPException:
