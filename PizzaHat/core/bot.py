@@ -137,7 +137,7 @@ class PizzaHat(commands.Bot):
             self.db = await db.create_db_pool()
 
         # Make the tickets view persistent
-        ticket_view = import_module("cogs.tickets").TicketView(self)
+        ticket_view = import_module("utils.ui").TicketView(self)
         self.add_view(ticket_view)
 
         # Loading cogs...
