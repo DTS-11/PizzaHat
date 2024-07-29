@@ -15,7 +15,7 @@ from utils.config import BOOSTER_ROLE, CONTRIBUTOR_ROLE, PARTNER_ROLE, STAFF_ROL
 start_time = time.time()
 
 
-def format_date(dt: datetime.datetime):
+def format_date(dt: Union[datetime.datetime, None]):
     if dt is None:
         return "N/A"
     return f"<t:{int(dt.timestamp())}>"
