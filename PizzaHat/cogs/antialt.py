@@ -88,7 +88,7 @@ class AntiAlts(Cog, emoji=1211597953433862144):
     async def get_aa_details(self, guild_id: int) -> Union[dict, None]:
         if self.bot.db is not None:
             data = await self.bot.db.fetchrow(
-                "SELECT enabled, min_age, restricted_role, level FROM automod WHERE guild_id=$1",
+                "SELECT enabled, min_age, restricted_role, level FROM antialt WHERE guild_id=$1",
                 guild_id,
             )
 
@@ -120,17 +120,18 @@ class AntiAlts(Cog, emoji=1211597953433862144):
 
         if ctx.guild:
             data = await self.get_aa_details(ctx.guild.id)
+            enabled = False
             if data is not None:
                 enabled = data["enabled"]
 
             em = discord.Embed(
                 title="Anti Alt Setup",
                 description=f"""
-                Anti-alt system is currently **{"enabled" if enabled else "disabled"}**.
+Anti-alt system is currently **{"enabled" if enabled else "disabled"}**.
 
-                **Level:** {data["level"] if data else "0"}
-                **Minimum account age:** {data["min_age"] if data else "None"}
-                **Restricted role:** {data["restricted_role"] if data else "None"}
+**Level:** {data["level"] if data else "0"}
+**Minimum account age:** {data["min_age"] if data else "None"}
+**Restricted role:** {data["restricted_role"] if data else "None"}
                 """,
                 color=self.bot.color,
                 timestamp=ctx.message.created_at,
@@ -154,12 +155,12 @@ class AntiAlts(Cog, emoji=1211597953433862144):
             em.add_field(
                 name="Usage",
                 value="""
-            <:certified_mod_badge:1211597953433862144> Anti-alt configuration commands.
-            - **enable:** Enable anti-alt system.
-            - **disable:** Disable anti-alt system.
-            - **minage <time>:** Set minimum account age for newly joined accounts.
-            - **level <lvl>:** Set anti-alts protection level.
-            - **role <@role>:** Set restricted role to be given to restricted user.
+<:certified_mod_badge:1211597953433862144> Anti-alt configuration commands.
+- **enable:** Enable anti-alt system.
+- **disable:** Disable anti-alt system.
+- **minage <time>:** Set minimum account age for newly joined accounts.
+- **level <lvl>:** Set anti-alts protection level.
+- **role <@role>:** Set restricted role to be given to restricted user.
             """,
                 inline=False,
             )
@@ -179,13 +180,13 @@ class AntiAlts(Cog, emoji=1211597953433862144):
                 view = AntiAltsSelectionView(context=ctx)
                 msg = await ctx.reply(
                     f"""
-            **Anti-alt setup**
+**Anti-alt setup**
 
-            - Level.
-            - Minimum account age.
-            - Restricted role.
+- Level.
+- Minimum account age.
+- Restricted role.
 
-            Please select a protection level.""",
+Please select a protection level.""",
                     view=view,
                 )
 
@@ -196,15 +197,15 @@ class AntiAlts(Cog, emoji=1211597953433862144):
 
                 await msg.edit(
                     content=f"""
-            **Anti-alt setup**
+**Anti-alt setup**
 
-            - Level: {view.level}
-            - Minimum account age.
-            - Restricted role.
+- Level: {view.level}
+- Minimum account age.
+- Restricted role.
 
-            Please enter the minimum account age requirement (in days).
-            Type `none` to have the default value (7 days).
-            Type `cancel` to cancel the setup.""",
+Please enter the minimum account age requirement (in days).
+Type `none` to have the default value (7 days).
+Type `cancel` to cancel the setup.""",
                     view=None,
                 )
 
@@ -226,15 +227,15 @@ class AntiAlts(Cog, emoji=1211597953433862144):
 
                 await msg.edit(
                     content=f"""
-            **Anti-alt setup**
+**Anti-alt setup**
 
-            - Level: `{view.level}`
-            - Minimum account age: {min_account_age} days.
-            - Restricted role.
+- Level: `{view.level}`
+- Minimum account age: {min_account_age} days.
+- Restricted role.
 
-            Please enter a restricted role.
-            Type `create` to create one automatically.
-            Type `cancel` to cancel the setup.
+Please enter a restricted role.
+Type `create` to create one automatically.
+Type `cancel` to cancel the setup.
             """
                 )
 
@@ -274,7 +275,7 @@ class AntiAlts(Cog, emoji=1211597953433862144):
 
                 (
                     await self.bot.db.execute(
-                        "INSERT INTO antialt VALUES ($1, $2, $3, $4) WHERE guild_id=$1",
+                        "INSERT INTO antialt VALUES ($1, $2, $3, $4, $5)",
                         ctx.guild.id,
                         True,
                         min_account_age,
@@ -287,13 +288,13 @@ class AntiAlts(Cog, emoji=1211597953433862144):
 
                 await msg.edit(
                     content=f"""
-            **Setup complete**
+**Setup complete**
 
-            Here are your settings:
+Here are your settings:
 
-            - Level: `{view.level}`
-            - Minimum account age: {min_account_age} days.
-            - Restricted role: <@&{restricted_role}>
+- Level: `{view.level}`
+- Minimum account age: {min_account_age} days.
+- Restricted role: <@&{restricted_role}>
                         """
                 )
                 return
