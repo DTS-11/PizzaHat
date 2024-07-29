@@ -215,8 +215,8 @@ class GuildLogs(Cog):
                 if e not in before.roles:
                     roles.append(e)
 
-        for h in roles:
-            role_text += f"{h.mention} "
+        for role in roles:
+            role_text += f"{role.mention} "
         role_text = role_text[:-2]
 
         if should_log_all or should_log_member:
@@ -1145,6 +1145,7 @@ class GuildLogs(Cog):
                 ),
                 inline=False,
             )
+            em.add_field(name="Members:", value=member.guild.member_count, inline=False)
 
             await channel.send(embed=em)
 
@@ -1180,7 +1181,11 @@ class GuildLogs(Cog):
             if len(roles) == 0:
                 roles = "No roles."
 
+            em.add_field(
+                name="Joined:", value=format_date(member.joined_at), inline=False
+            )
             em.add_field(name="Roles:", value=roles, inline=False)
+            em.add_field(name="Members:", value=member.guild.member_count, inline=False)
             await channel.send(embed=em)
 
 
