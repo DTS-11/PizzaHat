@@ -107,6 +107,7 @@ class PizzaHat(commands.Bot):
             voice_states=True,
             message_content=True,
             auto_moderation=True,
+            emojis_and_stickers=True,
         )
 
         super().__init__(
