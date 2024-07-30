@@ -50,7 +50,7 @@ def cog_help_embed(cog):
         + "\n\n```ml\n<> Required Argument | [] Optional Argument\n```",
         color=discord.Color.blue(),
     )
-    em.set_thumbnail(url=cog.emoji.url)
+    em.set_thumbnail(url=cog.emoji.url if cog.emoji else None)
     em.set_footer(text="Use help [command] for more info.")
 
     for x in sorted(cog.get_commands(), key=lambda c: c.name):
