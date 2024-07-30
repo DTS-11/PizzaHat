@@ -26,7 +26,17 @@ def format_date(dt: Union[datetime.datetime, None]):
 
 
 class PollOptionsModal(Modal):
-    def __init__(self, ctx, cog, question, duration, channel, message, count, multiple):
+    def __init__(
+        self,
+        ctx: Context,
+        cog,
+        question: str,
+        duration,
+        channel,
+        message,
+        count: int,
+        multiple: bool,
+    ):
         super().__init__(title="Add Poll Options")
         self.ctx = ctx
         self.cog = cog
@@ -44,6 +54,12 @@ class PollOptionsModal(Modal):
             self.add_item(option_input)
 
         self.multiple = multiple
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if self.ctx.author != interaction.user:
+            return await interaction.response.send_message(
+                "Not your interaction ._.", ephemeral=True
+            )
 
     async def on_submit(self, interaction: discord.Interaction):
         options = [input.value for input in self.option_inputs if input.value.strip()]
@@ -777,15 +793,15 @@ class Utility(Cog, emoji=916988537264570368):
 
     @commands.command(aliases=["av"])
     @commands.cooldown(1, 10, commands.BucketType.user)
-    async def avatar(self, ctx: Context, member: Optional[Union[discord.Member, discord.User]]):  # type: ignore
+    async def avatar(
+        self, ctx: Context, member: Optional[Union[discord.Member, discord.User]]
+    ):
         """
         Displays a user's avatar
         If no member is provided, returns your avatar.
         """
 
-        if not member:
-            member = ctx.author  # type: ignore
-
+        member = member or ctx.author
         em = discord.Embed(title=f"Avatar of {member.name}", color=self.bot.color)
 
         if member.avatar is not None:
