@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional, Union
 
 import chat_exporter
 import discord
@@ -20,7 +20,7 @@ class Paginator(ui.View):
         self.clear_items()
 
     @ui.button(label="<<", style=ButtonStyle.gray)
-    async def first(self, interaction: discord.Interaction, button: ui.Button):
+    async def first(self, interaction: Interaction, button: ui.Button):
         if self.current == 0:
             return await interaction.response.send_message(
                 "Already at the first page ._.", ephemeral=True
@@ -29,7 +29,7 @@ class Paginator(ui.View):
         self.current = 0
 
     @ui.button(label="Back", style=ButtonStyle.blurple)
-    async def back(self, interaction: discord.Interaction, button: ui.Button):
+    async def back(self, interaction: Interaction, button: ui.Button):
         if self.current == 0:
             return await interaction.response.send_message(
                 "Already at the first page ._.", ephemeral=True
@@ -40,12 +40,12 @@ class Paginator(ui.View):
         self.current -= 1
 
     @ui.button(emoji="🛑", style=ButtonStyle.red)
-    async def stop(self, interaction: discord.Interaction, button: ui.Button):
+    async def stop(self, interaction: Interaction, button: ui.Button):
         if interaction.message is not None:
             await interaction.message.delete()
 
     @ui.button(label="Next", style=ButtonStyle.blurple)
-    async def next(self, interaction: discord.Interaction, button: ui.Button):
+    async def next(self, interaction: Interaction, button: ui.Button):
         if self.current + 1 == len(self.embeds):
             return await interaction.response.send_message(
                 "Already at the last page ._.", ephemeral=True
@@ -56,7 +56,7 @@ class Paginator(ui.View):
         self.current += 1
 
     @ui.button(label=">>", style=ButtonStyle.gray)
-    async def last(self, interaction: discord.Interaction, button: ui.Button):
+    async def last(self, interaction: Interaction, button: ui.Button):
         if self.current + 1 == len(self.embeds):
             return await interaction.response.send_message(
                 "Already at the last page ._.", ephemeral=True
@@ -64,10 +64,41 @@ class Paginator(ui.View):
         await interaction.response.edit_message(embed=self.embeds[-1], view=self)
         self.current = len(self.embeds) - 1
 
-    async def interaction_check(self, interaction: discord.Interaction):
+    async def interaction_check(self, interaction: Interaction):
         if interaction.user == self.ctx.author:
             return True
         await interaction.response.send_message("Not your command ._.", ephemeral=True)
+
+
+class ConfirmationView(ui.View):
+    def __init__(
+        self,
+        ctx: Context,
+        timeout: Optional[int] = 300,
+        user: Optional[Union[discord.Member, discord.User]] = None,
+    ):
+        super().__init__(timeout=timeout)
+        self.value = None
+        self.ctx = ctx
+        self.user = user or self.ctx.author
+
+    @ui.button(label="Confirm", style=ButtonStyle.green)
+    async def confirm(self, interaction: Interaction, button: ui.Button):
+        self.value = True
+        self.stop()
+
+    @ui.button(label="Abort", style=ButtonStyle.red)
+    async def abort(self, interaction: Interaction, button: ui.Button):
+        self.value = False
+        self.stop()
+
+    async def interaction_check(self, interaction: Interaction) -> bool:
+        if interaction.user != self.user:
+            await interaction.response.send_message(
+                "This confirmation dialog is not for you.", ephemeral=True
+            )
+            return False
+        return True
 
 
 class TicketView(ui.View):
