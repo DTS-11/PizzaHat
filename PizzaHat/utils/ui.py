@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import chat_exporter
 import discord
@@ -9,7 +9,7 @@ from discord.ext.commands import Context
 
 # credits to Nirlep's EpicBot paginator system!
 # https://github.com/Nirlep5252/EpicBot/blob/main/utils/ui.py#L70
-class Paginator(discord.ui.View):
+class Paginator(ui.View):
     def __init__(self, ctx: Context, embeds: List[discord.Embed]):
         super().__init__(timeout=180)
         self.ctx = ctx
@@ -19,8 +19,8 @@ class Paginator(discord.ui.View):
     async def on_timeout(self) -> None:
         self.clear_items()
 
-    @discord.ui.button(label="<<", style=discord.ButtonStyle.gray)
-    async def first(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @ui.button(label="<<", style=ButtonStyle.gray)
+    async def first(self, interaction: discord.Interaction, button: ui.Button):
         if self.current == 0:
             return await interaction.response.send_message(
                 "Already at the first page ._.", ephemeral=True
@@ -28,8 +28,8 @@ class Paginator(discord.ui.View):
         await interaction.response.edit_message(embed=self.embeds[0], view=self)
         self.current = 0
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.blurple)
-    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @ui.button(label="Back", style=ButtonStyle.blurple)
+    async def back(self, interaction: discord.Interaction, button: ui.Button):
         if self.current == 0:
             return await interaction.response.send_message(
                 "Already at the first page ._.", ephemeral=True
@@ -39,13 +39,13 @@ class Paginator(discord.ui.View):
         )
         self.current -= 1
 
-    @discord.ui.button(emoji="🛑", style=discord.ButtonStyle.red)
-    async def stop(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @ui.button(emoji="🛑", style=ButtonStyle.red)
+    async def stop(self, interaction: discord.Interaction, button: ui.Button):
         if interaction.message is not None:
             await interaction.message.delete()
 
-    @discord.ui.button(label="Next", style=discord.ButtonStyle.blurple)
-    async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @ui.button(label="Next", style=ButtonStyle.blurple)
+    async def next(self, interaction: discord.Interaction, button: ui.Button):
         if self.current + 1 == len(self.embeds):
             return await interaction.response.send_message(
                 "Already at the last page ._.", ephemeral=True
@@ -55,8 +55,8 @@ class Paginator(discord.ui.View):
         )
         self.current += 1
 
-    @discord.ui.button(label=">>", style=discord.ButtonStyle.gray)
-    async def last(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @ui.button(label=">>", style=ButtonStyle.gray)
+    async def last(self, interaction: discord.Interaction, button: ui.Button):
         if self.current + 1 == len(self.embeds):
             return await interaction.response.send_message(
                 "Already at the last page ._.", ephemeral=True
