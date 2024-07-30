@@ -8,9 +8,8 @@ from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
-from discord.ui import Button, View
 from utils.config import ANTIHOIST_CHARS
-from utils.ui import Paginator
+from utils.ui import ConfirmationView, Paginator
 
 
 class Mod(Cog, emoji=847248846526087239):
@@ -158,35 +157,31 @@ class Mod(Cog, emoji=847248846526087239):
     async def prune(self, ctx: Context, days: int, *roles: discord.Role):
         """Kicks inactive members from the guild."""
 
-        view = View(timeout=60)
+        if not ctx.guild:
+            return
 
-        async def yes_callback(interaction: discord.Interaction):
-            reason = f"Prune members initiated by {ctx.author}"
-            await interaction.response.send_message("Pruning members...")
-            try:
-                await ctx.guild.prune_members(days=days, roles=roles, reason=reason, compute_prune_count=False)  # type: ignore
-            except discord.HTTPException:
-                await interaction.edit_original_response(
-                    content=f"{self.bot.no} Failed to prune members."
-                )
-            else:
-                await interaction.edit_original_response(
-                    content=f"{self.bot.yes} Members have been pruned."
-                )
-
-        async def no_callback(interaction: discord.Interaction):
-            await interaction.response.send_message("Prune cancelled.")
-
-        yes = Button(style=discord.ButtonStyle.green, label="Yes")
-        no = Button(style=discord.ButtonStyle.red, label="No")
-        yes.callback = yes_callback
-        no.callback = no_callback
-        view.add_item(yes).add_item(no)
-
-        est_pruned = await ctx.guild.estimate_pruned_members(days=days, roles=roles)  # type: ignore
-        await ctx.send(
-            f"Are you sure that you want to prune {est_pruned} members?", view=view
+        reason = f"Prune members initiated by {ctx.author}"
+        confirm = ConfirmationView(ctx, 60)
+        est_pruned = await ctx.guild.estimate_pruned_members(days=days, roles=roles)
+        msg = await ctx.send(
+            f"Are you sure that you want to prune **{est_pruned}** members?",
+            view=confirm,
         )
+        await confirm.wait()
+
+        if not confirm.value:
+            return await ctx.send("Aborted pruning members.")
+        await msg.delete()
+        m = await ctx.send("Pruning members...")
+
+        try:
+            await ctx.guild.prune_members(
+                days=days, roles=roles, reason=reason, compute_prune_count=False
+            )
+        except discord.HTTPException:
+            await m.edit(content=f"{self.bot.no} Failed to prune members.")
+        else:
+            await m.edit(content=f"{self.bot.yes} Members have been pruned.")
 
     @commands.command(aliases=["mn"])
     @commands.guild_only()
