@@ -187,9 +187,9 @@ class MyHelp(commands.HelpCommand):
         view.message = await ctx.send(embed=bot_help_embed(ctx), view=view)  # type: ignore
 
     async def send_command_help(self, command: commands.Command):
-        signature = self.get_command_signature(command)
+        # signature = self.get_command_signature(command)
         embed = discord.Embed(
-            title=signature,
+            title=f"{self.context.clean_prefix}{command} {command.signature}",
             description=(command.help or "No help found...")
             + "\n\n```ml\n<> Required Argument | [] Optional Argument\n```",
             color=discord.Color.blue(),
