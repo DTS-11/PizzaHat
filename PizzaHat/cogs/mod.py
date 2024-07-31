@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from typing import List, Union
+from typing import List, Optional, Union
 
 import discord
 import humanfriendly
@@ -178,8 +178,10 @@ class Mod(Cog, emoji=847248846526087239):
             await ctx.guild.prune_members(
                 days=days, roles=roles, reason=reason, compute_prune_count=False
             )
+
         except discord.HTTPException:
             await m.edit(content=f"{self.bot.no} Failed to prune members.")
+
         else:
             await m.edit(content=f"{self.bot.yes} Members have been pruned.")
 
@@ -189,9 +191,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(manage_nicknames=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def modnick(self, ctx: Context, member: discord.Member):
-        """
-        Sets a random moderated nickname.
-        """
+        """Sets a random moderated nickname."""
         try:
             nick = f"Moderated Nickname {uuid.uuid4()}"[:24]
             await member.edit(nick=nick)
@@ -206,9 +206,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(manage_nicknames=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def setnick(self, ctx: Context, member: discord.Member, *, nick: str):
-        """
-        Sets a custom nickname.
-        """
+        """Sets a custom nickname."""
 
         try:
             await member.edit(nick=nick)
@@ -225,9 +223,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(manage_nicknames=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def decancer(self, ctx: Context, member: discord.Member):
-        """
-        Removes special characters and renames the member as "Moderated Nickname"
-        """
+        """Removes special characters and renames the member as "Moderated Nickname"""
 
         try:
             if member.display_name[
@@ -289,9 +285,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     async def lock(self, ctx: Context):
-        """
-        Lock management commands.
-        """
+        """Lock management commands."""
 
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
@@ -305,8 +299,6 @@ class Mod(Cog, emoji=847248846526087239):
         """
         Locks a channel with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
-
-        Example: `p!lock channel [@role] [#channel]`
         """
 
         if ctx.guild is not None:
@@ -362,9 +354,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     async def unlock(self, ctx: Context):
-        """
-        Unlock management commands.
-        """
+        """Unlock management commands."""
 
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
@@ -441,9 +431,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def hide(self, ctx: Context, role: discord.Role = None, channel: discord.TextChannel = None):  # type: ignore
-        """
-        Hides a channel from a given role or @everyone.
-        """
+        """Hides a channel from a given role or @everyone."""
 
         if ctx.guild is not None:
             role = role or ctx.guild.default_role
@@ -461,9 +449,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def expose(self, ctx: Context, role: discord.Role = None, channel: discord.TextChannel = None):  # type: ignore
-        """
-        Exposes a channel from a given role or @everyone.
-        """
+        """Exposes a channel from a given role or @everyone."""
 
         if ctx.guild is not None:
             role = role or ctx.guild.default_role
@@ -545,9 +531,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(kick_members=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def kick(self, ctx: Context, member: discord.Member, *, reason: str | None):
-        """
-        Kicks a member from the server.
-        """
+        """Kicks a member from the server."""
 
         if reason is None:
             reason = f"No reason provided.\nKicked by {ctx.author}"
@@ -667,9 +651,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(ban_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def unban(self, ctx: Context, id: int):
-        """
-        Unbans a member from the server using their ID.
-        """
+        """Unbans a member from the server using their ID."""
 
         try:
             if ctx.guild is not None:
@@ -718,9 +700,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(moderate_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def unmute(self, ctx: Context, member: discord.Member, *, reason: str | None):
-        """
-        Unmutes or removes a member from timeout.
-        """
+        """Unmutes or removes a member from timeout."""
 
         if reason is None:
             reason = f"Action done by {ctx.author}"
@@ -733,9 +713,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     async def role(self, ctx: Context):
-        """
-        Role management commands.
-        """
+        """Role management commands."""
 
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
@@ -746,9 +724,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(manage_roles=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def role_add(self, ctx: Context, user: discord.Member, *, role: discord.Role):
-        """
-        Assign role to a user.
-        """
+        """Assign role to a user."""
 
         if role not in user.roles:
             await user.add_roles(role)
@@ -765,16 +741,13 @@ class Mod(Cog, emoji=847248846526087239):
     async def role_remove(
         self, ctx: Context, user: discord.Member, *, role: discord.Role
     ):
-        """
-        Remove role from a user.
-        """
+        """Remove role from a user."""
 
         if role in user.roles:
             await user.remove_roles(role)
             await ctx.send(
                 f"{self.bot.yes} Successfully removed `{role.name}` from {user}"
             )
-
         else:
             await ctx.send(f"{self.bot.no} {user} does not have `{role.name}` role.")
 
@@ -791,9 +764,7 @@ class Mod(Cog, emoji=847248846526087239):
         color: discord.Color = discord.Color.default(),
         hoist: bool = False,
     ):
-        """
-        Create a new role in the server with given color and hoist options.
-        """
+        """Create a new role in the server with given color and hoist options."""
 
         if ctx.guild is not None:
             await ctx.guild.create_role(
@@ -810,9 +781,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(manage_roles=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def role_delete(self, ctx: Context, *, role: discord.Role):
-        """
-        Delete an already existing role in the server.
-        """
+        """Delete an already existing role in the server."""
 
         if ctx.guild is not None:
             if role in ctx.guild.roles:
@@ -823,9 +792,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def role_list(self, ctx: Context):
-        """
-        List all the server roles.
-        """
+        """List all the server roles."""
 
         if ctx.guild is not None:
             roles = sorted(ctx.guild.roles, key=lambda x: x.position, reverse=True)
@@ -865,9 +832,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     async def channel(self, ctx: Context):
-        """
-        Channel related commands.
-        """
+        """Channel related commands."""
 
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
@@ -878,9 +843,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def channel_create(self, ctx: Context, name: str):
-        """
-        Create a new channel in the server.
-        """
+        """Create a new channel in the server."""
 
         if ctx.guild is not None:
             await ctx.guild.create_text_channel(name)
@@ -892,21 +855,16 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def channel_delete(self, ctx: Context, channel: discord.TextChannel):
-        """
-        Delete a channel in the server.
-        """
+        """Delete a channel in the server."""
 
-        if ctx.guild is not None:
-            await channel.delete()
-            await ctx.send(f"{self.bot.yes} Channel deleted successfully!")
+        await channel.delete()
+        await ctx.send(f"{self.bot.yes} Channel deleted successfully!")
 
     @channel.command(name="list", aliases=["all"])
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def channel_list(self, ctx: Context):
-        """
-        List all the server channels.
-        """
+        """List all the server channels."""
 
         if ctx.guild is not None:
             channels = [
@@ -995,26 +953,37 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def channel_topic(self, ctx: Context, *, text: str):
-        """Change the current channel's topic."""
+    async def channel_topic(
+        self,
+        ctx: Context,
+        channel: Optional[Union[discord.TextChannel, discord.ForumChannel]],
+        *,
+        text: str,
+    ):
+        """
+        Change the channel topic.
+        If no channel is given, it will default to the current channel.
+        """
 
-        if isinstance(ctx.channel, Union[discord.TextChannel, discord.ForumChannel]):
-            await ctx.channel.edit(topic=text)
-            await ctx.send(f"{self.bot.yes} Channel topic changed successfully!")
+        channel = channel or ctx.channel  # type: ignore
 
-        else:
+        try:
+            await channel.edit(topic=text)  # type: ignore
+
+        except discord.HTTPException:
             await ctx.send(
                 f"{self.bot.no} You can only change the topic of text/forum channels."
             )
+
+        else:
+            await ctx.send(f"{self.bot.yes} Channel topic changed successfully!")
 
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def warn(self, ctx: Context, member: discord.Member, *, reason: str | None):
-        """
-        Warns a user.
-        """
+        """Warns a user."""
 
         if reason is None:
             reason = f"No reason given.\nWarned done by {ctx.author}"
@@ -1115,9 +1084,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def deletewarn(self, ctx: Context, member: discord.Member, warn_id: int):
-        """
-        Deletes a warn of the user with warn ID.
-        """
+        """Deletes a warn of the user with warn ID."""
 
         result = (
             await self.bot.db.execute(
