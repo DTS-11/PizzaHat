@@ -13,11 +13,11 @@ def bot_help_embed(ctx: commands.Context):
         color=discord.Color.blue(),
     )
     em.description = """
-Hello, welcome to the help page!\n\n
-Use `help [command]` for more info on a command.\n
-Use `help [category]` for more info on a category.\n
+Hello, welcome to the help page!
 Use the dropdown menu to select a category.\n
-        """
+- Use `help [command]` for more info on a command.
+- Use `help [category]` for more info on a category.
+    """
 
     em.add_field(name="About me", value=ctx.bot.description, inline=False)
     em.add_field(
@@ -46,18 +46,21 @@ def cog_help_embed(cog):
 
     em = discord.Embed(
         title=f"{title}",
-        description=(desc or "No description...")
-        + "\n\n```ml\n<> Required Argument | [] Optional Argument\n```",
+        description=(desc or "No description..."),
         color=discord.Color.blue(),
     )
     em.set_thumbnail(url=cog.emoji.url if cog.emoji else None)
     em.set_footer(text="Use help [command] for more info.")
 
-    for x in sorted(cog.get_commands(), key=lambda c: c.name):
-        cmd_help = x.short_doc if x.short_doc else x.help
-        em.add_field(name=f"{x.name} {x.signature}", value=cmd_help, inline=False)
+    commands_info = []
+    for cmd in sorted(cog.get_commands(), key=lambda c: c.name):
+        cmd_help = cmd.short_doc if cmd.short_doc else cmd.help
+        commands_info.append(f"<:arrow:1267380018116563016> `{cmd.name}` - {cmd_help}")
 
-    em.set_footer(text="Use help [command] for more info.")
+    commands_value = "\n".join(commands_info)
+    # em.add_field(name="Commands", value=commands_value, inline=False)
+    em.description += f"\n### Commands\n{commands_value}"  # type: ignore
+
     return em
 
 
