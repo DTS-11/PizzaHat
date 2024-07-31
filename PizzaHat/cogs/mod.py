@@ -24,7 +24,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_permissions(manage_guild=True)
     async def logs(self, ctx: Context, channel: discord.TextChannel):
         """
-        Set a guild log channel.
+        Set a guild logs channel.
         To replace the log channel, simply run this command again.
         """
 
@@ -53,7 +53,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.has_permissions(manage_guild=True)
     async def logconfig(self, ctx: Context, *log_modules: str):
         """
-        Choose what all events the bot needs to log.
+        Choose what events the bot needs to log.
 
         **Available Modules**
         `All:` Log everything
@@ -155,7 +155,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(kick_members=True, manage_guild=True)
     @commands.cooldown(1, 10, commands.BucketType.guild)
     async def prune(self, ctx: Context, days: int, *roles: discord.Role):
-        """Kicks inactive members from the guild."""
+        """Kicks inactive members."""
 
         if not ctx.guild:
             return
@@ -192,6 +192,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def modnick(self, ctx: Context, member: discord.Member):
         """Sets a random moderated nickname."""
+
         try:
             nick = f"Moderated Nickname {uuid.uuid4()}"[:24]
             await member.edit(nick=nick)
@@ -223,7 +224,10 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(manage_nicknames=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def decancer(self, ctx: Context, member: discord.Member):
-        """Removes special characters and renames the member as "Moderated Nickname"""
+        """
+        Removes special characters from the user's name
+        and renames them as "Moderated Nickname"
+        """
 
         try:
             if member.display_name[
@@ -248,7 +252,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def slowmode(self, ctx: Context, seconds: int | None):
         """
-        Change the slow-mode in the current channel.
+        Change the slowmode.
         If no values are given, the bot returns slowmode of the current channel.
         """
 
@@ -368,8 +372,6 @@ class Mod(Cog, emoji=847248846526087239):
         """
         Unlocks a channel with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
-
-        Example: `p!unlock channel [@role] [#channel]`
         """
 
         if ctx.guild is not None:
@@ -431,7 +433,10 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def hide(self, ctx: Context, role: discord.Role = None, channel: discord.TextChannel = None):  # type: ignore
-        """Hides a channel from a given role or @everyone."""
+        """
+        Hides a channel.
+        If no role is given, defaults to @everyone.
+        """
 
         if ctx.guild is not None:
             role = role or ctx.guild.default_role
@@ -449,7 +454,9 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def expose(self, ctx: Context, role: discord.Role = None, channel: discord.TextChannel = None):  # type: ignore
-        """Exposes a channel from a given role or @everyone."""
+        """
+        Exposes a channel.
+        If no role is given, defaults to @everyone."""
 
         if ctx.guild is not None:
             role = role or ctx.guild.default_role
@@ -468,7 +475,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def clear(self, ctx: Context, amount: int = 100):
         """
-        Deletes certain amount of messages in the current channel.
+        Deletes certain amount of messages.
         If no amount is given, it deletes upto 100 messages.
         """
 
@@ -531,7 +538,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(kick_members=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def kick(self, ctx: Context, member: discord.Member, *, reason: str | None):
-        """Kicks a member from the server."""
+        """Kicks a member."""
 
         if reason is None:
             reason = f"No reason provided.\nKicked by {ctx.author}"
@@ -552,7 +559,7 @@ class Mod(Cog, emoji=847248846526087239):
         reason: str | None,
     ):
         """
-        Kick multiple members from the server.
+        Kick multiple members.
         You can only kick users who are in the server.
         """
 
@@ -575,7 +582,7 @@ class Mod(Cog, emoji=847248846526087239):
         self, ctx: Context, member: Union[discord.Member, int], *, reason: str | None
     ):
         """
-        Bans a member whether or not the member is in the server.
+        Bans a member whether or not they're in the server.
         You can ban the member using their ID or my mentioning them.
         """
 
@@ -605,7 +612,7 @@ class Mod(Cog, emoji=847248846526087239):
         reason: str | None,
     ):
         """
-        Mass bans multiple members from the server.
+        Mass bans multiple members.
         You can only ban users, who are in the server.
         """
 
@@ -628,7 +635,7 @@ class Mod(Cog, emoji=847248846526087239):
     async def softban(
         self, ctx: Context, member: discord.Member, *, reason: str | None
     ):
-        """Soft bans a member from the server.
+        """Soft bans a member.
 
         A softban is basically banning the member from the server but
         then unbanning the member as well. This allows you to essentially
@@ -651,7 +658,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(ban_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def unban(self, ctx: Context, id: int):
-        """Unbans a member from the server using their ID."""
+        """Unbans a member."""
 
         try:
             if ctx.guild is not None:
@@ -667,12 +674,12 @@ class Mod(Cog, emoji=847248846526087239):
                 "Not a valid previously banned member or the member could not be found."
             )
 
-    @commands.command(aliases=["mute"])
+    @commands.command(aliases=["timeout"])
     @commands.guild_only()
     @commands.has_permissions(moderate_members=True)
     @commands.bot_has_permissions(moderate_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def timeout(
+    async def mute(
         self, ctx: Context, member: discord.Member, duration, *, reason: str | None
     ):
         """
@@ -681,9 +688,7 @@ class Mod(Cog, emoji=847248846526087239):
         Use 5m for 5 mins, 1h for 1 hour etc...
         """
 
-        if reason is None:
-            reason = f"Action done by {ctx.author}"
-
+        reason = reason or f"Action done by {ctx.author}"
         humanly_duration = humanfriendly.parse_timespan(duration)
 
         await member.timeout(
@@ -691,7 +696,7 @@ class Mod(Cog, emoji=847248846526087239):
             reason=reason,
         )
         await ctx.send(
-            f"{self.bot.yes} {member} has been timed out for {duration}.\nReason: {reason}"
+            f"{self.bot.yes} {member} has been timed out for {duration}."
         )
 
     @commands.command(aliases=["untimeout"])
@@ -702,9 +707,7 @@ class Mod(Cog, emoji=847248846526087239):
     async def unmute(self, ctx: Context, member: discord.Member, *, reason: str | None):
         """Unmutes or removes a member from timeout."""
 
-        if reason is None:
-            reason = f"Action done by {ctx.author}"
-
+        reason = reason or f"Action done by {ctx.author}"
         await member.timeout(None, reason=reason)
         await ctx.send(f"{self.bot.yes} {member} has been unmuted!")
 
@@ -764,7 +767,7 @@ class Mod(Cog, emoji=847248846526087239):
         color: discord.Color = discord.Color.default(),
         hoist: bool = False,
     ):
-        """Create a new role in the server with given color and hoist options."""
+        """Create a new role with color and hoist options."""
 
         if ctx.guild is not None:
             await ctx.guild.create_role(
@@ -781,7 +784,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(manage_roles=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def role_delete(self, ctx: Context, *, role: discord.Role):
-        """Delete an already existing role in the server."""
+        """Delete a role."""
 
         if ctx.guild is not None:
             if role in ctx.guild.roles:
@@ -843,7 +846,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def channel_create(self, ctx: Context, name: str):
-        """Create a new channel in the server."""
+        """Creates a new channel."""
 
         if ctx.guild is not None:
             await ctx.guild.create_text_channel(name)
@@ -855,7 +858,7 @@ class Mod(Cog, emoji=847248846526087239):
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def channel_delete(self, ctx: Context, channel: discord.TextChannel):
-        """Delete a channel in the server."""
+        """Delete a channel."""
 
         await channel.delete()
         await ctx.send(f"{self.bot.yes} Channel deleted successfully!")

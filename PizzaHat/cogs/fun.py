@@ -129,7 +129,7 @@ class Fun(Cog, emoji=802615573556363284):
     @commands.command(name="credits")
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def _credits(self, ctx: Context):
-        """Shows all the people who have helped make this bot."""
+        """Shows the people who have contributed to this bot."""
 
         if self.bot.user and self.bot.user.avatar is not None:
             em = discord.Embed(
@@ -153,7 +153,7 @@ class Fun(Cog, emoji=802615573556363284):
     @commands.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def echo(self, ctx: Context, channel: discord.TextChannel, *, msg: str):
-        """Makes the bot say something in the specified channel"""
+        """Makes the bot say something in another channel."""
 
         if not channel.permissions_for(ctx.author).send_messages:  # type: ignore
             return await ctx.message.add_reaction("⚠")
@@ -167,7 +167,7 @@ class Fun(Cog, emoji=802615573556363284):
     @commands.command(aliases=["ss"])
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def screenshot(self, ctx: Context, *, url: str):
-        """Takes a screenshot from a given URL."""
+        """Takes a screenshot."""
 
         await ctx.send(f"https://image.thum.io/get/https://{url}")
 
@@ -209,7 +209,10 @@ class Fun(Cog, emoji=802615573556363284):
     @commands.command(aliases=["calc"])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def calculate(self, ctx: Context, *, query):
-        """Do some math calculations. Cannot do algebraic expressions."""
+        """
+        Do some simple math calculations.
+        Cannot do algebraic expressions.
+        """
 
         query = query.replace(",", "")
         engine_input = "{m:" + query + "}"
@@ -258,7 +261,10 @@ class Fun(Cog, emoji=802615573556363284):
     @commands.command(name="8ball")
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def _8ball(self, ctx: Context, *, question: str):
-        """Ask any question, and let the bot respond with the answers."""
+        """
+        The Magic 8 Ball Oracle has answer to all the questions.
+        Just ask!
+        """
 
         responses = [
             "As I see it, yes.",
@@ -488,11 +494,11 @@ class Fun(Cog, emoji=802615573556363284):
     @commands.command()
     @commands.guild_only()
     @commands.cooldown(1, 30, commands.BucketType.user)
-    async def pressf(self, ctx: Context, *, obj: str):
-        """Pay respect to something by pressing the F button."""
+    async def pressf(self, ctx: Context, *, object: str):
+        """Pay respect by pressing the F button."""
 
         em = discord.Embed(
-            description=f"It's time to pay respect for **{obj}**",
+            description=f"It's time to pay respect for **{object}**",
             color=self.bot.color,
             timestamp=ctx.message.created_at,
         )

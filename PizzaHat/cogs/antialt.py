@@ -114,9 +114,7 @@ class AntiAlts(Cog, emoji=1211597953433862144):
         config: str | None,
         setting: Union[discord.Role, str, int] = None,  # type: ignore
     ):
-        """
-        Setup anti-alt in your server.
-        """
+        """Setup anti-alt in your server."""
 
         if ctx.guild:
             data = await self.get_aa_details(ctx.guild.id)

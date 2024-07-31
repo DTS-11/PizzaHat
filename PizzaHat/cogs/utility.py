@@ -279,7 +279,7 @@ class Utility(Cog, emoji=916988537264570368):
     @commands.bot_has_permissions(create_polls=True)
     async def poll(self, ctx: commands.Context, duration: int, *, question: str, channel: discord.abc.Messageable = None):  # type: ignore
         """
-        Use Discord's Poll feature to create a poll!
+        Create a poll using the new Polls feature.
         Supports up to 10 choices and duration must be in hours (API limitation)
         """
 
@@ -347,7 +347,7 @@ class Utility(Cog, emoji=916988537264570368):
     @commands.has_permissions(manage_messages=True)
     async def quickpoll(self, ctx: Context, *, question: str):
         """
-        Quick and easy yes/no poll
+        Quick and easy yes/no poll.
         For advanced poll, see `poll` command.
         """
 
@@ -661,7 +661,7 @@ class Utility(Cog, emoji=916988537264570368):
     @commands.command(aliases=["stats"])
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def about(self, ctx: Context):
-        """Tells you information about the bot itself."""
+        """View bot statistics."""
 
         total_members = 0
         total_unique = len(self.bot.users)
@@ -727,10 +727,7 @@ class Utility(Cog, emoji=916988537264570368):
     @commands.command()
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def suggest(self, ctx: Context, *, suggestion):
-        """
-        Suggest some commands that should be included in bot.
-        This command need not be used if you are in the support server.
-        """
+        """Suggest some cool features."""
 
         await ctx.send(
             f"{self.bot.yes} {ctx.author.mention}, your suggestion has been recorded!"
@@ -750,7 +747,7 @@ class Utility(Cog, emoji=916988537264570368):
                 icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
             )
 
-        msg = await channel.send(embed=em)  # type: ignore
+        await channel.send(embed=em)  # type: ignore
 
     # show perms
     async def say_permissions(self, ctx: Context, member, channel):
@@ -814,12 +811,13 @@ class Utility(Cog, emoji=916988537264570368):
     @commands.command()
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def charinfo(self, ctx: Context, *, characters: str):
-        """Shows you information about a number of characters.
-        Only up to 15 characters at a time.
+        """
+        Shows you information about some characters.
+        Only up to 25 characters at a time.
         """
 
-        if len(characters) > 15:
-            await ctx.send("Too many characters ({}/15)".format(len(characters)))
+        if len(characters) > 25:
+            await ctx.send("Too many characters ({}/25)".format(len(characters)))
             return
 
         fmt = "`\\U{0:>08}`: {1} - {2} \N{EM DASH}"

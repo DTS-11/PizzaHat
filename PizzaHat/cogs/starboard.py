@@ -15,9 +15,7 @@ class Starboard(Cog, emoji=1220673915576389692):
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def star(self, ctx: Context):
-        """
-        Starboard commands.
-        """
+        """Starboard commands."""
 
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)

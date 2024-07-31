@@ -28,7 +28,7 @@ class Tags(Cog, emoji=916988536656367626):
     @commands.has_permissions(manage_messages=True)
     async def tag_create(self, ctx: Context, name: str, *, content: str):
         """
-        Creates a new tag with given name.
+        Creates a new tag.
         Put quotes around the name if you want it to have multiple words.
         """
 
@@ -67,11 +67,7 @@ class Tags(Cog, emoji=916988536656367626):
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
     async def tag_delete(self, ctx: Context, tag: str):
-        """
-        Delete an existing tag using tag name.
-
-        Example: `p!tag delete new_tag`
-        """
+        """Delete an existing tag."""
 
         if self.bot.db and ctx.guild is not None:
             data = await self.bot.db.fetch(
@@ -171,11 +167,7 @@ class Tags(Cog, emoji=916988536656367626):
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
     async def tag_edit(self, ctx: Context, tag: str, *, content: str):
-        """
-        Edit the content of an existing tag.
-
-        Example: `p!tag edit new_tag`
-        """
+        """Edit the content of an existing tag."""
 
         if self.bot.db and ctx.guild:
             data = await self.bot.db.fetch(

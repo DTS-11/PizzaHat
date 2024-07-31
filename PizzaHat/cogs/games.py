@@ -16,9 +16,7 @@ class Games(Cog, emoji=819957465160220734):
     @commands.command(aliases=["ttt"])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def tictactoe(self, ctx: Context, member: discord.User):
-        """
-        Play tic-tac-toe with another user.
-        """
+        """Play Tic-Tac-Toe."""
 
         game = button_games.BetaTictactoe(cross=ctx.author, circle=member)  # type: ignore
         await game.start(ctx, timeout=300, embed_color=self.bot.color)
@@ -26,9 +24,7 @@ class Games(Cog, emoji=819957465160220734):
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def hangman(self, ctx: Context):
-        """
-        Play hangman.
-        """
+        """Play hangman."""
 
         game = button_games.BetaHangman()
         await game.start(ctx, timeout=180, embed_color=self.bot.color)
@@ -36,9 +32,7 @@ class Games(Cog, emoji=819957465160220734):
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def typerace(self, ctx: Context):
-        """
-        Play type racing game.
-        """
+        """Play type racing game."""
 
         game = games.TypeRacer()
         await game.start(ctx, timeout=120, embed_color=self.bot.color)
@@ -46,9 +40,7 @@ class Games(Cog, emoji=819957465160220734):
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def rps(self, ctx: Context, member: discord.User = None):  # type: ignore
-        """
-        Play rock, paper, scissors with another user or the bot.
-        """
+        """Play rock, paper, scissor"""
 
         game = button_games.BetaRockPaperScissors(member)
         await game.start(ctx, timeout=30, embed_color=self.bot.color)
@@ -56,9 +48,7 @@ class Games(Cog, emoji=819957465160220734):
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def chess(self, ctx: Context, member: discord.User):
-        """
-        Play chess with another user.
-        """
+        """Play chess."""
 
         game = button_games.BetaChess(white=ctx.author, black=member)  # type: ignore
         await game.start(ctx, timeout=600, embed_color=self.bot.color)
@@ -66,9 +56,7 @@ class Games(Cog, emoji=819957465160220734):
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def wordle(self, ctx: Context):
-        """
-        Play wordle.
-        """
+        """Play wordle."""
 
         game = button_games.BetaWordle()
         await game.start(ctx, timeout=180, embed_color=self.bot.color)
@@ -76,9 +64,7 @@ class Games(Cog, emoji=819957465160220734):
     @commands.command(aliases=["aki"])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def akinator(self, ctx: Context):
-        """
-        Think of someone/something and I'll try to guess it
-        """
+        """Think of someone/something and I'll guess it"""
 
         game = button_games.BetaAkinator()
         await game.start(
@@ -88,9 +74,7 @@ class Games(Cog, emoji=819957465160220734):
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def reactiontest(self, ctx: Context):
-        """
-        Test your reaction time.
-        """
+        """Test your reaction time."""
 
         game = button_games.BetaReactionGame()
         await game.start(ctx, timeout=15, embed_color=self.bot.color)
@@ -98,9 +82,7 @@ class Games(Cog, emoji=819957465160220734):
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def connect4(self, ctx: Context, member: discord.User):
-        """
-        Play connect4 with another user.
-        """
+        """Play connect4."""
 
         game = button_games.BetaConnectFour(red=ctx.author, blue=member)  # type: ignore
         await game.start(ctx, timeout=300, embed_color=self.bot.color)

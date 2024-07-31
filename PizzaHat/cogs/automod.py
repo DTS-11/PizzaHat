@@ -30,9 +30,7 @@ class AutoModeration(Cog, emoji=1207259153437949953):
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     async def automod(self, ctx: Context):
-        """
-        Automod configuration commands.
-        """
+        """Automod config commands."""
 
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
@@ -43,9 +41,7 @@ class AutoModeration(Cog, emoji=1207259153437949953):
     @commands.bot_has_permissions(manage_guild=True)
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def automod_enable(self, ctx: Context):
-        """
-        Enables bot auto-mod in the server.
-        """
+        """Enables automod in the server."""
 
         (
             await self.bot.db.execute(
@@ -64,9 +60,7 @@ class AutoModeration(Cog, emoji=1207259153437949953):
     @commands.bot_has_permissions(manage_guild=True)
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def automod_disable(self, ctx: Context):
-        """
-        Disables bot auto-mod in the server.
-        """
+        """Disables automod in the server."""
 
         (
             await self.bot.db.execute(

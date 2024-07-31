@@ -196,7 +196,7 @@ class Dev(Cog, emoji=833297795761831956):
     @commands.command(hidden=True)
     @commands.is_owner()
     async def botlogs(self, ctx: Context):
-        """Command to show bot logs (bot.log) file in discord itself."""
+        """Send bot.log file."""
 
         f = open("bot.log", "r")
         await ctx.send(f"```ruby\n{f.read()}\n```")
@@ -204,7 +204,7 @@ class Dev(Cog, emoji=833297795761831956):
     @commands.command(hidden=True)
     @commands.is_owner()
     async def reloadall(self, ctx: Context):
-        """Quick way to reload all cogs at once."""
+        """Reloads all cogs."""
 
         for cog in INITIAL_EXTENSIONS:
             await self.bot.reload_extension(cog)
@@ -218,7 +218,7 @@ class Dev(Cog, emoji=833297795761831956):
     @commands.command(hidden=True)
     @commands.is_owner()
     async def update_badwords(self, ctx: Context):
-        """Update the bad words file by uploading the attachment."""
+        """Update the bad words file."""
 
         if not ctx.message.attachments:
             return await ctx.send(f"{self.bot.no} No file attached.")

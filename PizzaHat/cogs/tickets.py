@@ -19,7 +19,8 @@ class Tickets(Cog, emoji=1220678462839197756):
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def tsetup(self, ctx: Context, channel: discord.TextChannel):
         """
-        Setup the Ticket system in the server by sending the `Create Ticket` message.
+        Setup the Ticket system.
+        This sends the `Create Ticket` message which enables users to open a ticket.
         """
 
         em = discord.Embed(

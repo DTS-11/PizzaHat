@@ -92,9 +92,7 @@ class Emojis(Cog, emoji=1220671125709918228):
     @commands.has_permissions(manage_emojis=True)
     @commands.bot_has_permissions(manage_emojis=True)
     async def _emoji(self, ctx: Context):
-        """
-        Emoji management commands.
-        """
+        """Emoji management commands."""
 
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
@@ -105,9 +103,7 @@ class Emojis(Cog, emoji=1220671125709918228):
     @commands.has_permissions(manage_emojis=True)
     @commands.bot_has_permissions(manage_emojis=True)
     async def create(self, ctx: Context, emoji: EmojiURL, name):
-        """
-        Creates an emoji for the server under the given name.
-        """
+        """Creates an emoji."""
 
         if ctx.guild is not None:
             emoji_count = sum(e.animated == emoji.animated for e in ctx.guild.emojis)
@@ -147,9 +143,7 @@ class Emojis(Cog, emoji=1220671125709918228):
     @commands.has_permissions(manage_emojis=True)
     @commands.bot_has_permissions(manage_emojis=True)
     async def delete(self, ctx: Context, emoji: discord.Emoji):
-        """
-        Deletes an emoji from the server.
-        """
+        """Deletes an emoji."""
 
         await emoji.delete(reason=f"Action done by {ctx.author}")
         await ctx.send(f"{self.bot.yes} Emoji successfully deleted.")
@@ -157,7 +151,7 @@ class Emojis(Cog, emoji=1220671125709918228):
     @_emoji.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def info(self, ctx: Context, emoji: discord.Emoji):
-        """Shows info about emoji."""
+        """Shows info about an emoji."""
 
         try:
             if emoji.guild is not None:
