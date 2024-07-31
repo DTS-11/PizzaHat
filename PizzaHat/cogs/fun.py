@@ -16,6 +16,7 @@ from utils.config import (
     DLISTGG_VOTE,
     REG_INVITE,
     SUPPORT_SERVER,
+    TOPGG_TOKEN,
     TOPGG_VOTE,
     WUMPUS_VOTE,
 )
@@ -64,6 +65,18 @@ class Fun(Cog, emoji=802615573556363284):
             block.RangeBlock(),
         ]
         self.engine = Interpreter(blocks)
+        self.regex = re.compile(r"(\w*)\s*(?:```)(\w*)?([\s\S]*)(?:```$)")
+
+    @property
+    def session(self):
+        return self.bot.http._HTTPClient__session  # type: ignore
+
+    async def _run_code(self, *, lang: str, code: str):
+        res = await self.session.post(
+            "https://emkc.org/api/v1/piston/execute",
+            json={"language": lang, "source": code},
+        )
+        return await res.json()
 
     @commands.command()
     @commands.guild_only()
@@ -489,6 +502,89 @@ class Fun(Cog, emoji=802615573556363284):
         )
 
         await ctx.send(embed=em, view=PressFView(ctx.author))
+
+    @commands.command()
+    @commands.cooldown(1, 30, commands.BucketType.user)
+    async def checkvote(self, ctx: Context, member: discord.Member = None):  # type: ignore
+        """Check if a user has voted or not."""
+
+        member = member or ctx.author
+
+        async with self.session.get(
+            f"https://top.gg/api/bots/860889936914677770/check?userId={member.id}",
+            headers={"Authorization": TOPGG_TOKEN},
+        ) as topgg_resp:
+            response = await topgg_resp.json()
+            voted = response["voted"] == 1
+
+            if voted:
+                em = discord.Embed(
+                    title="<a:peepo_pog:1267536669892935712> Voted!",
+                    description=f"You have voted in the last **12** hours.\nClick [here]({TOPGG_VOTE}) to vote again.",
+                    color=discord.Color.green(),
+                    timestamp=ctx.message.created_at,
+                )
+            else:
+                em = discord.Embed(
+                    title="<:peepo_cry:1267536683872550922> Not Voted!",
+                    description=f"You have not voted in the last **12** hours.\nClick [here]({TOPGG_VOTE}) to vote.",
+                    color=discord.Color.red(),
+                    timestamp=ctx.message.created_at,
+                )
+            return await ctx.send(embed=em)
+
+    @commands.command()
+    @commands.cooldown(3, 30, commands.BucketType.user)
+    async def run(self, ctx: Context, *, codeblock: str):
+        """Run code and get results instantly!"""
+
+        matches = self.regex.findall(codeblock)
+        if not matches:
+            return await ctx.reply(
+                embed=discord.Embed(
+                    title="Uh-oh",
+                    description="Please use codeblocks to run your code!",
+                    color=discord.Color.red(),
+                )
+            )
+        lang = matches[0][0] or matches[0][1]
+        if not lang:
+            return await ctx.reply(
+                embed=discord.Embed(
+                    title="Uh-oh",
+                    description="Couldn't find the language hinted in the codeblock or before it",
+                    color=discord.Color.red(),
+                )
+            )
+        code = matches[0][2]
+        result = await self._run_code(lang=lang, code=code)
+        await self._send_result(ctx, result)
+
+    async def _send_result(self, ctx: Context, result: dict):
+        if "message" in result:
+            return await ctx.reply(
+                embed=discord.Embed(title="Uh-oh", description=result["message"])
+            )
+        output = result["output"]
+        if len(output) > 2000:
+            return await ctx.reply("Your output was too long.")
+            # url = await create_guest_paste_bin(self.session, output)
+            # return await ctx.reply("Your output was too long, so here's the pastebin link " + url)
+
+        embed = discord.Embed(
+            title=f"Ran your {result['language']} code",
+            color=discord.Color.green(),
+            timestamp=ctx.message.created_at,
+        )
+        output = output[:500].strip()
+        shortened = len(output) > 500
+        lines = output.splitlines()
+        shortened = shortened or (len(lines) > 15)
+        output = "\n".join(lines[:15])
+        output += shortened * "\n\n**Output shortened**"
+        embed.add_field(name="Output", value=f"```{output}```" or "**<No output>**")
+
+        await ctx.reply(embed=embed)
 
 
 async def setup(bot):
