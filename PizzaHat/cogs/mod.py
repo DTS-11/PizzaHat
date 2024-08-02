@@ -338,20 +338,44 @@ class Mod(Cog, emoji=847248846526087239):
 
         if ctx.guild is not None:
             role = ctx.guild.default_role or role
+            reason = f"Action done by {ctx.author}"
+            confirm = ConfirmationView(ctx, 60)
+            msg = await ctx.send(
+                "Are you sure you want to lock the server?", view=confirm
+            )
+            await confirm.wait()
+
+            if not confirm.value:
+                return await ctx.send("Aborted lockdown process.")
+            await msg.delete()
+            m = await ctx.send("Server lockdown initiated...")
 
             for tc in ctx.guild.text_channels:
-                await tc.set_permissions(role, send_messages=False, add_reactions=False)
+                await tc.set_permissions(
+                    role, send_messages=False, add_reactions=False, reason=reason
+                )
 
             for vc in ctx.guild.voice_channels:
-                await vc.set_permissions(role, connect=False, speak=False)
+                await vc.set_permissions(
+                    role, connect=False, speak=False, reason=reason
+                )
 
             em = discord.Embed(
-                title=f"{self.bot.yes} Server Locked",
-                description=f"The server has been locked by a staff member. You are **not muted**.",
+                title="🔒 Server Locked",
+                description="The server has been locked by a staff member. You are **not muted**.",
                 color=discord.Color.green(),
+                timestamp=ctx.message.created_at,
+            )
+            em.set_author(
+                name=ctx.author,
+                url=ctx.author.avatar.url if ctx.author.avatar else None,
+            )
+            em.set_footer(
+                text=ctx.guild.name,
+                icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
             )
 
-            await ctx.send(embed=em)
+            await m.edit(embed=em)
 
     @commands.group()
     @commands.guild_only()
@@ -407,6 +431,17 @@ class Mod(Cog, emoji=847248846526087239):
 
         if ctx.guild is not None:
             role = ctx.guild.default_role or role
+            reason = f"Action done by {ctx.author}"
+            confirm = ConfirmationView(ctx, 60)
+            msg = await ctx.send(
+                "Are you sure you want to unlock the server?", view=confirm
+            )
+            await confirm.wait()
+
+            if not confirm.value:
+                return await ctx.send("Aborted unlock process.")
+            await msg.delete()
+            m = await ctx.send("Server unlock initiated...")
 
             for tc in ctx.guild.text_channels:
                 await tc.set_permissions(
@@ -414,18 +449,28 @@ class Mod(Cog, emoji=847248846526087239):
                     send_messages=True,
                     add_reactions=True,
                     read_message_history=True,
+                    reason=reason,
                 )
 
             for vc in ctx.guild.voice_channels:
-                await vc.set_permissions(role, connect=True, speak=True)
+                await vc.set_permissions(role, connect=True, speak=True, reason=reason)
 
             em = discord.Embed(
-                title=f"{self.bot.yes} Server Unlocked",
-                description=f"The server has been unlocked.",
+                title="🔓 Server Unlocked",
+                description="The server has been unlocked.",
                 color=discord.Color.green(),
+                timestamp=ctx.message.created_at,
+            )
+            em.set_author(
+                name=ctx.author,
+                url=ctx.author.avatar.url if ctx.author.avatar else None,
+            )
+            em.set_footer(
+                text=ctx.guild.name,
+                icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
             )
 
-            await ctx.send(embed=em)
+            await m.edit(embed=em)
 
     @commands.command()
     @commands.guild_only()
@@ -540,9 +585,7 @@ class Mod(Cog, emoji=847248846526087239):
     async def kick(self, ctx: Context, member: discord.Member, *, reason: str | None):
         """Kicks a member."""
 
-        if reason is None:
-            reason = f"No reason provided.\nKicked by {ctx.author}"
-
+        reason = f"Kicked by {ctx.author} (ID: {ctx.author.id})"
         await member.kick(reason=reason)
         await ctx.send(f"{self.bot.yes} Kicked `{member}`")
 
@@ -563,13 +606,11 @@ class Mod(Cog, emoji=847248846526087239):
         You can only kick users who are in the server.
         """
 
-        if reason is None:
-            reason = reason or f"Kicked by {ctx.author} (ID: {ctx.author.id})"
-
         if not len(members):
             return await ctx.send("One or more required arguments are missing.")
 
         for member in members:
+            reason = reason or f"Kicked by {ctx.author} (ID: {ctx.author.id})"
             await member.kick(reason=reason)
         await ctx.send(f"{self.bot.yes} Kicked {len(members)} members")
 
@@ -586,8 +627,7 @@ class Mod(Cog, emoji=847248846526087239):
         You can ban the member using their ID or my mentioning them.
         """
 
-        if reason is None:
-            reason = reason or f"Banned by {ctx.author} (ID: {ctx.author.id})"
+        reason = reason or f"Banned by {ctx.author} (ID: {ctx.author.id})"
 
         if ctx.guild is not None:
             if isinstance(member, int):
@@ -616,14 +656,12 @@ class Mod(Cog, emoji=847248846526087239):
         You can only ban users, who are in the server.
         """
 
-        if reason is None:
-            reason = f"Banned by {ctx.author} (ID: {ctx.author.id})"
-
         if not len(members):
             return await ctx.send("One or more required arguments are missing.")
 
         else:
             for target in members:
+                reason = f"Banned by {ctx.author} (ID: {ctx.author.id})"
                 await target.ban(reason=reason, delete_message_days=0)
                 await ctx.send(f"{self.bot.yes} Banned `{target}`")
 
@@ -645,9 +683,7 @@ class Mod(Cog, emoji=847248846526087239):
         if not ctx.guild:
             return
 
-        if reason is None:
-            reason = f"Banned by {ctx.author} (ID: {ctx.author.id})"
-
+        reason = f"Banned by {ctx.author} (ID: {ctx.author.id})"
         await ctx.guild.ban(member, reason=reason)
         await ctx.guild.unban(member, reason=reason)
         await ctx.send(f"{self.bot.yes} Sucessfully soft-banned {member}.")
@@ -695,9 +731,7 @@ class Mod(Cog, emoji=847248846526087239):
             discord.utils.utcnow() + datetime.timedelta(seconds=humanly_duration),
             reason=reason,
         )
-        await ctx.send(
-            f"{self.bot.yes} {member} has been timed out for {duration}."
-        )
+        await ctx.send(f"{self.bot.yes} {member} has been timed out for {duration}.")
 
     @commands.command(aliases=["untimeout"])
     @commands.guild_only()
@@ -988,8 +1022,7 @@ class Mod(Cog, emoji=847248846526087239):
     async def warn(self, ctx: Context, member: discord.Member, *, reason: str | None):
         """Warns a user."""
 
-        if reason is None:
-            reason = f"No reason given.\nWarned done by {ctx.author}"
+        reason = f"No reason given.\nWarned done by {ctx.author}"
 
         if ctx.guild is not None:
             if member == ctx.author or member == self.bot.user:
