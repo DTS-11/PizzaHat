@@ -6,7 +6,7 @@ load_dotenv()
 
 
 # TOKENS
-TOKEN = os.getenv("BOT_TOKEN")  # main bot token
+TOKEN = os.getenv("TOKEN")  # main bot token
 TEST_BOT = os.getenv("TEST_BOT")  # test bot token
 
 PG_URL = os.getenv("PG_URL")  # postgres connection url
