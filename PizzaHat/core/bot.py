@@ -124,8 +124,8 @@ class PizzaHat(commands.Bot):
         )
 
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
-        self.yes = "<:yes:813819712953647206>"
-        self.no = "<:no:829841023445631017>"
+        self.yes = "<:yes:1268859625105784865>"
+        self.no = "<:no:1268859614129295514>"
         self.color = 0x456DD4
         self.session = aiohttp.ClientSession()
 
