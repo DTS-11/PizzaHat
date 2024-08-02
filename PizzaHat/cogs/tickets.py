@@ -25,7 +25,7 @@ class Tickets(Cog, emoji=1220678462839197756):
 
         em = discord.Embed(
             title="Create a ticket!",
-            description="Click <:P_ticket:1220678462839197756> to create/open a new ticket.",
+            description="Click <:tickets:1268867314292625469> to create/open a new ticket.",
             color=discord.Color.gold(),
         )
         em.set_thumbnail(url="https://i.imgur.com/mOTlTBy.png")

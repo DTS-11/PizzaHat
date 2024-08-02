@@ -35,7 +35,7 @@ class AntiAltsSelectionView(discord.ui.View):
                 label="Level 03",
                 description="Ban the suspect from the server.",
                 value="3",
-                emoji="<:ban:836327858204835851>",
+                emoji="<:ban:1268874381648465920>",
             ),
         ],
     )
@@ -146,14 +146,14 @@ Anti-alt system is currently **{"enabled" if enabled else "disabled"}**.
                 inline=True,
             )
             em.add_field(
-                name="<:ban:836327858204835851>  Level 03",
+                name="<:ban:1268874381648465920>  Level 03",
                 value="The bot will ban the suspect and log their info.",
                 inline=True,
             )
             em.add_field(
                 name="Usage",
                 value="""
-<:certified_mod_badge:1211597953433862144> Anti-alt configuration commands.
+<:certified_mod:1268851128548724756> Anti-alt configuration commands.
 - **enable:** Enable anti-alt system.
 - **disable:** Disable anti-alt system.
 - **minage <time>:** Set minimum account age for newly joined accounts.

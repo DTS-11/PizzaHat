@@ -165,26 +165,26 @@ class Utility(Cog, emoji=916988537264570368):
             contrib_role = ctx.guild.get_role(CONTRIBUTOR_ROLE)
 
             if member.id in self.bot.owner_ids:  # type: ignore
-                badges.append("<:developer:833297795761831956> Developer of PizzaHat")
+                badges.append("<:developer:1268856867585658981> Developer of PizzaHat")
 
             for roles in member.roles:
                 if roles == staff_role:
                     badges.append(
-                        "<:staff:916988537264570368> Staff Member in the support server"
+                        "<:squaredstaff:1268863165542961172> Staff Member in the support server"
                     )
 
                 elif roles == booster_role:
                     badges.append(
-                        "<:booster:983684380134371339> Booster in the support server"
+                        "<:booster:1268853959863570463> Booster in the support server"
                     )
 
                 elif roles == contrib_role:
                     badges.append(
-                        "<:github:983685053752176691> Contributor of PizzaHat"
+                        "<:github:1267380265068789850> Contributor of PizzaHat"
                     )
 
                 elif roles == partner_role:
-                    badges.append("<:partner:916988537033875468> PizzaHat's Partner")
+                    badges.append("<:partner:1268852831851642880> PizzaHat's Partner")
 
             if member.avatar is not None:
                 em = discord.Embed(title=f"{member} Badges", color=self.bot.color)
@@ -386,15 +386,15 @@ class Utility(Cog, emoji=916988537264570368):
             "hypesquad_bravery": "<:bravery:876078067548835850>",
             "hypesquad_balance": "<:balance:876078067297173534>",
             "hypesquad_brilliance": "<:brilliance:876078066848366662>",
-            "hypesquad": "<:hypesquad:876081552826728459>",
-            "partner": "<:partner:916988537033875468>",
-            "verified_bot_developer": "<:developer:833297795761831956>",
-            "active_developer": "<:activedev:1211600070819192922>",
+            "hypesquad": "<:hypesquad:1268857976655974413>",
+            "partner": "<:partner:1268852831851642880>",
+            "verified_bot_developer": "<:developer:1268856867585658981>",
+            "active_developer": "<:activedev:1268867341886947462>",
             "bug_hunter_lvl_1": "<:bug_hunter_lvl1:876079074693480508> ",
             "bug_hunter_lvl_2": "<:bug_hunter_lvl2:876079074647371796>",
-            "early_supporter": "<:supporter:843936375941103646>",
-            "staff": "<:staff:916988537264570368>",
-            "discord_certified_moderator": "<:certified_mod_badge:1211597953433862144>",
+            "early_supporter": "<:earlysupporter:1268857611285958667>",
+            "staff": "<:squaredstaff:1268863165542961172>",
+            "discord_certified_moderator": "<:certified_mod_badge:1268876753883889706>",
         }
         misc_flags_descriptions = {
             "team_user": "Application Team User",
@@ -452,7 +452,7 @@ class Utility(Cog, emoji=916988537264570368):
 
         if ctx.guild is not None:
             if ctx.guild.owner_id == member.id:
-                badges.append("<:owner:1211601449885110303>")
+                badges.append("<:owner:1268852819448823839>")
 
             elif (
                 isinstance(member, discord.Member) and member.premium_since is not None
@@ -462,7 +462,7 @@ class Utility(Cog, emoji=916988537264570368):
                     value=format_date(member.premium_since),
                     inline=False,
                 )
-                badges.append("<:booster:983684380134371339>")
+                badges.append("<:booster:1268853959863570463>")
 
         if badges:
             em.add_field(name="Badges", value=" ".join(badges), inline=False)
@@ -494,7 +494,7 @@ class Utility(Cog, emoji=916988537264570368):
                 if {ctx.guild.premium_tier} == 2
                 else "No Level"
             )
-            boosts = f"<:booster:983684380134371339> {ctx.guild.premium_subscription_count} Boosts ({boost_level})"
+            boosts = f"<:booster:1268853959863570463> {ctx.guild.premium_subscription_count} Boosts ({boost_level})"
 
             em = discord.Embed(title=ctx.guild.name, color=self.bot.color)
             em.set_thumbnail(
@@ -508,17 +508,17 @@ class Utility(Cog, emoji=916988537264570368):
 
             if ctx.guild.owner is not None:
                 em.description = f"""
-    > **Owner:** {ctx.guild.owner.mention} `[{ctx.guild.owner}]`
-    > **Description:** {ctx.guild.description if ctx.guild.description else "N/A"}
-    > **ID:** {ctx.guild.id}
-    {f"> **[Guild Icon]({ctx.guild.icon.url})**" if ctx.guild.icon else ""}
+    <:owner:1268852819448823839> **Owner:** {ctx.guild.owner.mention} `[{ctx.guild.owner}]`
+    <:description:1268877993862893618> **Description:** {ctx.guild.description if ctx.guild.description else "N/A"}
+    <:id:1268872547915792487> **ID:** {ctx.guild.id}
+    {f"<:image:1268878284775755841> **[Guild Icon]({ctx.guild.icon.url})**" if ctx.guild.icon else ""}
     """
 
             em.add_field(
-                name=f"👥 {ctx.guild.member_count} Members",
+                name=f"<:member:1268853618887622717> {ctx.guild.member_count} Members",
                 value=(
-                    f"<:memberlist:811747305543434260> Humans: {len([m for m in ctx.guild.members if not m.bot])}\n"
-                    f"<:botlist:811747723434786859> Bots: {sum(member.bot for member in ctx.guild.members)}"
+                    f"<:members:1268853443968106547> Humans: {len([m for m in ctx.guild.members if not m.bot])}\n"
+                    f"<:bot:1268861825068564520> Bots: {sum(member.bot for member in ctx.guild.members)}"
                 ),
                 inline=False,
             )
@@ -526,20 +526,22 @@ class Utility(Cog, emoji=916988537264570368):
             em.add_field(
                 name="Channels",
                 value=(
-                    f"<:textchannel:811747767763992586> Text: {len(ctx.guild.text_channels)}\n"
-                    f"<:voicechannel:811748732906635295> Voice: {len(ctx.guild.voice_channels)}\n"
-                    f"📁 Categories: {len(ctx.guild.categories)}"
+                    f"<:textchannel:1268867364183605248> Text: {len(ctx.guild.text_channels)}\n"
+                    f"<:voicechannel:1268867352972234834> Voice: {len(ctx.guild.voice_channels)}\n"
+                    f"<:file:1268857634790838272> Categories: {len(ctx.guild.categories)}"
                 ),
                 inline=False,
             )
 
             em.add_field(
-                name="<:role:985140259702583326> Role Count",
+                name="<:member:1268853618887622717> Role Count",
                 value=len(ctx.guild.roles),
                 inline=False,
             )
             em.add_field(
-                name="🙂 Emoji Count", value=len(ctx.guild.emojis), inline=False
+                name="<:emoji:1268867324195246133> Emoji Count",
+                value=len(ctx.guild.emojis),
+                inline=False,
             )
 
             em.add_field(
@@ -549,7 +551,7 @@ class Utility(Cog, emoji=916988537264570368):
             )
 
             em.add_field(
-                name="✨ Server Features",
+                name="<:sparkle:1268870549879259210> Server Features",
                 value=(
                     f"{boosts}\n" + all_features
                     if boosts and features

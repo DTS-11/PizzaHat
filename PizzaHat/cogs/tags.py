@@ -109,7 +109,7 @@ class Tags(Cog, emoji=916988536656367626):
                             color=self.bot.color,
                         )
                         for i in chunk:
-                            em.description += f"<:P_Arrow:1220768725414969429> {i[0]}\n"  # type: ignore
+                            em.description += f"<:arrow:1267380018116563016> {i[0]}\n"  # type: ignore
                         embeds.append(em)
 
                     paginator = Paginator(ctx, embeds)
@@ -121,7 +121,7 @@ class Tags(Cog, emoji=916988536656367626):
                         color=self.bot.color,
                     )
                     for i in data:
-                        em.description += f"<:P_Arrow:1220768725414969429> {i[0]}\n"  # type: ignore
+                        em.description += f"<:arrow:1267380018116563016> {i[0]}\n"  # type: ignore
                     await ctx.send(embed=em)
 
             else:

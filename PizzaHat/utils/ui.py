@@ -107,7 +107,9 @@ class TicketView(ui.View):
         self.thread_id = None
         super().__init__(timeout=None)
 
-    @ui.button(emoji="<:P_ticket:1220678462839197756>", custom_id="create_ticket_btn")
+    @ui.button(
+        emoji="<:ticketbadge:1268879389324611595>", custom_id="create_ticket_btn"
+    )
     @commands.bot_has_permissions(create_private_threads=True)
     async def create_ticket(self, interaction: Interaction, button: ui.Button):
         if not interaction.guild:
