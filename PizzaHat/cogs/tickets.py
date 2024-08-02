@@ -6,7 +6,7 @@ from discord.ext.commands import Context
 from utils.ui import TicketView
 
 
-class Tickets(Cog, emoji=1220678462839197756):
+class Tickets(Cog, emoji=1268867314292625469):
     """Button ticket system for support and help!"""
 
     def __init__(self, bot: PizzaHat):
@@ -25,7 +25,7 @@ class Tickets(Cog, emoji=1220678462839197756):
 
         em = discord.Embed(
             title="Create a ticket!",
-            description="Click <:tickets:1268867314292625469> to create/open a new ticket.",
+            description="Click <:ticketbadge:1268879389324611595> to create/open a new ticket.",
             color=discord.Color.gold(),
         )
         em.set_thumbnail(url="https://i.imgur.com/mOTlTBy.png")

@@ -7,7 +7,7 @@ from discord.ext.commands import Context
 from discord_games import button_games
 
 
-class Games(Cog, emoji=819957465160220734):
+class Games(Cog, emoji=1268852069624975441):
     """Games that can be played with the bot!"""
 
     def __init__(self, bot: PizzaHat):

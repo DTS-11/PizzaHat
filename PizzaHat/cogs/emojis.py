@@ -81,7 +81,7 @@ class EmojiURL:
             return cls(animated=partial.animated, url=str(partial.url))
 
 
-class Emojis(Cog, emoji=1220671125709918228):
+class Emojis(Cog, emoji=1268867324195246133):
     """Emoji management commands."""
 
     def __init__(self, bot: PizzaHat):
@@ -189,7 +189,8 @@ class Emojis(Cog, emoji=1220671125709918228):
             embed = discord.Embed(
                 title=f"**Emoji Information for:** `{emoji.name}`",
                 description=description,
-                colour=0xADD8E6,
+                color=0xADD8E6,
+                timestamp=ctx.message.created_at,
             )
             embed.set_thumbnail(url=emoji.url)
 

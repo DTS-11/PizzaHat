@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from asyncpg import Record
 
 
-class Dev(Cog, emoji=833297795761831956):
+class Dev(Cog, emoji=1268856867585658981):
     """Developer commands."""
 
     def __init__(self, bot: PizzaHat):

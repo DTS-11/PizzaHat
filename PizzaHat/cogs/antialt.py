@@ -78,7 +78,7 @@ class AntiAltsSelectionView(discord.ui.View):
         self.stop()
 
 
-class AntiAlts(Cog, emoji=1211597953433862144):
+class AntiAlts(Cog, emoji=1268851128548724756):
     """Configure Anti-Alt system in your server."""
 
     def __init__(self, bot):

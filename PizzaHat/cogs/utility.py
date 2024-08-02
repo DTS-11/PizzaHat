@@ -117,7 +117,7 @@ class PollOptionsModal(Modal):
         await self.message.edit(embed=new_embed, view=end_poll_view)
 
 
-class Utility(Cog, emoji=916988537264570368):
+class Utility(Cog, emoji=1268851252565905449):
     """Utility commands that makes your Discord experience better!"""
 
     def __init__(self, bot: PizzaHat):

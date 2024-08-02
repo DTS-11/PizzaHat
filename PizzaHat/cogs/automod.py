@@ -7,7 +7,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 
 
-class AutoModeration(Cog, emoji=1207259153437949953):
+class AutoModeration(Cog, emoji=1268880500248936491):
     """Configure Auto-Moderation in the server."""
 
     def __init__(self, bot: PizzaHat):

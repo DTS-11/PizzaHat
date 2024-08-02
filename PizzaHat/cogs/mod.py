@@ -12,7 +12,7 @@ from utils.config import ANTIHOIST_CHARS
 from utils.ui import ConfirmationView, Paginator
 
 
-class Mod(Cog, emoji=847248846526087239):
+class Mod(Cog, emoji=1268851270136107048):
     """Keep your server safe!"""
 
     def __init__(self, bot: PizzaHat):

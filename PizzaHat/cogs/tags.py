@@ -8,7 +8,7 @@ from discord.ext.commands import Context
 from utils.ui import Paginator
 
 
-class Tags(Cog, emoji=916988536656367626):
+class Tags(Cog, emoji=1268850578415681546):
     """Commands to fetch something by a tag name."""
 
     def __init__(self, bot: PizzaHat):
