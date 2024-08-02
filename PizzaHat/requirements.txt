@@ -16,6 +16,8 @@ pillow
 psutil
 # topggpy
 emojis
+emoji
+colorthief
 async-lru
 chat-exporter
 
