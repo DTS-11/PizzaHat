@@ -40,14 +40,14 @@ Use the dropdown menu to select a category.\n
     return em
 
 
-def cog_help_embed(cog):
-    desc = cog.description if cog.description else None
-    title = cog.qualified_name
+def cog_help_embed(cog: Cog | None):
+    if cog is None:
+        return
 
     em = discord.Embed(
-        title=f"{title}",
-        description=(desc or "No description..."),
-        color=discord.Color.blue(),
+        title=cog.qualified_name,
+        description=(cog.description if cog.description else "No description..."),
+        color=cog.color,
     )
     em.set_thumbnail(url=cog.emoji.url if cog.emoji else None)
     em.set_footer(text="Use help [command] for more info.")
