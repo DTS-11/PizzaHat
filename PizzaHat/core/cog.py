@@ -3,7 +3,7 @@ from io import BytesIO
 import emoji
 import requests
 from colorthief import ColorThief
-from discord import Color
+from discord import Color, PartialEmoji
 from discord.ext.commands import Cog as DiscordCog
 from discord.ext.commands import CogMeta as DiscordCogMeta
 from PIL import Image
@@ -32,12 +32,16 @@ class Cog(DiscordCog, metaclass=CogMeta):
     def emoji(self):
         e = None
 
-        if hasattr(self, "__cog_emoji__"):
-            e = self.__cog_emoji__  # type: ignore
-            if isinstance(e, int):  # custom emoji referenced by id
-                e = self.bot.get_emoji(e)  # type: ignore
-
-        return e
+        if e is not None:
+            if hasattr(self, "__cog_emoji__"):
+                e_id = self.__cog_emoji__  # type: ignore
+                if isinstance(e_id, int):
+                    e = self.bot.get_emoji(e_id)  # type: ignore
+                    if e.animated:
+                        e = PartialEmoji.from_str(f"a:_:{e_id}")
+                    else:
+                        e = PartialEmoji.from_str(f":_:{e_id}")
+            return e
 
     @property
     def full_description(self):
