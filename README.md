@@ -12,7 +12,7 @@ PizzaHat Discord Bot <h1/>
 
 ## ℹ️ • Info
 
-[PizzaHat](https://pizzahat.netlify.app) is a multi-purpose bot, made to satisfy your needs, as well as your server's needs too! This project is open source so that other developers could work on it and make it even better!
+[PizzaHat](https://pizzahat.vercel.app) is a multi-purpose bot, made to satisfy your needs, as well as your server's needs too! This project is open source so that other developers could work on it and make it even better!
 
 ## <img src="https://cdn.discordapp.com/emojis/800797566471897088.png?size=80" height="30px"> • Features
 
