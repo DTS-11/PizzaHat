@@ -37,15 +37,14 @@ class Cog(DiscordCog, metaclass=CogMeta):
 
         if isinstance(e, int):
             guild_emoji = self.bot.get_emoji(e)  # type: ignore
-            return (
-                PartialEmoji(
+            if guild_emoji:
+                return PartialEmoji(
                     name=guild_emoji.name,
                     id=guild_emoji.id,
                     animated=guild_emoji.animated,
                 )
-                if guild_emoji
-                else None
-            )
+            else:
+                return PartialEmoji(id=e, name="_")
 
         elif isinstance(e, str):
             if e.startswith("<") and e.endswith(">"):
