@@ -49,7 +49,7 @@ def cog_help_embed(cog: Cog | None):
         description=(cog.description if cog.description else "No description..."),
         color=cog.color,
     )
-    em.set_thumbnail(url=cog.emoji.url if cog.emoji else None)
+    em.set_thumbnail(url=cog.emoji.url if cog.emoji else "")
     em.set_footer(text="Use help [command] for more info.")
 
     commands_info = []
@@ -85,7 +85,7 @@ def cmds_list_embed(ctx: commands.Context, mapping):
                     for command in sorted(commands_, key=lambda x: x.name)
                 ]
             )
-            cog_emoji = cog.emoji if hasattr(cog, "emoji") else None
+            cog_emoji = cog.emoji if hasattr(cog, "emoji") else ""
 
             em.add_field(
                 name=f"{cog_emoji} {cog.qualified_name}", value=cmds, inline=False
