@@ -40,7 +40,6 @@ def find_closest_emoji(color):
 
 
 def emojify_image(img, size=14):
-
     WIDTH, HEIGHT = (size, size)
     small_img = img.resize((WIDTH, HEIGHT), Image.NEAREST)
 

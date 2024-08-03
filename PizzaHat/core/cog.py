@@ -50,7 +50,6 @@ class Cog(DiscordCog, metaclass=CogMeta):
             emoji_str = str(self.emoji)
 
             if emoji.is_emoji(emoji_str):
-
                 try:
                     # For Unicode emojis, render emoji to PNG
                     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
