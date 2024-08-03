@@ -151,6 +151,7 @@ class HelpView(ui.View):
         await interaction.response.send_message(
             content="Not your help command ._.", ephemeral=True
         )
+        return False
 
     @ui.button(label="Home", emoji="🏠", style=ButtonStyle.blurple)
     async def go_home(self, interaction: Interaction, button: ui.Button):
@@ -239,7 +240,7 @@ class MyHelp(commands.HelpCommand):
         title = self.get_command_signature(group)
         await self.send_help_embed(title, group.help, group.commands)
 
-    async def send_cog_help(self, cog: Cog):
+    async def send_cog_help(self, cog):
         await self.send(embed=cog_help_embed(cog))
 
     async def send_error_message(self, error):

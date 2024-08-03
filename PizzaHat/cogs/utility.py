@@ -10,7 +10,13 @@ from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Modal, Select, TextInput, View
-from utils.config import BOOSTER_ROLE, CONTRIBUTOR_ROLE, PARTNER_ROLE, STAFF_ROLE
+from utils.config import (
+    BOOSTER_ROLE,
+    CONTRIBUTOR_ROLE,
+    PARTNER_ROLE,
+    STAFF_ROLE,
+    SUPPORT_SERVER,
+)
 
 start_time = time.time()
 
@@ -56,10 +62,13 @@ class PollOptionsModal(Modal):
         self.multiple = multiple
 
     async def interaction_check(self, interaction: discord.Interaction):
-        if self.ctx.author != interaction.user:
-            return await interaction.response.send_message(
-                "Not your interaction ._.", ephemeral=True
-            )
+        if interaction.user == self.ctx.author:
+            return True
+
+        await interaction.response.send_message(
+            content="Not your interaction ._.", ephemeral=True
+        )
+        return False
 
     async def on_submit(self, interaction: discord.Interaction):
         options = [input.value for input in self.option_inputs if input.value.strip()]
@@ -152,7 +161,7 @@ class Utility(Cog, emoji=1268851252565905449):
         # thanks to .ddominik (Dominik#3040) for helping me out with this command.
         if ctx.guild.id != 764049436275114004 if ctx.guild else None:
             return await ctx.send(
-                "This command can be only used in the support server.\nhttps://discord.gg/WhNVDTF"
+                f"This command can be only used in the support server.\n{SUPPORT_SERVER}"
             )
 
         badges = []
