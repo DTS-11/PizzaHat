@@ -18,6 +18,9 @@ class Games(Cog, emoji=1268852069624975441):
     async def tictactoe(self, ctx: Context, member: discord.User):
         """Play Tic-Tac-Toe."""
 
+        if member == ctx.author or member.bot:
+            return await ctx.send("You can't play against yourself or bots!")
+
         game = button_games.BetaTictactoe(cross=ctx.author, circle=member)  # type: ignore
         await game.start(ctx, timeout=300, embed_color=self.bot.color)
 
@@ -42,6 +45,9 @@ class Games(Cog, emoji=1268852069624975441):
     async def rps(self, ctx: Context, member: discord.User = None):  # type: ignore
         """Play rock, paper, scissor"""
 
+        if member == ctx.author or member.bot:
+            return await ctx.send("You can't play against yourself or bots!")
+
         game = button_games.BetaRockPaperScissors(member)
         await game.start(ctx, timeout=30, embed_color=self.bot.color)
 
@@ -49,6 +55,9 @@ class Games(Cog, emoji=1268852069624975441):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def chess(self, ctx: Context, member: discord.User):
         """Play chess."""
+
+        if member == ctx.author or member.bot:
+            return await ctx.send("You can't play against yourself or bots!")
 
         game = button_games.BetaChess(white=ctx.author, black=member)  # type: ignore
         await game.start(ctx, timeout=600, embed_color=self.bot.color)
@@ -83,6 +92,9 @@ class Games(Cog, emoji=1268852069624975441):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def connect4(self, ctx: Context, member: discord.User):
         """Play connect4."""
+
+        if member == ctx.author or member.bot:
+            return await ctx.send("You can't play against yourself or bots!")
 
         game = button_games.BetaConnectFour(red=ctx.author, blue=member)  # type: ignore
         await game.start(ctx, timeout=300, embed_color=self.bot.color)
