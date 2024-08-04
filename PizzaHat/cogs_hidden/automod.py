@@ -22,7 +22,7 @@ class AutoModConfig(Cog):
         self.zalgo_regex = re.compile(r"%CC%", re.MULTILINE)
 
     def mod_perms(self, m: discord.Message):
-        p = m.author.guild_permissions  # type: ignore
+        p: discord.Permissions = m.author.guild_permissions  # type: ignore
         return (
             True
             if (
@@ -76,7 +76,7 @@ class AutoModConfig(Cog):
             return
 
         em = discord.Embed(
-            title="⚠ Auto-Mod Triggered",
+            title="<:danger:1268855303768903733> Auto-Mod Triggered",
             description=msg.content,
             color=discord.Color.red(),
         )
@@ -91,14 +91,10 @@ class AutoModConfig(Cog):
 
     @Cog.listener()
     async def on_message(self, msg: discord.Message):
-        if msg.guild is not None:
-            am_enabled_guild = await self.check_if_am_is_enabled(msg.guild.id)
-
-        if msg.author.bot or msg.content == "" or not msg.guild:
+        if msg.author.bot or msg.content == "" or not msg.guild or self.mod_perms(msg):
             return
 
-        if self.mod_perms(msg):
-            return
+        am_enabled_guild = await self.check_if_am_is_enabled(msg.guild.id)
 
         if not am_enabled_guild:
             return

@@ -1,3 +1,5 @@
+from typing import Optional
+
 import discord
 import discord_games as games
 from core.bot import PizzaHat
@@ -42,10 +44,10 @@ class Games(Cog, emoji=1268852069624975441):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def rps(self, ctx: Context, member: discord.User = None):  # type: ignore
+    async def rps(self, ctx: Context, member: Optional[discord.User] = None):
         """Play rock, paper, scissor"""
 
-        if member == ctx.author or member.bot:
+        if member == ctx.author or (member is not None and member.bot):
             return await ctx.send("You can't play against yourself or bots!")
 
         game = button_games.BetaRockPaperScissors(member)

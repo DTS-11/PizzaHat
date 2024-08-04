@@ -40,7 +40,7 @@ class Paginator(ui.View):
         self.current -= 1
 
     @ui.button(emoji="🛑", style=ButtonStyle.red)
-    async def stop(self, interaction: Interaction, button: ui.Button):
+    async def delete(self, interaction: Interaction, button: ui.Button):
         if interaction.message is not None:
             await interaction.message.delete()
 
@@ -67,7 +67,11 @@ class Paginator(ui.View):
     async def interaction_check(self, interaction: Interaction):
         if interaction.user == self.ctx.author:
             return True
-        await interaction.response.send_message("Not your command ._.", ephemeral=True)
+
+        await interaction.response.send_message(
+            content="Not your command ._.", ephemeral=True
+        )
+        return False
 
 
 class ConfirmationView(ui.View):

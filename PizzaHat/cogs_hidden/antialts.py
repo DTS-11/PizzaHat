@@ -1,9 +1,10 @@
 import datetime
 import time
-from typing import Union
+from typing import Optional, Union
 
 import discord
 from async_lru import alru_cache
+from asyncpg import Record
 from core.bot import PizzaHat
 from discord.ext import commands
 
@@ -52,15 +53,15 @@ class AntiAltsConfig(commands.Cog):
     async def antialt_member_join(self, member: discord.Member):
         aa_enabled_guild = await self.check_if_aa_is_enabled(member.guild.id)
         logs_channel = await self.get_logs_channel(member.guild.id)
+        data = None
 
-        if self.bot.db is not None:
-            if aa_enabled_guild:
-                data = await self.bot.db.fetch(
-                    "SELECT min_age, restricted_role, level FROM antialt WHERE guild_id=$1",
-                    member.guild.id,
-                )
+        if self.bot.db is not None and aa_enabled_guild:
+            data: Optional[Record] = await self.bot.db.fetchrow(
+                "SELECT min_age, restricted_role, level FROM antialt WHERE guild_id=$1",
+                member.guild.id,
+            )
 
-        if member.bot or not aa_enabled_guild:
+        if member.bot or not data:
             return
 
         delv = (
@@ -69,11 +70,11 @@ class AntiAltsConfig(commands.Cog):
                 - member.created_at.replace(tzinfo=None)
             ).total_seconds()
         ) / (60 * 60 * 24)
-        if delv >= data[0]:
+        if delv >= data["min_age"]:
             return
 
-        restricted_role = member.guild.get_role(data[1])
-        level = data[2]
+        restricted_role = member.guild.get_role(data["restricted_role"])
+        level = data["level"]
 
         if logs_channel is None or restricted_role is None:
             return

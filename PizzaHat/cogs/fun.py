@@ -3,6 +3,7 @@ import random
 import re
 import string
 import time
+from typing import Optional, Union
 
 import discord
 from core.bot import PizzaHat
@@ -511,7 +512,9 @@ class Fun(Cog, emoji=802615573556363284):
 
     @commands.command()
     @commands.cooldown(1, 30, commands.BucketType.user)
-    async def checkvote(self, ctx: Context, member: discord.Member = None):  # type: ignore
+    async def checkvote(
+        self, ctx: Context, member: Optional[Union[discord.Member, discord.User]] = None
+    ):
         """Check if a user has voted or not."""
 
         member = member or ctx.author

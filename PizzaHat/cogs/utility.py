@@ -149,8 +149,10 @@ class Utility(Cog, emoji=1268851252565905449):
         )
 
     @commands.command()
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def badges(self, ctx: Context, member: discord.Member = None):  # type: ignore
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def badges(
+        self, ctx: Context, member: Optional[Union[discord.Member, discord.User]] = None
+    ):
         """
         Shows different badges of a user.
         If no user is given, returns your badges.
@@ -176,46 +178,37 @@ class Utility(Cog, emoji=1268851252565905449):
             if member.id in self.bot.owner_ids:  # type: ignore
                 badges.append("<:developer:1268856867585658981> Developer of PizzaHat")
 
-            for roles in member.roles:
-                if roles == staff_role:
-                    badges.append(
-                        "<:squaredstaff:1268863165542961172> Staff Member in the support server"
-                    )
+            if isinstance(member, discord.Member):
+                for roles in member.roles:
+                    if roles == staff_role:
+                        badges.append(
+                            "<:squaredstaff:1268863165542961172> Staff Member in the support server"
+                        )
 
-                elif roles == booster_role:
-                    badges.append(
-                        "<:booster:1268853959863570463> Booster in the support server"
-                    )
+                    elif roles == booster_role:
+                        badges.append(
+                            "<:booster:1268853959863570463> Booster in the support server"
+                        )
 
-                elif roles == contrib_role:
-                    badges.append(
-                        "<:github:1267380265068789850> Contributor of PizzaHat"
-                    )
+                    elif roles == contrib_role:
+                        badges.append(
+                            "<:github:1267380265068789850> Contributor of PizzaHat"
+                        )
 
-                elif roles == partner_role:
-                    badges.append("<:partner:1268852831851642880> PizzaHat's Partner")
+                    elif roles == partner_role:
+                        badges.append(
+                            "<:partner:1268852831851642880> PizzaHat's Partner"
+                        )
 
-            if member.avatar is not None:
-                em = discord.Embed(title=f"{member} Badges", color=self.bot.color)
-                em.set_thumbnail(url=member.avatar.url)
-                em.description = (
-                    "\n".join(badges)
-                    if len(badges) != 0
-                    else "This user has no special badges."
-                )
+            em = discord.Embed(title=f"{member} Badges", color=self.bot.color)
+            em.set_thumbnail(url=member.avatar.url if member.avatar else None)
+            em.description = (
+                "\n".join(badges)
+                if len(badges) != 0
+                else "This user has no special badges."
+            )
 
-                await ctx.send(embed=em)
-
-            else:
-                em = discord.Embed(title=f"{member} Badges", color=self.bot.color)
-                em.set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
-                em.description = (
-                    "\n".join(badges)
-                    if len(badges) != 0
-                    else "This user has no special badges."
-                )
-
-                await ctx.send(embed=em)
+            await ctx.send(embed=em)
 
     # @commands.command()
     # @commands.guild_only()
@@ -286,7 +279,14 @@ class Utility(Cog, emoji=1268851252565905449):
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.has_permissions(create_polls=True)
     @commands.bot_has_permissions(create_polls=True)
-    async def poll(self, ctx: commands.Context, duration: int, *, question: str, channel: discord.abc.Messageable = None):  # type: ignore
+    async def poll(
+        self,
+        ctx: commands.Context,
+        duration: int,
+        *,
+        question: str,
+        channel: Optional[discord.abc.Messageable] = None,
+    ):
         """
         Create a poll using the new Polls feature.
         Supports up to 10 choices and duration must be in hours (API limitation)
@@ -381,15 +381,15 @@ class Utility(Cog, emoji=1268851252565905449):
     @commands.command()
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.guild_only()
-    async def userinfo(self, ctx: Context, member: discord.Member = None):  # type: ignore
+    async def userinfo(
+        self, ctx: Context, member: Optional[Union[discord.Member, discord.User]] = None
+    ):
         """
         Shows info about a user.
         If no user is given, returns info about yourself.
         """
 
         member = member or ctx.author
-        uroles = [role.mention for role in member.roles if not role.is_default()]
-        uroles.reverse()
 
         user_badges_flags = {
             "hypesquad_bravery": "<:bravery:876078067548835850>",
@@ -417,33 +417,19 @@ class Utility(Cog, emoji=1268851252565905449):
         subset_flags = set_flags & user_badges_flags.keys()
         badges = [user_badges_flags[flag] for flag in subset_flags]
 
-        if len(uroles) > 15:
-            uroles = [f"{', '.join(uroles[:10])} (+{len(member.roles) - 11})"]
-
-        user_roles = (
-            (" **({} Total)**").format(len(member.roles) - 1)
-            if uroles != []
-            else ("No roles")
-        )
-
         em = discord.Embed(
             title="User Information",
             color=member.color,
             timestamp=ctx.message.created_at,
         )
         em.description = f"""
-    > **Username:** {member}
-    > **Display Name:** {member.display_name}
-    > **Created:** {format_date(member.created_at)}
-    > **ID:** {member.id}
-    {f"> **[User Icon]({member.avatar.url})**" if member.avatar else ""}
-    """
+> **Username:** {member}
+> **Display Name:** {member.display_name}
+> **Created:** {format_date(member.created_at)}
+> **ID:** {member.id}
+{f"> **[User Icon]({member.avatar.url})**" if member.avatar else ""}
+        """
 
-        em.add_field(
-            name="Joined",
-            value=format_date(member.joined_at),  # type: ignore
-            inline=False,
-        )
         em.set_thumbnail(
             url=(
                 member.avatar.url
@@ -451,37 +437,58 @@ class Utility(Cog, emoji=1268851252565905449):
                 else "https://logos-world.net/wp-content/uploads/2020/12/Discord-Logo.png"
             )
         )
-
-        em.add_field(name="Roles", value=", ".join(uroles) + user_roles, inline=False)
-        em.add_field(
-            name="Member Bot",
-            value=f"{self.bot.yes} Yes" if member.bot else f"{self.bot.no} No",
-            inline=False,
-        )
-
-        if ctx.guild is not None:
-            if ctx.guild.owner_id == member.id:
-                badges.append("<:owner:1268852819448823839>")
-
-            elif (
-                isinstance(member, discord.Member) and member.premium_since is not None
-            ):
-                em.add_field(
-                    name="Boosted",
-                    value=format_date(member.premium_since),
-                    inline=False,
-                )
-                badges.append("<:booster:1268853959863570463>")
-
-        if badges:
-            em.add_field(name="Badges", value=" ".join(badges), inline=False)
-
         em.set_footer(
             text=f"Requested by {ctx.author}",
             icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
         )
 
-        await ctx.send(embed=em)
+        if isinstance(member, discord.Member):
+            uroles = [role.mention for role in member.roles if not role.is_default()]
+            uroles.reverse()
+
+            if len(uroles) > 15:
+                uroles = [f"{', '.join(uroles[:10])} (+{len(member.roles) - 11})"]
+
+            user_roles = (
+                (" **({} Total)**").format(len(member.roles) - 1)
+                if uroles != []
+                else ("No roles")
+            )
+
+            em.add_field(
+                name="Joined",
+                value=format_date(member.joined_at),
+                inline=False,
+            )
+
+            em.add_field(
+                name="Roles", value=", ".join(uroles) + user_roles, inline=False
+            )
+            em.add_field(
+                name="Member Bot",
+                value=f"{self.bot.yes} Yes" if member.bot else f"{self.bot.no} No",
+                inline=False,
+            )
+
+            if ctx.guild is not None:
+                if ctx.guild.owner_id == member.id:
+                    badges.append("<:owner:1268852819448823839>")
+
+                elif (
+                    isinstance(member, discord.Member)
+                    and member.premium_since is not None
+                ):
+                    em.add_field(
+                        name="Boosted",
+                        value=format_date(member.premium_since),
+                        inline=False,
+                    )
+                    badges.append("<:booster:1268853959863570463>")
+
+            if badges:
+                em.add_field(name="Badges", value=" ".join(badges), inline=False)
+
+            await ctx.send(embed=em)
 
     @commands.command()
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -574,34 +581,45 @@ class Utility(Cog, emoji=1268851252565905449):
     @commands.command()
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.guild_only()
-    async def channelinfo(self, ctx: Context, *, channel: discord.TextChannel = None):  # type: ignore
+    async def channelinfo(
+        self,
+        ctx: Context,
+        *,
+        channel: Optional[Union[discord.TextChannel, discord.abc.Messageable]] = None,
+    ):
         """
         Shows info about a channel.
         If no channel is given, returns info for the current channel.
         """
 
-        if channel is None:
-            channel = ctx.channel  # type: ignore
+        channel = channel or ctx.channel
 
-        e = discord.Embed(title="Channel information", color=self.bot.color)
+        if isinstance(channel, discord.TextChannel):
+            e = discord.Embed(title="Channel information", color=self.bot.color)
+            e.add_field(name="Channel name", value=channel.name, inline=False)
+            e.add_field(name="Channel ID", value=channel.id, inline=False)
+            e.add_field(name="Mention", value=channel.mention, inline=False)
 
-        e.add_field(name="Channel name", value=channel.name, inline=False)
-        e.add_field(name="Channel ID", value=channel.id, inline=False)
-        e.add_field(name="Mention", value=channel.mention, inline=False)
+            if channel.category is not None:
+                e.add_field(
+                    name="Category name", value=channel.category.name, inline=False
+                )
 
-        if channel.category is not None:
-            e.add_field(name="Category name", value=channel.category.name, inline=False)
+            e.add_field(
+                name="Channel Created",
+                value=format_date(channel.created_at),
+                inline=False,
+            )
+            e.add_field(
+                name="NSFW",
+                value=f"{self.bot.yes} Yes" if channel.nsfw else f"{self.bot.no} No",
+                inline=False,
+            )
 
-        e.add_field(
-            name="Channel Created", value=format_date(channel.created_at), inline=False
-        )
-        e.add_field(
-            name="NSFW",
-            value=f"{self.bot.yes} Yes" if channel.nsfw else f"{self.bot.no} No",
-            inline=False,
-        )
+            await ctx.send(embed=e)
 
-        await ctx.send(embed=e)
+        else:
+            await ctx.send(f"{self.bot.no} That is not a text channel.")
 
     @commands.command()
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -614,10 +632,11 @@ class Utility(Cog, emoji=1268851252565905449):
         e.add_field(name="VC ID", value=vc.id, inline=False)
         e.add_field(name="VC bitrate", value=vc.bitrate, inline=False)
         e.add_field(name="Mention", value=vc.mention, inline=False)
-
-        if vc.category is not None:
-            e.add_field(name="Category name", value=vc.category.name, inline=False)
-
+        e.add_field(
+            name="Category name",
+            value=vc.category.name if vc.category else "N/A",
+            inline=False,
+        )
         e.add_field(name="VC Created", value=format_date(vc.created_at), inline=False)
 
         await ctx.send(embed=e)
@@ -639,12 +658,11 @@ class Utility(Cog, emoji=1268851252565905449):
             name="Role Created", value=format_date(role.created_at), inline=False
         )
         e.add_field(name="Role Color", value=role.color, inline=False)
-
-        if role.mentionable:
-            e.add_field(name="Mentionable", value=f"{self.bot.yes} Yes", inline=False)
-
-        else:
-            e.add_field(name="Mentionable", value=f"{self.bot.no} No", inline=False)
+        e.add_field(
+            name="Mentionable",
+            value=f"{self.bot.yes} Yes" if role.mentionable else f"{self.bot.no} No",
+            inline=False,
+        )
 
         await ctx.send(embed=e)
 
@@ -769,7 +787,6 @@ class Utility(Cog, emoji=1268851252565905449):
             name = name.replace("_", " ").title()
             if value:
                 allowed.append(name)
-
             else:
                 denied.append(name)
 
@@ -779,7 +796,12 @@ class Utility(Cog, emoji=1268851252565905449):
 
     @commands.command(aliases=["perms"])
     @commands.cooldown(1, 10, commands.BucketType.user)
-    async def permissions(self, ctx: Context, *, member: discord.Member = None):  # type: ignore
+    async def permissions(
+        self,
+        ctx: Context,
+        *,
+        member: Optional[Union[discord.Member, discord.User]] = None,
+    ):
         """Shows a member's permissions.
         If used in DM's, shows your permissions in a DM channel."""
 
@@ -802,7 +824,7 @@ class Utility(Cog, emoji=1268851252565905449):
     @commands.command(aliases=["av"])
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def avatar(
-        self, ctx: Context, member: Optional[Union[discord.Member, discord.User]]
+        self, ctx: Context, member: Optional[Union[discord.Member, discord.User]] = None
     ):
         """
         Displays a user's avatar

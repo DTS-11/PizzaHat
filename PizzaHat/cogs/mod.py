@@ -237,7 +237,9 @@ class Mod(Cog, emoji=1268851270136107048):
                     nick="Moderated Nickname",
                     reason=f"Decancered member (req. by: {ctx.author}).",
                 )
-                await ctx.send(f"{self.bot.yes} Successfully decancered {member}")
+                await ctx.send(
+                    f"{self.bot.yes} Successfully decancered {member.mention}"
+                )
 
             if ANTIHOIST_CHARS not in member.display_name[0]:
                 await ctx.send("No special characters found.")
@@ -250,7 +252,7 @@ class Mod(Cog, emoji=1268851270136107048):
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def slowmode(self, ctx: Context, seconds: int | None):
+    async def slowmode(self, ctx: Context, seconds: Optional[int] = None):
         """
         Change the slowmode.
         If no values are given, the bot returns slowmode of the current channel.
@@ -281,7 +283,7 @@ class Mod(Cog, emoji=1268851270136107048):
             else:
                 await ctx.channel.edit(slowmode_delay=seconds)
                 await ctx.send(
-                    f"{self.bot.yes} Slow-mode in this channel changed to `{seconds}` seconds!"
+                    f"{self.bot.yes} Slow-mode in this channel has been changed to `{seconds}` seconds!"
                 )
 
     @commands.group(aliases=["lockdown"])
@@ -299,7 +301,12 @@ class Mod(Cog, emoji=1268851270136107048):
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def lock_channel(self, ctx: Context, role: discord.Role = None, channel: discord.TextChannel = None):  # type: ignore
+    async def lock_channel(
+        self,
+        ctx: Context,
+        role: Optional[discord.Role] = None,
+        channel: Optional[Union[discord.TextChannel, discord.abc.Messageable]] = None,
+    ):
         """
         Locks a channel with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
@@ -309,21 +316,24 @@ class Mod(Cog, emoji=1268851270136107048):
             role = role or ctx.guild.default_role
             channel = channel or ctx.channel
 
-            overwrite = channel.overwrites_for(role)
-            overwrite.send_messages = False
-            overwrite.add_reactions = False
+            if isinstance(channel, discord.TextChannel):
+                overwrite = channel.overwrites_for(role)
+                overwrite.send_messages = False
+                overwrite.add_reactions = False
 
-            await channel.set_permissions(role, overwrite=overwrite)
-            await ctx.message.add_reaction("🔒")
+                em = discord.Embed(
+                    title="🔒 Locked",
+                    description=f"{channel.mention} has been locked for {role.mention}",
+                    color=self.bot.color,
+                )
+                await channel.set_permissions(role, overwrite=overwrite)
+                await ctx.message.add_reaction("🔒")
+                await ctx.send(embed=em)
 
-            em = discord.Embed(color=self.bot.color)
-            em.add_field(
-                name="🔒 Locked",
-                value=f"{channel.mention} has been locked for {role.mention}",
-                inline=False,
-            )
-
-            await ctx.send(embed=em)
+            else:
+                await ctx.send(
+                    f"{self.bot.no} This command can only be used on text channels."
+                )
 
     @lock.command(name="server")
     @commands.guild_only()
@@ -392,7 +402,12 @@ class Mod(Cog, emoji=1268851270136107048):
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def unlock_channel(self, ctx: Context, role: discord.Role = None, channel: discord.TextChannel = None):  # type: ignore
+    async def unlock_channel(
+        self,
+        ctx: Context,
+        role: Optional[discord.Role] = None,
+        channel: Optional[Union[discord.TextChannel, discord.abc.Messageable]] = None,Gg
+    ):
         """
         Unlocks a channel with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
@@ -402,21 +417,25 @@ class Mod(Cog, emoji=1268851270136107048):
             role = role or ctx.guild.default_role
             channel = channel or ctx.channel
 
-            overwrite = channel.overwrites_for(role)
-            overwrite.send_messages = True
-            overwrite.add_reactions = True
+            if isinstance(channel, discord.TextChannel):
+                overwrite = channel.overwrites_for(role)
+                overwrite.send_messages = True
+                overwrite.add_reactions = True
 
-            await channel.set_permissions(role, overwrite=overwrite)
-            await ctx.message.add_reaction("🔓")
+                em = discord.Embed(
+                    title="🔓 Unlocked",
+                    description=f"{channel.mention} has been unlocked for {role.mention}",
+                    color=self.bot.color,
+                )
 
-            em = discord.Embed(color=self.bot.color)
-            em.add_field(
-                name="🔓 Unlocked",
-                value=f"{channel.mention} has been unlocked for {role.mention}",
-                inline=False,
-            )
+                await channel.set_permissions(role, overwrite=overwrite)
+                await ctx.message.add_reaction("🔓")
+                await ctx.send(embed=em)
 
-            await ctx.send(embed=em)
+            else:
+                await ctx.send(
+                    f"{self.bot.no} This command can only be used on text channels."
+                )
 
     @unlock.command(name="server")
     @commands.guild_only()
@@ -477,7 +496,12 @@ class Mod(Cog, emoji=1268851270136107048):
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def hide(self, ctx: Context, role: discord.Role = None, channel: discord.TextChannel = None):  # type: ignore
+    async def hide(
+        self,
+        ctx: Context,
+        role: Optional[discord.Role] = None,
+        channel: Optional[Union[discord.TextChannel, discord.abc.Messageable]] = None,
+    ):
         """
         Hides a channel.
         If no role is given, defaults to @everyone.
@@ -487,18 +511,24 @@ class Mod(Cog, emoji=1268851270136107048):
             role = role or ctx.guild.default_role
             channel = channel or ctx.channel
 
-            overwrite = channel.overwrites_for(role)
-            overwrite.view_channel = False
+            if isinstance(channel, discord.TextChannel):
+                overwrite = channel.overwrites_for(role)
+                overwrite.view_channel = False
 
-            await channel.set_permissions(role, overwrite=overwrite)
-            await ctx.send(f"{channel.mention} has been hidden from `{role}`")
+                await channel.set_permissions(role, overwrite=overwrite)
+                await ctx.send(f"{channel.mention} has been hidden from {role.mention}")
 
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def expose(self, ctx: Context, role: discord.Role = None, channel: discord.TextChannel = None):  # type: ignore
+    async def expose(
+        self,
+        ctx: Context,
+        role: Optional[discord.Role] = None,
+        channel: Optional[Union[discord.TextChannel, discord.abc.Messageable]] = None,
+    ):
         """
         Exposes a channel.
         If no role is given, defaults to @everyone."""
@@ -507,11 +537,12 @@ class Mod(Cog, emoji=1268851270136107048):
             role = role or ctx.guild.default_role
             channel = channel or ctx.channel
 
-            overwrite = channel.overwrites_for(role)
-            overwrite.view_channel = True
+            if isinstance(channel, discord.TextChannel):
+                overwrite = channel.overwrites_for(role)
+                overwrite.view_channel = True
 
-            await channel.set_permissions(role, overwrite=overwrite)
-            await ctx.send(f"{channel.mention} has been exposed to `{role}`")
+                await channel.set_permissions(role, overwrite=overwrite)
+                await ctx.send(f"{channel.mention} has been exposed to {role.mention}")
 
     @commands.command(aliases=["purge"])
     @commands.guild_only()
@@ -587,7 +618,7 @@ class Mod(Cog, emoji=1268851270136107048):
 
         reason = f"Kicked by {ctx.author} (ID: {ctx.author.id})"
         await member.kick(reason=reason)
-        await ctx.send(f"{self.bot.yes} Kicked `{member}`")
+        await ctx.send(f"{self.bot.yes} Kicked {member.mention}")
 
     @commands.command(aliases=["mk"])
     @commands.guild_only()
@@ -633,11 +664,11 @@ class Mod(Cog, emoji=1268851270136107048):
             if isinstance(member, int):
                 await ctx.guild.ban(discord.Object(id=member), reason=f"{reason}")
                 user = await self.bot.fetch_user(member)
-                await ctx.send(f"{self.bot.yes} Banned `{user}`")
+                await ctx.send(f"{self.bot.yes} Banned {user}")
 
             else:
                 await member.ban(reason=f"{reason}", delete_message_days=0)
-                await ctx.send(f"{self.bot.yes} Banned `{member}`")
+                await ctx.send(f"{self.bot.yes} Banned {member.mention}")
 
     @commands.command(aliases=["mb"])
     @commands.guild_only()
@@ -663,7 +694,7 @@ class Mod(Cog, emoji=1268851270136107048):
             for target in members:
                 reason = f"Banned by {ctx.author} (ID: {ctx.author.id})"
                 await target.ban(reason=reason, delete_message_days=0)
-                await ctx.send(f"{self.bot.yes} Banned `{target}`")
+                await ctx.send(f"{self.bot.yes} Banned {target}")
 
     @commands.command(aliases=["sb"])
     @commands.guild_only()
@@ -686,7 +717,7 @@ class Mod(Cog, emoji=1268851270136107048):
         reason = f"Banned by {ctx.author} (ID: {ctx.author.id})"
         await ctx.guild.ban(member, reason=reason)
         await ctx.guild.unban(member, reason=reason)
-        await ctx.send(f"{self.bot.yes} Sucessfully soft-banned {member}.")
+        await ctx.send(f"{self.bot.yes} Sucessfully soft-banned {member.mention}.")
 
     @commands.command(aliases=["ub"])
     @commands.guild_only()
@@ -703,7 +734,7 @@ class Mod(Cog, emoji=1268851270136107048):
                     discord.Object(id=id),
                     reason=f"Unbanned by {ctx.author} (ID: {ctx.author.id})",
                 )
-                await ctx.send(f"{self.bot.yes} Unbanned `{user}`")
+                await ctx.send(f"{self.bot.yes} Unbanned {user}")
 
         except discord.NotFound:
             await ctx.send(
@@ -731,7 +762,9 @@ class Mod(Cog, emoji=1268851270136107048):
             discord.utils.utcnow() + datetime.timedelta(seconds=humanly_duration),
             reason=reason,
         )
-        await ctx.send(f"{self.bot.yes} {member} has been timed out for {duration}.")
+        await ctx.send(
+            f"{self.bot.yes} {member.mention} has been timed out for {duration}."
+        )
 
     @commands.command(aliases=["untimeout"])
     @commands.guild_only()
@@ -743,7 +776,7 @@ class Mod(Cog, emoji=1268851270136107048):
 
         reason = reason or f"Action done by {ctx.author}"
         await member.timeout(None, reason=reason)
-        await ctx.send(f"{self.bot.yes} {member} has been unmuted!")
+        await ctx.send(f"{self.bot.yes} {member.mention} has been unmuted!")
 
     @commands.group()
     @commands.guild_only()
@@ -765,10 +798,10 @@ class Mod(Cog, emoji=1268851270136107048):
 
         if role not in user.roles:
             await user.add_roles(role)
-            await ctx.send(f"{self.bot.yes} Successfully added `{role.name}` to {user}")
+            await ctx.send(f"{self.bot.yes} Successfully added {role.name} to {user}")
 
         else:
-            await ctx.send(f"{self.bot.no} {user} already has `{role.name}` role.")
+            await ctx.send(f"{self.bot.no} {user} already has {role.name} role.")
 
     @role.command(name="remove")
     @commands.guild_only()
@@ -783,10 +816,10 @@ class Mod(Cog, emoji=1268851270136107048):
         if role in user.roles:
             await user.remove_roles(role)
             await ctx.send(
-                f"{self.bot.yes} Successfully removed `{role.name}` from {user}"
+                f"{self.bot.yes} Successfully removed {role.name} from {user}"
             )
         else:
-            await ctx.send(f"{self.bot.no} {user} does not have `{role.name}` role.")
+            await ctx.send(f"{self.bot.no} {user} does not have {role.name} role.")
 
     @role.command(name="create")
     @commands.guild_only()
@@ -993,7 +1026,7 @@ class Mod(Cog, emoji=1268851270136107048):
     async def channel_topic(
         self,
         ctx: Context,
-        channel: Optional[Union[discord.TextChannel, discord.ForumChannel]],
+        channel: Optional[Union[discord.TextChannel, discord.ForumChannel]] = None,
         *,
         text: str,
     ):
@@ -1063,7 +1096,9 @@ class Mod(Cog, emoji=1268851270136107048):
     @commands.command(aliases=["warns"])
     @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def warnings(self, ctx: Context, member: discord.Member = None):  # type: ignore
+    async def warnings(
+        self, ctx: Context, member: Optional[Union[discord.Member, discord.User]] = None
+    ):
         """
         Displays the warnings of the user.
         If no user is given, the bot sends your warnings.
@@ -1135,12 +1170,12 @@ class Mod(Cog, emoji=1268851270136107048):
 
         if result == "DELETE 0":
             await ctx.send(
-                f"{self.bot.no} Warn ID: `{warn_id}` not found for {member}."
+                f"{self.bot.no} Warn ID: `{warn_id}` not found for {member.mention}."
             )
 
         else:
             await ctx.send(
-                f"{self.bot.yes} Warn ID `{warn_id}` for {member} has been deleted."
+                f"{self.bot.yes} Warn ID `{warn_id}` for {member.mention} has been deleted."
             )
 
 

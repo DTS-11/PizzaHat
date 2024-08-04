@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 
 import discord
 from async_lru import alru_cache
@@ -112,7 +112,7 @@ class AntiAlts(Cog, emoji=1268851128548724756):
         self,
         ctx: Context,
         config: str | None,
-        setting: Union[discord.Role, str, int] = None,  # type: ignore
+        setting: Optional[Union[discord.Role, str, int]] = None,
     ):
         """Setup anti-alt in your server."""
 
