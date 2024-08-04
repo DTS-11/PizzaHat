@@ -9,7 +9,7 @@ from utils.ui import Paginator
 
 
 class Tags(Cog, emoji=1268850578415681546):
-    """Commands to fetch something by a tag name."""
+    """Organize and streamline your server's content."""
 
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
