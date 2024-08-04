@@ -6,8 +6,8 @@ from importlib import import_module
 from logging.config import dictConfig
 
 import aiohttp
-import core.database as db
 import discord
+from core.database import create_db_pool
 from discord.ext import commands
 from discord.ext.commands import CommandError, Context
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
@@ -134,8 +134,7 @@ class PizzaHat(commands.Bot):
             self.uptime = datetime.datetime.now(datetime.timezone.utc)
 
         # Create DB connection
-        if db is not None:
-            self.db = await db.create_db_pool()
+        self.db = await create_db_pool()
 
         # Make the tickets view persistent
         ticket_view = import_module("utils.ui").TicketView(self)
