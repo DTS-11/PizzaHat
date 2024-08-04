@@ -1,18 +1,18 @@
 import asyncio
 from typing import Union
 
-import discord
-from discord.ext import commands
+from discord import Message
+from discord.ext.commands import Context
 
 
 async def wait_for_msg(
-    ctx: commands.Context, timeout: int, msg_to_edit: discord.Message
-) -> Union[discord.Message, str]:
-    def check(msg: discord.Message):
+    ctx: Context, timeout: int, msg_to_edit: Message
+) -> Union[Message, str]:
+    def check(msg: Message):
         return msg.author == ctx.author and msg.channel == ctx.channel
 
     try:
-        m = await ctx.bot.wait_for("message", timeout=timeout, check=check)
+        m: Message = await ctx.bot.wait_for("message", check=check, timeout=timeout)
         try:
             await m.delete()
         except Exception:
