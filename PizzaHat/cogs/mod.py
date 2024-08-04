@@ -406,7 +406,7 @@ class Mod(Cog, emoji=1268851270136107048):
         self,
         ctx: Context,
         role: Optional[discord.Role] = None,
-        channel: Optional[Union[discord.TextChannel, discord.abc.Messageable]] = None,Gg
+        channel: Optional[Union[discord.TextChannel, discord.abc.Messageable]] = None,
     ):
         """
         Unlocks a channel with role requirement.
