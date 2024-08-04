@@ -1,9 +1,10 @@
 from io import BytesIO
+from typing import Union
 
 import emoji
 import requests
 from colorthief import ColorThief
-from discord import Color, PartialEmoji
+from discord import Color, Emoji, PartialEmoji
 from discord.ext.commands import Cog as DiscordCog
 from discord.ext.commands import CogMeta as DiscordCogMeta
 from PIL import Image
@@ -29,37 +30,21 @@ class Cog(DiscordCog, metaclass=CogMeta):
     """
 
     @property
-    def emoji(self):
-        if not hasattr(self, "__cog_emoji__"):
+    def emoji(self) -> Union[Emoji, PartialEmoji, None]:
+        emoji: Union[str, int, PartialEmoji, Emoji, None] = getattr(
+            self, "__cogemoji__", None
+        )
+        if not emoji:
             return None
 
-        e = self.__cog_emoji__  # type: ignore
+        if isinstance(emoji, (Emoji, PartialEmoji)):
+            return emoji
 
-        if isinstance(e, int):
-            guild_emoji = self.bot.get_emoji(e)  # type: ignore
-            if guild_emoji:
-                return PartialEmoji(
-                    name=guild_emoji.name,
-                    id=guild_emoji.id,
-                    animated=guild_emoji.animated,
-                )
-            else:
-                return PartialEmoji(id=e, name="_")
-
-        elif isinstance(e, str):
-            if e.startswith("<") and e.endswith(">"):
-                animated = e.startswith("<a:")
-                name, emoji_id = e.rsplit(":", 1)
-                name = name.split(":")[-1]
-                return PartialEmoji(name=name, id=int(emoji_id[:-1]), animated=animated)
-            else:
-                return PartialEmoji(name=e)
-
-        elif isinstance(e, PartialEmoji):
-            return e
-
-        else:
-            return None
+        return (
+            self.bot.get_emoji(emoji)  # type: ignore
+            if isinstance(emoji, int)
+            else PartialEmoji.from_str(emoji)
+        )
 
     @property
     def full_description(self):
