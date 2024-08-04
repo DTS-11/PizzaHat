@@ -9,4 +9,4 @@ async def create_db_pool():
     ssl_object.check_hostname = False
     ssl_object.verify_mode = ssl.CERT_NONE
 
-    return await asyncpg.create_pool(dsn=PG_URL, ssl=ssl_object)
+    return await asyncpg.create_pool(PG_URL, ssl=ssl_object)
