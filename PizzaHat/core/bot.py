@@ -14,14 +14,14 @@ from discord.ext.commands.errors import ExtensionAlreadyLoaded
 from utils.config import REPO_LINK
 
 INITIAL_EXTENSIONS = [
-    # "cogs.antialt",
+    "cogs.antialt",
     "cogs.automod",
     "cogs.dev",
     "cogs.emojis",
     "cogs.fun",
     "cogs.games",
     "cogs.mod",
-    # "cogs.starboard",
+    "cogs.starboard",
     "cogs.tags",
     "cogs.tickets",
     "cogs.utility",
@@ -33,6 +33,7 @@ SUB_EXTENSIONS = [
     "cogs_hidden.events",
     "cogs_hidden.guild_logs",
     "cogs_hidden.help",
+    "cogs_hidden.starboard",
 ]
 
 LOGGING_CONFIG = {
