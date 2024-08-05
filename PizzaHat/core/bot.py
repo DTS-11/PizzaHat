@@ -28,7 +28,7 @@ INITIAL_EXTENSIONS = [
 ]
 
 SUB_EXTENSIONS = [
-    "cogs_hidden.antialts",
+    "cogs_hidden.antialt",
     "cogs_hidden.automod",
     "cogs_hidden.events",
     "cogs_hidden.guild_logs",
