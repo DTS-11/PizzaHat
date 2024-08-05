@@ -13,6 +13,8 @@ from utils.bad_words import BANNED_WORDS
 
 
 class AutoModConfig(Cog):
+    """AutoMod config/logic cog."""
+
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
         self.mentions = bot.allowed_mentions

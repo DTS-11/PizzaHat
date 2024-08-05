@@ -18,6 +18,8 @@ def datetime_to_sec(t: datetime.datetime):
 
 
 class AntiAltsConfig(Cog):
+    """Anti alt config/logic cog."""
+
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
