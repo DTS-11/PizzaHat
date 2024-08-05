@@ -31,20 +31,30 @@ class Cog(DiscordCog, metaclass=CogMeta):
 
     @property
     def emoji(self) -> Union[Emoji, PartialEmoji, None]:
-        emoji: Union[str, int, PartialEmoji, Emoji, None] = getattr(
-            self, "__cog_emoji__", None
-        )
+        emoji = getattr(self, "__cog_emoji__", None)
         if not emoji:
             return None
 
         if isinstance(emoji, (Emoji, PartialEmoji)):
             return emoji
 
-        return (
-            self.bot.get_emoji(emoji)  # type: ignore
-            if isinstance(emoji, int)
-            else PartialEmoji.from_str(emoji)
-        )
+        if isinstance(emoji, int):
+            guild_emoji = self.bot.get_emoji(emoji)  # type: ignore
+            if guild_emoji:
+                return guild_emoji
+            else:
+                return PartialEmoji(id=emoji, name="_")
+
+        elif isinstance(emoji, str):
+            if emoji.startswith("<") and emoji.endswith(">"):
+                animated = emoji.startswith("<a:")
+                name, emoji_id = emoji.rsplit(":", 1)
+                name = name.split(":")[-1]
+                return PartialEmoji(name=name, id=int(emoji_id[:-1]), animated=animated)
+            else:
+                return PartialEmoji(name=emoji)
+
+        return None
 
     @property
     def full_description(self):
