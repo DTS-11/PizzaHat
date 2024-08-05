@@ -6,6 +6,7 @@ import discord
 from async_lru import alru_cache
 from asyncpg import Record
 from core.bot import PizzaHat
+from core.cog import Cog
 from discord.ext import commands
 
 
@@ -16,7 +17,7 @@ def datetime_to_sec(t: datetime.datetime):
     )
 
 
-class AntiAltsConfig(commands.Cog):
+class AntiAltsConfig(Cog):
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
@@ -49,7 +50,7 @@ class AntiAltsConfig(commands.Cog):
         if data is not None:
             return data
 
-    @commands.Cog.listener("on_member_join")
+    @Cog.listener("on_member_join")
     async def antialt_member_join(self, member: discord.Member):
         aa_enabled_guild = await self.check_if_aa_is_enabled(member.guild.id)
         logs_channel = await self.get_logs_channel(member.guild.id)
