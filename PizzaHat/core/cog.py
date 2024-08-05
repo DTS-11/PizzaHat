@@ -32,7 +32,7 @@ class Cog(DiscordCog, metaclass=CogMeta):
     @property
     def emoji(self) -> Union[Emoji, PartialEmoji, None]:
         emoji: Union[str, int, PartialEmoji, Emoji, None] = getattr(
-            self, "__cogemoji__", None
+            self, "__cog_emoji__", None
         )
         if not emoji:
             return None
