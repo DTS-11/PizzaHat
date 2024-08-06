@@ -1,5 +1,3 @@
-from typing import Union
-
 from async_lru import alru_cache
 from discord.ext import commands
 from discord.ext.commands import Context
@@ -15,16 +13,15 @@ class AutoModeration(Cog, emoji=1268880500248936491):
         self.bot: PizzaHat = bot
 
     @alru_cache()
-    async def check_if_am_is_enabled(self, guild_id: int) -> Union[bool, None]:
-        data = (
+    async def check_if_am_is_enabled(self, guild_id: int) -> bool:
+        data: bool = (
             await self.bot.db.fetchval(
                 "SELECT enabled FROM automod WHERE guild_id=$1", guild_id
             )
             if self.bot.db
-            else None
+            else False
         )
-        if data is not None:
-            return data
+        return data
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()

@@ -37,7 +37,7 @@ class TabularData:
         self._columns: list[str] = []
         self._rows: list[list[str]] = []
 
-    def set_columns(self, columns: list[str]):
+    def set_columns(self, columns: list[str]) -> None:
         self._columns = columns
         self._widths = [len(c) + 2 for c in columns]
 
@@ -59,7 +59,7 @@ class TabularData:
 
         to_draw = [sep]
 
-        def get_entry(d):
+        def get_entry(d) -> str:
             elem = "|".join(f"{e:^{self._widths[i]}}" for i, e in enumerate(d))
             return f"|{elem}|"
 

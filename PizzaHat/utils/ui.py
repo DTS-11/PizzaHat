@@ -64,7 +64,7 @@ class Paginator(ui.View):
         await interaction.response.edit_message(embed=self.embeds[-1], view=self)
         self.current = len(self.embeds) - 1
 
-    async def interaction_check(self, interaction: Interaction):
+    async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user == self.ctx.author:
             return True
 

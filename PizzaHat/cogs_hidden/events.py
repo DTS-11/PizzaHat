@@ -84,6 +84,11 @@ class Events(Cog):
                 (guild_id BIGINT, user_msg_id BIGINT PRIMARY KEY, bot_msg_id BIGINT)"""
             )
 
+            # await self.bot.db.execute(
+            #     """CREATE TABLE IF NOT EXISTS welcome
+            #     (guild_id BIGINT PRIMARY KEY, channel_id BIGINT, title TEXT, description TEXT, thumbnail TEXT, footer TEXT, author TEXT, color INT, welcome_img_enabled BOOL DEFAULT false)"""
+            # )
+
     # ====== BOT PING MSG ======
 
     @Cog.listener()

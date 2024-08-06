@@ -27,7 +27,7 @@ COLORS = {
 }
 
 
-def euclidean_distance(c1, c2):
+def euclidean_distance(c1, c2) -> float:
     r1, g1, b1 = c1
     r2, g2, b2 = c2
     d = ((r2 - r1) ** 2 + (g2 - g1) ** 2 + (b2 - b1) ** 2) ** 0.5
@@ -35,12 +35,12 @@ def euclidean_distance(c1, c2):
     return d
 
 
-def find_closest_emoji(color):
+def find_closest_emoji(color) -> str:
     c = sorted(list(COLORS), key=lambda k: euclidean_distance(color, k))
     return COLORS[c[0]]
 
 
-def emojify_image(img, size=14):
+def emojify_image(img, size=14) -> str:
     WIDTH, HEIGHT = (size, size)
     small_img = img.resize((WIDTH, HEIGHT), Image.NEAREST)
 
@@ -261,7 +261,7 @@ class Emojis(Cog, emoji=1268867324195246133):
         if not isinstance(url, str):
             url = url.display_avatar.url
 
-        def get_emojified_image():
+        def get_emojified_image() -> str:
             r = requests.get(url, stream=True)
             image = Image.open(r.raw).convert("RGB")
             res = emojify_image(image, size)

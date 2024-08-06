@@ -58,7 +58,7 @@ class Dev(Cog, emoji=1268856867585658981):
 
         to_compile = f'async def func():\n{textwrap.indent(body, "    ")}'
 
-        def paginate(text: str):
+        def paginate(text: str) -> list[str]:
             """Simple generator that paginates text."""
             last = 0
             pages = []

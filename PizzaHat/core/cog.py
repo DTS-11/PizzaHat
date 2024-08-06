@@ -57,7 +57,7 @@ class Cog(DiscordCog, metaclass=CogMeta):
         return None
 
     @property
-    def full_description(self):
+    def full_description(self) -> str:
         """The cog's emoji with the cog's description."""
         return (str((self.emoji or "")) + " " + self.description).strip()
 

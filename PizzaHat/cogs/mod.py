@@ -583,7 +583,7 @@ class Mod(Cog, emoji=1268851270136107048):
         If no amount is given, it deletes upto 100 messages.
         """
 
-        def is_bot(m: discord.Message):
+        def is_bot(m: discord.Message) -> bool:
             return m.author == self.bot.user
 
         if ctx.channel is discord.DMChannel:

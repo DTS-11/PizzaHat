@@ -1,13 +1,13 @@
 import discord
 from discord import ButtonStyle, Interaction, ui
 from discord.ext import commands
-
+from typing import Union
 from core.bot import PizzaHat
 from core.cog import Cog
 from utils.config import COG_EXCEPTIONS, REG_INVITE, SUPPORT_SERVER, WUMPUS_VOTE
 
 
-def bot_help_embed(ctx: commands.Context):
+def bot_help_embed(ctx: commands.Context) -> discord.Embed:
     em = discord.Embed(
         title=f"{ctx.bot.user.name} Help",
         timestamp=ctx.message.created_at,
@@ -41,7 +41,7 @@ Use the dropdown menu to select a category.\n
     return em
 
 
-def cog_help_embed(cog: Cog | None):
+def cog_help_embed(cog: Cog | None) -> Union[discord.Embed, None]:
     if cog is None:
         return
 
@@ -65,7 +65,7 @@ def cog_help_embed(cog: Cog | None):
     return em
 
 
-def cmds_list_embed(ctx: commands.Context, mapping):
+def cmds_list_embed(ctx: commands.Context, mapping) -> discord.Embed:
     em = discord.Embed(
         title=f"{ctx.bot.user.name} Help",
         timestamp=ctx.message.created_at,
@@ -145,7 +145,7 @@ class HelpView(ui.View):
 
             await self.message.edit(view=self)  # type: ignore
 
-    async def interaction_check(self, interaction: Interaction):
+    async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user == self.ctx.author:
             return True
 

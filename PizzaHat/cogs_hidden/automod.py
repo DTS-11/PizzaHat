@@ -24,7 +24,7 @@ class AutoModConfig(Cog):
         )
         self.zalgo_regex = re.compile(r"%CC%", re.MULTILINE)
 
-    def mod_perms(self, m: discord.Message):
+    def mod_perms(self, m: discord.Message) -> bool:
         p: discord.Permissions = m.author.guild_permissions  # type: ignore
         return (
             True
@@ -56,16 +56,15 @@ class AutoModConfig(Cog):
             return channel
 
     @alru_cache()
-    async def check_if_am_is_enabled(self, guild_id: int) -> Union[bool, None]:
-        data = (
+    async def check_if_am_is_enabled(self, guild_id: int) -> bool:
+        data: bool = (
             await self.bot.db.fetchval(
                 "SELECT enabled FROM automod WHERE guild_id=$1", guild_id
             )
             if self.bot.db
-            else None
+            else False
         )
-        if data is not None:
-            return data
+        return data
 
     @Cog.listener()
     async def on_automod_trigger(self, msg: discord.Message, module: str):
@@ -102,7 +101,7 @@ class AutoModConfig(Cog):
         if not am_enabled_guild:
             return
 
-    async def banned_words(self, msg: discord.Message):
+    async def banned_words(self, msg: discord.Message) -> bool:
         banned_words = BANNED_WORDS.copy()
 
         for word in banned_words:
@@ -120,7 +119,7 @@ class AutoModConfig(Cog):
                 return True
         return False
 
-    async def all_caps(self, msg: discord.Message):
+    async def all_caps(self, msg: discord.Message) -> bool:
         if len(msg.content) <= 7:
             return False
 
@@ -153,8 +152,8 @@ class AutoModConfig(Cog):
             return True
         return False
 
-    async def message_spam(self, msg: discord.Message):
-        def _check(m: discord.Message):
+    async def message_spam(self, msg: discord.Message) -> bool:
+        def _check(m: discord.Message) -> bool:
             return (
                 m.author == msg.author
                 and (
@@ -208,7 +207,7 @@ class AutoModConfig(Cog):
                             return True
         return False
 
-    async def mass_mentions(self, msg: discord.Message):
+    async def mass_mentions(self, msg: discord.Message) -> bool:
         if len(msg.mentions) >= 3:
             await msg.delete()
             await msg.channel.send(
@@ -219,7 +218,7 @@ class AutoModConfig(Cog):
             return True
         return False
 
-    async def emoji_spam(self, msg: discord.Message):
+    async def emoji_spam(self, msg: discord.Message) -> bool:
         converter = commands.PartialEmojiConverter()
         stuff = msg.content.split()
         emoji_count = emojis.count(msg.content)
@@ -242,7 +241,7 @@ class AutoModConfig(Cog):
             return True
         return False
 
-    async def zalgo_text(self, msg: discord.Message):
+    async def zalgo_text(self, msg: discord.Message) -> bool:
         x = self.zalgo_regex.search(parse.quote(msg.content.encode("utf-8")))
         if x:
             await msg.delete()

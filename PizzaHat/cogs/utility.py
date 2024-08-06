@@ -22,13 +22,13 @@ from utils.config import (
 start_time = time.time()
 
 
-def format_date(dt: Union[datetime.datetime, None]):
+def format_date(dt: Union[datetime.datetime, None]) -> str:
     if dt is None:
         return "N/A"
     return f"<t:{int(dt.timestamp())}>"
 
 
-# def to_keycap(c):
+# def to_keycap(c) -> str:
 #     return "\N{KEYCAP TEN}" if c == 10 else str(c) + "\u20e3"
 
 

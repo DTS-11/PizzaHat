@@ -24,7 +24,7 @@ from utils.config import (
 )
 
 
-def clean_string(string):
+def clean_string(string) -> str:
     string = re.sub("@", "@\u200b", string)
     string = re.sub("#", "#\u200b", string)
     return string

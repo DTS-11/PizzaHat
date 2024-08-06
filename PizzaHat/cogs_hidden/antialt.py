@@ -10,7 +10,7 @@ from core.bot import PizzaHat
 from core.cog import Cog
 
 
-def datetime_to_sec(t: datetime.datetime):
+def datetime_to_sec(t: datetime.datetime) -> int:
     current_time = datetime.datetime.fromtimestamp(time.time())
     return round(
         round(time.time()) + (current_time - t.replace(tzinfo=None)).total_seconds()
@@ -41,18 +41,17 @@ class AntiAltsConfig(Cog):
             return channel
 
     @alru_cache()
-    async def check_if_aa_is_enabled(self, guild_id: int) -> Union[bool, None]:
-        data = (
+    async def check_if_aa_is_enabled(self, guild_id: int) -> bool:
+        data: bool = (
             await self.bot.db.fetchval(
                 "SELECT enabled FROM antialt WHERE guild_id=$1", guild_id
             )
             if self.bot.db
-            else None
+            else False
         )
-        if data is not None:
-            return data
+        return data
 
-    @Cog.listener("on_member_join")
+    @Cog.listener(name="on_member_join")
     async def antialt_member_join(self, member: discord.Member):
         aa_enabled_guild = await self.check_if_aa_is_enabled(member.guild.id)
         logs_channel = await self.get_logs_channel(member.guild.id)

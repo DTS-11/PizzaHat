@@ -8,7 +8,7 @@ from discord.ext.commands import Context
 async def wait_for_msg(
     ctx: Context, timeout: int, msg_to_edit: Message
 ) -> Union[Message, str]:
-    def check(msg: Message):
+    def check(msg: Message) -> bool:
         return msg.author == ctx.author and msg.channel == ctx.channel
 
     try:
