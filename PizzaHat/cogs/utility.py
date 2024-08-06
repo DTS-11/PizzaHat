@@ -5,11 +5,12 @@ from typing import Optional, Union
 
 import discord
 import psutil
-from core.bot import PizzaHat
-from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Modal, Select, TextInput, View
+
+from core.bot import PizzaHat
+from core.cog import Cog
 from utils.config import (
     BOOSTER_ROLE,
     CONTRIBUTOR_ROLE,
@@ -366,11 +367,7 @@ class Utility(Cog, emoji=1268851252565905449):
             )
         )
 
-        try:
-            await ctx.message.delete()
-
-        except:
-            pass
+        await ctx.message.delete()
 
         yes_thumb = "👍"
         no_thumb = "👎"
@@ -378,7 +375,7 @@ class Utility(Cog, emoji=1268851252565905449):
         await msg.add_reaction(yes_thumb)
         await msg.add_reaction(no_thumb)
 
-    @commands.command()
+    @commands.command(aliases=["ui"])
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.guild_only()
     async def userinfo(
@@ -490,7 +487,7 @@ class Utility(Cog, emoji=1268851252565905449):
 
             await ctx.send(embed=em)
 
-    @commands.command()
+    @commands.command(aliases=["si"])
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.guild_only()
     async def serverinfo(self, ctx: Context):

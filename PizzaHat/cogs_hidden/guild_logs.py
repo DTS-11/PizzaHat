@@ -3,11 +3,12 @@ from typing import List, Union
 
 import discord
 from async_lru import alru_cache
+from discord.utils import escape_markdown
+from humanfriendly import format_timespan
+
 from cogs.utility import format_date
 from core.bot import PizzaHat
 from core.cog import Cog
-from discord.utils import escape_markdown
-from humanfriendly import format_timespan
 
 
 class GuildLogs(Cog):
@@ -291,7 +292,9 @@ class GuildLogs(Cog):
             em.set_footer(text=f"ID: {member.id}")
 
             if before.channel is None:
-                em.description = f"{member.mention} joined voice channel {after.channel.mention}"  # type: ignore
+                em.description = (
+                    f"{member.mention} joined voice channel {after.channel.mention}"  # type: ignore
+                )
                 em.color = discord.Color.green()
 
             elif after.channel is None:

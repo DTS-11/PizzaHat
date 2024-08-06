@@ -4,10 +4,11 @@ from typing import List, Optional, Union
 
 import discord
 import humanfriendly
-from core.bot import PizzaHat
-from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
+
+from core.bot import PizzaHat
+from core.cog import Cog
 from utils.config import ANTIHOIST_CHARS
 from utils.ui import ConfirmationView, Paginator
 

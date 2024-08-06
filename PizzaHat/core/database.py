@@ -1,6 +1,7 @@
 import ssl
 
 import asyncpg
+
 from utils.config import PG_URL
 
 

@@ -1,9 +1,10 @@
 import datetime
 
 import discord
+
 from core.bot import PizzaHat
 from core.cog import Cog
-from utils.config import DLIST_TOKEN, LOGS_CHANNEL, TOPGG_TOKEN
+from utils.config import LOGS_CHANNEL
 
 
 class Events(Cog):

@@ -3,6 +3,7 @@ from typing import Union
 
 import discord
 from async_lru import alru_cache
+
 from core.bot import PizzaHat
 from core.cog import Cog
 
@@ -92,7 +93,10 @@ class StarboardEvents(Cog):
                 if reaction.count >= star_count:
                     if not self_star:
                         if message.author == payload.member:
-                            return await message.remove_reaction(payload.emoji, payload.member)  # type: ignore
+                            return await message.remove_reaction(
+                                payload.emoji,
+                                payload.member,  # type: ignore
+                            )
                     em = create_starboard_embed(message)
 
                     try:
@@ -114,7 +118,10 @@ class StarboardEvents(Cog):
                             )
 
                         else:
-                            star_embed = await star_channel.send(content=f"⭐ **{reaction.count}** | {channel.mention}", embed=em)  # type: ignore
+                            star_embed = await star_channel.send(  # type: ignore
+                                content=f"⭐ **{reaction.count}** | {channel.mention}",
+                                embed=em,
+                            )
                         (
                             await self.bot.db.execute(
                                 "INSERT INTO star_info (guild_id, user_msg_id, bot_msg_id) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT star_info_pkey DO NOTHING",

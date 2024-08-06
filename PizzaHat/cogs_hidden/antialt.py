@@ -5,9 +5,9 @@ from typing import Optional, Union
 import discord
 from async_lru import alru_cache
 from asyncpg import Record
+
 from core.bot import PizzaHat
 from core.cog import Cog
-from discord.ext import commands
 
 
 def datetime_to_sec(t: datetime.datetime):

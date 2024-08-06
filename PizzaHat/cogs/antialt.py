@@ -2,10 +2,11 @@ from typing import Optional, Union
 
 import discord
 from async_lru import alru_cache
-from core.bot import PizzaHat
-from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
+
+from core.bot import PizzaHat
+from core.cog import Cog
 from utils.message import wait_for_msg
 
 
@@ -177,7 +178,7 @@ Anti-alt system is currently **{"enabled" if enabled else "disabled"}**.
 
                 view = AntiAltsSelectionView(context=ctx)
                 msg = await ctx.reply(
-                    f"""
+                    """
 **Anti-alt setup**
 
 - Level.
@@ -243,7 +244,8 @@ Type `cancel` to cancel the setup.
                 if m.content.lower() != "create":  # type: ignore
                     try:
                         r_role = await commands.RoleConverter().convert(
-                            ctx=ctx, argument=m.content  # type: ignore
+                            ctx=ctx,
+                            argument=m.content,  # type: ignore
                         )
                     except Exception:
                         return await msg.edit(

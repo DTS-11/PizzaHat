@@ -1,5 +1,4 @@
 import datetime
-import logging
 import sys
 import traceback
 from importlib import import_module
@@ -7,10 +6,11 @@ from logging.config import dictConfig
 
 import aiohttp
 import discord
-from core.database import create_db_pool
 from discord.ext import commands
 from discord.ext.commands import CommandError, Context
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
+
+from core.database import create_db_pool
 from utils.config import REPO_LINK
 
 INITIAL_EXTENSIONS = [
