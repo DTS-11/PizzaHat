@@ -1,5 +1,5 @@
 <h1 align="center">
-    <img src="./assets/bot-logo.png" width="300" height="300"/> <br>
+    <img src="./PizzaHat/assets/images/bot-logo.png" width="300" height="300"/> <br>
 PizzaHat Discord Bot <h1/>
 
 <h4 align="center"> Your ultimate Discord companion! <h4/>
