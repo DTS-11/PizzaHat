@@ -1,14 +1,13 @@
 <h1 align="center">
     <img src="./assets/bot-logo.png" width="300" height="300"/> <br>
 PizzaHat Discord Bot <h1/>
-	
+
 <h4 align="center"> Your ultimate Discord companion! <h4/>
   </a><br>
   <img src="https://img.shields.io/badge/discord.py-2.3.2-blue?style=flat" />
   <img src="https://img.shields.io/badge/Python-3.11-green?style=flat&logo=python" />
   <img src="https://github.com/DTS-11/PizzaHat/actions/workflows/codeql-analysis.yml/badge.svg" />
 </h1>
-
 
 ## ℹ️ • Info
 
@@ -20,6 +19,7 @@ PizzaHat Discord Bot <h1/>
 - 🔼 99% uptime. </li>
 - 🏓 Low latency. </li>
 - <img src="https://cdn.discordapp.com/emojis/847248846526087239.png?size=80" height="19px"> Powerful moderation. </li>
+- 🛡️ Effective automod and antiraid system. </li>
 - 🥳 Fun commands. </li>
 - 🎮 Fun games. </li>
 - ⚒️ Utility commands. </li>
@@ -36,7 +36,13 @@ PizzaHat Discord Bot <h1/>
 - Fork the repo.
 - Create a new branch
 - Add features/changes (with proper docs for help)
-- Format code with Black & organise imports by using isort (vscode extension)
+- Format code & sort imports with Ruff
+
+```bash
+ruff check --select I --fix .
+ruff format .
+```
+
 - Commit and push the changes
 - Submit pull request
 
@@ -101,6 +107,8 @@ Note:
 - You CANNOT USE PizzaHat's name, logo in your bot.
 
 - You MUST give credits to the repository and to the contributors.
+
+- You are also NOT ALLOWED to change/remove the `credits` command.
 
 ---
 
