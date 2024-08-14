@@ -49,4 +49,6 @@ COG_EXCEPTIONS = [
     "GuildLogs",
     "Help",
     "Jishaku",
+    "StarboardEvents",
+    "WelcomeEvents",
 ]
