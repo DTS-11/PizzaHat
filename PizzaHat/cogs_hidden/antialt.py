@@ -69,7 +69,7 @@ class AntiAltsConfig(Cog):
         delv = (
             (
                 datetime.datetime.now(datetime.timezone.utc)
-                - member.created_at.replace(tzinfo=None)
+                - member.created_at.replace(tzinfo=datetime.timezone.utc)
             ).total_seconds()
         ) / (60 * 60 * 24)
         if delv >= data["min_age"]:
