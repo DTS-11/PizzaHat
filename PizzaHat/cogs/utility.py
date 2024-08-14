@@ -405,7 +405,6 @@ class Utility(Cog, emoji=1268851252565905449):
         misc_flags_descriptions = {
             "team_user": "Application Team User",
             "system": "System User",
-            "spammer": "Spammer",
             "verified_bot": "Verified Bot",
             "bot_http_interactions": "HTTP Interactions Bot",
         }
@@ -521,15 +520,16 @@ class Utility(Cog, emoji=1268851252565905449):
 
             if ctx.guild.owner is not None:
                 em.description = f"""
-    <:owner:1268852819448823839> **Owner:** {ctx.guild.owner.mention} `[{ctx.guild.owner}]`
-    <:description:1268877993862893618> **Description:** {ctx.guild.description if ctx.guild.description else "N/A"}
-    <:id:1268872547915792487> **ID:** {ctx.guild.id}
-    {f"<:image:1268878284775755841> **[Guild Icon]({ctx.guild.icon.url})**" if ctx.guild.icon else ""}
+<:owner:1268852819448823839> **Owner:** {ctx.guild.owner.mention} `[{ctx.guild.owner}]`
+<:description:1268877993862893618> **Description:** {ctx.guild.description if ctx.guild.description else "N/A"}
+<:id:1268872547915792487> **ID:** {ctx.guild.id}
+{f"<:image:1268878284775755841> **[Guild Icon]({ctx.guild.icon.url})**" if ctx.guild.icon else ""}
     """
 
             em.add_field(
-                name=f"<:member:1268853618887622717> {ctx.guild.member_count} Members",
+                name="Members",
                 value=(
+                    f"<:member:1268853618887622717> Total: {ctx.guild.member_count}\n"
                     f"<:members:1268853443968106547> Humans: {len([m for m in ctx.guild.members if not m.bot])}\n"
                     f"<:bot:1268861825068564520> Bots: {sum(member.bot for member in ctx.guild.members)}"
                 ),
@@ -647,7 +647,7 @@ class Utility(Cog, emoji=1268851252565905449):
         You can mention the role or give the name of it.
         """
 
-        e = discord.Embed(title="Role Information", color=self.bot.color)
+        e = discord.Embed(title="Role Information", color=role.color)
         e.add_field(name="Role name", value=role.name, inline=False)
         e.add_field(name="Role ID", value=role.id, inline=False)
         e.add_field(name="Mention", value=role.mention, inline=False)
