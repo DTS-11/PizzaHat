@@ -1143,7 +1143,7 @@ class GuildLogs(Cog):
                 value=format_timespan(
                     (
                         datetime.datetime.now(datetime.timezone.utc)
-                        - member.created_at.replace(tzinfo=None)
+                        - member.created_at.replace(tzinfo=datetime.timezone.utc)
                     ).total_seconds()
                 ),
                 inline=False,
