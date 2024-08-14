@@ -1,7 +1,9 @@
+from typing import Union
+
 import discord
 from discord import ButtonStyle, Interaction, ui
 from discord.ext import commands
-from typing import Union
+
 from core.bot import PizzaHat
 from core.cog import Cog
 from utils.config import COG_EXCEPTIONS, REG_INVITE, SUPPORT_SERVER, WUMPUS_VOTE
@@ -60,7 +62,8 @@ def cog_help_embed(cog: Cog | None) -> Union[discord.Embed, None]:
 
     commands_value = "\n".join(commands_info)
     # em.add_field(name="Commands", value=commands_value, inline=False)
-    em.description += f"\n### Commands\n{commands_value}"  # type: ignore
+    if commands_value:
+        em.description += f"\n### Commands\n{commands_value}"  # type: ignore
 
     return em
 
