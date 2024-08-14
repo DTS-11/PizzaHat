@@ -1,7 +1,8 @@
 import ssl
+from typing import Union
 
 import asyncpg
-from typing import Union
+
 from utils.config import PG_URL
 
 
