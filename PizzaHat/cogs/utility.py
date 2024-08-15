@@ -18,6 +18,7 @@ from utils.config import (
     STAFF_ROLE,
     SUPPORT_SERVER,
 )
+from utils.embed import green_embed, normal_embed, orange_embed, red_embed
 
 start_time = time.time()
 
@@ -118,11 +119,10 @@ class PollOptionsModal(Modal):
         end_poll_btn.callback = end_poll_callback
         end_poll_view.add_item(end_poll_btn)
 
-        new_embed = discord.Embed(
+        new_embed = green_embed(
             title="Poll Created",
             description="The poll has been successfully created.",
-            color=discord.Color.green(),
-            timestamp=datetime.datetime.now(),
+            timestamp=True,
         )
         await self.message.edit(embed=new_embed, view=end_poll_view)
 
@@ -201,7 +201,7 @@ class Utility(Cog, emoji=1268851252565905449):
                             "<:partner:1268852831851642880> PizzaHat's Partner"
                         )
 
-            em = discord.Embed(title=f"{member} Badges", color=self.bot.color)
+            em = normal_embed(title=f"{member} Badges")
             em.set_thumbnail(url=member.avatar.url if member.avatar else None)
             em.description = (
                 "\n".join(badges)
@@ -303,13 +303,14 @@ class Utility(Cog, emoji=1268851252565905449):
             duration_timedelta = datetime.timedelta(hours=duration)
             if duration < 1:
                 return await ctx.send(
-                    f"{self.bot.no} Duration must be at least 1 hour."
+                    embed=red_embed(f"{self.bot.no} Duration must be at least 1 hour.")
                 )
 
         except ValueError as e:
-            print(f"Error in poll duration: {e}")
             return await ctx.send(
-                f"{self.bot.no} Something went wrong while parsing the duration."
+                embed=red_embed(
+                    f"{self.bot.no} Something went wrong while parsing the duration, please report this to the developers.\n{e}"
+                )
             )
 
         add_options_view = View()
@@ -339,11 +340,10 @@ class Utility(Cog, emoji=1268851252565905449):
         select_menu.callback = select_callback
         add_options_view.add_item(select_menu)
 
-        em = discord.Embed(
+        em = orange_embed(
             title="Configure Choices",
             description="Please select whether members can choose multiple options or just one.",
-            color=discord.Color.orange(),
-            timestamp=ctx.message.created_at,
+            timestamp=True,
         )
         em.set_author(
             name=ctx.author,
@@ -508,7 +508,7 @@ class Utility(Cog, emoji=1268851252565905449):
             )
             boosts = f"<:booster:1268853959863570463> {ctx.guild.premium_subscription_count} Boosts ({boost_level})"
 
-            em = discord.Embed(title=ctx.guild.name, color=self.bot.color)
+            em = normal_embed(title=ctx.guild.name)
             em.set_thumbnail(
                 url=(
                     ctx.guild.icon.url
@@ -592,7 +592,7 @@ class Utility(Cog, emoji=1268851252565905449):
         channel = channel or ctx.channel
 
         if isinstance(channel, discord.TextChannel):
-            e = discord.Embed(title="Channel information", color=self.bot.color)
+            e = normal_embed(title="Channel information")
             e.add_field(name="Channel name", value=channel.name, inline=False)
             e.add_field(name="Channel ID", value=channel.id, inline=False)
             e.add_field(name="Mention", value=channel.mention, inline=False)
@@ -624,7 +624,7 @@ class Utility(Cog, emoji=1268851252565905449):
     async def vcinfo(self, ctx: Context, vc: discord.VoiceChannel):
         """Shows info about a voice channel."""
 
-        e = discord.Embed(title="VC Information", color=self.bot.color)
+        e = normal_embed(title="VC Information")
         e.add_field(name="VC name", value=vc.name, inline=False)
         e.add_field(name="VC ID", value=vc.id, inline=False)
         e.add_field(name="VC bitrate", value=vc.bitrate, inline=False)
@@ -756,15 +756,16 @@ class Utility(Cog, emoji=1268851252565905449):
         """Suggest some cool features."""
 
         await ctx.send(
-            f"{self.bot.yes} {ctx.author.mention}, your suggestion has been recorded!"
+            embed=green_embed(
+                f"{self.bot.yes} {ctx.author.mention}, your suggestion has been recorded!"
+            )
         )
         channel = self.bot.get_channel(798259756803817545)
 
-        em = discord.Embed(
+        em = green_embed(
             title="New Suggestion",
             description=f"> {suggestion}",
-            color=discord.Color.green(),
-            timestamp=ctx.message.created_at,
+            timestamp=True,
         )
 
         if ctx.author.avatar is not None:
@@ -829,7 +830,7 @@ class Utility(Cog, emoji=1268851252565905449):
         """
 
         member = member or ctx.author
-        em = discord.Embed(title=f"Avatar of {member.name}", color=self.bot.color)
+        em = discord.Embed(title=f"Avatar of {member.name}", color=member.color)
 
         if member.avatar is not None:
             em.set_image(url=member.avatar.url)
@@ -847,7 +848,11 @@ class Utility(Cog, emoji=1268851252565905449):
         """
 
         if len(characters) > 25:
-            await ctx.send("Too many characters ({}/25)".format(len(characters)))
+            await ctx.send(
+                embed=red_embed(
+                    f"{self.bot.no} Too many characters ({len(characters)}/25)"
+                )
+            )
             return
 
         fmt = "`\\U{0:>08}`: {1} - {2} \N{EM DASH}"

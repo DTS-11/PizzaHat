@@ -9,6 +9,7 @@ from humanfriendly import format_timespan
 from cogs.utility import format_date
 from core.bot import PizzaHat
 from core.cog import Cog
+from utils.embed import green_embed, normal_embed, orange_embed, red_embed
 
 
 class GuildLogs(Cog):
@@ -71,10 +72,9 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_messages:
-            em = discord.Embed(
+            em = green_embed(
                 title=f"Message edited in #{before.channel}",
-                color=discord.Color.green(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.add_field(name="- Before", value=before.content, inline=False)
             em.add_field(name="+ After", value=after.content, inline=False)
@@ -102,11 +102,10 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_messages:
-            em = discord.Embed(
+            em = red_embed(
                 title=f"Message Deleted in #{msg.channel}",
                 description=msg.content,
-                color=discord.Color.red(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.set_author(
                 name=msg.author,
@@ -129,11 +128,10 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_messages:
-            em = discord.Embed(
+            em = red_embed(
                 title="Bulk Message Deleted",
                 description=f"**{len(msgs)}** messages deleted in {msgs[0].channel}",
-                color=discord.Color.red(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.set_author(
                 name=msgs[0].author,
@@ -155,10 +153,9 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_mod:
-            em = discord.Embed(
+            em = red_embed(
                 title="Member Banned",
-                color=discord.Color.red(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
 
             em.add_field(name="Reason", value=discord.AuditLogAction.ban, inline=False)
@@ -178,10 +175,9 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_mod:
-            em = discord.Embed(
+            em = green_embed(
                 title="Member Unbanned",
-                color=discord.Color.green(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
 
             em.add_field(
@@ -221,13 +217,12 @@ class GuildLogs(Cog):
         role_text = role_text[:-2]
 
         if should_log_all or should_log_member:
-            em = discord.Embed(
+            em = normal_embed(
                 description=f"Role{'s' if len(roles) > 1 else ''} {role_text} "
                 f"{'were' if len(roles) > 1 else 'was'} "
                 f"{'added to' if len(before.roles) < len(after.roles) else 'removed from'} "
                 f"{after.mention}",
-                color=self.bot.color,
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.set_author(
                 name=after,
@@ -252,11 +247,10 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_member:
-            em = discord.Embed(
+            em = orange_embed(
                 title="Nickname Updated",
                 description=f"`{before.nick}` ➜ `{after.nick}`",
-                color=discord.Color.orange(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.set_author(
                 name=after,
@@ -321,11 +315,10 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_role:
-            em = discord.Embed(
+            em = green_embed(
                 title="Role Created",
                 description=role.mention,
-                color=discord.Color.green(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.add_field(name="Name", value=role.name, inline=False)
             em.add_field(name="Color", value=role.color, inline=False)
@@ -343,10 +336,9 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_role:
-            em = discord.Embed(
+            em = red_embed(
                 title="Role Deleted",
-                color=discord.Color.red(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.add_field(name="Name", value=role.name, inline=False)
             em.add_field(name="Color", value=role.color, inline=False)
@@ -367,11 +359,10 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_role:
-            em = discord.Embed(
+            em = orange_embed(
                 title="Role Updated",
                 description=after.mention,
-                color=discord.Color.orange(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
 
             if before.name != after.name:
@@ -438,10 +429,9 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_guild:
-            em = discord.Embed(
+            em = orange_embed(
                 title="Server Updated",
-                color=discord.Color.orange(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
 
             em.set_author(name=after, icon_url=after.icon.url if after.icon else None)
@@ -550,10 +540,9 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_guild:
-            em = discord.Embed(
+            em = orange_embed(
                 title="Emoji Updated",
-                color=discord.Color.orange(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.description = f"""
         > **Emoji ID:** {before.id}
@@ -620,10 +609,9 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_guild:
-            em = discord.Embed(
+            em = orange_embed(
                 title="Sticker Updated",
-                color=discord.Color.orange(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.description = f"""
         > **Sticker ID:** {before.id}
@@ -674,11 +662,10 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_guild:
-            em = discord.Embed(
+            em = green_embed(
                 title="Channel Created",
                 description=channel.mention,
-                color=discord.Color.green(),
-                timestamp=channel.created_at,
+                timestamp=True,
             )
             em.set_author(
                 name=channel.guild,
@@ -703,10 +690,9 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_guild:
-            em = discord.Embed(
+            em = red_embed(
                 description=f"> Name: {channel.name}\n> ID: {channel.id}",
-                color=discord.Color.red(),
-                timestamp=channel.created_at,
+                timestamp=True,
             )
             em.set_author(
                 name=channel.guild,
@@ -739,11 +725,10 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_guild:
-            em = discord.Embed(
+            em = orange_embed(
                 title="Channel Updated",
                 description=after.mention,
-                color=discord.Color.orange(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.set_author(
                 name=after.guild,
@@ -827,18 +812,17 @@ class GuildLogs(Cog):
             return
 
         if not should_log_all and not should_log_integrations:
-            em = discord.Embed(
+            em = green_embed(
                 title="Integration Created",
-                color=discord.Color.green(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
 
             em.description = f"""
-        > **ID:** {integration.id}
-        > **Name:** {integration.name}
-        > **Type:** {integration.type}
-        > **Enabled**: {integration.enabled}
-        > **Created by:** {integration.user}
+> **ID:** {integration.id}
+> **Name:** {integration.name}
+> **Type:** {integration.type}
+> **Enabled**: {integration.enabled}
+> **Created by:** {integration.user}
         """
 
             em.set_footer(
@@ -864,18 +848,17 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_integrations:
-            em = discord.Embed(
+            em = orange_embed(
                 title="Integration Updated",
-                color=discord.Color.orange(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
 
             em.description = f"""
-        > **ID:** {integration.id}
-        > **Name:** {integration.name}
-        > **Type:** {integration.type}
-        > **Enabled**: {integration.enabled}
-        > **Created by:** {integration.user}
+> **ID:** {integration.id}
+> **Name:** {integration.name}
+> **Type:** {integration.type}
+> **Enabled**: {integration.enabled}
+> **Created by:** {integration.user}
         """
 
             em.set_footer(
@@ -904,16 +887,15 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_integrations:
-            em = discord.Embed(
+            em = red_embed(
                 title="Integration Deleted",
-                color=discord.Color.red(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
 
             em.description = f"""
-        > **Integration ID:** {payload.integration_id}
-        > **Application ID:** {payload.application_id}
-        > **Guild ID:** {payload.guild_id}
+> **Integration ID:** {payload.integration_id}
+> **Application ID:** {payload.application_id}
+> **Guild ID:** {payload.guild_id}
         """
 
             if guild:
@@ -936,19 +918,18 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_automod:
-            em = discord.Embed(
+            em = green_embed(
                 title="New Automod Rule Created",
-                color=discord.Color.green(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.description = f"""
-        **Name and ID:** {rule.name} ({rule.id})
-        **Creator:** {rule.creator} ({rule.creator_id})
-        **Trigger(s):** {rule.trigger}
-        **Action(s):** {rule.actions}
-        **Enabled:** {rule.enabled}
-        **Ignored Channels:** {rule.exempt_channels}
-        **Ignored Roles:** {rule.exempt_roles}
+**Name and ID:** {rule.name} ({rule.id})
+**Creator:** {rule.creator} ({rule.creator_id})
+**Trigger(s):** {rule.trigger}
+**Action(s):** {rule.actions}
+**Enabled:** {rule.enabled}
+**Ignored Channels:** {rule.exempt_channels}
+**Ignored Roles:** {rule.exempt_roles}
             """
 
             em.set_thumbnail(url=rule.guild.icon.url if rule.guild.icon else None)
@@ -964,10 +945,9 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_automod:
-            em = discord.Embed(
+            em = orange_embed(
                 title="New Automod Rule Updated",
-                color=discord.Color.orange(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.description = f"""
         **Name and ID:** {rule.name} ({rule.id})
@@ -992,10 +972,9 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_automod:
-            em = discord.Embed(
+            em = red_embed(
                 title="New Automod Rule Deleted",
-                color=discord.Color.red(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.description = f"""
         **Name and ID:** {rule.name} ({rule.id})
@@ -1020,10 +999,9 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_automod:
-            em = discord.Embed(
+            em = red_embed(
                 title="Automod Action Taken",
-                color=discord.Color.red(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.description = f"""
         **Action:** {execution.action}
@@ -1058,10 +1036,9 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_invites:
-            em = discord.Embed(
+            em = green_embed(
                 title="Invite Created",
-                color=discord.Color.green(),
-                timestamp=invite.created_at,
+                timestamp=True,
             )
             em.add_field(name="Invite Code", value=invite.code, inline=False)
             em.add_field(name="Created By", value=invite.inviter, inline=False)
@@ -1097,10 +1074,9 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_invites:
-            em = discord.Embed(
+            em = red_embed(
                 title="Invite Deleted",
-                color=discord.Color.red(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.description = f"> **Invite Code:** {invite.code}"
 
@@ -1127,10 +1103,9 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_joins:
-            em = discord.Embed(
+            em = green_embed(
                 description=f"{member.mention} {escape_markdown(str(member))}",
-                color=discord.Color.green(),
-                timestamp=member.joined_at,
+                timestamp=True,
             )
             em.set_author(
                 name="Member Joined!",
@@ -1162,10 +1137,9 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_joins:
-            em = discord.Embed(
+            em = red_embed(
                 description=f"{member.mention} {escape_markdown(str(member))}",
-                color=discord.Color.red(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.set_author(
                 name="Member Left!",

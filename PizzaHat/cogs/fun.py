@@ -585,10 +585,9 @@ class Fun(Cog, emoji=802615573556363284):
             # url = await create_guest_paste_bin(self.session, output)
             # return await ctx.reply("Your output was too long, so here's the pastebin link " + url)
 
-        embed = discord.Embed(
+        embed = green_embed(
             title=f"Ran your {result['language']} code",
-            color=discord.Color.green(),
-            timestamp=ctx.message.created_at,
+            timestamp=True,
         )
         output = output[:500].strip()
         shortened = len(output) > 500

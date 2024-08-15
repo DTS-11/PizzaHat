@@ -7,13 +7,13 @@ from discord.ext import commands
 from core.bot import PizzaHat
 from core.cog import Cog
 from utils.config import COG_EXCEPTIONS, REG_INVITE, SUPPORT_SERVER, WUMPUS_VOTE
+from utils.embed import normal_embed
 
 
 def bot_help_embed(ctx: commands.Context) -> discord.Embed:
-    em = discord.Embed(
+    em = normal_embed(
         title=f"{ctx.bot.user.name} Help",
-        timestamp=ctx.message.created_at,
-        color=discord.Color.blue(),
+        timestamp=True,
     )
     em.description = """
 Hello, welcome to the help page!
@@ -69,10 +69,9 @@ def cog_help_embed(cog: Cog | None) -> Union[discord.Embed, None]:
 
 
 def cmds_list_embed(ctx: commands.Context, mapping) -> discord.Embed:
-    em = discord.Embed(
+    em = normal_embed(
         title=f"{ctx.bot.user.name} Help",
-        timestamp=ctx.message.created_at,
-        color=discord.Color.blue(),
+        timestamp=True,
     )
 
     em.set_thumbnail(url=ctx.bot.user.avatar.url)
@@ -196,11 +195,10 @@ class MyHelp(commands.HelpCommand):
 
     async def send_command_help(self, command: commands.Command):
         # signature = self.get_command_signature(command)
-        embed = discord.Embed(
+        embed = normal_embed(
             title=f"{self.context.clean_prefix}{command} {command.signature}",
             description=(command.help or "No help found...")
             + "\n\n```ml\n<> Required Argument | [] Optional Argument\n```",
-            color=discord.Color.blue(),
         )
 
         if command.aliases:
@@ -223,11 +221,10 @@ class MyHelp(commands.HelpCommand):
         await self.send(embed=embed)
 
     async def send_help_embed(self, title: str, description: str | None, commands):
-        embed = discord.Embed(
+        embed = normal_embed(
             title=title,
             description=(description or "No help found...")
             + "\n\n```ml\n<> Required Argument | [] Optional Argument\n```",
-            color=discord.Color.blue(),
         )
 
         for command in commands:

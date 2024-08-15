@@ -5,6 +5,7 @@ import discord
 from core.bot import PizzaHat
 from core.cog import Cog
 from utils.config import LOGS_CHANNEL
+from utils.embed import green_embed, red_embed
 
 
 class Events(Cog):
@@ -124,10 +125,9 @@ class Events(Cog):
         #     except:
         #         pass
 
-        em = discord.Embed(
+        em = green_embed(
             title="Guild Joined",
-            color=discord.Color.green(),
-            timestamp=datetime.datetime.now(),
+            timestamp=True,
         )
         em.set_author(name=guild.name, icon_url=guild.icon.url if guild.icon else None)
 
@@ -153,10 +153,9 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild):
-        em = discord.Embed(
+        em = red_embed(
             title="Guild Left",
-            color=discord.Color.red(),
-            timestamp=datetime.datetime.now(),
+            timestamp=True,
         )
         em.set_author(name=guild.name, icon_url=guild.icon.url if guild.icon else None)
 

@@ -8,6 +8,7 @@ from asyncpg import Record
 
 from core.bot import PizzaHat
 from core.cog import Cog
+from utils.embed import orange_embed
 
 
 def datetime_to_sec(t: datetime.datetime) -> int:
@@ -86,11 +87,10 @@ class AntiAltsConfig(Cog):
         )
 
         embed = (
-            discord.Embed(
+            orange_embed(
                 title="Alt Account Detected.",
                 description=f"{member.mention} {discord.utils.escape_markdown(str(member))}\n\n**Account Age:** {account_age}",
-                color=discord.Color.orange(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             .set_author(name=member, icon_url=member.display_avatar.url)
             .set_footer(text=f"ID: {member.id}")

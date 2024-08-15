@@ -11,6 +11,7 @@ from discord.ext import commands
 from core.bot import PizzaHat
 from core.cog import Cog
 from utils.bad_words import BANNED_WORDS
+from utils.embed import red_embed
 
 
 class AutoModConfig(Cog):
@@ -77,10 +78,9 @@ class AutoModConfig(Cog):
         if not logs_channel or not am_enabled_guild:
             return
 
-        em = discord.Embed(
+        em = red_embed(
             title="<:danger:1268855303768903733> Auto-Mod Triggered",
             description=msg.content,
-            color=discord.Color.red(),
         )
         em.set_author(
             name=msg.author,
