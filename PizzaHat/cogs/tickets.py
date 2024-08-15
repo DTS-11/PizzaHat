@@ -4,6 +4,7 @@ from discord.ext.commands import Context
 
 from core.bot import PizzaHat
 from core.cog import Cog
+from utils.embed import green_embed, red_embed
 from utils.ui import TicketView
 
 
@@ -45,10 +46,16 @@ class Tickets(Cog, emoji=1268867314292625469):
 
         if isinstance(ctx.channel, discord.Thread):
             await ctx.channel.add_user(user)
-            await ctx.send(f"{self.bot.yes} Added {user.mention} to the ticket.")
+            await ctx.send(
+                embed=green_embed(f"{self.bot.yes} Added {user.mention} to the ticket.")
+            )
 
         else:
-            await ctx.send(f"{self.bot.no} You can only add people to a ticket thread.")
+            await ctx.send(
+                embed=red_embed(
+                    f"{self.bot.no} You can only add people to a ticket thread."
+                )
+            )
 
     @commands.command()
     @commands.guild_only()
@@ -60,11 +67,17 @@ class Tickets(Cog, emoji=1268867314292625469):
 
         if isinstance(ctx.channel, discord.Thread):
             await ctx.channel.remove_user(user)
-            await ctx.send(f"{self.bot.yes} Removed {user.mention} to the ticket.")
+            await ctx.send(
+                embed=green_embed(
+                    f"{self.bot.yes} Removed {user.mention} to the ticket."
+                )
+            )
 
         else:
             await ctx.send(
-                f"{self.bot.no} You can only remove people from a ticket thread."
+                embed=red_embed(
+                    f"{self.bot.no} You can only remove people from a ticket thread."
+                )
             )
 
     @commands.command()
@@ -76,12 +89,14 @@ class Tickets(Cog, emoji=1268867314292625469):
         """Archives and locks the current ticket thread."""
 
         if isinstance(ctx.channel, discord.Thread):
-            await ctx.send(f"{self.bot.yes} Closed the ticket.")
+            await ctx.send(embed=green_embed(f"{self.bot.yes} Closed the ticket."))
             await ctx.channel.edit(archived=True, locked=True)
 
         else:
             await ctx.send(
-                f"{self.bot.no} You can only close tickets from ticket threads."
+                embed=red_embed(
+                    f"{self.bot.no} You can only close tickets from ticket threads."
+                )
             )
 
     @commands.command()
@@ -94,10 +109,16 @@ class Tickets(Cog, emoji=1268867314292625469):
 
         if isinstance(ctx.channel, discord.Thread):
             await ctx.channel.edit(name=name)
-            await ctx.send(f"{self.bot.yes} Renamed the ticket thread to `{name}`")
+            await ctx.send(
+                embed=green_embed(
+                    f"{self.bot.yes} Renamed the ticket thread to `{name}`"
+                )
+            )
 
         else:
-            await ctx.send(f"{self.bot.no} You can only rename ticket threads.")
+            await ctx.send(
+                embed=red_embed(f"{self.bot.no} You can only rename ticket threads.")
+            )
 
 
 async def setup(bot):

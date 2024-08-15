@@ -10,6 +10,7 @@ from discord.ext.commands import Context
 from core.bot import PizzaHat
 from core.cog import Cog
 from utils.config import ANTIHOIST_CHARS
+from utils.embed import green_embed, normal_embed, orange_embed, red_embed
 from utils.ui import ConfirmationView, Paginator
 
 
@@ -43,9 +44,10 @@ class Mod(Cog, emoji=1268851270136107048):
             ["all"],
         )
 
-        await ctx.send(f"{self.bot.yes} Guild logs channel set to {channel.mention}")
         await ctx.send(
-            "Default logging config set to `all`. Please use the `logconfig` command to change the logging configs."
+            embed=green_embed(
+                description=f"{self.bot.yes} Guild logs channel set to {channel.mention}\nDefault logging config set to `all`. Please use the `logconfig` command to change the logging configs."
+            )
         )
 
     @commands.command()
@@ -93,18 +95,12 @@ class Mod(Cog, emoji=1268851270136107048):
 
         for module in log_modules:
             if module.lower() not in available_modules:
-                em = discord.Embed(
-                    title="Incorrect module",
-                    description=f"{module} is not an available module.",
-                    color=discord.Color.red(),
-                    timestamp=ctx.message.created_at,
+                return await ctx.send(
+                    embed=red_embed(
+                        title=f"{self.bot.no} Invalid Module",
+                        description=f"{module} is not an available module.\n\nAvailable modules: {', '.join(available_modules)}",
+                    )
                 )
-                em.add_field(
-                    name="Available Modules",
-                    value=", ".join(available_modules),
-                    inline=False,
-                )
-                return await ctx.send(embed=em)
 
         # Remove duplicates and convert all modules to lowercase
         lowercase_modules: List[str] = list(
@@ -139,16 +135,18 @@ class Mod(Cog, emoji=1268851270136107048):
 
         # Send confirmation message
         enabled_modules = ", ".join(lowercase_modules)
-        confirmation_msg = f"{self.bot.yes} Logging enabled for: {enabled_modules}."
-        await ctx.send(confirmation_msg)
+        confirmation_em = green_embed(
+            description=f"{self.bot.yes} Logging enabled for: {enabled_modules}."
+        )
+        await ctx.send(embed=confirmation_em)
 
         # Send confirmation message for disabled modules
         if removed_modules:
             disabled_modules = ", ".join(removed_modules)
-            disabled_confirmation_msg = (
-                f"{self.bot.no} Logging disabled for: {disabled_modules}."
+            disabled_confirmation_em = green_embed(
+                description=f"{self.bot.yes} Logging disabled for: {disabled_modules}."
             )
-            await ctx.send(disabled_confirmation_msg)
+            await ctx.send(embed=disabled_confirmation_em)
 
     @commands.command()
     @commands.guild_only()
@@ -165,15 +163,19 @@ class Mod(Cog, emoji=1268851270136107048):
         confirm = ConfirmationView(ctx, 60)
         est_pruned = await ctx.guild.estimate_pruned_members(days=days, roles=roles)
         msg = await ctx.send(
-            f"Are you sure that you want to prune **{est_pruned}** members?",
+            embed=orange_embed(
+                description=f"<:warning:1268855244033363968> Are you sure that you want to prune **{est_pruned}** members?"
+            ),
             view=confirm,
         )
         await confirm.wait()
 
         if not confirm.value:
-            return await ctx.send("Aborted pruning members.")
+            return await ctx.send(
+                embed=red_embed(description="Aborted pruning members.")
+            )
         await msg.delete()
-        m = await ctx.send("Pruning members...")
+        m = await ctx.send(embed=orange_embed(description="Pruning members..."))
 
         try:
             await ctx.guild.prune_members(
@@ -181,10 +183,16 @@ class Mod(Cog, emoji=1268851270136107048):
             )
 
         except discord.HTTPException:
-            await m.edit(content=f"{self.bot.no} Failed to prune members.")
+            await m.edit(
+                embed=red_embed(description=f"{self.bot.no} Failed to prune members.")
+            )
 
         else:
-            await m.edit(content=f"{self.bot.yes} Members have been pruned.")
+            await m.edit(
+                embed=green_embed(
+                    description=f"{self.bot.yes} Members have been pruned."
+                )
+            )
 
     @commands.command(aliases=["mn"])
     @commands.guild_only()
@@ -197,10 +205,16 @@ class Mod(Cog, emoji=1268851270136107048):
         try:
             nick = f"Moderated Nickname {uuid.uuid4()}"[:24]
             await member.edit(nick=nick)
-            await ctx.send(f"{self.bot.yes} Nickname changed to `{nick}`")
+            await ctx.send(
+                embed=green_embed(
+                    description=f"{self.bot.yes} Nickname changed to `{nick}`"
+                )
+            )
 
         except discord.HTTPException:
-            await ctx.send("Something went wrong.")
+            await ctx.send(
+                embed=red_embed(description=f"{self.bot.no} Something went wrong.")
+            )
 
     @commands.command(aliases=["sn"])
     @commands.guild_only()
@@ -213,11 +227,15 @@ class Mod(Cog, emoji=1268851270136107048):
         try:
             await member.edit(nick=nick)
             await ctx.send(
-                f"{self.bot.yes} Nickname for {member.name} was changed to {member.mention}"
+                embed=green_embed(
+                    description=f"{self.bot.yes} Nickname for {member.name} was changed to {member.mention}"
+                )
             )
 
         except discord.HTTPException:
-            await ctx.send("Something went wrong.")
+            await ctx.send(
+                embed=red_embed(description=f"{self.bot.no} Something went wrong.")
+            )
 
     @commands.command()
     @commands.guild_only()
@@ -239,14 +257,22 @@ class Mod(Cog, emoji=1268851270136107048):
                     reason=f"Decancered member (req. by: {ctx.author}).",
                 )
                 await ctx.send(
-                    f"{self.bot.yes} Successfully decancered {member.mention}"
+                    embed=green_embed(
+                        description=f"{self.bot.yes} Successfully decancered {member.mention}"
+                    )
                 )
 
             if ANTIHOIST_CHARS not in member.display_name[0]:
-                await ctx.send("No special characters found.")
+                await ctx.send(
+                    embed=red_embed(
+                        description=f"{self.bot.no} No special characters found."
+                    )
+                )
 
         except discord.HTTPException:
-            await ctx.send("Something went wrong.")
+            await ctx.send(
+                embed=red_embed(description=f"{self.bot.no} Something went wrong.")
+            )
 
     @commands.command(aliases=["sm"])
     @commands.guild_only()
@@ -260,7 +286,9 @@ class Mod(Cog, emoji=1268851270136107048):
         """
 
         if ctx.channel is discord.DMChannel:
-            return await ctx.send("Slow-mode cannot be checked/added.")
+            return await ctx.send(
+                embed=red_embed(description="Slow-mode cannot be checked/added.")
+            )
 
         if isinstance(
             ctx.channel,
@@ -273,19 +301,25 @@ class Mod(Cog, emoji=1268851270136107048):
         ):
             if seconds is None:
                 seconds = ctx.channel.slowmode_delay
-                await ctx.send(f"The slowmode in this channel is `{seconds}` seconds")
-
-            elif seconds == 0:
-                await ctx.channel.edit(slowmode_delay=0)
-                await ctx.send(
-                    f"{self.bot.yes} Slow-mode set to none in this channel. Chat goes brrrr...."
+                return await ctx.send(
+                    embed=normal_embed(
+                        description=f"The slowmode in this channel is `{seconds}` seconds"
+                    )
                 )
 
-            else:
-                await ctx.channel.edit(slowmode_delay=seconds)
-                await ctx.send(
-                    f"{self.bot.yes} Slow-mode in this channel has been changed to `{seconds}` seconds!"
+            elif seconds < 0:
+                return await ctx.send(
+                    embed=red_embed(
+                        description=f"{self.bot.no} Slowmode must be a positive number"
+                    )
                 )
+
+            await ctx.channel.edit(slowmode_delay=seconds)
+            await ctx.send(
+                embed=green_embed(
+                    description=f"{self.bot.yes} Slow-mode in this channel has been set to {f'`{seconds}` seconds.' if seconds != 0 else 'none. Chat goes brrrr...'}"
+                )
+            )
 
     @commands.group(aliases=["lockdown"])
     @commands.guild_only()
@@ -322,18 +356,21 @@ class Mod(Cog, emoji=1268851270136107048):
                 overwrite.send_messages = False
                 overwrite.add_reactions = False
 
-                em = discord.Embed(
-                    title="🔒 Locked",
-                    description=f"{channel.mention} has been locked for {role.mention}",
-                    color=self.bot.color,
-                )
                 await channel.set_permissions(role, overwrite=overwrite)
                 await ctx.message.add_reaction("🔒")
-                await ctx.send(embed=em)
+                await ctx.send(
+                    embed=green_embed(
+                        title="🔒 Locked",
+                        description=f"{self.bot.yes} Channel has been locked for {role.mention}",
+                        timestamp=True,
+                    )
+                )
 
             else:
                 await ctx.send(
-                    f"{self.bot.no} This command can only be used on text channels."
+                    embed=red_embed(
+                        description=f"{self.bot.no} This command can only be used on text channels."
+                    )
                 )
 
     @lock.command(name="server")
@@ -352,14 +389,23 @@ class Mod(Cog, emoji=1268851270136107048):
             reason = f"Action done by {ctx.author}"
             confirm = ConfirmationView(ctx, 60)
             msg = await ctx.send(
-                "Are you sure you want to lock the server?", view=confirm
+                embed=orange_embed(
+                    description="<:warning:1268855244033363968> Are you sure you want to lock the server?"
+                ),
+                view=confirm,
             )
             await confirm.wait()
 
             if not confirm.value:
-                return await ctx.send("Aborted lockdown process.")
+                return await ctx.send(
+                    embed=red_embed(
+                        description=f"{self.bot.no} Aborted lockdown process."
+                    )
+                )
             await msg.delete()
-            m = await ctx.send("Server lockdown initiated...")
+            m = await ctx.send(
+                embed=orange_embed(description="Server lockdown initiated...")
+            )
 
             for tc in ctx.guild.text_channels:
                 await tc.set_permissions(
@@ -371,11 +417,10 @@ class Mod(Cog, emoji=1268851270136107048):
                     role, connect=False, speak=False, reason=reason
                 )
 
-            em = discord.Embed(
+            em = green_embed(
                 title="🔒 Server Locked",
                 description="The server has been locked by a staff member. You are **not muted**.",
-                color=discord.Color.green(),
-                timestamp=ctx.message.created_at,
+                timestamp=True,
             )
             em.set_author(
                 name=ctx.author,
@@ -423,19 +468,21 @@ class Mod(Cog, emoji=1268851270136107048):
                 overwrite.send_messages = True
                 overwrite.add_reactions = True
 
-                em = discord.Embed(
-                    title="🔓 Unlocked",
-                    description=f"{channel.mention} has been unlocked for {role.mention}",
-                    color=self.bot.color,
-                )
-
                 await channel.set_permissions(role, overwrite=overwrite)
                 await ctx.message.add_reaction("🔓")
-                await ctx.send(embed=em)
+                await ctx.send(
+                    embed=green_embed(
+                        title="🔓 Unlocked",
+                        description=f"{self.bot.yes} Channel has been unlocked for {role.mention}",
+                        timestamp=True,
+                    )
+                )
 
             else:
                 await ctx.send(
-                    f"{self.bot.no} This command can only be used on text channels."
+                    embed=red_embed(
+                        description=f"{self.bot.no} This command can only be used on text channels."
+                    )
                 )
 
     @unlock.command(name="server")
@@ -454,14 +501,23 @@ class Mod(Cog, emoji=1268851270136107048):
             reason = f"Action done by {ctx.author}"
             confirm = ConfirmationView(ctx, 60)
             msg = await ctx.send(
-                "Are you sure you want to unlock the server?", view=confirm
+                embed=orange_embed(
+                    description="<:warning:1268855244033363968> Are you sure you want to unlock the server?"
+                ),
+                view=confirm,
             )
             await confirm.wait()
 
             if not confirm.value:
-                return await ctx.send("Aborted unlock process.")
+                return await ctx.send(
+                    embed=red_embed(
+                        description=f"{self.bot.no} Aborted unlock process."
+                    )
+                )
             await msg.delete()
-            m = await ctx.send("Server unlock initiated...")
+            m = await ctx.send(
+                embed=orange_embed(description="Server unlock initiated...")
+            )
 
             for tc in ctx.guild.text_channels:
                 await tc.set_permissions(
@@ -475,11 +531,10 @@ class Mod(Cog, emoji=1268851270136107048):
             for vc in ctx.guild.voice_channels:
                 await vc.set_permissions(role, connect=True, speak=True, reason=reason)
 
-            em = discord.Embed(
+            em = green_embed(
                 title="🔓 Server Unlocked",
                 description="The server has been unlocked.",
-                color=discord.Color.green(),
-                timestamp=ctx.message.created_at,
+                timestamp=True,
             )
             em.set_author(
                 name=ctx.author,
@@ -517,7 +572,20 @@ class Mod(Cog, emoji=1268851270136107048):
                 overwrite.view_channel = False
 
                 await channel.set_permissions(role, overwrite=overwrite)
-                await ctx.send(f"{channel.mention} has been hidden from {role.mention}")
+                await ctx.send(
+                    embed=green_embed(
+                        title="🔓 Hidden",
+                        description=f"{self.bot.yes} Channel has been hidden from {role.mention}",
+                        timestamp=True,
+                    )
+                )
+
+            else:
+                await ctx.send(
+                    embed=red_embed(
+                        description=f"{self.bot.no} This command can only be used on text channels."
+                    )
+                )
 
     @commands.command()
     @commands.guild_only()
@@ -543,7 +611,20 @@ class Mod(Cog, emoji=1268851270136107048):
                 overwrite.view_channel = True
 
                 await channel.set_permissions(role, overwrite=overwrite)
-                await ctx.send(f"{channel.mention} has been exposed to {role.mention}")
+                await ctx.send(
+                    embed=green_embed(
+                        title="🔓 Exposed",
+                        description=f"{self.bot.yes} Channel has been exposed to {role.mention}",
+                        timestamp=True,
+                    )
+                )
+
+            else:
+                await ctx.send(
+                    embed=red_embed(
+                        description=f"{self.bot.no} This command can only be used on text channels."
+                    )
+                )
 
     @commands.command(aliases=["purge"])
     @commands.guild_only()
@@ -557,20 +638,50 @@ class Mod(Cog, emoji=1268851270136107048):
         """
 
         if ctx.channel is discord.DMChannel:
-            return await ctx.send("Messages cannot be cleared.")
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} Messages cannot be cleared."
+                )
+            )
 
         if amount > 100:
             return await ctx.send(
-                f"{self.bot.no} I can only purge 100 messages at a time."
+                embed=red_embed(
+                    description=f"{self.bot.no} I can only purge 100 messages at a time."
+                )
+            )
+
+        elif amount < 0:
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} Purge amount must be a positive number."
+                )
             )
 
         else:
             await ctx.message.delete()
-            await ctx.channel.purge(limit=amount)  # type: ignore
-            await ctx.send(
-                f"{self.bot.yes} {amount} messages cleared by {ctx.author}",
-                delete_after=2.5,
-            )
+            if isinstance(
+                ctx.channel,
+                Union[
+                    discord.TextChannel,
+                    discord.StageChannel,
+                    discord.VoiceChannel,
+                    discord.Thread,
+                ],
+            ):
+                await ctx.channel.purge(limit=amount)
+                await ctx.send(
+                    embed=green_embed(
+                        description=f"{self.bot.yes} {amount} messages cleared by {ctx.author.mention}"
+                    ),
+                    delete_after=2.5,
+                )
+            else:
+                await ctx.send(
+                    embed=red_embed(
+                        description=f"{self.bot.no} This command is not supported in this channel type."
+                    )
+                )
 
     @commands.command()
     @commands.guild_only()
@@ -587,11 +698,15 @@ class Mod(Cog, emoji=1268851270136107048):
             return m.author == self.bot.user
 
         if ctx.channel is discord.DMChannel:
-            return await ctx.send("Cannot clear messages.")
+            return await ctx.send(
+                embed=red_embed(description=f"{self.bot.no} Cannot clear messages.")
+            )
 
         if amount > 100:
             return await ctx.send(
-                f"{self.bot.no} I can only clear upto 100 messages at a time."
+                embed=red_embed(
+                    description=f"{self.bot.no} I can only clear upto 100 messages at a time."
+                )
             )
 
         else:
@@ -606,7 +721,16 @@ class Mod(Cog, emoji=1268851270136107048):
             ):
                 await ctx.channel.purge(limit=amount, check=is_bot)
                 await ctx.send(
-                    f"{self.bot.yes} {amount} messages cleared", delete_after=2.5
+                    embed=green_embed(
+                        description=f"{self.bot.yes} {amount} messages cleared by {ctx.author.mention}"
+                    ),
+                    delete_after=2.5,
+                )
+            else:
+                await ctx.send(
+                    embed=red_embed(
+                        description=f"{self.bot.no} This command is not supported in this channel type."
+                    )
                 )
 
     @commands.command()
@@ -619,7 +743,9 @@ class Mod(Cog, emoji=1268851270136107048):
 
         reason = f"Kicked by {ctx.author} (ID: {ctx.author.id})"
         await member.kick(reason=reason)
-        await ctx.send(f"{self.bot.yes} Kicked {member.mention}")
+        await ctx.send(
+            embed=green_embed(description=f"{self.bot.yes} Kicked {member.mention}")
+        )
 
     @commands.command(aliases=["mk"])
     @commands.guild_only()
@@ -639,12 +765,20 @@ class Mod(Cog, emoji=1268851270136107048):
         """
 
         if not len(members):
-            return await ctx.send("One or more required arguments are missing.")
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} One or more required arguments are missing."
+                )
+            )
 
         for member in members:
             reason = reason or f"Kicked by {ctx.author} (ID: {ctx.author.id})"
             await member.kick(reason=reason)
-        await ctx.send(f"{self.bot.yes} Kicked {len(members)} members")
+        await ctx.send(
+            embed=green_embed(
+                description=f"{self.bot.yes} Kicked {len(members)} members"
+            )
+        )
 
     @commands.command(aliases=["b"])
     @commands.guild_only()
@@ -665,11 +799,17 @@ class Mod(Cog, emoji=1268851270136107048):
             if isinstance(member, int):
                 await ctx.guild.ban(discord.Object(id=member), reason=f"{reason}")
                 user = await self.bot.fetch_user(member)
-                await ctx.send(f"{self.bot.yes} Banned {user}")
+                await ctx.send(
+                    embed=green_embed(description=f"{self.bot.yes} Banned {user}")
+                )
 
             else:
                 await member.ban(reason=f"{reason}", delete_message_days=0)
-                await ctx.send(f"{self.bot.yes} Banned {member.mention}")
+                await ctx.send(
+                    embed=green_embed(
+                        description=f"{self.bot.yes} Banned {member.mention}"
+                    )
+                )
 
     @commands.command(aliases=["mb"])
     @commands.guild_only()
@@ -689,13 +829,19 @@ class Mod(Cog, emoji=1268851270136107048):
         """
 
         if not len(members):
-            return await ctx.send("One or more required arguments are missing.")
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} One or more required arguments are missing."
+                )
+            )
 
         else:
             for target in members:
                 reason = f"Banned by {ctx.author} (ID: {ctx.author.id})"
                 await target.ban(reason=reason, delete_message_days=0)
-                await ctx.send(f"{self.bot.yes} Banned {target}")
+                await ctx.send(
+                    embed=green_embed(description=f"{self.bot.yes} Banned {target}")
+                )
 
     @commands.command(aliases=["sb"])
     @commands.guild_only()
@@ -718,7 +864,11 @@ class Mod(Cog, emoji=1268851270136107048):
         reason = f"Banned by {ctx.author} (ID: {ctx.author.id})"
         await ctx.guild.ban(member, reason=reason)
         await ctx.guild.unban(member, reason=reason)
-        await ctx.send(f"{self.bot.yes} Sucessfully soft-banned {member.mention}.")
+        await ctx.send(
+            embed=green_embed(
+                description=f"{self.bot.yes} Sucessfully soft-banned {member.mention}."
+            )
+        )
 
     @commands.command(aliases=["ub"])
     @commands.guild_only()
@@ -735,11 +885,15 @@ class Mod(Cog, emoji=1268851270136107048):
                     discord.Object(id=id),
                     reason=f"Unbanned by {ctx.author} (ID: {ctx.author.id})",
                 )
-                await ctx.send(f"{self.bot.yes} Unbanned {user}")
+                await ctx.send(
+                    embed=green_embed(description=f"{self.bot.yes} Unbanned {user}")
+                )
 
         except discord.NotFound:
             await ctx.send(
-                "Not a valid previously banned member or the member could not be found."
+                embed=red_embed(
+                    description=f"{self.bot.no} Not a valid previously banned member or the member could not be found."
+                )
             )
 
     @commands.command(aliases=["timeout"])
@@ -764,7 +918,9 @@ class Mod(Cog, emoji=1268851270136107048):
             reason=reason,
         )
         await ctx.send(
-            f"{self.bot.yes} {member.mention} has been timed out for {duration}."
+            embed=green_embed(
+                description=f"{self.bot.yes} {member.mention} has been timed out for {duration}."
+            )
         )
 
     @commands.command(aliases=["untimeout"])
@@ -777,39 +933,41 @@ class Mod(Cog, emoji=1268851270136107048):
 
         reason = reason or f"Action done by {ctx.author}"
         await member.timeout(None, reason=reason)
-        await ctx.send(f"{self.bot.yes} {member.mention} has been unmuted!")
+        await ctx.send(
+            embed=green_embed(
+                description=f"{self.bot.yes} {member.mention} has been unmuted!"
+            )
+        )
 
-    @commands.group()
-    @commands.guild_only()
-    @commands.has_permissions(manage_roles=True)
-    @commands.bot_has_permissions(manage_roles=True)
-    async def role(self, ctx: Context):
-        """Role management commands."""
-
-        if ctx.subcommand_passed is None:
-            await ctx.send_help(ctx.command)
-
-    @role.command(name="add")
+    @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def role_add(self, ctx: Context, user: discord.Member, *, role: discord.Role):
+    async def addrole(self, ctx: Context, user: discord.Member, *, role: discord.Role):
         """Assign role to a user."""
 
         if role not in user.roles:
             await user.add_roles(role)
-            await ctx.send(f"{self.bot.yes} Successfully added {role.name} to {user}")
+            await ctx.send(
+                embed=green_embed(
+                    description=f"{self.bot.yes} Successfully added {role.mention} to {user.mention}"
+                )
+            )
 
         else:
-            await ctx.send(f"{self.bot.no} {user} already has {role.name} role.")
+            await ctx.send(
+                embed=normal_embed(
+                    description=f"{user.mention} already has {role.mention} role."
+                )
+            )
 
-    @role.command(name="remove")
+    @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def role_remove(
+    async def removerole(
         self, ctx: Context, user: discord.Member, *, role: discord.Role
     ):
         """Remove role from a user."""
@@ -817,17 +975,23 @@ class Mod(Cog, emoji=1268851270136107048):
         if role in user.roles:
             await user.remove_roles(role)
             await ctx.send(
-                f"{self.bot.yes} Successfully removed {role.name} from {user}"
+                embed=green_embed(
+                    description=f"{self.bot.yes} Successfully removed {role.mention} from {user.mention}"
+                )
             )
         else:
-            await ctx.send(f"{self.bot.no} {user} does not have {role.name} role.")
+            await ctx.send(
+                embed=normal_embed(
+                    description=f"{user.mention} does not have {role.mention} role."
+                )
+            )
 
-    @role.command(name="create")
+    @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def role_create(
+    async def createrole(
         self,
         ctx: Context,
         *,
@@ -844,9 +1008,13 @@ class Mod(Cog, emoji=1268851270136107048):
                 color=color,
                 hoist=hoist,
             )
-            await ctx.send(f"{self.bot.yes} Role created successfully!")
+            await ctx.send(
+                embed=green_embed(
+                    description=f"{self.bot.yes} Role created successfully!"
+                )
+            )
 
-    @role.command(name="delete")
+    @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
@@ -857,12 +1025,16 @@ class Mod(Cog, emoji=1268851270136107048):
         if ctx.guild is not None:
             if role in ctx.guild.roles:
                 await role.delete()
-                await ctx.send(f"{self.bot.yes} Role deleted successfully!")
+                await ctx.send(
+                    embed=green_embed(
+                        description=f"{self.bot.yes} Role deleted successfully!"
+                    )
+                )
 
-    @role.command(name="list", aliases=["all"])
+    @commands.command()
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def role_list(self, ctx: Context):
+    async def rolelist(self, ctx: Context):
         """List all the server roles."""
 
         if ctx.guild is not None:
@@ -898,43 +1070,41 @@ class Mod(Cog, emoji=1268851270136107048):
             view = Paginator(ctx, embeds)
             return await ctx.send(embed=embeds[0], view=view)
 
-    @commands.group()
-    @commands.guild_only()
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
-    async def channel(self, ctx: Context):
-        """Channel related commands."""
-
-        if ctx.subcommand_passed is None:
-            await ctx.send_help(ctx.command)
-
-    @channel.command(name="create")
+    @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def channel_create(self, ctx: Context, name: str):
+    async def createchannel(self, ctx: Context, name: str):
         """Creates a new channel."""
 
         if ctx.guild is not None:
             await ctx.guild.create_text_channel(name)
-            await ctx.send(f"{self.bot.yes} Channel created successfully!")
+            await ctx.send(
+                embed=green_embed(
+                    description=f"{self.bot.yes} Channel created successfully!"
+                )
+            )
 
-    @channel.command(name="delete")
+    @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def channel_delete(self, ctx: Context, channel: discord.TextChannel):
+    async def deletechannel(self, ctx: Context, channel: discord.TextChannel):
         """Delete a channel."""
 
         await channel.delete()
-        await ctx.send(f"{self.bot.yes} Channel deleted successfully!")
+        await ctx.send(
+            embed=green_embed(
+                description=f"{self.bot.yes} Channel deleted successfully!"
+            )
+        )
 
-    @channel.command(name="list", aliases=["all"])
+    @commands.command()
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def channel_list(self, ctx: Context):
+    async def channellist(self, ctx: Context):
         """List all the server channels."""
 
         if ctx.guild is not None:
@@ -1019,12 +1189,12 @@ class Mod(Cog, emoji=1268851270136107048):
             view = Paginator(ctx, embeds)
             return await ctx.send(embed=embeds[0], view=view)
 
-    @channel.command(name="topic")
+    @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def channel_topic(
+    async def channeltopic(
         self,
         ctx: Context,
         channel: Optional[Union[discord.TextChannel, discord.ForumChannel]] = None,
@@ -1043,11 +1213,17 @@ class Mod(Cog, emoji=1268851270136107048):
 
         except discord.HTTPException:
             await ctx.send(
-                f"{self.bot.no} You can only change the topic of text/forum channels."
+                embed=red_embed(
+                    description=f"{self.bot.no} You can only change the topic of text/forum channels."
+                )
             )
 
         else:
-            await ctx.send(f"{self.bot.yes} Channel topic changed successfully!")
+            await ctx.send(
+                embed=green_embed(
+                    description=f"{self.bot.yes} Channel topic changed successfully!"
+                )
+            )
 
     @commands.command()
     @commands.guild_only()
@@ -1060,12 +1236,16 @@ class Mod(Cog, emoji=1268851270136107048):
 
         if ctx.guild is not None:
             if member == ctx.author or member == self.bot.user:
-                return await ctx.send("You cant warn yourself or the bot.")
+                return await ctx.send(
+                    embed=red_embed(description="You cant warn yourself or the bot.")
+                )
 
             if not ctx.author.top_role.position == member.top_role.position:  # type: ignore
                 if not ctx.author.top_role.position > member.top_role.position:  # type: ignore
                     return await ctx.send(
-                        "You cant warn someone that has higher or same role heirarchy."
+                        embed=red_embed(
+                            description="You cant warn someone that has higher or same role heirarchy."
+                        )
                     )
 
             (
@@ -1080,11 +1260,10 @@ class Mod(Cog, emoji=1268851270136107048):
                 else None
             )
 
-            em = discord.Embed(
+            em = green_embed(
                 title=f"{self.bot.yes} Warned User",
                 description=f"Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}",
-                color=discord.Color.green(),
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.set_author(
                 name=ctx.author,
@@ -1119,11 +1298,10 @@ class Mod(Cog, emoji=1268851270136107048):
             )
 
             if not records:
-                em = discord.Embed(
+                em = green_embed(
                     title=f"Warnings of {member.name}",
                     description="✨ This user has no warns!",
-                    color=discord.Color.green(),
-                    timestamp=datetime.datetime.now(),
+                    timestamp=True,
                 )
                 em.set_thumbnail(url=member.avatar.url if member.avatar else None)
                 return await ctx.send(embed=em)
@@ -1139,11 +1317,10 @@ class Mod(Cog, emoji=1268851270136107048):
                 ]
 
                 for chunk in chunks:
-                    em = discord.Embed(
+                    em = normal_embed(
                         title=f"Warnings of {member.name} | {len(records)} warns",
                         description="\n".join(chunk),
-                        color=self.bot.color,
-                        timestamp=datetime.datetime.now(),
+                        timestamp=True,
                     )
                     em.set_thumbnail(url=member.avatar.url if member.avatar else None)
                     embeds.append(em)
@@ -1171,12 +1348,16 @@ class Mod(Cog, emoji=1268851270136107048):
 
         if result == "DELETE 0":
             await ctx.send(
-                f"{self.bot.no} Warn ID: `{warn_id}` not found for {member.mention}."
+                embed=red_embed(
+                    description=f"{self.bot.no} Warn ID: `{warn_id}` not found for {member.mention}."
+                )
             )
 
         else:
             await ctx.send(
-                f"{self.bot.yes} Warn ID `{warn_id}` for {member.mention} has been deleted."
+                embed=green_embed(
+                    description=f"{self.bot.yes} Warn ID `{warn_id}` for {member.mention} has been deleted."
+                )
             )
 
 

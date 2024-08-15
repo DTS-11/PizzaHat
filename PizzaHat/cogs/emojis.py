@@ -10,6 +10,7 @@ from PIL import Image
 
 from core.bot import PizzaHat
 from core.cog import Cog
+from utils.embed import green_embed, normal_embed, red_embed
 from utils.ui import Paginator
 
 from .utility import format_date
@@ -109,14 +110,22 @@ class Emojis(Cog, emoji=1268867324195246133):
             emoji_count = sum(e.animated == emoji.animated for e in ctx.guild.emojis)
 
             if emoji_count >= ctx.guild.emoji_limit:
-                return await ctx.send("There are no more emoji slots in this server.")
+                return await ctx.send(
+                    embed=red_embed(
+                        f"{self.bot.no} There are no more emoji slots in this server."
+                    )
+                )
 
             async with self.bot.session.get(emoji.url) as resp:
                 if resp.status >= 400:
-                    return await ctx.send("Could not fetch the image.")
+                    return await ctx.send(
+                        embed=red_embed(f"{self.bot.no} Could not fetch the image.")
+                    )
 
                 if int(resp.headers["Content-Length"]) >= (256 * 1024):
-                    return await ctx.send("Image is too big.")
+                    return await ctx.send(
+                        embed=red_embed(f"{self.bot.no} Image is too big.")
+                    )
 
                 data = await resp.read()
                 coro = ctx.guild.create_custom_emoji(
@@ -128,14 +137,20 @@ class Emojis(Cog, emoji=1268867324195246133):
 
                 except asyncio.TimeoutError:
                     return await ctx.send(
-                        "Sorry, the bot is rate limited or it took too long."
+                        embed=red_embed(
+                            "Sorry, the bot is rate limited or it took too long."
+                        )
                     )
 
                 except discord.HTTPException as e:
-                    return await ctx.send(f"Failed to create emoji: {e}")
+                    return await ctx.send(
+                        embed=red_embed(f"{self.bot.no} Failed to create emoji: {e}")
+                    )
 
                 else:
-                    return await ctx.send(f"Created {created}")
+                    return await ctx.send(
+                        embed=green_embed(f"{self.bot.yes} Created {created}")
+                    )
 
     @_emoji.command()
     @commands.guild_only()
@@ -146,7 +161,7 @@ class Emojis(Cog, emoji=1268867324195246133):
         """Deletes an emoji."""
 
         await emoji.delete(reason=f"Action done by {ctx.author}")
-        await ctx.send(f"{self.bot.yes} Emoji successfully deleted.")
+        await ctx.send(embed=green_embed(f"{self.bot.yes} Emoji successfully deleted."))
 
     @_emoji.command()
     @commands.cooldown(1, 3, commands.BucketType.user)
@@ -158,7 +173,11 @@ class Emojis(Cog, emoji=1268867324195246133):
                 emoji = await emoji.guild.fetch_emoji(emoji.id)
 
         except discord.NotFound:
-            return await ctx.send("I could not find this emoji in the given guild.")
+            return await ctx.send(
+                embed=red_embed(
+                    f"{self.bot.no} I could not find this emoji in the given guild."
+                )
+            )
 
         is_managed = "Yes" if emoji.managed else "No"
         is_animated = "Yes" if emoji.animated else "No"
@@ -171,19 +190,19 @@ class Emojis(Cog, emoji=1268867324195246133):
 
         if emoji.guild and emoji.user is not None:
             description = f"""
-        **__General:__**
-        **- Name:** {emoji.name}
-        **- ID:** {emoji.id}
-        **- URL:** [Link To Emoji]({emoji.url})
-        **- Author:** {emoji.user.mention}
-        **- Time Created:** {format_date(emoji.created_at)}
-        **- Usable by:** {can_use_emoji}
-        **__Others:__**
-        **- Animated:** {is_animated}
-        **- Managed:** {is_managed}
-        **- Requires Colons:** {requires_colons}
-        **- Guild Name:** {emoji.guild.name}
-        **- Guild ID:** {emoji.guild.id}
+**__General:__**
+**- Name:** {emoji.name}
+**- ID:** {emoji.id}
+**- URL:** [Link To Emoji]({emoji.url})
+**- Author:** {emoji.user.mention}
+**- Time Created:** {format_date(emoji.created_at)}
+**- Usable by:** {can_use_emoji}
+**__Others:__**
+**- Animated:** {is_animated}
+**- Managed:** {is_managed}
+**- Requires Colons:** {requires_colons}
+**- Guild Name:** {emoji.guild.name}
+**- Guild ID:** {emoji.guild.id}
         """
 
             embed = discord.Embed(
@@ -220,11 +239,10 @@ class Emojis(Cog, emoji=1268867324195246133):
                 )
 
                 embeds.append(
-                    discord.Embed(
+                    normal_embed(
                         title=f"{ctx.guild.name} Emojis ({len(emojis)})",
                         description=description,
-                        color=self.bot.color,
-                        timestamp=ctx.message.created_at,
+                        timestamp=True,
                     )
                     .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
                     .set_footer(text=f"Page {i}/{len(emoji_chunks)}")

@@ -22,6 +22,7 @@ from utils.config import (
     TOPGG_VOTE,
     WUMPUS_VOTE,
 )
+from utils.embed import green_embed, normal_embed, red_embed
 
 
 def clean_string(string) -> str:
@@ -101,7 +102,9 @@ class Fun(Cog, emoji=802615573556363284):
 
         if data:
             if data[0] == reason:
-                return await ctx.send("You are already AFK with the same reason.")
+                return await ctx.send(
+                    embed=red_embed("You are already AFK with the same reason.")
+                )
 
             (
                 await self.bot.db.execute(
@@ -113,7 +116,9 @@ class Fun(Cog, emoji=802615573556363284):
                 if self.bot.db
                 else None
             )
-            return await ctx.send(f"{self.bot.yes} AFK status updated successfully.")
+            return await ctx.send(
+                embed=green_embed(f"{self.bot.yes} AFK status updated successfully.")
+            )
 
         else:
             (
@@ -126,7 +131,9 @@ class Fun(Cog, emoji=802615573556363284):
                 if self.bot.db and ctx.guild
                 else None
             )
-            return await ctx.send(f"{self.bot.yes} AFK status set successfully.")
+            return await ctx.send(
+                embed=green_embed(f"{self.bot.yes} AFK status set successfully.")
+            )
 
     @commands.command(name="credits")
     @commands.cooldown(1, 3, commands.BucketType.user)
@@ -134,21 +141,21 @@ class Fun(Cog, emoji=802615573556363284):
         """Shows the people who have contributed to this bot."""
 
         if self.bot.user and self.bot.user.avatar is not None:
-            em = discord.Embed(
+            em = green_embed(
                 title="Credits",
-                color=discord.Color.green(),
-                timestamp=ctx.message.created_at,
+                description="- **Contributors:** [View on GitHub](https://github.com/DTS-11/PizzaHat/graphs/contributors)\n- **Bot avatar made by:** <@619936982486876227>",
+                timestamp=True,
             )
             em.set_thumbnail(url=self.bot.user.avatar.url)
 
-            em.add_field(
-                name="Contributors",
-                value="[View on GitHub](https://github.com/DTS-11/PizzaHat/graphs/contributors)",
-                inline=False,
-            )
-            em.add_field(
-                name="Bot avatar made by", value="Potato Jesus#1950", inline=False
-            )
+            # em.add_field(
+            #     name="Contributors",
+            #     value="[View on GitHub](https://github.com/DTS-11/PizzaHat/graphs/contributors)",
+            #     inline=False,
+            # )
+            # em.add_field(
+            #     name="Bot avatar made by", value="Potato Jesus#1950", inline=False
+            # )
 
             await ctx.send(embed=em)
 
@@ -190,10 +197,9 @@ class Fun(Cog, emoji=802615573556363284):
             return
 
         else:
-            e = discord.Embed(
+            e = normal_embed(
                 title="Choose",
                 description=f"{ctx.author.mention}, I choose `{random.choice(options)}`",
-                color=self.bot.color,
             )
             await ctx.send(embed=e)
 
@@ -202,7 +208,7 @@ class Fun(Cog, emoji=802615573556363284):
     async def reverse(self, ctx: Context, *, text):
         """Reverse some text."""
 
-        e = discord.Embed(color=self.bot.color)
+        e = normal_embed()
         e.add_field(name="Input", value=f"```\n{text}\n```", inline=False)
         e.add_field(name="Output", value=f"```\n{text[::-1]}\n```", inline=False)
 
@@ -225,8 +231,7 @@ class Fun(Cog, emoji=802615573556363284):
 
         output_string = output.body.replace("{m:", "").replace("}", "")
 
-        embed = discord.Embed(
-            color=self.bot.color,
+        embed = normal_embed(
             title=f"Input: `{query}`",
             description=f"Output: `{output_string}`",
         )
@@ -251,7 +256,9 @@ class Fun(Cog, emoji=802615573556363284):
         user_gets_with_commas = "{:,}".format(userGets)
 
         # actual embed
-        embed = discord.Embed(title="Dank Memer Tax-Calculator", color=self.bot.color)
+        embed = normal_embed(
+            title="Dank Memer Tax-Calculator",
+        )
         embed.add_field(
             name="Amount to calculate",
             value=f"```\n⏣ {to_calculate_with_commas}```\nAmount expected to pay```css\n+ ⏣ {number_with_commas}```\nAmount lost by tax (5%)```diff\n- ⏣ {number_with_commas_amt_lost}```\nUser gets```fix\n⏣ {user_gets_with_commas}```",
@@ -291,10 +298,9 @@ class Fun(Cog, emoji=802615573556363284):
             "You may rely on it.",
         ]
 
-        em = discord.Embed(
+        em = normal_embed(
             title="Magic 8ball",
             description=f"Question: {question}\nAnswer: {random.choice(responses)}",
-            color=self.bot.color,
         )
 
         await ctx.send(embed=em)
@@ -412,8 +418,12 @@ class Fun(Cog, emoji=802615573556363284):
         """Flips a coin."""
 
         em = discord.Embed(
-            title=f"{ctx.author.name} flipped a coin and got {random.choice(['heads', 'tails'])}!",
-            color=discord.Color.random(),
+            title="Flipping...",
+            description=f"{ctx.author.mention} flipped a coin and got **{random.choice(['heads', 'tails'])}!**",
+            color=discord.Color.gold(),
+        )
+        em.set_thumbnail(
+            url="https://i.pinimg.com/originals/d7/49/06/d74906d39a1964e7d07555e7601b06ad.gif"
         )
 
         await ctx.send(embed=em)
@@ -439,7 +449,7 @@ class Fun(Cog, emoji=802615573556363284):
 
         view.add_item(b1).add_item(b2).add_item(b3)
 
-        em = discord.Embed(
+        em = normal_embed(
             title="🔗 Links",
             description=(
                 "Click on the links below if you cant see the buttons for some reason.\n"
@@ -447,7 +457,6 @@ class Fun(Cog, emoji=802615573556363284):
                 f"[Invite (recommended)]({REG_INVITE})\n"
                 f"[Support]({SUPPORT_SERVER})"
             ),
-            color=self.bot.color,
         )
         em.set_footer(text="Thank you for inviting me! <3")
 
@@ -475,10 +484,9 @@ class Fun(Cog, emoji=802615573556363284):
 
         view = View()
 
-        em = discord.Embed(
+        em = normal_embed(
             title="Vote for me",
             description="Click the buttons below to vote!",
-            color=self.bot.color,
         )
 
         if self.bot.user and self.bot.user.avatar is not None:
@@ -528,18 +536,16 @@ class Fun(Cog, emoji=802615573556363284):
             voted = response["voted"] == 1
 
             if voted:
-                em = discord.Embed(
+                em = green_embed(
                     title="<a:peepo_pog:1267536669892935712> Voted!",
                     description=f"You have voted in the last **12** hours.\nClick [here]({TOPGG_VOTE}) to vote again.",
-                    color=discord.Color.green(),
-                    timestamp=ctx.message.created_at,
+                    timestamp=True,
                 )
             else:
-                em = discord.Embed(
+                em = red_embed(
                     title="<:peepo_cry:1267536683872550922> Not Voted!",
                     description=f"You have not voted in the last **12** hours.\nClick [here]({TOPGG_VOTE}) to vote.",
-                    color=discord.Color.red(),
-                    timestamp=ctx.message.created_at,
+                    timestamp=True,
                 )
             return await ctx.send(embed=em)
 
@@ -551,19 +557,17 @@ class Fun(Cog, emoji=802615573556363284):
         matches = self.regex.findall(codeblock)
         if not matches:
             return await ctx.reply(
-                embed=discord.Embed(
+                embed=red_embed(
                     title="Uh-oh",
                     description="Please use codeblocks to run your code!",
-                    color=discord.Color.red(),
                 )
             )
         lang = matches[0][0] or matches[0][1]
         if not lang:
             return await ctx.reply(
-                embed=discord.Embed(
+                embed=red_embed(
                     title="Uh-oh",
                     description="Couldn't find the language hinted in the codeblock or before it",
-                    color=discord.Color.red(),
                 )
             )
         code = matches[0][2]

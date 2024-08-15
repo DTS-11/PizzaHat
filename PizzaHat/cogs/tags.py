@@ -1,11 +1,9 @@
-import datetime
-
-import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
 from core.bot import PizzaHat
 from core.cog import Cog
+from utils.embed import green_embed, normal_embed, red_embed
 from utils.ui import Paginator
 
 
@@ -35,7 +33,9 @@ class Tags(Cog, emoji=1268850578415681546):
 
         if len(name) > 50:
             return await ctx.send(
-                f"{self.bot.no} Tag name length cannot exceed 50 characters!"
+                embed=red_embed(
+                    f"{self.bot.no} Tag name length cannot exceed 50 characters!"
+                )
             )
 
         data = (
@@ -58,10 +58,14 @@ class Tags(Cog, emoji=1268850578415681546):
                 if self.bot.db and ctx.guild
                 else None
             )
-            await ctx.send(f"{self.bot.yes} Tag created successfully!")
+            await ctx.send(
+                embed=green_embed(f"{self.bot.yes} Tag created successfully!")
+            )
 
         elif data[1] == name:
-            await ctx.send(f"{self.bot.no} Tag with this name already exists!")
+            await ctx.send(
+                embed=red_embed(f"{self.bot.no} Tag with this name already exists!")
+            )
 
     @tag.command(name="delete", aliases=["remove", "del"])
     @commands.guild_only()
@@ -82,11 +86,15 @@ class Tags(Cog, emoji=1268850578415681546):
                         ctx.guild.id,
                         tag,
                     )
-                    await ctx.send(f"{self.bot.yes} Tag deleted!")
+                    await ctx.send(embed=green_embed(f"{self.bot.yes} Tag deleted!"))
                     break
 
             else:
-                await ctx.send(f"{self.bot.no} Tag with name `{tag}` does not exist.")
+                await ctx.send(
+                    embed=red_embed(
+                        f"{self.bot.no} Tag with name `{tag}` does not exist."
+                    )
+                )
 
     @tag.command(name="list", aliases=["all"])
     @commands.guild_only()
@@ -105,9 +113,8 @@ class Tags(Cog, emoji=1268850578415681546):
                     chunks = [data[i : i + 10] for i in range(0, len(data), 10)]
 
                     for chunk in chunks:
-                        em = discord.Embed(
+                        em = normal_embed(
                             description="",
-                            color=self.bot.color,
                         )
                         for i in chunk:
                             em.description += f"<:arrow:1267380018116563016> {i[0]}\n"  # type: ignore
@@ -117,9 +124,8 @@ class Tags(Cog, emoji=1268850578415681546):
                     await ctx.send(embed=embeds[0], view=paginator)
 
                 else:
-                    em = discord.Embed(
+                    em = normal_embed(
                         description="",
-                        color=self.bot.color,
                     )
                     for i in data:
                         em.description += f"<:arrow:1267380018116563016> {i[0]}\n"  # type: ignore
@@ -141,11 +147,10 @@ class Tags(Cog, emoji=1268850578415681546):
                 tag,
             )
 
-            em = discord.Embed(
+            em = normal_embed(
                 title=tag,
                 description="",
-                color=self.bot.color,
-                timestamp=datetime.datetime.now(),
+                timestamp=True,
             )
             em.set_author(
                 name=ctx.author.display_name,
@@ -184,11 +189,17 @@ class Tags(Cog, emoji=1268850578415681546):
                             ctx.guild.id,
                             tag,
                         )
-                        await ctx.send(f"{self.bot.yes} Tag updated!")
+                        await ctx.send(
+                            embed=green_embed(f"{self.bot.yes} Tag updated!")
+                        )
                         break
 
             else:
-                await ctx.send(f"{self.bot.no} Tag with name `{tag}` does not exist.")
+                await ctx.send(
+                    embed=red_embed(
+                        f"{self.bot.no} Tag with name `{tag}` does not exist."
+                    )
+                )
 
 
 async def setup(bot):

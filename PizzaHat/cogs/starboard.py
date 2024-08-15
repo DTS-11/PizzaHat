@@ -4,6 +4,7 @@ from discord.ext.commands import Context
 
 from core.bot import PizzaHat
 from core.cog import Cog
+from utils.embed import green_embed, red_embed
 
 
 class Starboard(Cog, emoji=1268881885480620075):
@@ -40,7 +41,11 @@ class Starboard(Cog, emoji=1268881885480620075):
             if self.bot.db and ctx.guild
             else None
         )
-        await ctx.send(f"{self.bot.yes} Starboard channel set to {channel.mention}.")
+        await ctx.send(
+            embed=green_embed(
+                f"{self.bot.yes} Starboard channel set to {channel.mention}."
+            )
+        )
 
     @star.command(name="count", aliases=["limit"])
     @commands.guild_only()
@@ -53,10 +58,14 @@ class Starboard(Cog, emoji=1268881885480620075):
         """
 
         if count > 100:
-            return await ctx.send(f"{self.bot.no} Maximum limit is 100.")
+            return await ctx.send(
+                embed=red_embed(f"{self.bot.no} Maximum limit is 100.")
+            )
 
         if count == 0:
-            return await ctx.send(f"{self.bot.no} Star count cannot be 0.")
+            return await ctx.send(
+                embed=red_embed(f"{self.bot.no} Star count cannot be 0.")
+            )
 
         (
             await self.bot.db.execute(
@@ -67,7 +76,9 @@ class Starboard(Cog, emoji=1268881885480620075):
             if self.bot.db and ctx.guild
             else None
         )
-        await ctx.send(f"{self.bot.yes} Starboard star count set to `{count}`.")
+        await ctx.send(
+            embed=green_embed(f"{self.bot.yes} Starboard star count set to `{count}`.")
+        )
 
     @star.command(name="self")
     @commands.guild_only()
@@ -81,7 +92,9 @@ class Starboard(Cog, emoji=1268881885480620075):
 
         if enable not in (True, False):
             return await ctx.send(
-                f"{self.bot.no} Please enter a valid value. Accepts `true` or `false`."
+                embed=red_embed(
+                    f"{self.bot.no} Please enter a valid value. Accepts `true` or `false`."
+                )
             )
 
         (
@@ -94,7 +107,9 @@ class Starboard(Cog, emoji=1268881885480620075):
             else None
         )
         await ctx.send(
-            f"{self.bot.yes} Starboard self-star set to `{'true' if enable else 'false'}`."
+            embed=green_embed(
+                f"{self.bot.yes} Starboard self-star set to `{'true' if enable else 'false'}`."
+            )
         )
 
 
