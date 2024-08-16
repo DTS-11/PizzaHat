@@ -1,4 +1,6 @@
+import asyncio
 import datetime
+from collections import defaultdict
 from typing import List, Union
 
 import discord
@@ -17,6 +19,8 @@ class GuildLogs(Cog):
 
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
+        self.recent_kicks = defaultdict(set)
+        self.lock = asyncio.Lock()
 
     @alru_cache()
     async def get_logs_channel(self, guild_id: int) -> Union[discord.TextChannel, None]:
@@ -186,6 +190,140 @@ class GuildLogs(Cog):
             em.set_author(name=user, icon_url=user.avatar.url if user.avatar else None)
             em.set_footer(text=f"User ID: {user.id}")
 
+            await channel.send(embed=em)
+
+    @Cog.listener(name="on_member_join")
+    async def send_join_log(self, member: discord.Member):
+        channel = await self.get_logs_channel(member.guild.id)
+        should_log_all = await self.check_log_enabled(member.guild.id, "all")
+        should_log_joins = await self.check_log_enabled(member.guild.id, "joins")
+
+        if not channel:
+            return
+
+        if should_log_all or should_log_joins:
+            em = green_embed(
+                description=f"{member.mention} {escape_markdown(str(member))}",
+                timestamp=True,
+            )
+            em.set_author(
+                name="Member Joined!",
+                icon_url=member.avatar.url if member.avatar else None,
+            )
+            em.set_footer(text=f"ID: {member.id}")
+            em.set_thumbnail(url=member.avatar.url if member.avatar else None)
+            em.add_field(
+                name="Account Age",
+                value=format_timespan(
+                    (
+                        datetime.datetime.now(datetime.timezone.utc)
+                        - member.created_at.replace(tzinfo=datetime.timezone.utc)
+                    ).total_seconds()
+                ),
+                inline=False,
+            )
+            em.add_field(name="Members:", value=member.guild.member_count, inline=False)
+
+            await channel.send(embed=em)
+
+    @Cog.listener()
+    async def on_member_remove(self, member: discord.Member):
+        async with self.lock:
+            if member.id in self.recent_kicks[member.guild.id]:
+                self.recent_kicks[member.guild.id].remove(member.id)
+                return
+
+            is_kick = await self.check_if_kick(member)
+            if is_kick:
+                await self.handle_kick(member, is_kick)
+            else:
+                await self.handle_leave(member)
+
+    async def check_if_kick(self, member: discord.Member):
+        try:
+            async for entry in member.guild.audit_logs(
+                limit=1, action=discord.AuditLogAction.kick
+            ):
+                if (
+                    entry.target
+                    and entry.target.id == member.id
+                    and (discord.utils.utcnow() - entry.created_at).total_seconds() < 5
+                ):
+                    return entry.user
+        except discord.errors.Forbidden:
+            pass
+        return None
+
+    async def handle_kick(
+        self, member: discord.Member, kicker: Union[discord.Member, discord.User]
+    ):
+        if isinstance(kicker, discord.User):
+            kicker = member.guild.get_member(kicker.id) or kicker
+
+        channel = await self.get_logs_channel(member.guild.id)
+        should_log_all = await self.check_log_enabled(member.guild.id, "all")
+        should_log_mod = await self.check_log_enabled(member.guild.id, "mod")
+
+        if channel and (should_log_all or should_log_mod):
+            em = red_embed(
+                title="<:danger:1268855303768903733> Member Kicked",
+                description=f"{member.mention} was kicked by {kicker.mention}",
+                timestamp=True,
+            )
+            em.set_author(
+                name=member,
+                icon_url=member.avatar.url if member.avatar else None,
+            )
+            em.set_footer(text=f"ID: {member.id}")
+
+            await channel.send(embed=em)
+
+        async with self.lock:
+            self.recent_kicks[member.guild.id].add(member.id)
+            self.bot.loop.create_task(
+                self.remove_from_recent_kicks(member.guild.id, member.id)
+            )
+
+    async def remove_from_recent_kicks(self, guild_id: int, member_id: int):
+        await asyncio.sleep(10)  # Wait for 10 seconds
+        async with self.lock:
+            self.recent_kicks[guild_id].discard(member_id)
+
+    async def handle_leave(self, member: discord.Member):
+        channel = await self.get_logs_channel(member.guild.id)
+        should_log_all = await self.check_log_enabled(member.guild.id, "all")
+        should_log_joins = await self.check_log_enabled(member.guild.id, "joins")
+
+        if not channel:
+            return
+
+        if should_log_all or should_log_joins:
+            em = red_embed(
+                description=f"{member.mention} {escape_markdown(str(member))}",
+                timestamp=True,
+            )
+            em.set_author(
+                name="Member Left!",
+                icon_url=member.avatar.url if member.avatar else None,
+            )
+            em.set_footer(text=f"ID: {member.id}")
+            em.set_thumbnail(url=member.avatar.url if member.avatar else None)
+
+            roles = ""
+            for role in member.roles[::-1]:
+                if len(roles) > 500:
+                    roles += "and more roles..."
+                    break
+                if str(role) != "@everyone":
+                    roles += f"{role.mention} "
+            if len(roles) == 0:
+                roles = "No roles."
+
+            em.add_field(
+                name="Joined:", value=format_date(member.joined_at), inline=False
+            )
+            em.add_field(name="Roles:", value=roles, inline=False)
+            em.add_field(name="Members:", value=member.guild.member_count, inline=False)
             await channel.send(embed=em)
 
     @Cog.listener(name="on_member_update")
@@ -1089,80 +1227,6 @@ class GuildLogs(Cog):
                 )
             em.set_footer(text=f"ID: {invite.id}")
 
-            await channel.send(embed=em)
-
-    # ====== MEMBER JOIN/LEAVE LGOS ======
-
-    @Cog.listener(name="on_member_join")
-    async def send_join_log(self, member: discord.Member):
-        channel = await self.get_logs_channel(member.guild.id)
-        should_log_all = await self.check_log_enabled(member.guild.id, "all")
-        should_log_joins = await self.check_log_enabled(member.guild.id, "joins")
-
-        if not channel:
-            return
-
-        if should_log_all or should_log_joins:
-            em = green_embed(
-                description=f"{member.mention} {escape_markdown(str(member))}",
-                timestamp=True,
-            )
-            em.set_author(
-                name="Member Joined!",
-                icon_url=member.avatar.url if member.avatar else None,
-            )
-            em.set_footer(text=f"ID: {member.id}")
-            em.set_thumbnail(url=member.avatar.url if member.avatar else None)
-            em.add_field(
-                name="Account Age",
-                value=format_timespan(
-                    (
-                        datetime.datetime.now(datetime.timezone.utc)
-                        - member.created_at.replace(tzinfo=datetime.timezone.utc)
-                    ).total_seconds()
-                ),
-                inline=False,
-            )
-            em.add_field(name="Members:", value=member.guild.member_count, inline=False)
-
-            await channel.send(embed=em)
-
-    @Cog.listener(name="on_member_leave")
-    async def send_leave_log(self, member: discord.Member):
-        channel = await self.get_logs_channel(member.guild.id)
-        should_log_all = await self.check_log_enabled(member.guild.id, "all")
-        should_log_joins = await self.check_log_enabled(member.guild.id, "joins")
-
-        if not channel:
-            return
-
-        if should_log_all or should_log_joins:
-            em = red_embed(
-                description=f"{member.mention} {escape_markdown(str(member))}",
-                timestamp=True,
-            )
-            em.set_author(
-                name="Member Left!",
-                icon_url=member.avatar.url if member.avatar else None,
-            )
-            em.set_footer(text=f"ID: {member.id}")
-            em.set_thumbnail(url=member.avatar.url if member.avatar else None)
-
-            roles = ""
-            for role in member.roles[::-1]:
-                if len(roles) > 500:
-                    roles += "and more roles..."
-                    break
-                if str(role) != "@everyone":
-                    roles += f"{role.mention} "
-            if len(roles) == 0:
-                roles = "No roles."
-
-            em.add_field(
-                name="Joined:", value=format_date(member.joined_at), inline=False
-            )
-            em.add_field(name="Roles:", value=roles, inline=False)
-            em.add_field(name="Members:", value=member.guild.member_count, inline=False)
             await channel.send(embed=em)
 
 
