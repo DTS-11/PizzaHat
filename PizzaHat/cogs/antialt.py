@@ -7,6 +7,7 @@ from discord.ext.commands import Context
 
 from core.bot import PizzaHat
 from core.cog import Cog
+from utils.embed import normal_embed
 from utils.message import wait_for_msg
 
 
@@ -123,7 +124,7 @@ class AntiAlts(Cog, emoji=1268851128548724756):
             if data is not None:
                 enabled = data["enabled"]
 
-            em = discord.Embed(
+            em = normal_embed(
                 title="Anti Alt Setup",
                 description=f"""
 Anti-alt system is currently **{"enabled" if enabled else "disabled"}**.
@@ -132,8 +133,7 @@ Anti-alt system is currently **{"enabled" if enabled else "disabled"}**.
 **Minimum account age:** {data["min_age"] if data else "None"}
 **Restricted role:** {data["restricted_role"] if data else "None"}
                 """,
-                color=self.bot.color,
-                timestamp=ctx.message.created_at,
+                timestamp=True,
             )
 
             em.add_field(

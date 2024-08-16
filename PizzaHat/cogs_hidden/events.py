@@ -1,11 +1,9 @@
-import datetime
-
 import discord
 
 from core.bot import PizzaHat
 from core.cog import Cog
 from utils.config import LOGS_CHANNEL
-from utils.embed import green_embed, red_embed
+from utils.embed import green_embed, normal_embed, red_embed
 
 
 class Events(Cog):
@@ -104,7 +102,7 @@ class Events(Cog):
                 return
 
             if msg.content in {f"<@{bot_id}>" or f"<@!{bot_id}>"}:
-                em = discord.Embed(color=self.bot.color)
+                em = normal_embed()
                 em.add_field(
                     name="Hello! <a:wave_animated:783393435242463324>",
                     value=f"I'm {self.bot.user.name} — Your Ultimate Discord Companion.\nTo get started, my prefix is `p!` or `P!` or <@{bot_id}>",

@@ -6,6 +6,8 @@ from discord import ButtonStyle, Interaction, ui
 from discord.ext import commands
 from discord.ext.commands import Context
 
+from utils.embed import normal_embed
+
 
 # credits to Nirlep's EpicBot paginator system!
 # https://github.com/Nirlep5252/EpicBot/blob/main/utils/ui.py#L70
@@ -133,11 +135,10 @@ class TicketView(ui.View):
         )
         await thread.add_user(interaction.user)
 
-        em = discord.Embed(
+        em = normal_embed(
             title="Ticket created!",
             description=f"Welcome {interaction.user.mention} `[{interaction.user}]`. Support team will get back to you shortly.",
-            color=self.bot.color,
-            timestamp=interaction.created_at,
+            timestamp=True,
         )
         em.set_footer(
             text=interaction.user,

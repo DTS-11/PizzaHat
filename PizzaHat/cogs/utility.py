@@ -716,7 +716,7 @@ class Utility(Cog, emoji=1268851252565905449):
         dpy_version = discord.__version__
         dev = self.bot.get_user(710247495334232164)
 
-        em = discord.Embed(color=self.bot.color)
+        em = normal_embed()
         if dev and dev.avatar is not None:
             em.set_author(name=dev, icon_url=dev.avatar.url)
 

@@ -13,6 +13,7 @@ from discord.ext.commands import Context
 
 from core.bot import INITIAL_EXTENSIONS, SUB_EXTENSIONS, PizzaHat
 from core.cog import Cog
+from utils.embed import normal_embed
 from utils.formats import TabularData, plural
 
 if TYPE_CHECKING:
@@ -71,16 +72,13 @@ class Dev(Cog, emoji=1268856867585658981):
                 pages.append(text[last:curr])  # type: ignore
             return list(filter(lambda a: a != "", pages))
 
-        color = self.bot.color
-
         try:
             exec(to_compile, env)
 
         except Exception as e:
-            embed = discord.Embed(
+            embed = normal_embed(
                 title="Error",
                 description=f"```py\n{e.__class__.__name__}: {e}\n```",
-                color=color,
             )
             await ctx.send(embed=embed)
 
@@ -92,10 +90,9 @@ class Dev(Cog, emoji=1268856867585658981):
 
         except Exception:
             value = stdout.getvalue()
-            embed = discord.Embed(
+            embed = normal_embed(
                 title="Error",
                 description=f"```py\n{value}{traceback.format_exc()}\n```",
-                color=color,
             )
             await ctx.send(embed=embed)
 
@@ -104,9 +101,7 @@ class Dev(Cog, emoji=1268856867585658981):
             if ret is None:
                 if value:
                     try:
-                        embed = discord.Embed(
-                            description=f"```py\n{value}\n```", color=color
-                        )
+                        embed = normal_embed(description=f"```py\n{value}\n```")
 
                         await ctx.send(embed=embed)
 
@@ -115,22 +110,16 @@ class Dev(Cog, emoji=1268856867585658981):
 
                         for page in paginated_text:
                             if page == paginated_text[-1]:
-                                embed = discord.Embed(
-                                    description=f"```py\n{page}\n```", color=color
-                                )
+                                embed = normal_embed(description=f"```py\n{page}\n```")
                                 await ctx.send(embed=embed)
                                 break
 
-                            embed = discord.Embed(
-                                description=f"```py\n{page}\n```", color=color
-                            )
+                            embed = normal_embed(description=f"```py\n{page}\n```")
 
                             await ctx.send(embed=embed)
             else:
                 try:
-                    embed = discord.Embed(
-                        description=f"```py\n{value}{ret}\n```", color=color
-                    )
+                    embed = normal_embed(description=f"```py\n{value}{ret}\n```")
                     await ctx.send(embed=embed)
 
                 except:
@@ -138,15 +127,11 @@ class Dev(Cog, emoji=1268856867585658981):
 
                     for page in paginated_text:
                         if page == paginated_text[-1]:
-                            embed = discord.Embed(
-                                description=f"```py\n{page}\n```", color=color
-                            )
+                            embed = normal_embed(description=f"```py\n{page}\n```")
                             await ctx.send(embed=embed)
                             break
 
-                        embed = discord.Embed(
-                            description=f"```py\n{page}\n```", color=color
-                        )
+                        embed = normal_embed(description=f"```py\n{page}\n```")
 
                         await ctx.send(embed=embed)
 

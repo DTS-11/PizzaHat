@@ -507,10 +507,9 @@ class Fun(Cog, emoji=802615573556363284):
     async def pressf(self, ctx: Context, *, object: str):
         """Pay respect by pressing the F button."""
 
-        em = discord.Embed(
+        em = normal_embed(
             description=f"It's time to pay respect for **{object}**",
-            color=self.bot.color,
-            timestamp=ctx.message.created_at,
+            timestamp=True,
         )
         em.set_footer(
             text=ctx.author,

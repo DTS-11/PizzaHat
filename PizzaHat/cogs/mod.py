@@ -1051,11 +1051,10 @@ class Mod(Cog, emoji=1268851270136107048):
                     [f"{role.mention} `({role.id})` • {role.name}" for role in chunk]
                 )
                 embeds.append(
-                    discord.Embed(
+                    normal_embed(
                         title=f"{ctx.guild.name} Roles ({len(roles)})",
                         description=description,
-                        color=self.bot.color,
-                        timestamp=ctx.message.created_at,
+                        timestamp=True,
                     )
                     .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
                     .set_footer(text=f"Page {i}/{len(role_chunks)}")
@@ -1141,11 +1140,10 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
 
                 embeds.append(
-                    discord.Embed(
+                    normal_embed(
                         title=f"{ctx.guild.name} Channels ({len(channels)})",
                         description=description,
-                        color=self.bot.color,
-                        timestamp=ctx.message.created_at,
+                        timestamp=True,
                     )
                     .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
                     .set_footer(text=f"Page 1/{len(channels_by_category) + 1}")
@@ -1170,11 +1168,10 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
 
                 embeds.append(
-                    discord.Embed(
+                    normal_embed(
                         title=f"{ctx.guild.name} Channels ({len(channels)})",
                         description=description,
-                        color=self.bot.color,
-                        timestamp=ctx.message.created_at,
+                        timestamp=True,
                     )
                     .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
                     .set_footer(text=f"Page {i}/{total_category_pages + 1}")
