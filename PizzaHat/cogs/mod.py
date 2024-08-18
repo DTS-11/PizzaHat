@@ -821,37 +821,45 @@ class Mod(Cog, emoji=1268851270136107048):
         if not ctx.guild:
             return
 
-        banned_users = []
-        embeds = []
+        try:
+            banned_users = []
+            embeds = []
 
-        async for entry in ctx.guild.audit_logs(action=discord.AuditLogAction.ban):
-            banned_users.append(f"{entry.user} banned {entry.target}")
+            async for ban_entry in ctx.guild.bans(limit=None):
+                banned_users.append(f"{ban_entry.user} (ID: {ban_entry.user.id})")
 
-        if not banned_users:
-            return await ctx.send(
-                embed=red_embed(
+            if not banned_users:
+                return await ctx.send(
+                    embed=red_embed(
+                        title="Banned Users",
+                        description="There are no banned users in this server.",
+                        timestamp=True,
+                    )
+                )
+
+            for i in range(0, len(banned_users), 10):
+                em = normal_embed(
                     title="Banned Users",
-                    description="There are no banned users in this server.",
+                    description="\n- ".join(banned_users[i : i + 10]),
                     timestamp=True,
                 )
-            )
+                em.set_footer(
+                    text=f"Page {len(embeds) + 1}/{-(-len(banned_users) // 10)}",
+                )
+                embeds.append(em)
 
-        for i in range(0, len(banned_users), 10):
-            em = normal_embed(
-                title="Banned Users",
-                description="\n- ".join(banned_users[i : i + 10]),
-                timestamp=True,
-            )
-            em.set_footer(
-                text=f"Page {len(embeds) + 1}/{-(-len(banned_users) // 10)}",
-            )
-            embeds.append(em)
+            if len(embeds) == 1:
+                return await ctx.send(embed=embeds[0])
+            else:
+                paginator = Paginator(ctx, embeds)
+                return await ctx.send(embed=embeds[0], view=paginator)
 
-        if len(embeds) == 1:
-            return await ctx.send(embed=embeds[0])
-        else:
-            paginator = Paginator(ctx, embeds)
-            return await ctx.send(embed=embeds[0], view=paginator)
+        except discord.Forbidden:
+            await ctx.send("I don't have permission to view the ban list.")
+        except discord.HTTPException as e:
+            await ctx.send(f"An error occurred while fetching the ban list: {str(e)}")
+        except Exception as e:
+            await ctx.send(f"An unexpected error occurred: {str(e)}")
 
     @commands.command(aliases=["mb"])
     @commands.guild_only()
