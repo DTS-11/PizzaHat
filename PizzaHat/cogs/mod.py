@@ -811,6 +811,48 @@ class Mod(Cog, emoji=1268851270136107048):
                     )
                 )
 
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(ban_members=True)
+    @commands.cooldown(1, 10, commands.BucketType.guild)
+    async def banlist(self, ctx: Context):
+        """Get a list of all the banned members."""
+
+        if not ctx.guild:
+            return
+
+        banned_users = []
+        embeds = []
+
+        async for entry in ctx.guild.audit_logs(action=discord.AuditLogAction.ban):
+            banned_users.append(f"{entry.user} banned {entry.target}")
+
+        if not banned_users:
+            return await ctx.send(
+                embed=red_embed(
+                    title="Banned Users",
+                    description="There are no banned users in this server.",
+                    timestamp=True,
+                )
+            )
+
+        for i in range(0, len(banned_users), 10):
+            em = normal_embed(
+                title="Banned Users",
+                description="\n- ".join(banned_users[i : i + 10]),
+                timestamp=True,
+            )
+            em.set_footer(
+                text=f"Page {len(embeds) + 1}/{-(-len(banned_users) // 10)}",
+            )
+            embeds.append(em)
+
+        if len(embeds) == 1:
+            return await ctx.send(embed=embeds[0])
+        else:
+            paginator = Paginator(ctx, embeds)
+            return await ctx.send(embed=embeds[0], view=paginator)
+
     @commands.command(aliases=["mb"])
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
@@ -1065,9 +1107,9 @@ class Mod(Cog, emoji=1268851270136107048):
 
             if len(embeds) == 1:
                 return await ctx.send(embed=embeds[0])
-
-            view = Paginator(ctx, embeds)
-            return await ctx.send(embed=embeds[0], view=view)
+            else:
+                view = Paginator(ctx, embeds)
+                return await ctx.send(embed=embeds[0], view=view)
 
     @commands.command()
     @commands.guild_only()
@@ -1182,9 +1224,9 @@ class Mod(Cog, emoji=1268851270136107048):
 
             if len(embeds) == 1:
                 return await ctx.send(embed=embeds[0])
-
-            view = Paginator(ctx, embeds)
-            return await ctx.send(embed=embeds[0], view=view)
+            else:
+                view = Paginator(ctx, embeds)
+                return await ctx.send(embed=embeds[0], view=view)
 
     @commands.command()
     @commands.guild_only()
@@ -1322,8 +1364,11 @@ class Mod(Cog, emoji=1268851270136107048):
                     em.set_thumbnail(url=member.avatar.url if member.avatar else None)
                     embeds.append(em)
 
-                paginator = Paginator(ctx, embeds)
-                return await ctx.send(embed=embeds[0], view=paginator)
+                if len(embeds) == 1:
+                    return await ctx.send(embed=embeds[0])
+                else:
+                    paginator = Paginator(ctx, embeds)
+                    return await ctx.send(embed=embeds[0], view=paginator)
 
     @commands.command(aliases=["delwarn"])
     @commands.guild_only()
