@@ -840,7 +840,7 @@ class Mod(Cog, emoji=1268851270136107048):
             for i in range(0, len(banned_users), 10):
                 em = normal_embed(
                     title="Banned Users",
-                    description="\n- ".join(banned_users[i : i + 10]),
+                    description="- " + "\n- ".join(banned_users[i : i + 10]),
                     timestamp=True,
                 )
                 em.set_footer(
