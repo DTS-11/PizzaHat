@@ -12,10 +12,16 @@ from utils.embed import normal_embed
 # credits to Nirlep's EpicBot paginator system!
 # https://github.com/Nirlep5252/EpicBot/blob/main/utils/ui.py#L70
 class Paginator(ui.View):
-    def __init__(self, ctx: Context, embeds: List[discord.Embed]):
+    def __init__(
+        self,
+        ctx: Context,
+        embeds: List[discord.Embed],
+        files: Optional[List[discord.File]] = None,
+    ):
         super().__init__(timeout=180)
         self.ctx = ctx
         self.embeds = embeds
+        self.files = files or []
         self.current = 0
 
     async def on_timeout(self) -> None:
@@ -27,7 +33,12 @@ class Paginator(ui.View):
             return await interaction.response.send_message(
                 "Already at the first page ._.", ephemeral=True
             )
-        await interaction.response.edit_message(embed=self.embeds[0], view=self)
+        if self.files:
+            await interaction.response.edit_message(
+                embed=self.embeds[0], attachments=[self.files[0]], view=self
+            )
+        else:
+            await interaction.response.edit_message(embed=self.embeds[0], view=self)
         self.current = 0
 
     @ui.button(label="Back", style=ButtonStyle.blurple)
@@ -36,9 +47,16 @@ class Paginator(ui.View):
             return await interaction.response.send_message(
                 "Already at the first page ._.", ephemeral=True
             )
-        await interaction.response.edit_message(
-            embed=self.embeds[self.current - 1], view=self
-        )
+        if self.files:
+            await interaction.response.edit_message(
+                embed=self.embeds[self.current - 1],
+                attachments=[self.files[self.current - 1]],
+                view=self,
+            )
+        else:
+            await interaction.response.edit_message(
+                embed=self.embeds[self.current - 1], view=self
+            )
         self.current -= 1
 
     @ui.button(emoji="🛑", style=ButtonStyle.red)
@@ -52,9 +70,16 @@ class Paginator(ui.View):
             return await interaction.response.send_message(
                 "Already at the last page ._.", ephemeral=True
             )
-        await interaction.response.edit_message(
-            embed=self.embeds[self.current + 1], view=self
-        )
+        if self.files:
+            await interaction.response.edit_message(
+                embed=self.embeds[self.current + 1],
+                attachments=[self.files[self.current + 1]],
+                view=self,
+            )
+        else:
+            await interaction.response.edit_message(
+                embed=self.embeds[self.current + 1], view=self
+            )
         self.current += 1
 
     @ui.button(label=">>", style=ButtonStyle.gray)
@@ -63,7 +88,12 @@ class Paginator(ui.View):
             return await interaction.response.send_message(
                 "Already at the last page ._.", ephemeral=True
             )
-        await interaction.response.edit_message(embed=self.embeds[-1], view=self)
+        if self.files:
+            await interaction.response.edit_message(
+                embed=self.embeds[-1], attachments=[self.files[-1]], view=self
+            )
+        else:
+            await interaction.response.edit_message(embed=self.embeds[-1], view=self)
         self.current = len(self.embeds) - 1
 
     async def interaction_check(self, interaction: Interaction) -> bool:
