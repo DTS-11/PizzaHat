@@ -20,5 +20,6 @@ emoji
 colorthief
 async-lru
 chat-exporter
+pyfiglet
 
 git+https://github.com/Tom-the-Bomb/Discord-Games.git
