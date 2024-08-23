@@ -6,13 +6,13 @@ import time
 from typing import Optional, Union
 
 import discord
+import pyfiglet
+from core.bot import PizzaHat
+from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Button, View
 from TagScriptEngine import Interpreter, block
-
-from core.bot import PizzaHat
-from core.cog import Cog
 from utils.config import (
     ADMIN_INVITE,
     DLISTGG_VOTE,
@@ -517,6 +517,15 @@ class Fun(Cog, emoji=802615573556363284):
         )
 
         await ctx.send(embed=em, view=PressFView(ctx.author))
+
+    @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def ascii(self, ctx: Context, *, text: str):
+        """Converts normal text to ascii art."""
+
+        await ctx.send(
+            embed=normal_embed(description=f"```\n{pyfiglet.figlet_format(text)}\n```")
+        )
 
     @commands.command()
     @commands.cooldown(1, 30, commands.BucketType.user)
