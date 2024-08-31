@@ -1,10 +1,13 @@
 import datetime
 import time
 import unicodedata
+from io import BytesIO
 from typing import Optional, Union
 
 import discord
 import psutil
+import requests
+from colorthief import ColorThief
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Modal, Select, TextInput, View
@@ -387,6 +390,16 @@ class Utility(Cog, emoji=1268851252565905449):
         """
 
         member = member or ctx.author
+        avatar_url = (
+            member.avatar.url
+            if member.avatar
+            else "https://logos-world.net/wp-content/uploads/2020/12/Discord-Logo.png"
+        )
+        response = requests.get(avatar_url)
+        image = BytesIO(response.content)
+        color_thief = ColorThief(image)
+        dominant_color = color_thief.get_color(quality=1)
+        hex_color = "#{:02x}{:02x}{:02x}".format(*dominant_color)
 
         user_badges_flags = {
             "hypesquad_bravery": "<:bravery:876078067548835850>",
@@ -415,24 +428,17 @@ class Utility(Cog, emoji=1268851252565905449):
 
         em = discord.Embed(
             title="User Information",
-            color=member.color,
+            color=int(hex_color[1:], 16),
             timestamp=ctx.message.created_at,
         )
         em.description = f"""
-> **Username:** {member}
-> **Display Name:** {member.display_name}
-> **Created:** {format_date(member.created_at)}
-> **ID:** {member.id}
-{f"> **[User Icon]({member.avatar.url})**" if member.avatar else ""}
+<:newmember:1268853457855709255> **Username:** {member.display_name} `[{member}]`
+<:id:1268872547915792487> **ID:** {member.id}
+<:timer:1268872526549745736> **Created:** {format_date(member.created_at)}
+{f"<:image:1268878284775755841> **[User Icon]({member.avatar.url})**" if member.avatar else ""}
         """
 
-        em.set_thumbnail(
-            url=(
-                member.avatar.url
-                if member.avatar
-                else "https://logos-world.net/wp-content/uploads/2020/12/Discord-Logo.png"
-            )
-        )
+        em.set_thumbnail(url=avatar_url)
         em.set_footer(
             text=f"Requested by {ctx.author}",
             icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
@@ -589,31 +595,26 @@ class Utility(Cog, emoji=1268851252565905449):
         If no channel is given, returns info for the current channel.
         """
 
+        if not ctx.guild:
+            return
+
         channel = channel or ctx.channel
 
         if isinstance(channel, discord.TextChannel):
-            e = normal_embed(title="Channel information")
-            e.add_field(name="Channel name", value=channel.name, inline=False)
-            e.add_field(name="Channel ID", value=channel.id, inline=False)
-            e.add_field(name="Mention", value=channel.mention, inline=False)
+            em = normal_embed(title="Channel Information", timestamp=True)
+            em.set_footer(text=ctx.guild.name)
+            em.set_thumbnail(url=ctx.guild.icon.url if ctx.guild.icon else None)
 
-            if channel.category is not None:
-                e.add_field(
-                    name="Category name", value=channel.category.name, inline=False
-                )
+            em.description = f"""
+<:textchannel:1268867364183605248> **Channel:** {channel.mention} `[{channel.name}]`
+<:id:1268872547915792487> **ID:** {channel.id}
+<:file:1268857634790838272> **Category:** {f"{channel.category.name}" if channel.category else "N/A"}
 
-            e.add_field(
-                name="Channel Created",
-                value=format_date(channel.created_at),
-                inline=False,
-            )
-            e.add_field(
-                name="NSFW",
-                value=f"{self.bot.yes} Yes" if channel.nsfw else f"{self.bot.no} No",
-                inline=False,
-            )
+<:timer:1268872526549745736> **Created:** {format_date(channel.created_at)}
 
-            await ctx.send(embed=e)
+<:danger:1268855303768903733> **NSFW:** {f"{self.bot.yes} Yes" if channel.nsfw else f"{self.bot.no} No"}
+"""
+            await ctx.send(embed=em)
 
         else:
             await ctx.send(f"{self.bot.no} That is not a text channel.")
@@ -624,19 +625,23 @@ class Utility(Cog, emoji=1268851252565905449):
     async def vcinfo(self, ctx: Context, vc: discord.VoiceChannel):
         """Shows info about a voice channel."""
 
-        e = normal_embed(title="VC Information")
-        e.add_field(name="VC name", value=vc.name, inline=False)
-        e.add_field(name="VC ID", value=vc.id, inline=False)
-        e.add_field(name="VC bitrate", value=vc.bitrate, inline=False)
-        e.add_field(name="Mention", value=vc.mention, inline=False)
-        e.add_field(
-            name="Category name",
-            value=vc.category.name if vc.category else "N/A",
-            inline=False,
-        )
-        e.add_field(name="VC Created", value=format_date(vc.created_at), inline=False)
+        if not ctx.guild:
+            return
 
-        await ctx.send(embed=e)
+        em = normal_embed(title="VC Information", timestamp=True)
+        em.set_footer(text=ctx.guild.name)
+        em.set_thumbnail(url=ctx.guild.icon.url if ctx.guild.icon else None)
+
+        em.description = f"""
+<:voicechannel:1268867352972234834> **Voice Channel:** {vc.mention} `[{vc.name}]`
+<:id:1268872547915792487> **ID:** {vc.id}
+
+<:timer:1268872526549745736> **Created:** {format_date(vc.created_at)}
+
+<:megaphone:1268856128503152691> **Bitrate:** {vc.bitrate}
+<:file:1268857634790838272> **Category:** {f"{vc.category.name}" if vc.category else "N/A"}
+"""
+        await ctx.send(embed=em)
 
     @commands.command()
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -647,21 +652,44 @@ class Utility(Cog, emoji=1268851252565905449):
         You can mention the role or give the name of it.
         """
 
-        e = discord.Embed(title="Role Information", color=role.color)
-        e.add_field(name="Role name", value=role.name, inline=False)
-        e.add_field(name="Role ID", value=role.id, inline=False)
-        e.add_field(name="Mention", value=role.mention, inline=False)
-        e.add_field(
-            name="Role Created", value=format_date(role.created_at), inline=False
-        )
-        e.add_field(name="Role Color", value=role.color, inline=False)
-        e.add_field(
-            name="Mentionable",
-            value=f"{self.bot.yes} Yes" if role.mentionable else f"{self.bot.no} No",
-            inline=False,
-        )
+        major_perms = {
+            "administrator": "Administrator",
+            "manage_channels": "Manage Channels",
+            "manage_roles": "Manage Roles",
+            "manage_guild": "Manage Server",
+            "manage_messages": "Manage Messages",
+            "kick_members": "Kick Members",
+            "ban_members": "Ban Members",
+            "mention_everyone": "Mention Everyone",
+            "manage_nicknames": "Manage Nicknames",
+            "manage_emojis": "Manage Emojis",
+            "manage_webhooks": "Manage Webhooks",
+            "view_audit_log": "View Audit Log",
+        }
+        permissions: discord.Permissions = role.permissions
+        active_major_perms = [
+            name for perm, name in major_perms.items() if getattr(permissions, perm)
+        ]
 
-        await ctx.send(embed=e)
+        em = discord.Embed(
+            title="Role Information", color=role.color, timestamp=ctx.message.created_at
+        )
+        em.set_footer(text=role.guild.name)
+        em.set_thumbnail(url=role.display_icon)
+
+        em.description = f"""
+**Role:** {role.mention} `({role.id})`
+**Role Created:** {format_date(role.created_at)}
+
+**Role Position:** {role.position}/{len(role.guild.roles)}
+**Member Count:** {len(role.members)}/{role.guild.member_count}
+
+**Hoisted:** {f"{self.bot.yes} Yes" if role.hoist else f"{self.bot.no} No"}
+**Mentionable:** {f"{self.bot.yes} Yes" if role.mentionable else f"{self.bot.no} No"}
+
+**Major Permissions:** {", ".join(active_major_perms) if active_major_perms else f"{self.bot.no} None"}
+"""
+        await ctx.send(embed=em)
 
     def get_bot_uptime(self, *, brief=False):
         now = datetime.datetime.now(datetime.timezone.utc)
@@ -673,7 +701,6 @@ class Utility(Cog, emoji=1268851252565905449):
         if not brief:
             if days:
                 fmt = "{d} days, {h} hours, {m} minutes, and {s} seconds"
-
             else:
                 fmt = "{h} hours, {m} minutes, and {s} seconds"
 
