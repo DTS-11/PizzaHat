@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
+from discord.ui import Button
 
 from core.bot import PizzaHat
 from core.cog import Cog
@@ -91,8 +92,26 @@ class Welcomer(Cog, emoji=1270391467415703682):
         """Set the welcome image."""
 
         if ctx.guild and self.bot.db:
+
+            async def select_image(interaction: discord.Interaction):
+                img_no = paginator.current + 1
+                await self.bot.db.execute(
+                    "INSERT INTO welcome_img (guild_id, welcome_img_no) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET welcome_img_no=$2",
+                    ctx.guild.id,
+                    img_no,
+                ) if self.bot.db and ctx.guild else None
+                await interaction.response.send_message(
+                    embed=green_embed(
+                        description=f"{self.bot.yes} Welcome image set to image number `{img_no}`."
+                    )
+                )
+
+            select_btn = Button(style=discord.ButtonStyle.green, label="Select Image")
+            select_btn.callback = select_image
+
             embeds: list[discord.Embed] = []
-            files: list[discord.File] = []
+            file_paths: list[str] = []
+
             welcome_img_enabled: bool = await self.bot.db.fetchval(
                 "SELECT welcome_img_enabled FROM welcome WHERE guild_id=$1",
                 ctx.guild.id,
@@ -106,23 +125,23 @@ class Welcomer(Cog, emoji=1270391467415703682):
                 )
                 return
 
-            for i in range(1, 5):
-                file = discord.File(
-                    f"assets/images/welcome/pic{i}.png",
-                    filename=f"welcome_image_{i}.png",
-                )
-                files.append(file)
+            for i in range(1, 4):
+                file_path = f"assets/images/welcome/pic{i}.png"
+                file_paths.append(file_path)
 
                 embed = normal_embed(title=f"Welcome Image {i}", timestamp=True)
                 embed.set_image(url=f"attachment://welcome_image_{i}.png")
-                embed.set_footer(text=f"Page {i}/4")
+                embed.set_footer(text=f"Page {i}/3")
                 embeds.append(embed)
 
-            if len(embeds) == 1:
-                return await ctx.send(embed=embeds[0], file=files[0])
-            else:
-                paginator = Paginator(ctx, embeds, files)
-                return await ctx.send(embed=embeds[0], view=paginator, files=files[:1])
+            paginator = Paginator(ctx, embeds, file_paths)
+            paginator.add_item(select_btn)
+            file = paginator.get_current_file()
+            first_embed = embeds[0]
+            first_embed.set_image(url="attachment://image_1.png")
+
+            if file:
+                return await ctx.send(embed=first_embed, file=file, view=paginator)
 
 
 async def setup(bot):
