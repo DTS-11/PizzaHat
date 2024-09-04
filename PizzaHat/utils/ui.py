@@ -16,16 +16,29 @@ class Paginator(ui.View):
         self,
         ctx: Context,
         embeds: List[discord.Embed],
-        files: Optional[List[discord.File]] = None,
+        file_paths: Optional[List[str]] = None,
     ):
         super().__init__(timeout=180)
         self.ctx = ctx
         self.embeds = embeds
-        self.files = files or []
+        self.file_paths = file_paths
         self.current = 0
 
-    async def on_timeout(self) -> None:
-        self.clear_items()
+    def get_current_file(self):
+        if self.file_paths and self.current < len(self.file_paths):
+            return discord.File(
+                self.file_paths[self.current], filename=f"image_{self.current + 1}.png"
+            )
+        return None
+
+    async def update_message(self, interaction: Interaction):
+        file = self.get_current_file()
+        embed = self.embeds[self.current]
+        if file:
+            embed.set_image(url=f"attachment://image_{self.current + 1}.png")
+        await interaction.response.edit_message(
+            embed=embed, attachments=[file] if file else [], view=self
+        )
 
     @ui.button(label="<<", style=ButtonStyle.gray)
     async def first(self, interaction: Interaction, button: ui.Button):
@@ -33,13 +46,8 @@ class Paginator(ui.View):
             return await interaction.response.send_message(
                 "Already at the first page ._.", ephemeral=True
             )
-        if self.files:
-            await interaction.response.edit_message(
-                embed=self.embeds[0], attachments=[self.files[0]], view=self
-            )
-        else:
-            await interaction.response.edit_message(embed=self.embeds[0], view=self)
         self.current = 0
+        await self.update_message(interaction)
 
     @ui.button(label="Back", style=ButtonStyle.blurple)
     async def back(self, interaction: Interaction, button: ui.Button):
@@ -47,17 +55,8 @@ class Paginator(ui.View):
             return await interaction.response.send_message(
                 "Already at the first page ._.", ephemeral=True
             )
-        if self.files:
-            await interaction.response.edit_message(
-                embed=self.embeds[self.current - 1],
-                attachments=[self.files[self.current - 1]],
-                view=self,
-            )
-        else:
-            await interaction.response.edit_message(
-                embed=self.embeds[self.current - 1], view=self
-            )
         self.current -= 1
+        await self.update_message(interaction)
 
     @ui.button(emoji="🛑", style=ButtonStyle.red)
     async def delete(self, interaction: Interaction, button: ui.Button):
@@ -70,17 +69,8 @@ class Paginator(ui.View):
             return await interaction.response.send_message(
                 "Already at the last page ._.", ephemeral=True
             )
-        if self.files:
-            await interaction.response.edit_message(
-                embed=self.embeds[self.current + 1],
-                attachments=[self.files[self.current + 1]],
-                view=self,
-            )
-        else:
-            await interaction.response.edit_message(
-                embed=self.embeds[self.current + 1], view=self
-            )
         self.current += 1
+        await self.update_message(interaction)
 
     @ui.button(label=">>", style=ButtonStyle.gray)
     async def last(self, interaction: Interaction, button: ui.Button):
@@ -88,18 +78,12 @@ class Paginator(ui.View):
             return await interaction.response.send_message(
                 "Already at the last page ._.", ephemeral=True
             )
-        if self.files:
-            await interaction.response.edit_message(
-                embed=self.embeds[-1], attachments=[self.files[-1]], view=self
-            )
-        else:
-            await interaction.response.edit_message(embed=self.embeds[-1], view=self)
         self.current = len(self.embeds) - 1
+        await self.update_message(interaction)
 
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user == self.ctx.author:
             return True
-
         await interaction.response.send_message(
             content="Not your command ._.", ephemeral=True
         )
