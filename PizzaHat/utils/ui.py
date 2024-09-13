@@ -150,22 +150,24 @@ class TicketView(ui.View):
             )
             await thread.add_user(interaction.user)
 
-        em = normal_embed(
-            title="Ticket created!",
-            description=f"Welcome {interaction.user.mention} `[{interaction.user}]`. Support team will get back to you shortly.",
-            timestamp=True,
-        )
-        em.set_footer(
-            text=interaction.user,
-            icon_url=(interaction.user.avatar.url if interaction.user.avatar else None),
-        )
+            em = normal_embed(
+                title="Ticket created!",
+                description=f"Welcome {interaction.user.mention} `[{interaction.user}]`. Support team will get back to you shortly.",
+                timestamp=True,
+            )
+            em.set_footer(
+                text=interaction.user,
+                icon_url=(
+                    interaction.user.avatar.url if interaction.user.avatar else None
+                ),
+            )
 
-        await thread.send(
-            content=f"{interaction.user.mention}",
-            embed=em,
-            view=TicketSettings(thread.id),
-        )
-        self.thread_id = thread.id
+            await thread.send(
+                content=f"{interaction.user.mention}",
+                embed=em,
+                view=TicketSettings(thread.id),
+            )
+            self.thread_id = thread.id
 
 
 class TicketSettings(ui.View):
