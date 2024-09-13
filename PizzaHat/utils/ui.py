@@ -142,12 +142,13 @@ class TicketView(ui.View):
                     ephemeral=True,
                 )
 
-        thread = await interaction.channel.create_thread(  # type: ignore
-            name=f"ticket-{interaction.user}",
-            reason=f"Ticket created by {interaction.user}",
-            invitable=False,  # type: ignore
-        )
-        await thread.add_user(interaction.user)
+        if isinstance(interaction.channel, discord.TextChannel):
+            thread = await interaction.channel.create_thread(
+                name=f"ticket-{interaction.user}",
+                reason=f"Ticket created by {interaction.user}",
+                invitable=False,  # type: ignore
+            )
+            await thread.add_user(interaction.user)
 
         em = normal_embed(
             title="Ticket created!",
