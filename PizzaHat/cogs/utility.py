@@ -380,7 +380,7 @@ class Utility(Cog, emoji=1268851252565905449):
         await msg.add_reaction(yes_thumb)
         await msg.add_reaction(no_thumb)
 
-    @commands.command(aliases=["tzset"])
+    @commands.command(aliases=["tzset", "timeset"])
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def timezoneset(self, ctx: Context):
         """Set your timezone."""
@@ -418,7 +418,7 @@ class Utility(Cog, emoji=1268851252565905449):
             embed=green_embed(description=f"{self.bot.yes} Timezone set successfully.")
         )
 
-    @commands.command(aliases=["tz"])
+    @commands.command(aliases=["tz", "time"])
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def timezone(
         self, ctx: Context, user: Optional[Union[discord.Member, discord.User]] = None
