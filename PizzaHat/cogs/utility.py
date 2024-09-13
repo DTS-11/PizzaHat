@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import time
 import unicodedata
@@ -6,6 +7,7 @@ from typing import Optional, Union
 
 import discord
 import psutil
+import pytz
 import requests
 from colorthief import ColorThief
 from discord.ext import commands
@@ -377,6 +379,91 @@ class Utility(Cog, emoji=1268851252565905449):
 
         await msg.add_reaction(yes_thumb)
         await msg.add_reaction(no_thumb)
+
+    @commands.command(aliases=["tzset"])
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    async def timezoneset(self, ctx: Context):
+        """Set your timezone."""
+
+        await ctx.send(
+            "Please enter your timezone. For a list of valid timezones, visit: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones\nYou have `2 minutes` to respond."
+        )
+
+        def check(m):
+            return m.author == ctx.author and m.channel == ctx.channel
+
+        try:
+            msg = await self.bot.wait_for("message", check=check, timeout=120.0)
+        except asyncio.TimeoutError:
+            await ctx.send("You didn't respond in time. Please try again.")
+            return
+
+        timezone = msg.content.strip()
+
+        if timezone not in pytz.all_timezones:
+            await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} That is not a valid timezone."
+                )
+            )
+            return
+
+        await self.bot.db.execute(
+            "INSERT INTO user_timezone (user_id, timezone) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET timezone = $2",
+            ctx.author.id,
+            timezone,
+        ) if self.bot.db else None
+
+        await ctx.send(
+            embed=green_embed(description=f"{self.bot.yes} Timezone set successfully.")
+        )
+
+    @commands.command(aliases=["tz"])
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    async def timezone(
+        self, ctx: Context, user: Optional[Union[discord.Member, discord.User]] = None
+    ):
+        """Shows the timezone and other info of a user or yourself."""
+
+        user = user or ctx.author
+        tz = (
+            await self.bot.db.fetchval(
+                "SELECT timezone FROM user_timezone WHERE user_id=$1", user.id
+            )
+            if self.bot.db
+            else None
+        )
+
+        if tz:
+            try:
+                tz_time = datetime.datetime.now(pytz.timezone(tz))
+                formatted_time = tz_time.strftime("%d-%m-%Y %H:%M:%S %Z")
+                if user == ctx.author:
+                    await ctx.send(
+                        embed=normal_embed(
+                            description=f"<:timer:1268872526549745736> Your timezone is `{tz}`.\nCurrent time: `{formatted_time}`"
+                        )
+                    )
+                else:
+                    await ctx.send(
+                        embed=normal_embed(
+                            description=f"<:timer:1268872526549745736> {user.mention}'s timezone is `{tz}`.\nCurrent time: `{formatted_time}`"
+                        )
+                    )
+
+            except pytz.exceptions.UnknownTimeZoneError:
+                await ctx.send(
+                    embed=red_embed(
+                        description=f"{self.bot.no} The timezone `{tz}` for {user.mention} is invalid. They may need to reset it."
+                    )
+                )
+
+        else:
+            await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} I could not find the timezone for {user.mention}."
+                )
+            )
 
     @commands.command(aliases=["ui"])
     @commands.cooldown(1, 10, commands.BucketType.user)
