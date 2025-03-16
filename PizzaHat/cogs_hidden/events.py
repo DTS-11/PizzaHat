@@ -93,6 +93,11 @@ class Events(Cog):
                 (guild_id BIGINT PRIMARY KEY, welcome_img_no INT)"""
             )
 
+            await self.bot.db.execute(
+                """CREATE TABLE IF NOT EXISTS user_timezone
+                (user_id BIGINT PRIMARY KEY, timezone TEXT)"""
+            )
+
     # ====== BOT PING MSG ======
 
     @Cog.listener()
