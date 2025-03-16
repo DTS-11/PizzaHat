@@ -57,7 +57,7 @@ class Dev(Cog, emoji=1268856867585658981):
         body = self.cleanup_code(body)
         stdout = io.StringIO()
 
-        to_compile = f'async def func():\n{textwrap.indent(body, "    ")}'
+        to_compile = f"async def func():\n{textwrap.indent(body, '    ')}"
 
         def paginate(text: str) -> list[str]:
             """Simple generator that paginates text."""

@@ -36,9 +36,9 @@ class AntiAltsConfig(Cog):
                 return
 
             channel = await guild.fetch_channel(data)
-            assert isinstance(
-                channel, discord.TextChannel
-            ), "channel will always be a textchannel"
+            assert isinstance(channel, discord.TextChannel), (
+                "channel will always be a textchannel"
+            )
             return channel
 
     @alru_cache()

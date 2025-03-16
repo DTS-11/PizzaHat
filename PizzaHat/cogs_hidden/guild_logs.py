@@ -34,9 +34,9 @@ class GuildLogs(Cog):
                 return
 
             channel = await guild.fetch_channel(data)
-            assert isinstance(
-                channel, discord.TextChannel
-            ), "channel will always be a textchannel"
+            assert isinstance(channel, discord.TextChannel), (
+                "channel will always be a textchannel"
+            )
             return channel
 
     @alru_cache()
@@ -592,7 +592,7 @@ class GuildLogs(Cog):
             if before.banner != after.banner:
                 em.add_field(
                     name="Banner Updated!",
-                    value=f"{'`None`' if before.banner is None else '[`Before`]('+str(before.banner.url)+')'} ➜ {'`None`' if after.banner is None else '[`After`]('+str(after.banner.url)+')'}",
+                    value=f"{'`None`' if before.banner is None else '[`Before`](' + str(before.banner.url) + ')'} ➜ {'`None`' if after.banner is None else '[`After`](' + str(after.banner.url) + ')'}",
                     inline=False,
                 )
 
@@ -613,7 +613,7 @@ class GuildLogs(Cog):
             if before.icon != after.icon:
                 em.add_field(
                     name="Icon",
-                    value=f"{'`None`' if before.icon is None else '[`Before`]('+str(before.icon.url)+')'} ➜ {'`None`' if after.icon is None else '[`After`]('+str(after.icon.url)+')'}",
+                    value=f"{'`None`' if before.icon is None else '[`Before`](' + str(before.icon.url) + ')'} ➜ {'`None`' if after.icon is None else '[`After`](' + str(after.icon.url) + ')'}",
                     inline=False,
                 )
 
@@ -653,7 +653,7 @@ class GuildLogs(Cog):
             if before.splash != after.splash:
                 em.add_field(
                     name="Invite Splash Banner",
-                    value=f"{'`None`' if before.splash is None else '[`Before`]('+str(before.splash.url)+')'} ➜ {'`None`' if after.splash is None else '[`After`]('+str(after.splash.url)+')'}",
+                    value=f"{'`None`' if before.splash is None else '[`Before`](' + str(before.splash.url) + ')'} ➜ {'`None`' if after.splash is None else '[`After`](' + str(after.splash.url) + ')'}",
                     inline=False,
                 )
 

@@ -173,7 +173,7 @@ class PizzaHat(commands.Bot):
             pass
 
         print(
-            f"Loaded all cogs.\nSuccess: {success}, Fail: {fail}\nDone! ({success+fail}/{total})"
+            f"Loaded all cogs.\nSuccess: {success}, Fail: {fail}\nDone! ({success + fail}/{total})"
         )
         print()
         print(f"Logged in as {self.user}")
