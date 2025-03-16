@@ -150,8 +150,8 @@ class Utility(Cog, emoji=1268851252565905449):
 
         await msg.edit(
             content="🏓 Pong!"
-            f"\nAPI: `{round(self.bot.latency*1000)}ms`"
-            f"\nBot: `{round(time2-time1)*1000}ms`"
+            f"\nAPI: `{round(self.bot.latency * 1000)}ms`"
+            f"\nBot: `{round(time2 - time1) * 1000}ms`"
         )
 
     @commands.command()
@@ -825,7 +825,8 @@ class Utility(Cog, emoji=1268851252565905449):
                     voice += 1
 
         memory_usage = self.process.memory_full_info().uss / 1024**2
-        cpu_usage = self.process.cpu_percent() / psutil.cpu_count()
+        cpu_count = psutil.cpu_count() or 1  # Ensure cpu_count is not None or zero
+        cpu_usage = self.process.cpu_percent() / cpu_count
 
         dpy_version = discord.__version__
         dev = self.bot.get_user(710247495334232164)

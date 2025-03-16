@@ -1,4 +1,5 @@
 import asyncio
+from io import BytesIO
 from typing import Union
 
 import discord
@@ -43,7 +44,7 @@ def find_closest_emoji(color) -> str:
 
 def emojify_image(img, size=14) -> str:
     WIDTH, HEIGHT = (size, size)
-    small_img = img.resize((WIDTH, HEIGHT), Image.NEAREST)
+    small_img = img.resize((WIDTH, HEIGHT), Image.Resampling.NEAREST)
 
     emoji = ""
     small_img = small_img.load()
@@ -281,7 +282,7 @@ class Emojis(Cog, emoji=1268867324195246133):
 
         def get_emojified_image() -> str:
             r = requests.get(url, stream=True)
-            image = Image.open(r.raw).convert("RGB")
+            image = Image.open(BytesIO(r.content)).convert("RGB")
             res = emojify_image(image, size)
 
             if size > 14:
