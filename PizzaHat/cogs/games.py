@@ -108,7 +108,7 @@ class Games(Cog, emoji=1268852069624975441):
         """Play memory game."""
 
         game = button_games.MemoryGame()
-        await game.start(ctx, timeout=180, embed_color=self.bot.color)
+        await game.start(ctx, timeout=180, embed_color=self.bot.color, button_style=discord.ButtonStyle.blurple)
 
 
 async def setup(bot):
