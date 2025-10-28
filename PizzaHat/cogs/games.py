@@ -102,6 +102,14 @@ class Games(Cog, emoji=1268852069624975441):
         game = button_games.BetaConnectFour(red=ctx.author, blue=member)  # type: ignore
         await game.start(ctx, timeout=300, embed_color=self.bot.color)
 
+    @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def memory(self, ctx: Context):
+        """Play memory game."""
+
+        game = button_games.MemoryGame()
+        await game.start(ctx, timeout=180, embed_color=self.bot.color)
+
 
 async def setup(bot):
     await bot.add_cog(Games(bot))
