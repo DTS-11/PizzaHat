@@ -1036,12 +1036,44 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.command()
+    @commands.command(name="clonerole")
+    @commands.guild_only()
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def clone_role(self, ctx: Context, role: discord.Role):
+        """Clone a role."""
+        if not ctx.guild:
+            return
+
+        if role.position >= ctx.guild.me.top_role.position:
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} You can't clone a role that is above the highest role in the server."
+                )
+            )
+
+        new_role = await ctx.guild.create_role(
+            name=role.name,
+            permissions=role.permissions,
+            colour=role.colour,
+            hoist=role.hoist,
+            mentionable=role.mentionable,
+            reason=f"Role cloned by {ctx.author}",
+        )
+
+        await ctx.send(
+            embed=green_embed(
+                description=f"{self.bot.yes} Role **{new_role.mention}** cloned successfully!"
+            )
+        )
+
+    @commands.command(name="createrole")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def createrole(
+    async def create_role(
         self,
         ctx: Context,
         *,
@@ -1064,12 +1096,12 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.command()
+    @commands.command(name="deleterole")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def role_delete(self, ctx: Context, *, role: discord.Role):
+    async def delete_role(self, ctx: Context, *, role: discord.Role):
         """Delete a role."""
 
         if ctx.guild is not None:
@@ -1081,10 +1113,10 @@ class Mod(Cog, emoji=1268851270136107048):
                     )
                 )
 
-    @commands.command()
+    @commands.command(name="rolelist")
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def rolelist(self, ctx: Context):
+    async def role_list(self, ctx: Context):
         """List all the server roles."""
 
         if ctx.guild is not None:
@@ -1119,12 +1151,12 @@ class Mod(Cog, emoji=1268851270136107048):
                 view = Paginator(ctx, embeds)
                 return await ctx.send(embed=embeds[0], view=view)
 
-    @commands.command()
+    @commands.command(name="createchannel")
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def createchannel(self, ctx: Context, name: str):
+    async def create_channel(self, ctx: Context, name: str):
         """Creates a new channel."""
 
         if ctx.guild is not None:
@@ -1135,12 +1167,12 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.command()
+    @commands.command(name="createchannel")
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def deletechannel(self, ctx: Context, channel: discord.TextChannel):
+    async def delete_channel(self, ctx: Context, channel: discord.TextChannel):
         """Delete a channel."""
 
         await channel.delete()
@@ -1150,10 +1182,10 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         )
 
-    @commands.command()
+    @commands.command(name="channellist")
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def channellist(self, ctx: Context):
+    async def channel_list(self, ctx: Context):
         """List all the server channels."""
 
         if ctx.guild is not None:
@@ -1236,12 +1268,12 @@ class Mod(Cog, emoji=1268851270136107048):
                 view = Paginator(ctx, embeds)
                 return await ctx.send(embed=embeds[0], view=view)
 
-    @commands.command()
+    @commands.command(name="channeltopic")
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def channeltopic(
+    async def channel_topic(
         self,
         ctx: Context,
         channel: Optional[Union[discord.TextChannel, discord.ForumChannel]] = None,
