@@ -1167,7 +1167,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.command(name="createchannel")
+    @commands.command(name="deletechannel")
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
