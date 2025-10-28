@@ -804,7 +804,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
 
             else:
-                await member.ban(reason=f"{reason}", delete_message_days=0)
+                await member.ban(reason=f"{reason}")
                 await ctx.send(
                     embed=green_embed(
                         description=f"{self.bot.yes} Banned {member.mention}"
@@ -888,7 +888,7 @@ class Mod(Cog, emoji=1268851270136107048):
         else:
             for target in members:
                 reason = f"Banned by {ctx.author} (ID: {ctx.author.id})"
-                await target.ban(reason=reason, delete_message_days=0)
+                await target.ban(reason=reason)
                 await ctx.send(
                     embed=green_embed(description=f"{self.bot.yes} Banned {target}")
                 )
