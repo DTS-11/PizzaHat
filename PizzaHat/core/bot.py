@@ -128,7 +128,6 @@ class PizzaHat(commands.Bot):
         self.yes = "<:yes:1268859625105784865>"
         self.no = "<:no:1268859614129295514>"
         self.color = 0x456DD4
-        self.session = aiohttp.ClientSession()
 
     async def setup_hook(self) -> None:
         if not hasattr(self, "uptime"):
@@ -136,6 +135,9 @@ class PizzaHat(commands.Bot):
 
         # Create DB connection
         self.db = await create_db_pool()
+
+        # Create aiohttp session
+        self.session = aiohttp.ClientSession()
 
         # Make the tickets view persistent
         ticket_view = import_module("utils.ui").TicketView(self)
