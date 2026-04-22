@@ -10,7 +10,7 @@ from discord.ext import commands
 from discord.ext.commands import CommandError, Context
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
 
-from core.database import create_db_pool
+from core.database import bootstrap_database, create_db_pool
 from utils.config import REPO_LINK
 
 INITIAL_EXTENSIONS = [
@@ -128,6 +128,7 @@ class PizzaHat(commands.Bot):
         self.yes = "<:yes:1268859625105784865>"
         self.no = "<:no:1268859614129295514>"
         self.color = 0x456DD4
+        self.logging_webhooks: dict[int, discord.Webhook] = {}
 
     async def setup_hook(self) -> None:
         if not hasattr(self, "uptime"):
@@ -135,6 +136,7 @@ class PizzaHat(commands.Bot):
 
         # Create DB connection
         self.db = await create_db_pool()
+        await bootstrap_database(self.db)
 
         # Create aiohttp session
         self.session = aiohttp.ClientSession()
@@ -180,6 +182,73 @@ class PizzaHat(commands.Bot):
         print()
         print(f"Logged in as {self.user}")
         print("=========================")
+
+    async def close(self) -> None:
+        if hasattr(self, "session") and not self.session.closed:
+            await self.session.close()
+        await super().close()
+
+    async def get_logging_webhook(
+        self, channel: discord.TextChannel
+    ) -> discord.Webhook | None:
+        cached_webhook = self.logging_webhooks.get(channel.id)
+        if cached_webhook is not None:
+            return cached_webhook
+
+        if self.user is None:
+            return None
+
+        webhook_name = f"{self.user.name} Logging"
+
+        try:
+            webhooks = await channel.webhooks()
+        except discord.Forbidden:
+            return None
+
+        for webhook in webhooks:
+            if webhook.name == webhook_name and webhook.user and webhook.user.id == self.user.id:
+                self.logging_webhooks[channel.id] = webhook
+                return webhook
+
+        try:
+            webhook = await channel.create_webhook(name=webhook_name)
+        except discord.Forbidden:
+            return None
+
+        self.logging_webhooks[channel.id] = webhook
+        return webhook
+
+    async def send_log(
+        self,
+        channel: discord.TextChannel,
+        *,
+        embed: discord.Embed,
+        content: str | None = None,
+    ) -> None:
+        webhook = await self.get_logging_webhook(channel)
+        if webhook is None or self.user is None:
+            await channel.send(content=content, embed=embed)
+            return
+
+        try:
+            if content is None:
+                await webhook.send(
+                    embed=embed,
+                    username=f"{self.user.name} Logging",
+                    avatar_url=self.user.display_avatar.url,
+                    wait=False,
+                )
+            else:
+                await webhook.send(
+                    content=content,
+                    embed=embed,
+                    username=f"{self.user.name} Logging",
+                    avatar_url=self.user.display_avatar.url,
+                    wait=False,
+                )
+        except (discord.Forbidden, discord.HTTPException):
+            self.logging_webhooks.pop(channel.id, None)
+            await channel.send(content=content, embed=embed)
 
     async def on_command_error(self, ctx: Context, error: CommandError) -> None:
         if isinstance(error, commands.CommandNotFound):

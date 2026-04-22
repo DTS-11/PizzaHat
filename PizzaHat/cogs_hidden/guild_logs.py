@@ -22,6 +22,10 @@ class GuildLogs(Cog):
         self.recent_kicks = defaultdict(set)
         self.lock = asyncio.Lock()
 
+    def clear_config_cache(self, guild_id: int | None = None) -> None:
+        self.get_logs_channel.cache_clear()
+        self.check_log_enabled.cache_clear()
+
     @alru_cache()
     async def get_logs_channel(self, guild_id: int) -> Union[discord.TextChannel, None]:
         if self.bot.db is not None:
@@ -33,7 +37,7 @@ class GuildLogs(Cog):
             if not guild or not data:
                 return
 
-            channel = await guild.fetch_channel(data)
+            channel = guild.get_channel(data) or await guild.fetch_channel(data)
             assert isinstance(channel, discord.TextChannel), (
                 "channel will always be a textchannel"
             )
@@ -88,7 +92,7 @@ class GuildLogs(Cog):
             )
             em.set_footer(text=f"User ID: {before.author.id}")
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener()
     async def on_message_delete(self, msg: discord.Message):
@@ -117,7 +121,7 @@ class GuildLogs(Cog):
             )
             em.set_footer(text=f"User ID: {msg.author.id}")
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener()
     async def on_bulk_message_delete(self, msgs: List[discord.Message]):
@@ -143,7 +147,7 @@ class GuildLogs(Cog):
             )
             em.set_footer(text=f"User ID: {msgs[0].author.id}")
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     # ====== MEMBER LOGS ======
 
@@ -167,7 +171,7 @@ class GuildLogs(Cog):
             em.set_author(name=user, icon_url=user.avatar.url if user.avatar else None)
             em.set_footer(text=f"User ID: {user.id}")
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener()
     async def on_member_unban(self, guild: discord.Guild, user: discord.User):
@@ -190,7 +194,7 @@ class GuildLogs(Cog):
             em.set_author(name=user, icon_url=user.avatar.url if user.avatar else None)
             em.set_footer(text=f"User ID: {user.id}")
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener(name="on_member_join")
     async def send_join_log(self, member: discord.Member):
@@ -224,7 +228,7 @@ class GuildLogs(Cog):
             )
             em.add_field(name="Members:", value=member.guild.member_count, inline=False)
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener()
     async def on_member_remove(self, member: discord.Member):
@@ -276,7 +280,7 @@ class GuildLogs(Cog):
             )
             em.set_footer(text=f"ID: {member.id}")
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
         async with self.lock:
             self.recent_kicks[member.guild.id].add(member.id)
@@ -324,7 +328,7 @@ class GuildLogs(Cog):
             )
             em.add_field(name="Roles:", value=roles, inline=False)
             em.add_field(name="Members:", value=member.guild.member_count, inline=False)
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener(name="on_member_update")
     async def member_role_update(self, before: discord.Member, after: discord.Member):
@@ -368,7 +372,7 @@ class GuildLogs(Cog):
             )
             em.set_footer(text=f"ID: {after.id}")
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener(name="on_member_update")
     async def member_nickname_update(
@@ -396,7 +400,7 @@ class GuildLogs(Cog):
             )
             em.set_footer(text=f"ID: {after.id}")
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     # ====== VOICE CHANNEL LOGS ======
 
@@ -439,7 +443,7 @@ class GuildLogs(Cog):
                 em.description = f"{member.mention} moved from {before.channel.mention} to {after.channel.mention}"
                 em.color = discord.Color.orange()
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     # ====== GUILD ROLE LOGS ======
 
@@ -462,7 +466,7 @@ class GuildLogs(Cog):
             em.add_field(name="Color", value=role.color, inline=False)
             em.set_footer(text=f"Role ID: {role.id}")
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener()
     async def on_guild_role_delete(self, role: discord.Role):
@@ -482,7 +486,7 @@ class GuildLogs(Cog):
             em.add_field(name="Color", value=role.color, inline=False)
             em.set_footer(text=f"Role ID: {role.id}")
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener(name="on_guild_role_update")
     async def guild_role_update(self, before: discord.Role, after: discord.Role):
@@ -553,7 +557,7 @@ class GuildLogs(Cog):
                 em.add_field(name="Permissions", value=all_perms, inline=False)
 
             em.set_footer(text=f"Role ID: {before.id}")
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     # ===== GUILD LOGS =====
 
@@ -664,7 +668,7 @@ class GuildLogs(Cog):
                     inline=False,
                 )
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener()
     async def on_guild_emojis_update(
@@ -730,7 +734,7 @@ class GuildLogs(Cog):
                     inline=False,
                 )
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener()
     async def on_guild_stickers_update(
@@ -786,7 +790,7 @@ class GuildLogs(Cog):
                     inline=False,
                 )
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     # ====== GUILD CHANNEL UPDATES  ======
 
@@ -816,7 +820,7 @@ class GuildLogs(Cog):
             em.set_footer(text=f"ID: {channel.id}")
 
             if isinstance(log_channel, discord.TextChannel):
-                await log_channel.send(embed=em)
+                await self.bot.send_log(log_channel, embed=em)
 
     @Cog.listener()
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
@@ -848,7 +852,7 @@ class GuildLogs(Cog):
                 em.title = "Channel Deleted"
 
             if isinstance(log_channel, discord.TextChannel):
-                await log_channel.send(embed=em)
+                await self.bot.send_log(log_channel, embed=em)
 
     @Cog.listener()
     async def on_guild_channel_update(self, before, after):
@@ -972,7 +976,7 @@ class GuildLogs(Cog):
                 ),
             )
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener()
     async def on_integration_update(self, integration: discord.Integration):
@@ -1008,7 +1012,7 @@ class GuildLogs(Cog):
                 ),
             )
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener()
     async def on_raw_integration_delete(
@@ -1042,7 +1046,7 @@ class GuildLogs(Cog):
                     icon_url=(guild.icon.url if guild.icon else None),
                 )
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     # ====== GUILD AUTOMOD LOGS ======
 
@@ -1071,7 +1075,7 @@ class GuildLogs(Cog):
             """
 
             em.set_thumbnail(url=rule.guild.icon.url if rule.guild.icon else None)
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener()
     async def on_automod_rule_update(self, rule: discord.AutoModRule):
@@ -1098,7 +1102,7 @@ class GuildLogs(Cog):
             """
 
             em.set_thumbnail(url=rule.guild.icon.url if rule.guild.icon else None)
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener()
     async def on_automod_rule_delete(self, rule: discord.AutoModRule):
@@ -1125,7 +1129,7 @@ class GuildLogs(Cog):
             """
 
             em.set_thumbnail(url=rule.guild.icon.url if rule.guild.icon else None)
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener()
     async def on_automod_action(self, execution: discord.AutoModAction):
@@ -1157,7 +1161,7 @@ class GuildLogs(Cog):
             em.set_thumbnail(
                 url=execution.guild.icon.url if execution.guild.icon else None
             )
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     # ====== GUILD INVITE LOGS ======
 
@@ -1197,7 +1201,7 @@ class GuildLogs(Cog):
                 )
             em.set_footer(text=f"ID: {invite.id}")
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
     @Cog.listener()
     async def on_invite_delete(self, invite: discord.Invite):
@@ -1227,7 +1231,7 @@ class GuildLogs(Cog):
                 )
             em.set_footer(text=f"ID: {invite.id}")
 
-            await channel.send(embed=em)
+            await self.bot.send_log(channel, embed=em)
 
 
 async def setup(bot):

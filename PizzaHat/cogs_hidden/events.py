@@ -37,66 +37,7 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_ready(self):
-        if self.bot.db is not None:
-            await self.bot.db.execute(
-                """CREATE TABLE IF NOT EXISTS afk
-                (guild_id BIGINT, user_id BIGINT, reason TEXT)"""
-            )
-
-            await self.bot.db.execute(
-                """CREATE TABLE IF NOT EXISTS warnlogs
-                (id SERIAL PRIMARY KEY, guild_id BIGINT, user_id BIGINT, mod_id BIGINT, reason TEXT)"""
-            )
-
-            await self.bot.db.execute(
-                """CREATE TABLE IF NOT EXISTS logs_config
-                (guild_id BIGINT PRIMARY KEY, module TEXT[] DEFAULT ARRAY['all'])"""
-            )
-
-            await self.bot.db.execute(
-                """CREATE TABLE IF NOT EXISTS guild_logs
-                (guild_id BIGINT PRIMARY KEY, channel_id BIGINT)"""
-            )
-
-            await self.bot.db.execute(
-                """CREATE TABLE IF NOT EXISTS automod
-                (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT false)"""
-            )
-
-            await self.bot.db.execute(
-                """CREATE TABLE IF NOT EXISTS antialt
-                (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT false, min_age INT, restricted_role BIGINT, level INT)"""
-            )
-
-            await self.bot.db.execute(
-                """CREATE TABLE IF NOT EXISTS tags
-                (guild_id BIGINT PRIMARY KEY, tag_name TEXT, content TEXT, creator BIGINT)"""
-            )
-
-            await self.bot.db.execute(
-                """CREATE TABLE IF NOT EXISTS star_config
-                (guild_id BIGINT PRIMARY KEY, channel_id BIGINT, star_count INT DEFAULT 5, self_star BOOL DEFAULT true)"""
-            )
-
-            await self.bot.db.execute(
-                """CREATE TABLE IF NOT EXISTS star_info
-                (guild_id BIGINT, user_msg_id BIGINT PRIMARY KEY, bot_msg_id BIGINT)"""
-            )
-
-            # await self.bot.db.execute(
-            #     """CREATE TABLE IF NOT EXISTS welcome
-            #     (guild_id BIGINT PRIMARY KEY, channel_id BIGINT, title TEXT, description TEXT, thumbnail TEXT, footer TEXT, author TEXT, color INT, welcome_img_enabled BOOL DEFAULT false)"""
-            # )
-
-            await self.bot.db.execute(
-                """CREATE TABLE IF NOT EXISTS welcome_img
-                (guild_id BIGINT PRIMARY KEY, welcome_img_no INT)"""
-            )
-
-            await self.bot.db.execute(
-                """CREATE TABLE IF NOT EXISTS user_timezone
-                (user_id BIGINT PRIMARY KEY, timezone TEXT)"""
-            )
+        return
 
     # ====== BOT PING MSG ======
 
@@ -161,6 +102,12 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild):
+        for cog_name in ("AntiAlts", "AntiAltsConfig", "AutoModeration", "AutoModConfig", "GuildLogs", "StarboardEvents"):
+            cog = self.bot.get_cog(cog_name)
+            clear_cache = getattr(cog, "clear_config_cache", None)
+            if callable(clear_cache):
+                clear_cache(guild.id)
+
         em = red_embed(
             title="Guild Left",
             timestamp=True,
@@ -187,7 +134,7 @@ class Events(Cog):
             return
 
         data = (
-            await self.bot.db.fetch(
+            await self.bot.db.fetchrow(
                 "SELECT reason FROM afk WHERE guild_id=$1 AND user_id=$2",
                 msg.guild.id,
                 msg.author.id,
@@ -213,7 +160,7 @@ class Events(Cog):
         if msg.mentions:
             for mention in msg.mentions:
                 d2 = (
-                    await self.bot.db.fetch(
+                    await self.bot.db.fetchrow(
                         "SELECT reason FROM afk WHERE guild_id=$1 AND user_id=$2",
                         msg.guild.id,
                         mention.id,
@@ -225,7 +172,7 @@ class Events(Cog):
                 if d2 and mention.id != msg.author.id:
                     em = discord.Embed(
                         title="Member AFK",
-                        description=f"{mention.name} is AFK\n**Reason:** {d2[0]['reason']}",
+                        description=f"{mention.name} is AFK\n**Reason:** {d2['reason']}",
                         color=discord.Color.og_blurple(),
                         timestamp=msg.created_at,
                     )

@@ -44,6 +44,9 @@ class StarboardEvents(Cog):
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
+    def clear_config_cache(self, guild_id: int | None = None) -> None:
+        self.get_starboard_config.cache_clear()
+
     @alru_cache()
     async def get_starboard_config(self, guild_id: int) -> Union[dict, None]:
         data = (

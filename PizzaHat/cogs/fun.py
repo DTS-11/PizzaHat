@@ -92,7 +92,7 @@ class Fun(Cog, emoji=802615573556363284):
             return
 
         data = (
-            await self.bot.db.fetch(
+            await self.bot.db.fetchrow(
                 "SELECT reason FROM afk WHERE guild_id=$1 AND user_id=$2",
                 ctx.guild.id,
                 ctx.author.id,
@@ -102,7 +102,7 @@ class Fun(Cog, emoji=802615573556363284):
         )
 
         if data:
-            if data[0] == reason:
+            if data["reason"] == reason:
                 return await ctx.send(
                     embed=red_embed("You are already AFK with the same reason.")
                 )

@@ -86,6 +86,14 @@ class AntiAlts(Cog, emoji=1268851128548724756):
     def __init__(self, bot):
         self.bot: PizzaHat = bot
 
+    def clear_config_cache(self, guild_id: int | None = None) -> None:
+        self.get_aa_details.cache_clear()
+
+        hidden_cog = self.bot.get_cog("AntiAltsConfig")
+        clear_cache = getattr(hidden_cog, "clear_config_cache", None)
+        if callable(clear_cache):
+            clear_cache(guild_id)
+
     @alru_cache()
     async def get_aa_details(self, guild_id: int) -> Union[dict, None]:
         if self.bot.db is not None:
@@ -275,7 +283,7 @@ Type `cancel` to cancel the setup.
 
                 (
                     await self.bot.db.execute(
-                        "INSERT INTO antialt VALUES ($1, $2, $3, $4, $5)",
+                        "INSERT INTO antialt (guild_id, enabled, min_age, restricted_role, level) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (guild_id) DO UPDATE SET enabled=$2, min_age=$3, restricted_role=$4, level=$5",
                         ctx.guild.id,
                         True,
                         min_account_age,
@@ -285,6 +293,7 @@ Type `cancel` to cancel the setup.
                     if self.bot.db
                     else None
                 )
+                self.clear_config_cache(ctx.guild.id)
 
                 await msg.edit(
                     content=f"""
@@ -307,12 +316,14 @@ Here are your settings:
 
                 (
                     await self.bot.db.execute(
-                        "INSERT INTO antialt (enabled) VALUES (false) WHERE guild_id=$1",
+                        "UPDATE antialt SET enabled=$1 WHERE guild_id=$2",
+                        False,
                         ctx.guild.id,
                     )
                     if self.bot.db
                     else None
                 )
+                self.clear_config_cache(ctx.guild.id)
                 return await ctx.send(
                     f"{self.bot.yes} Anti-alt system has been disabled."
                 )
@@ -333,13 +344,14 @@ Here are your settings:
 
                 (
                     await self.bot.db.execute(
-                        "INSERT INTO antialt (min_age) VALUES ($1) WHERE guild_id=$2",
+                        "UPDATE antialt SET min_age=$1 WHERE guild_id=$2",
                         setting,
                         ctx.guild.id,
                     )
                     if self.bot.db
                     else None
                 )
+                self.clear_config_cache(ctx.guild.id)
                 return await ctx.send(
                     f"{self.bot.yes} Minimum account age has been updated to `{setting}` day(s)."
                 )
@@ -360,13 +372,14 @@ Here are your settings:
 
                 (
                     await self.bot.db.execute(
-                        "INSERT INTO antialt (level) VALUES ($1) WHERE guild_id=$2",
+                        "UPDATE antialt SET level=$1 WHERE guild_id=$2",
                         setting,
                         ctx.guild.id,
                     )
                     if self.bot.db
                     else None
                 )
+                self.clear_config_cache(ctx.guild.id)
                 return await ctx.send(
                     f"{self.bot.yes} Anti-alt protection level has been updated to `{setting}`."
                 )
@@ -387,13 +400,14 @@ Here are your settings:
 
                 (
                     await self.bot.db.execute(
-                        "INSERT INTO antialt (restricted_role) VALUES ($1) WHERE guild_id=$2",
-                        setting,
+                        "UPDATE antialt SET restricted_role=$1 WHERE guild_id=$2",
+                        setting.id,
                         ctx.guild.id,
                     )
                     if self.bot.db
                     else None
                 )
+                self.clear_config_cache(ctx.guild.id)
                 return await ctx.send(
                     f"{self.bot.yes} Restricted role has been updated to `{setting.name}`."
                 )

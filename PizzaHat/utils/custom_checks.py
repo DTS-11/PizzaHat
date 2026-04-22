@@ -1,5 +1,9 @@
-# from discord.ext import commands
-# from discord.ext.commands import Context
+from discord.ext import commands
+from discord.ext.commands import Context
+
+
+class PremiumCheck(commands.CheckFailure):
+    pass
 
 
 # class NoStaffRoleSet(commands.CheckFailure):
@@ -8,6 +12,28 @@
 
 # class UserNotStaff(commands.CheckFailure):
 #     pass
+
+
+def premium():
+    """Check if the guild is premium."""
+
+    async def predicate(ctx: Context):
+        if not ctx.guild:
+            raise commands.CheckFailure("This command can only be used in a server.")
+
+        if ctx.bot.db is None:
+            raise PremiumCheck()
+
+        guild_id = await ctx.bot.db.fetchval(
+            "SELECT guild_id FROM premium WHERE guild_id=$1", ctx.guild.id
+        )
+
+        if guild_id:
+            return True
+        else:
+            raise PremiumCheck()
+
+    return commands.check(predicate)
 
 
 # def server_staff_role():

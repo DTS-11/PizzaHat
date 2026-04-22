@@ -20,6 +20,18 @@ class Mod(Cog, emoji=1268851270136107048):
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
+    def clear_log_config_cache(self, guild_id: int | None = None) -> None:
+        guild_logs_cog = self.bot.get_cog("GuildLogs")
+        clear_cache = getattr(guild_logs_cog, "clear_config_cache", None)
+        if callable(clear_cache):
+            clear_cache(guild_id)
+
+        for cog_name in ("AutoModConfig", "AntiAltsConfig"):
+            cog = self.bot.get_cog(cog_name)
+            clear_cache = getattr(cog, "clear_config_cache", None)
+            if callable(clear_cache):
+                clear_cache(guild_id)
+
     @commands.command()
     @commands.guild_only()
     @commands.cooldown(2, 60, commands.BucketType.user)
@@ -39,10 +51,11 @@ class Mod(Cog, emoji=1268851270136107048):
             channel.id,
         )
         await self.bot.db.execute(
-            "INSERT INTO logs_config (guild_id, module) VALUES ($1, $2)",
+            "INSERT INTO logs_config (guild_id, module) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET module=$2",
             ctx.guild.id,
             ["all"],
         )
+        self.clear_log_config_cache(ctx.guild.id)
 
         await ctx.send(
             embed=green_embed(
@@ -128,10 +141,11 @@ class Mod(Cog, emoji=1268851270136107048):
 
         # Update log configurations
         await self.bot.db.execute(
-            "UPDATE logs_config SET module = $2 WHERE guild_id = $1",
+            "INSERT INTO logs_config (guild_id, module) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET module=$2",
             ctx.guild.id,
             lowercase_modules,
         )
+        self.clear_log_config_cache(ctx.guild.id)
 
         # Send confirmation message
         enabled_modules = ", ".join(lowercase_modules)

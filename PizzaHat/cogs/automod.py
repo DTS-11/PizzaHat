@@ -12,6 +12,14 @@ class AutoModeration(Cog, emoji=1268880500248936491):
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
+    def clear_config_cache(self, guild_id: int | None = None) -> None:
+        self.check_if_am_is_enabled.cache_clear()
+
+        hidden_cog = self.bot.get_cog("AutoModConfig")
+        clear_cache = getattr(hidden_cog, "clear_config_cache", None)
+        if callable(clear_cache):
+            clear_cache(guild_id)
+
     @alru_cache()
     async def check_if_am_is_enabled(self, guild_id: int) -> bool:
         data: bool = (
@@ -43,13 +51,14 @@ class AutoModeration(Cog, emoji=1268880500248936491):
 
         (
             await self.bot.db.execute(
-                "INSERT INTO automod (guild_id, enabled) VALUES ($1, $2)",
+                "INSERT INTO automod (guild_id, enabled) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET enabled=$2",
                 ctx.guild.id,
                 True,
             )
             if self.bot.db and ctx.guild
             else None
         )
+        self.clear_config_cache(ctx.guild.id if ctx.guild else None)
         await ctx.send(f"{self.bot.yes} Auto-mod enabled.")
 
     @automod.command(name="disable")
@@ -62,11 +71,14 @@ class AutoModeration(Cog, emoji=1268880500248936491):
 
         (
             await self.bot.db.execute(
-                "DELETE FROM automod WHERE guild_id=$1", ctx.guild.id
+                "INSERT INTO automod (guild_id, enabled) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET enabled=$2",
+                ctx.guild.id,
+                False,
             )
             if self.bot.db and ctx.guild
             else None
         )
+        self.clear_config_cache(ctx.guild.id if ctx.guild else None)
         await ctx.send(f"{self.bot.yes} Auto-mod disabled.")
 
 

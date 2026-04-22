@@ -24,6 +24,10 @@ class AntiAltsConfig(Cog):
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
+    def clear_config_cache(self, guild_id: int | None = None) -> None:
+        self.get_logs_channel.cache_clear()
+        self.check_if_aa_is_enabled.cache_clear()
+
     @alru_cache()
     async def get_logs_channel(self, guild_id: int) -> Union[discord.TextChannel, None]:
         if self.bot.db is not None:
@@ -35,7 +39,7 @@ class AntiAltsConfig(Cog):
             if not guild or not data:
                 return
 
-            channel = await guild.fetch_channel(data)
+            channel = guild.get_channel(data) or await guild.fetch_channel(data)
             assert isinstance(channel, discord.TextChannel), (
                 "channel will always be a textchannel"
             )
@@ -107,7 +111,7 @@ class AntiAltsConfig(Cog):
             action_value = "BANNED"
 
         embed.add_field(name="Action:", value=action_value, inline=False)
-        await logs_channel.send(embed=embed)
+        await self.bot.send_log(logs_channel, embed=embed)
 
 
 async def setup(bot):

@@ -25,6 +25,10 @@ class AutoModConfig(Cog):
         )
         self.zalgo_regex = re.compile(r"%CC%", re.MULTILINE)
 
+    def clear_config_cache(self, guild_id: int | None = None) -> None:
+        self.get_logs_channel.cache_clear()
+        self.check_if_am_is_enabled.cache_clear()
+
     def mod_perms(self, m: discord.Message) -> bool:
         p: discord.Permissions = m.author.guild_permissions  # type: ignore
         return (
@@ -50,7 +54,7 @@ class AutoModConfig(Cog):
             if not guild or not data:
                 return
 
-            channel = await guild.fetch_channel(data)
+            channel = guild.get_channel(data) or await guild.fetch_channel(data)
             assert isinstance(channel, discord.TextChannel), (
                 "channel will always be a textchannel"
             )
@@ -89,7 +93,7 @@ class AutoModConfig(Cog):
         em.set_footer(text=f"Message ID: {msg.id} | User ID: {msg.author.id}")
         em.add_field(name="Module", value=module)
 
-        await logs_channel.send(embed=em)
+        await self.bot.send_log(logs_channel, embed=em)
 
     @Cog.listener()
     async def on_message(self, msg: discord.Message):

@@ -13,6 +13,12 @@ class Starboard(Cog, emoji=1268881885480620075):
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
+    def clear_config_cache(self, guild_id: int | None = None) -> None:
+        hidden_cog = self.bot.get_cog("StarboardEvents")
+        clear_cache = getattr(hidden_cog, "clear_config_cache", None)
+        if callable(clear_cache):
+            clear_cache(guild_id)
+
     @commands.group()
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
@@ -41,6 +47,7 @@ class Starboard(Cog, emoji=1268881885480620075):
             if self.bot.db and ctx.guild
             else None
         )
+        self.clear_config_cache(ctx.guild.id if ctx.guild else None)
         await ctx.send(
             embed=green_embed(
                 f"{self.bot.yes} Starboard channel set to {channel.mention}."
@@ -76,6 +83,7 @@ class Starboard(Cog, emoji=1268881885480620075):
             if self.bot.db and ctx.guild
             else None
         )
+        self.clear_config_cache(ctx.guild.id if ctx.guild else None)
         await ctx.send(
             embed=green_embed(f"{self.bot.yes} Starboard star count set to `{count}`.")
         )
@@ -106,6 +114,7 @@ class Starboard(Cog, emoji=1268881885480620075):
             if self.bot.db and ctx.guild
             else None
         )
+        self.clear_config_cache(ctx.guild.id if ctx.guild else None)
         await ctx.send(
             embed=green_embed(
                 f"{self.bot.yes} Starboard self-star set to `{'true' if enable else 'false'}`."

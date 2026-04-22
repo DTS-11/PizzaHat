@@ -40,13 +40,15 @@ class Tags(Cog, emoji=1268850578415681546):
 
         data = (
             await self.bot.db.fetchrow(
-                "SELECT * FROM tags WHERE guild_id=$1", ctx.guild.id
+                "SELECT tag_name FROM tags WHERE guild_id=$1 AND tag_name=$2",
+                ctx.guild.id,
+                name,
             )
             if self.bot.db and ctx.guild
             else None
         )
 
-        if data is None or data[1] != name:
+        if data is None:
             (
                 await self.bot.db.execute(
                     "INSERT INTO tags (guild_id, tag_name, content, creator) VALUES ($1, $2, $3, $4)",
@@ -62,7 +64,7 @@ class Tags(Cog, emoji=1268850578415681546):
                 embed=green_embed(f"{self.bot.yes} Tag created successfully!")
             )
 
-        elif data[1] == name:
+        else:
             await ctx.send(
                 embed=red_embed(f"{self.bot.no} Tag with this name already exists!")
             )
@@ -75,26 +77,20 @@ class Tags(Cog, emoji=1268850578415681546):
         """Delete an existing tag."""
 
         if self.bot.db and ctx.guild is not None:
-            data = await self.bot.db.fetch(
-                "SELECT * FROM tags WHERE guild_id=$1", ctx.guild.id
+            deleted = await self.bot.db.execute(
+                "DELETE FROM tags WHERE guild_id=$1 AND tag_name=$2",
+                ctx.guild.id,
+                tag,
             )
 
-            for i in data:
-                if i[1] == tag:
-                    await self.bot.db.execute(
-                        "DELETE FROM tags WHERE guild_id=$1 AND tag_name=$2",
-                        ctx.guild.id,
-                        tag,
-                    )
-                    await ctx.send(embed=green_embed(f"{self.bot.yes} Tag deleted!"))
-                    break
-
-            else:
+            if deleted.endswith("0"):
                 await ctx.send(
                     embed=red_embed(
                         f"{self.bot.no} Tag with name `{tag}` does not exist."
                     )
                 )
+            else:
+                await ctx.send(embed=green_embed(f"{self.bot.yes} Tag deleted!"))
 
     @tag.command(name="list", aliases=["all"])
     @commands.guild_only()
@@ -141,7 +137,7 @@ class Tags(Cog, emoji=1268850578415681546):
         """Get info on a particular tag."""
 
         if self.bot.db and ctx.guild is not None:
-            data = await self.bot.db.fetch(
+            data = await self.bot.db.fetchrow(
                 "SELECT tag_name, content, creator FROM tags WHERE guild_id=$1 AND tag_name=$2",
                 ctx.guild.id,
                 tag,
@@ -158,13 +154,15 @@ class Tags(Cog, emoji=1268850578415681546):
             )
 
             if data:
-                for i in data:
-                    em.description += i[1]
-                    em.add_field(
-                        name="Owner",
-                        value=f"<@{i[2]}> `[{await self.bot.fetch_user(i[2])}]`",
-                        inline=False,
-                    )
+                creator = self.bot.get_user(data["creator"]) or await self.bot.fetch_user(
+                    data["creator"]
+                )
+                em.description += data["content"]
+                em.add_field(
+                    name="Owner",
+                    value=f"<@{data['creator']}> `[{creator}]`",
+                    inline=False,
+                )
 
             await ctx.send(embed=em)
 
@@ -176,30 +174,21 @@ class Tags(Cog, emoji=1268850578415681546):
         """Edit the content of an existing tag."""
 
         if self.bot.db and ctx.guild:
-            data = await self.bot.db.fetch(
-                "SELECT tag_name, content FROM tags WHERE guild_id=$1", ctx.guild.id
+            updated = await self.bot.db.execute(
+                "UPDATE tags SET content=$1 WHERE guild_id=$2 AND tag_name=$3",
+                content,
+                ctx.guild.id,
+                tag,
             )
 
-            if data:
-                for i in data:
-                    if i[0] == tag:
-                        await self.bot.db.execute(
-                            "UPDATE tags SET content=$1 WHERE guild_id=$2 AND tag_name=$3",
-                            content,
-                            ctx.guild.id,
-                            tag,
-                        )
-                        await ctx.send(
-                            embed=green_embed(f"{self.bot.yes} Tag updated!")
-                        )
-                        break
-
-            else:
+            if updated.endswith("0"):
                 await ctx.send(
                     embed=red_embed(
                         f"{self.bot.no} Tag with name `{tag}` does not exist."
                     )
                 )
+            else:
+                await ctx.send(embed=green_embed(f"{self.bot.yes} Tag updated!"))
 
 
 async def setup(bot):
