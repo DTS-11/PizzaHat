@@ -1,8 +1,9 @@
 import discord
-from core.bot import PizzaHat
-from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
+
+from core.bot import PizzaHat
+from core.cog import Cog
 from utils.embed import green_embed, red_embed
 from utils.ui import TicketView
 
@@ -90,6 +91,14 @@ class Tickets(Cog, emoji=1268867314292625469):
         if isinstance(ctx.channel, discord.Thread):
             await ctx.send(embed=green_embed(f"{self.bot.yes} Closed the ticket."))
             await ctx.channel.edit(archived=True, locked=True)
+
+            if self.bot.db and ctx.guild:
+                await self.bot.db.execute(
+                    "UPDATE ticket_logs SET closed_at=NOW(), closed_by=$1 WHERE thread_id=$2 AND guild_id=$3",
+                    ctx.author.id,
+                    ctx.channel.id,
+                    ctx.guild.id,
+                )
 
         else:
             await ctx.send(
