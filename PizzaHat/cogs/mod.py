@@ -4,11 +4,13 @@ from typing import List, Optional, Union
 
 import discord
 import humanfriendly
-from core.bot import PizzaHat
-from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
+
+from core.bot import PizzaHat, Tier
+from core.cog import Cog
 from utils.config import ANTIHOIST_CHARS
+from utils.custom_checks import premium
 from utils.embed import green_embed, normal_embed, orange_embed, red_embed
 from utils.ui import ConfirmationView, Paginator
 
@@ -160,6 +162,189 @@ class Mod(Cog, emoji=1268851270136107048):
                 description=f"{self.bot.yes} Logging disabled for: {disabled_modules}."
             )
             await ctx.send(embed=disabled_confirmation_em)
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    @premium(Tier.PRO)
+    async def insights(self, ctx: Context):
+        """Get detailed server insights."""
+
+        if not ctx.guild or not self.bot.db:
+            return
+
+        guild = ctx.guild
+        db = self.bot.db
+
+        async with ctx.typing():
+            today = datetime.datetime.utcnow().date()
+            today_start = datetime.datetime.combine(today, datetime.time.min)
+
+            total_members = guild.member_count
+            online_members = sum(
+                1 for m in guild.members if m.status != discord.Status.offline
+            )
+            leaves_today = 0
+
+            try:
+                async for _ in guild.audit_logs(
+                    limit=50, action=discord.AuditLogAction.member_prune
+                ):
+                    if _.created_at.replace(tzinfo=None) >= today_start:
+                        leaves_today += _.target.value  # type: ignore
+            except (discord.HTTPException, AttributeError):
+                pass
+
+            warning_count = (
+                await db.fetchval(
+                    "SELECT COUNT(*) FROM warnlogs WHERE guild_id=$1", guild.id
+                )
+                or 0
+            )
+
+            starboard_count = (
+                await db.fetchval(
+                    "SELECT COUNT(*) FROM star_info WHERE guild_id=$1", guild.id
+                )
+                or 0
+            )
+
+            ticket_stats = await db.fetchrow(
+                "SELECT COUNT(*) as total, COUNT(closed_at) as closed "
+                "FROM ticket_logs WHERE guild_id=$1",
+                guild.id,
+            )
+            active_tickets = (ticket_stats["total"] or 0) - (
+                ticket_stats["closed"] or 0
+            )
+
+            top_warned = await db.fetch(
+                "SELECT user_id, COUNT(*) as count FROM warnlogs "
+                "WHERE guild_id=$1 GROUP BY user_id ORDER BY count DESC LIMIT 5",
+                guild.id,
+            )
+
+            top_mods = await db.fetch(
+                "SELECT mod_id, COUNT(*) as count FROM warnlogs "
+                "WHERE guild_id=$1 GROUP BY mod_id ORDER BY count DESC LIMIT 5",
+                guild.id,
+            )
+
+            warned_lines = []
+            for w in top_warned:
+                user = guild.get_member(w["user_id"])
+                name = user.name if user else f"<@{w['user_id']}>"
+                warned_lines.append(f"`{w['count']}` • {name}")
+
+            mods_lines = []
+            for m in top_mods:
+                user = guild.get_member(m["mod_id"])
+                name = user.name if user else f"<@{m['mod_id']}>"
+                mods_lines.append(f"`{m['count']}` • {name}")
+
+            total_tickets = ticket_stats["total"] or 0
+            closed_tickets = ticket_stats["closed"] or 0
+            open_tickets = total_tickets - closed_tickets
+
+            closed_stats = await db.fetchrow(
+                "SELECT COUNT(*) as closed, "
+                "COALESCE(AVG(EXTRACT(EPOCH FROM (closed_at - opened_at))/60), 0) as avg_resolution "
+                "FROM ticket_logs WHERE guild_id=$1 AND closed_at IS NOT NULL",
+                guild.id,
+            )
+            avg_res = closed_stats["avg_resolution"] or 0
+
+            top_staff = await db.fetch(
+                "SELECT closed_by, COUNT(*) as count FROM ticket_logs "
+                "WHERE guild_id=$1 AND closed_by IS NOT NULL "
+                "GROUP BY closed_by ORDER BY count DESC LIMIT 5",
+                guild.id,
+            )
+
+            staff_lines = []
+            for s in top_staff:
+                user = guild.get_member(s["closed_by"])
+                name = user.name if user else f"<@{s['closed_by']}>"
+                staff_lines.append(f"`{s['count']}` • {name}")
+
+            automod_config = await db.fetchval(
+                "SELECT enabled FROM automod WHERE guild_id=$1", guild.id
+            )
+            antialt_config = await db.fetchval(
+                "SELECT enabled FROM antialt WHERE guild_id=$1", guild.id
+            )
+            star_config = await db.fetchval(
+                "SELECT channel_id FROM star_config WHERE guild_id=$1", guild.id
+            )
+            logs_config = await db.fetchval(
+                "SELECT channel_id FROM guild_logs WHERE guild_id=$1", guild.id
+            )
+
+            def check_enabled(val):
+                return f"{self.bot.yes} Enabled" if val else f"{self.bot.no} Disabled"
+
+            stats_em = normal_embed(
+                title="📊 Server Insights",
+                description=(
+                    f"**{guild.name}**\n\n"
+                    f"<:members:1268853443968106547> **Members:** `{total_members:,}`\n"
+                    f"<:newmember:1268853457855709255> **Online:** `{online_members:,}`\n"
+                    f"<:leave:1268858477997199436> **Leaves Today:** `{leaves_today}`\n"
+                    f"<:ticketbadge:1268879389324611595> **Active Tickets:** `{active_tickets}`\n"
+                    f"<:danger:1268855303768903733> **Warnings:** `{warning_count}`\n"
+                    f"<:star:1268881885480620075> **Starboard:** `{starboard_count}`"
+                ),
+                timestamp=True,
+            )
+            stats_em.set_thumbnail(url=guild.icon.url if guild.icon else None)
+
+            mod_em = normal_embed(
+                title="<:certified_mod_badge:1268876753883889706> Moderation Insights",
+                description=(
+                    f"**Most Warned Users**\n"
+                    f"{'- ' + chr(10) + '- '.join(warned_lines) if warned_lines else '`None`'}\n\n"
+                    f"**Active Moderators**\n"
+                    f"{'- ' + chr(10) + '- '.join(mods_lines) if mods_lines else '`None`'}\n\n"
+                    f"⚡ AutoMod triggers • Check logs for details"
+                ),
+                timestamp=True,
+            )
+            mod_em.set_thumbnail(url=guild.icon.url if guild.icon else None)
+
+            ticket_em = normal_embed(
+                title="<:ticketbadge:1268879389324611595> Ticket Analytics",
+                description=(
+                    f"**Stats**\n"
+                    f"📬 **Created:** `{total_tickets}`\n"
+                    f"<:Unlocked:1390689325234258030> **Open:** `{open_tickets}`\n"
+                    f"<:Locked:1390689313930608701> **Closed:** `{closed_tickets}`\n"
+                    f"<:timer:1268872526549745736> **Avg Resolution:** `{f'{avg_res:.1f}m' if avg_res else 'N/A'}`\n\n"
+                    f"<:squaredstaff:1268863165542961172> **Staff Leaderboard**\n"
+                    f"{'- ' + chr(10) + '- '.join(staff_lines) if staff_lines else '`None`'}"
+                ),
+                timestamp=True,
+            )
+            ticket_em.set_thumbnail(url=guild.icon.url if guild.icon else None)
+
+            config_em = normal_embed(
+                title="<:discordcog:1497265278550016110> Configuration Status",
+                description=(
+                    f"<:wrench:1268855253768339476> **AutoMod:** {check_enabled(automod_config)}\n"
+                    f"<:raidreport:1268857575919714376> **Anti-Alt:** {check_enabled(antialt_config)}\n"
+                    f"<:star:1268881885480620075> **Starboard:** {check_enabled(star_config)}\n"
+                    f"<:logs:1497265635183431770> **Logs:** {check_enabled(logs_config)}\n"
+                    f"<:ticketbadge:1268879389324611595> **Tickets:** {self.bot.yes} Enabled"
+                ),
+                timestamp=True,
+            )
+            config_em.set_thumbnail(url=guild.icon.url if guild.icon else None)
+
+            embeds = [stats_em, mod_em, ticket_em, config_em]
+            for i, em in enumerate(embeds, 1):
+                em.set_footer(text=f"Page {i}/{len(embeds)}")
+
+            paginator = Paginator(ctx, embeds)
+            await ctx.send(embed=stats_em, view=paginator)
 
     @commands.command()
     @commands.guild_only()
