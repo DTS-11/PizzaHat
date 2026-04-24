@@ -4,7 +4,7 @@ PizzaHat Discord Bot <h1/>
 
 <h4 align="center"> Your ultimate Discord companion! <h4/>
   </a><br>
-  <img src="https://img.shields.io/badge/discord.py-2.3.2-blue?style=flat" />
+  <img src="https://img.shields.io/badge/discord.py-2.4.0-blue?style=flat" />
   <img src="https://img.shields.io/badge/Python-3.11-green?style=flat&logo=python" />
   <img src="https://github.com/DTS-11/PizzaHat/actions/workflows/codeql-analysis.yml/badge.svg" />
 </h1>
