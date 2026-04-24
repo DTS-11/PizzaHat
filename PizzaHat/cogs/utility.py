@@ -10,12 +10,11 @@ import psutil
 import pytz
 import requests
 from colorthief import ColorThief
+from core.bot import PizzaHat
+from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Modal, Select, TextInput, View
-
-from core.bot import PizzaHat
-from core.cog import Cog
 from utils.config import (
     BOOSTER_ROLE,
     CONTRIBUTOR_ROLE,
@@ -153,6 +152,32 @@ class Utility(Cog, emoji=1268851252565905449):
             f"\nAPI: `{round(self.bot.latency * 1000)}ms`"
             f"\nBot: `{round(time2 - time1) * 1000}ms`"
         )
+
+    @commands.command()
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def premium(self, ctx: Context):
+        """Check if you have premium access to the bot."""
+
+        if self.bot.db is not None:
+            try:
+                is_premium = ctx.guild.id in [
+                    g["guild_id"]
+                    for g in await self.bot.db.fetch("SELECT guild_id FROM premium")
+                ]
+            except Exception:
+                is_premium = False
+
+            if is_premium:
+                await ctx.send(
+                    embed=green_embed("<:Premium_Icon:1390689334574972978> Premium")
+                )
+            else:
+                await ctx.send(
+                    embed=red_embed(
+                        f"{self.bot.no} Premium",
+                        "Purchase [premium](https://pizzahat.vercel.app/premium) to get access to exclusive features.",
+                    )
+                )
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
