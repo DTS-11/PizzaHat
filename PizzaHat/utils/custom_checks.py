@@ -1,70 +1,66 @@
 from discord.ext import commands
 from discord.ext.commands import Context
 
+from core.bot import Tier
+
 
 class PremiumCheck(commands.CheckFailure):
     pass
 
 
-# class NoStaffRoleSet(commands.CheckFailure):
-#     pass
+_tier_cache = {}
 
 
-# class UserNotStaff(commands.CheckFailure):
-#     pass
-
-
-def premium():
-    """Check if the guild is premium."""
+def premium(tier: Tier = Tier.BASIC):
+    """
+    Check if the guild has the required tier level.
+    tier: Minimum Tier required (default: BASIC - accepts BASIC or PRO)
+    """
+    required_tier = tier
 
     async def predicate(ctx: Context):
         if not ctx.guild:
-            raise commands.CheckFailure("This command can only be used in a server.")
+            raise commands.CheckFailure(
+                f"{ctx.bot.no} This command can only be used in a server."
+            )
 
         if ctx.bot.db is None:
-            raise PremiumCheck()
+            raise PremiumCheck(
+                f"{ctx.bot.no} This is a premium feature, you need {required_tier.name} to use this.\n[Click here to upgrade](https://pizzahat.vercel.app/premium)"
+            )
 
-        guild_id = await ctx.bot.db.fetchval(
-            "SELECT guild_id FROM premium WHERE guild_id=$1", ctx.guild.id
-        )
+        guild_id = ctx.guild.id
 
-        if guild_id:
+        cached_tier = _tier_cache.get(guild_id)
+        if cached_tier is None:
+            row = await ctx.bot.db.fetchrow(
+                "SELECT tier FROM premium WHERE guild_id=$1", guild_id
+            )
+            if row:
+                cached_tier = Tier(row["tier"])
+                _tier_cache[guild_id] = cached_tier
+            else:
+                cached_tier = Tier.FREE
+                _tier_cache[guild_id] = Tier.FREE
+
+        if cached_tier >= required_tier:
             return True
-        else:
-            raise PremiumCheck()
+
+        tier_names = {
+            Tier.BASIC: "Basic",
+            Tier.PRO: "Pro",
+        }
+        tier_name = tier_names.get(required_tier, required_tier.name)
+        raise PremiumCheck(
+            f"{ctx.bot.no} This is a premium feature, you need **{tier_name}** to use this.\n[Click here to upgrade](https://pizzahat.vercel.app/premium)"
+        )
 
     return commands.check(predicate)
 
 
-# def server_staff_role():
-#     """Check if the server has a staff role set."""
-
-#     async def predicate(ctx: Context):
-#         role_id = await ctx.bot.db.fetchval("SELECT role_id FROM staff_role WHERE guild_id=$1", ctx.guild.id)  # type: ignore
-
-#         if ctx.guild.get_role(role_id):  # type: ignore
-#             return True
-
-#         else:
-#             await ctx.send("No staff role set in this server.")
-#             raise NoStaffRoleSet()
-
-#     return commands.check(predicate)
-
-
-# def user_is_staff():
-#     """Check if the user has a staff role."""
-
-#     async def predicate(ctx: Context):
-#         role_id = await ctx.bot.db.fetchval("SELECT role_id FROM staff_role WHERE guild_id=$1", ctx.guild.id)  # type: ignore
-
-#         if role_id in [role.id for role in ctx.author.roles]:  # type: ignore
-#             return True
-
-#         else:
-#             await ctx.send(
-#                 "You do not have the required staff role to use this command."
-#             )
-#             raise UserNotStaff()
-
-#     return commands.check(predicate)
+def clear_tier_cache(guild_id: int | None = None):
+    """Clear the premium tier cache."""
+    if guild_id:
+        _tier_cache.pop(guild_id, None)
+    else:
+        _tier_cache.clear()
