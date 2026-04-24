@@ -46,6 +46,20 @@ def orange_embed(
     )
 
 
+def golden_embed(
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    *,
+    timestamp: Optional[bool] = None,
+) -> Embed:
+    return Embed(
+        title=title,
+        description=description,
+        color=Color.gold(),
+        timestamp=datetime.datetime.now() if timestamp else None,
+    )
+
+
 def normal_embed(
     title: Optional[str] = None,
     description: Optional[str] = None,
