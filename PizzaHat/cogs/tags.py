@@ -1,9 +1,17 @@
-from core.bot import PizzaHat
-from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
+
+from core.bot import PizzaHat, Tier
+from core.cog import Cog
+from utils.custom_checks import _tier_cache
 from utils.embed import green_embed, normal_embed, red_embed
 from utils.ui import Paginator
+
+TAG_LIMITS = {
+    Tier.FREE: 25,
+    Tier.BASIC: 50,
+    Tier.PRO: 250,
+}
 
 
 class Tags(Cog, emoji=1268850578415681546):
@@ -38,24 +46,25 @@ class Tags(Cog, emoji=1268850578415681546):
                     )
                 )
 
-            try:
-                is_premium = ctx.guild.id in [
-                    g["guild_id"]
-                    for g in await self.bot.db.fetch("SELECT guild_id FROM premium")
-                ]
-            except Exception:
-                is_premium = False
+            cached_tier = _tier_cache.get(ctx.guild.id)
+            if cached_tier is None:
+                tier_row = await self.bot.db.fetchrow(
+                    "SELECT tier FROM premium WHERE guild_id=$1", ctx.guild.id
+                )
+                cached_tier = Tier(tier_row["tier"]) if tier_row else Tier.FREE
+                _tier_cache[ctx.guild.id] = cached_tier
 
-            limit = 250 if is_premium else 25
+            limit = TAG_LIMITS[cached_tier]
             current_tags = await self.bot.db.fetchval(
                 "SELECT COUNT(*) FROM tags WHERE guild_id=$1", ctx.guild.id
             )
 
             if current_tags >= limit:
+                tier_name = cached_tier.name.title()
                 return await ctx.send(
                     embed=red_embed(
                         f"{self.bot.no} Tag limit reached! ({limit} tags).",
-                        "Upgrade to **premium** for unlimited tags.",
+                        f"Your current tier is **{tier_name}**. Upgrade to unlock more tags.",
                     )
                 )
 
