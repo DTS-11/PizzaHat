@@ -1,5 +1,4 @@
 import discord
-
 from core.bot import PizzaHat
 from core.cog import Cog
 from utils.config import LOGS_CHANNEL
@@ -102,7 +101,14 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild):
-        for cog_name in ("AntiAlts", "AntiAltsConfig", "AutoModeration", "AutoModConfig", "GuildLogs", "StarboardEvents"):
+        for cog_name in (
+            "AntiAlts",
+            "AntiAltsConfig",
+            "AutoModeration",
+            "AutoModConfig",
+            "GuildLogs",
+            "StarboardEvents",
+        ):
             cog = self.bot.get_cog(cog_name)
             clear_cache = getattr(cog, "clear_config_cache", None)
             if callable(clear_cache):

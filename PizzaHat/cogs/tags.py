@@ -1,8 +1,7 @@
-from discord.ext import commands
-from discord.ext.commands import Context
-
 from core.bot import PizzaHat
 from core.cog import Cog
+from discord.ext import commands
+from discord.ext.commands import Context
 from utils.embed import green_embed, normal_embed, red_embed
 from utils.ui import Paginator
 
@@ -31,43 +30,59 @@ class Tags(Cog, emoji=1268850578415681546):
         Put quotes around the name if you want it to have multiple words.
         """
 
-        if len(name) > 50:
-            return await ctx.send(
-                embed=red_embed(
-                    f"{self.bot.no} Tag name length cannot exceed 50 characters!"
+        if self.bot.db and ctx.guild is not None:
+            if len(name) > 50:
+                return await ctx.send(
+                    embed=red_embed(
+                        f"{self.bot.no} Tag name length cannot exceed 50 characters!"
+                    )
                 )
+
+            try:
+                is_premium = ctx.guild.id in [
+                    g["guild_id"]
+                    for g in await self.bot.db.fetch("SELECT guild_id FROM premium")
+                ]
+            except Exception:
+                is_premium = False
+
+            limit = 250 if is_premium else 25
+            current_tags = await self.bot.db.fetchval(
+                "SELECT COUNT(*) FROM tags WHERE guild_id=$1", ctx.guild.id
             )
 
-        data = (
-            await self.bot.db.fetchrow(
+            if current_tags >= limit:
+                return await ctx.send(
+                    embed=red_embed(
+                        f"{self.bot.no} Tag limit reached! ({limit} tags).",
+                        "Upgrade to **premium** for unlimited tags.",
+                    )
+                )
+
+            data = await self.bot.db.fetchrow(
                 "SELECT tag_name FROM tags WHERE guild_id=$1 AND tag_name=$2",
                 ctx.guild.id,
                 name,
             )
-            if self.bot.db and ctx.guild
-            else None
-        )
 
-        if data is None:
-            (
-                await self.bot.db.execute(
-                    "INSERT INTO tags (guild_id, tag_name, content, creator) VALUES ($1, $2, $3, $4)",
-                    ctx.guild.id,
-                    name,
-                    content,
-                    ctx.author.id,
+            if data is None:
+                (
+                    await self.bot.db.execute(
+                        "INSERT INTO tags (guild_id, tag_name, content, creator) VALUES ($1, $2, $3, $4)",
+                        ctx.guild.id,
+                        name,
+                        content,
+                        ctx.author.id,
+                    )
                 )
-                if self.bot.db and ctx.guild
-                else None
-            )
-            await ctx.send(
-                embed=green_embed(f"{self.bot.yes} Tag created successfully!")
-            )
+                await ctx.send(
+                    embed=green_embed(f"{self.bot.yes} Tag created successfully!")
+                )
 
-        else:
-            await ctx.send(
-                embed=red_embed(f"{self.bot.no} Tag with this name already exists!")
-            )
+            else:
+                await ctx.send(
+                    embed=red_embed(f"{self.bot.no} Tag with this name already exists!")
+                )
 
     @tag.command(name="delete", aliases=["remove", "del"])
     @commands.guild_only()
@@ -154,9 +169,9 @@ class Tags(Cog, emoji=1268850578415681546):
             )
 
             if data:
-                creator = self.bot.get_user(data["creator"]) or await self.bot.fetch_user(
+                creator = self.bot.get_user(
                     data["creator"]
-                )
+                ) or await self.bot.fetch_user(data["creator"])
                 em.description += data["content"]
                 em.add_field(
                     name="Owner",

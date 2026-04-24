@@ -2,12 +2,11 @@ from typing import Optional
 
 import discord
 import discord_games as games
+from core.bot import PizzaHat
+from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord_games import button_games
-
-from core.bot import PizzaHat
-from core.cog import Cog
 
 
 class Games(Cog, emoji=1268852069624975441):
@@ -108,7 +107,12 @@ class Games(Cog, emoji=1268852069624975441):
         """Play memory game."""
 
         game = button_games.MemoryGame()
-        await game.start(ctx, timeout=180, embed_color=self.bot.color, button_style=discord.ButtonStyle.blurple)
+        await game.start(
+            ctx,
+            timeout=180,
+            embed_color=self.bot.color,
+            button_style=discord.ButtonStyle.blurple,
+        )
 
 
 async def setup(bot):

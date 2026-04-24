@@ -5,7 +5,6 @@ from typing import Optional, Union
 import discord
 from async_lru import alru_cache
 from asyncpg import Record
-
 from core.bot import PizzaHat
 from core.cog import Cog
 from utils.embed import orange_embed

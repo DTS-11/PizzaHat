@@ -6,11 +6,10 @@ from logging.config import dictConfig
 
 import aiohttp
 import discord
+from core.database import bootstrap_database, create_db_pool
 from discord.ext import commands
 from discord.ext.commands import CommandError, Context
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
-
-from core.database import bootstrap_database, create_db_pool
 from utils.config import REPO_LINK
 
 INITIAL_EXTENSIONS = [
@@ -206,7 +205,11 @@ class PizzaHat(commands.Bot):
             return None
 
         for webhook in webhooks:
-            if webhook.name == webhook_name and webhook.user and webhook.user.id == self.user.id:
+            if (
+                webhook.name == webhook_name
+                and webhook.user
+                and webhook.user.id == self.user.id
+            ):
                 self.logging_webhooks[channel.id] = webhook
                 return webhook
 

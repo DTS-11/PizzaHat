@@ -5,7 +5,6 @@ import discord
 from discord import ButtonStyle, Interaction, ui
 from discord.ext import commands
 from discord.ext.commands import Context
-
 from utils.embed import normal_embed
 
 
