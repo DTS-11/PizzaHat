@@ -2,6 +2,7 @@ import ssl
 from typing import Union
 
 import asyncpg
+
 from utils.config import PG_URL
 
 
@@ -51,6 +52,9 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         # USER_TIMEZONE
         """CREATE TABLE IF NOT EXISTS user_timezone
         (user_id BIGINT PRIMARY KEY, timezone TEXT)""",
+        # TICKETS
+        """CREATE TABLE IF NOT EXISTS ticket_logs
+        (guild_id BIGINT, thread_id BIGINT PRIMARY KEY, creator_id BIGINT, opened_at TIMESTAMP DEFAULT NOW(), closed_at TIMESTAMP, closed_by BIGINT)""",
     ]
 
     for statement in statements:
