@@ -1,16 +1,19 @@
 import datetime
 import sys
 import traceback
+from enum import IntEnum
 from importlib import import_module
 from logging.config import dictConfig
 
 import aiohttp
 import discord
-from core.database import bootstrap_database, create_db_pool
 from discord.ext import commands
 from discord.ext.commands import CommandError, Context
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
+
+from core.database import bootstrap_database, create_db_pool
 from utils.config import REPO_LINK
+from utils.embed import golden_embed
 
 INITIAL_EXTENSIONS = [
     "cogs.antialt",
@@ -80,6 +83,13 @@ LOGGING_CONFIG = {
 }
 
 dictConfig(LOGGING_CONFIG)
+
+
+class Tier(IntEnum):
+    FREE = 0
+    BASIC = 1
+    PRO = 2
+
 
 description = f"""
 I'm PizzaHat —— Your Ultimate Discord Companion, a bot made by @itsdts.
@@ -318,3 +328,15 @@ class PizzaHat(commands.Bot):
                 f"Whoopsie! This command needs a timeout. Hang tight while it takes a siesta. 😴⏳\nTry again after `{error.retry_after:.0f}s`",
                 delete_after=5,
             )
+
+        elif isinstance(error, commands.CheckFailure):
+            from utils.custom_checks import PremiumCheck
+
+            if isinstance(error, PremiumCheck):
+                await ctx.send(
+                    embed=golden_embed(
+                        "Premium Required", str(error), timestamp=True
+                    ).set_thumbnail(
+                        url="https://cdn3.emoji.gg/emojis/321814-cool-diamond.png"
+                    )
+                )
