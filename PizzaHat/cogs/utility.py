@@ -10,11 +10,12 @@ import psutil
 import pytz
 import requests
 from colorthief import ColorThief
-from core.bot import PizzaHat
-from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Modal, Select, TextInput, View
+
+from core.bot import PizzaHat
+from core.cog import Cog
 from utils.config import (
     BOOSTER_ROLE,
     CONTRIBUTOR_ROLE,
@@ -158,7 +159,7 @@ class Utility(Cog, emoji=1268851252565905449):
     async def premium(self, ctx: Context):
         """Check if you have premium access to the bot."""
 
-        if self.bot.db is not None:
+        if self.bot.db and ctx.guild is not None:
             try:
                 is_premium = ctx.guild.id in [
                     g["guild_id"]
@@ -169,7 +170,7 @@ class Utility(Cog, emoji=1268851252565905449):
 
             if is_premium:
                 await ctx.send(
-                    embed=green_embed("<:Premium_Icon:1390689334574972978> Premium")
+                    embed=green_embed("<:cooldiamond:1497276086210527242> Premium")
                 )
             else:
                 await ctx.send(

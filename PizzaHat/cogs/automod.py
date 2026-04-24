@@ -1,8 +1,9 @@
 from async_lru import alru_cache
-from core.bot import PizzaHat
-from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
+
+from core.bot import PizzaHat
+from core.cog import Cog
 
 
 class AutoModeration(Cog, emoji=1268880500248936491):
