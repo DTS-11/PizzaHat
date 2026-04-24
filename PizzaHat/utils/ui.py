@@ -5,6 +5,9 @@ import discord
 from discord import ButtonStyle, Interaction, ui
 from discord.ext import commands
 from discord.ext.commands import Context
+
+from core.bot import Tier
+from utils.custom_checks import _tier_cache
 from utils.embed import normal_embed
 
 
@@ -149,6 +152,14 @@ class TicketView(ui.View):
             )
             await thread.add_user(interaction.user)
 
+            if self.bot.db:
+                await self.bot.db.execute(
+                    "INSERT INTO ticket_logs (guild_id, thread_id, creator_id) VALUES ($1, $2, $3)",
+                    interaction.guild.id,
+                    thread.id,
+                    interaction.user.id,
+                )
+
             em = normal_embed(
                 title="Ticket created!",
                 description=f"Welcome {interaction.user.mention} `[{interaction.user}]`. Support team will get back to you shortly.",
@@ -164,15 +175,31 @@ class TicketView(ui.View):
             await thread.send(
                 content=f"{interaction.user.mention}",
                 embed=em,
-                view=TicketSettings(thread.id),
+                view=TicketSettings(thread.id, self.bot),
             )
             self.thread_id = thread.id
 
 
 class TicketSettings(ui.View):
-    def __init__(self, thread_id: int):
+    def __init__(self, thread_id: int, bot):
         self.thread_id = thread_id
+        self.bot = bot
         super().__init__(timeout=None)
+
+    async def check_premium(self, guild_id: int) -> bool:
+        cached_tier = _tier_cache.get(guild_id)
+        if cached_tier is None and self.bot.db is not None:
+            row = await self.bot.db.fetchrow(
+                "SELECT tier FROM premium WHERE guild_id=$1", guild_id
+            )
+            if row:
+                cached_tier = Tier(row["tier"])
+                _tier_cache[guild_id] = cached_tier
+            else:
+                cached_tier = Tier.FREE
+                _tier_cache[guild_id] = Tier.FREE
+
+        return cached_tier is not None and cached_tier >= Tier.BASIC
 
     @ui.button(
         label="Close Ticket",
@@ -181,16 +208,36 @@ class TicketSettings(ui.View):
         custom_id="close_ticket_btn",
     )
     async def close_ticket(self, interaction: Interaction, button: ui.Button):
-        if interaction.guild is not None:
-            thread = interaction.guild.get_thread(self.thread_id)
+        if interaction.guild is None:
+            return
 
-            if thread:
-                await interaction.response.send_message(
-                    content="Ticket thread has been archived!"
+        member = interaction.guild.get_member(interaction.user.id)
+        if not member or not (
+            member.guild_permissions.manage_threads
+            or member.guild_permissions.manage_channels
+        ):
+            return await interaction.response.send_message(
+                "You need **Manage Threads** or **Manage Channels** permission to close tickets.",
+                ephemeral=True,
+            )
+
+        thread = interaction.guild.get_thread(self.thread_id)
+
+        if thread:
+            await interaction.response.send_message(
+                content="Ticket thread has been archived!"
+            )
+            await thread.edit(archived=True, locked=True)
+
+            if self.bot.db:
+                await self.bot.db.execute(
+                    "UPDATE ticket_logs SET closed_at=NOW(), closed_by=$1 WHERE thread_id=$2 AND guild_id=$3",
+                    interaction.user.id,
+                    self.thread_id,
+                    interaction.guild.id,
                 )
-                await thread.edit(archived=True, locked=True)
-            else:
-                await interaction.followup.send(content="Unable to find ticket thread!")
+        else:
+            await interaction.followup.send(content="Unable to find ticket thread!")
 
     @ui.button(
         label="Transcript",
@@ -199,13 +246,22 @@ class TicketSettings(ui.View):
         custom_id="ticket_transcript_btn",
     )
     async def ticket_transcript(self, interaction: Interaction, button: ui.Button):
-        if interaction.guild is not None:
-            thread = interaction.guild.get_thread(self.thread_id)
+        if interaction.guild is None:
+            return
 
-            if thread:
-                msg = await chat_exporter.quick_export(thread)
-                await chat_exporter.quick_link(thread, msg)
-            else:
-                await interaction.followup.send(
-                    content="Unable to generate transcript for this ticket."
-                )
+        is_premium = await self.check_premium(interaction.guild.id)
+        if not is_premium:
+            return await interaction.response.send_message(
+                "This feature is for **Basic** or **Pro** tiers only.\n"
+                "Purchase [here](https://pizzahat.vercel.app/premium)",
+                ephemeral=True,
+            )
+
+        thread = interaction.guild.get_thread(self.thread_id)
+
+        if thread:
+            await chat_exporter.quick_export(thread)
+        else:
+            await interaction.followup.send(
+                content="Unable to generate transcript for this ticket."
+            )
