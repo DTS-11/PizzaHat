@@ -10,19 +10,21 @@ import psutil
 import pytz
 import requests
 from colorthief import ColorThief
+from core.bot import PizzaHat
+from core.cog import Cog
+from core.database import get_prefix, invalidate_prefix_cache, set_prefix
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Modal, Select, TextInput, View
-
-from core.bot import PizzaHat
-from core.cog import Cog
 from utils.config import (
     BOOSTER_ROLE,
     CONTRIBUTOR_ROLE,
+    DEFAULT_PREFIX,
     PARTNER_ROLE,
     STAFF_ROLE,
     SUPPORT_SERVER,
 )
+from utils.custom_checks import premium
 from utils.embed import green_embed, normal_embed, orange_embed, red_embed
 
 start_time = time.time()
@@ -151,12 +153,12 @@ class Utility(Cog, emoji=1268851252565905449):
         await msg.edit(
             content="🏓 Pong!"
             f"\nAPI: `{round(self.bot.latency * 1000)}ms`"
-            f"\nBot: `{round(time2 - time1) * 1000}ms`"
+            f"\nBot: `{round((time2 - time1) * 1000)}ms`"
         )
 
-    @commands.command()
+    @commands.command(name="premium")
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def premium(self, ctx: Context):
+    async def check_premium(self, ctx: Context):
         """Check if you have premium access to the bot."""
 
         if self.bot.db and ctx.guild is not None:
@@ -241,6 +243,45 @@ class Utility(Cog, emoji=1268851252565905449):
             )
 
             await ctx.send(embed=em)
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.cooldown(1, 20, commands.BucketType.user)
+    @commands.has_permissions(manage_messages=True)
+    @premium()
+    async def prefix(self, ctx: Context, new_prefix: Optional[str] = None):
+        """
+        Show or change the bot's prefix for this server.
+        If no prefix is given, shows the current one.
+        Changing the prefix requires Manage Messages and premium.
+        """
+
+        if not ctx.guild:
+            return
+
+        if new_prefix is None:
+            current = await get_prefix(self.bot.db, ctx.guild.id)
+            await ctx.send(
+                embed=normal_embed(
+                    title="Server Prefix",
+                    description=f"Current prefix: `{current}`\nTo change it, run `{current}prefix <new_prefix>`",
+                )
+            )
+            return
+
+        if new_prefix == DEFAULT_PREFIX:
+            if ctx.guild and self.bot.db:
+                await self.bot.db.execute(
+                    "DELETE FROM prefix WHERE guild_id = $1",
+                    ctx.guild.id,
+                )
+            await invalidate_prefix_cache(ctx.guild.id)
+        else:
+            await set_prefix(self.bot.db, ctx.guild.id, new_prefix)
+
+        await ctx.send(
+            embed=green_embed(f"{self.bot.yes} Prefix changed to `{new_prefix}`")
+        )
 
     # @commands.command()
     # @commands.guild_only()
@@ -528,12 +569,12 @@ class Utility(Cog, emoji=1268851252565905449):
             "staff": "<:squaredstaff:1268863165542961172>",
             "discord_certified_moderator": "<:certified_mod_badge:1268876753883889706>",
         }
-        misc_flags_descriptions = {
-            "team_user": "Application Team User",
-            "system": "System User",
-            "verified_bot": "Verified Bot",
-            "bot_http_interactions": "HTTP Interactions Bot",
-        }
+        # misc_flags_descriptions = {
+        #     "team_user": "Application Team User",
+        #     "system": "System User",
+        #     "verified_bot": "Verified Bot",
+        #     "bot_http_interactions": "HTTP Interactions Bot",
+        # }
 
         set_flags = {flag for flag, value in member.public_flags if value}
         subset_flags = set_flags & user_badges_flags.keys()

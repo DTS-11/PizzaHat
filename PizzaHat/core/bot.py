@@ -7,12 +7,11 @@ from logging.config import dictConfig
 
 import aiohttp
 import discord
+from core.database import bootstrap_database, create_db_pool, get_prefix
 from discord.ext import commands
 from discord.ext.commands import CommandError, Context
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
-
-from core.database import bootstrap_database, create_db_pool
-from utils.config import REPO_LINK
+from utils.config import DEFAULT_PREFIX, REPO_LINK
 from utils.embed import golden_embed
 
 INITIAL_EXTENSIONS = [
@@ -21,7 +20,6 @@ INITIAL_EXTENSIONS = [
     "cogs.dev",
     "cogs.emojis",
     "cogs.fun",
-    "cogs.games",
     "cogs.mod",
     "cogs.starboard",
     "cogs.tags",
@@ -121,7 +119,7 @@ class PizzaHat(commands.Bot):
         )
 
         super().__init__(
-            command_prefix=commands.when_mentioned_or("p!", "P!"),
+            command_prefix=self.get_custom_prefix,
             description=description,
             intents=intents,
             allowed_mentions=allowed_mentions,
@@ -129,7 +127,7 @@ class PizzaHat(commands.Bot):
             strip_after_prefix=True,
             status=discord.Status.online,
             activity=discord.Activity(
-                type=discord.ActivityType.watching, name="p!help"
+                type=discord.ActivityType.custom, name="p!help | pizzahat.vercel.app"
             ),
         )
 
@@ -138,6 +136,17 @@ class PizzaHat(commands.Bot):
         self.no = "<:no:1268859614129295514>"
         self.color = 0x456DD4
         self.logging_webhooks: dict[int, discord.Webhook] = {}
+
+    async def get_custom_prefix(
+        self, bot: "PizzaHat", message: discord.Message
+    ) -> list[str]:
+        bot_mention = [f"<@{bot.user.id}>", f"<@!{bot.user.id}>"] if bot.user else []
+
+        if message.guild is None:
+            return [DEFAULT_PREFIX] + bot_mention
+
+        prefix = await get_prefix(self.db, message.guild.id)
+        return [prefix] + bot_mention
 
     async def setup_hook(self) -> None:
         if not hasattr(self, "uptime"):
@@ -160,7 +169,7 @@ class PizzaHat(commands.Bot):
 
         for ext in INITIAL_EXTENSIONS:
             try:
-                self.public_extensions = await self.load_extension(ext)
+                await self.load_extension(ext)
                 success += 1
 
             except Exception as e:

@@ -2,8 +2,40 @@ import ssl
 from typing import Union
 
 import asyncpg
+from utils.config import DEFAULT_PREFIX, PG_URL
 
-from utils.config import PG_URL
+_prefix_cache: dict[int, str] = {}
+
+
+async def get_prefix(pool, guild_id: int) -> str:
+    if guild_id in _prefix_cache:
+        return _prefix_cache[guild_id]
+
+    if pool is None:
+        return DEFAULT_PREFIX
+
+    prefix = await pool.fetchval(
+        "SELECT prefix FROM prefix WHERE guild_id = $1", guild_id
+    )
+    result = prefix if prefix else DEFAULT_PREFIX
+    _prefix_cache[guild_id] = result
+    return result
+
+
+async def set_prefix(pool, guild_id: int, prefix: str) -> None:
+    if pool:
+        await pool.execute(
+            "INSERT INTO prefix (guild_id, prefix) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET prefix = $2",
+            guild_id,
+            prefix,
+        )
+
+    _prefix_cache[guild_id] = prefix
+
+
+async def invalidate_prefix_cache(guild_id: int) -> None:
+    """Remove a guild's prefix from cache, e.g. when the prefix row is deleted."""
+    _prefix_cache.pop(guild_id, None)
 
 
 async def create_db_pool() -> Union[asyncpg.pool.Pool, None]:
@@ -22,6 +54,9 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         # PREMIUM
         """CREATE TABLE IF NOT EXISTS premium
         (guild_id BIGINT PRIMARY KEY, user_id BIGINT NOT NULL, polar_subscription_id TEXT NOT NULL, polar_customer_id TEXT NOT NULL, tier INT DEFAULT 1, status TEXT DEFAULT 'active', current_period_start TIMESTAMP, current_period_end TIMESTAMP, cancel_at_period_end BOOL DEFAULT FALSE, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW())""",
+        # PREFIX
+        """CREATE TABLE IF NOT EXISTS prefix
+        (guild_id BIGINT PRIMARY KEY, prefix TEXT DEFAULT 'p!')""",
         # AFK
         """CREATE TABLE IF NOT EXISTS afk
         (guild_id BIGINT, user_id BIGINT, reason TEXT)""",
