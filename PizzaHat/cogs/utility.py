@@ -10,12 +10,13 @@ import psutil
 import pytz
 import requests
 from colorthief import ColorThief
-from core.bot import PizzaHat
-from core.cog import Cog
-from core.database import get_prefix, invalidate_prefix_cache, set_prefix
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Modal, Select, TextInput, View
+
+from core.bot import PizzaHat
+from core.cog import Cog
+from core.database import get_prefix, invalidate_prefix_cache, set_prefix
 from utils.config import (
     BOOSTER_ROLE,
     CONTRIBUTOR_ROLE,

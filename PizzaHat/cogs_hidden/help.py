@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import Union
 
 import discord
-from core.bot import PizzaHat
-from core.cog import Cog
 from discord import ButtonStyle, Interaction, app_commands, ui
 from discord.ext import commands
+
+from core.bot import PizzaHat
+from core.cog import Cog
 from utils.config import COG_EXCEPTIONS, REG_INVITE, SUPPORT_SERVER, WUMPUS_VOTE
 from utils.embed import normal_embed
 
