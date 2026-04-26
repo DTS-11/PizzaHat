@@ -2,11 +2,10 @@ from typing import List, Optional, Union
 
 import chat_exporter
 import discord
+from core.bot import Tier
 from discord import ButtonStyle, Interaction, ui
 from discord.ext import commands
 from discord.ext.commands import Context
-
-from core.bot import Tier
 from utils.custom_checks import _tier_cache
 from utils.embed import normal_embed
 

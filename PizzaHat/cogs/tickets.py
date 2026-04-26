@@ -1,9 +1,8 @@
 import discord
-from discord.ext import commands
-from discord.ext.commands import Context
-
 from core.bot import PizzaHat
 from core.cog import Cog
+from discord.ext import commands
+from discord.ext.commands import Context
 from utils.embed import green_embed, red_embed
 from utils.ui import TicketView
 

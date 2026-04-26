@@ -4,11 +4,10 @@ from typing import List, Optional, Union
 
 import discord
 import humanfriendly
-from discord.ext import commands
-from discord.ext.commands import Context
-
 from core.bot import PizzaHat, Tier
 from core.cog import Cog
+from discord.ext import commands
+from discord.ext.commands import Context
 from utils.config import ANTIHOIST_CHARS
 from utils.custom_checks import premium
 from utils.embed import green_embed, normal_embed, orange_embed, red_embed

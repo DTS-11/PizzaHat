@@ -1,8 +1,7 @@
-from discord.ext import commands
-from discord.ext.commands import Context
-
 from core.bot import PizzaHat, Tier
 from core.cog import Cog
+from discord.ext import commands
+from discord.ext.commands import Context
 from utils.custom_checks import _tier_cache
 from utils.embed import green_embed, normal_embed, red_embed
 from utils.ui import Paginator

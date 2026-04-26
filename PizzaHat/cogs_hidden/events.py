@@ -1,5 +1,4 @@
 import discord
-
 from core.bot import PizzaHat
 from core.cog import Cog
 from utils.config import LOGS_CHANNEL

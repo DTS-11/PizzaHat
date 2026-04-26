@@ -2,7 +2,6 @@ import ssl
 from typing import Union
 
 import asyncpg
-
 from utils.config import DEFAULT_PREFIX, PG_URL
 
 _prefix_cache: dict[int, str] = {}

@@ -8,11 +8,10 @@ from contextlib import redirect_stdout
 from typing import TYPE_CHECKING, Awaitable, Callable, Union
 
 import discord
-from discord.ext import commands
-from discord.ext.commands import Context
-
 from core.bot import INITIAL_EXTENSIONS, SUB_EXTENSIONS, PizzaHat
 from core.cog import Cog
+from discord.ext import commands
+from discord.ext.commands import Context
 from utils.embed import normal_embed
 from utils.formats import TabularData, plural
 

@@ -7,11 +7,10 @@ from logging.config import dictConfig
 
 import aiohttp
 import discord
+from core.database import bootstrap_database, create_db_pool, get_prefix
 from discord.ext import commands
 from discord.ext.commands import CommandError, Context
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
-
-from core.database import bootstrap_database, create_db_pool, get_prefix
 from utils.config import DEFAULT_PREFIX, REPO_LINK
 from utils.embed import golden_embed
 

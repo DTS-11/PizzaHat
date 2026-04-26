@@ -1,7 +1,6 @@
+from core.bot import Tier
 from discord.ext import commands
 from discord.ext.commands import Context
-
-from core.bot import Tier
 
 
 class PremiumCheck(commands.CheckFailure):
