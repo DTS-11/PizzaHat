@@ -10,13 +10,12 @@ import psutil
 import pytz
 import requests
 from colorthief import ColorThief
-from discord.ext import commands
-from discord.ext.commands import Context
-from discord.ui import Modal, Select, TextInput, View
-
 from core.bot import PizzaHat
 from core.cog import Cog
 from core.database import get_prefix, invalidate_prefix_cache, set_prefix
+from discord.ext import commands
+from discord.ext.commands import Context
+from discord.ui import Modal, Select, TextInput, View
 from utils.config import (
     BOOSTER_ROLE,
     CONTRIBUTOR_ROLE,
@@ -173,13 +172,20 @@ class Utility(Cog, emoji=1268851252565905449):
 
             if is_premium:
                 await ctx.send(
-                    embed=green_embed("<:cooldiamond:1497276086210527242> Premium")
+                    embed=green_embed(
+                        "<:cooldiamond:1497276086210527242> Premium",
+                        "Thank you for purchasing premium!",
+                    ).set_thumbnail(
+                        url="https://cdn.discordapp.com/emojis/821269598401069106.webp?size=48&name=CowboyLove&lossless=true"
+                    )
                 )
             else:
                 await ctx.send(
                     embed=red_embed(
-                        f"{self.bot.no} Premium",
+                        "<:cooldiamond:1497276086210527242> Premium",
                         "Purchase [premium](https://pizzahat.vercel.app/premium) to get access to exclusive features.",
+                    ).set_thumbnail(
+                        url="https://cdn.discordapp.com/emojis/820971106693152778.webp?size=48"
                     )
                 )
 
