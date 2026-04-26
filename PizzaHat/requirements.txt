@@ -22,5 +22,3 @@ async-lru
 chat-exporter
 pyfiglet
 # validators
-
-git+https://github.com/Tom-the-Bomb/Discord-Games.git
