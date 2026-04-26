@@ -1,11 +1,12 @@
+from __future__ import annotations
+
 from typing import Union
 
 import discord
-from discord import ButtonStyle, Interaction, ui
-from discord.ext import commands
-
 from core.bot import PizzaHat
 from core.cog import Cog
+from discord import ButtonStyle, Interaction, app_commands, ui
+from discord.ext import commands
 from utils.config import COG_EXCEPTIONS, REG_INVITE, SUPPORT_SERVER, WUMPUS_VOTE
 from utils.embed import normal_embed
 
@@ -57,11 +58,12 @@ def cog_help_embed(cog: Cog | None) -> Union[discord.Embed, None]:
 
     commands_info = []
     for cmd in sorted(cog.get_commands(), key=lambda c: c.name):
+        if cmd.hidden:
+            continue
         cmd_help = cmd.short_doc if cmd.short_doc else cmd.help
         commands_info.append(f"<:arrow:1267380018116563016> `{cmd.name}` - {cmd_help}")
 
     commands_value = "\n".join(commands_info)
-    # em.add_field(name="Commands", value=commands_value, inline=False)
     if commands_value:
         em.description += f"\n### Commands\n{commands_value}"  # type: ignore
 
@@ -82,16 +84,21 @@ def cmds_list_embed(ctx: commands.Context, mapping) -> discord.Embed:
 
     for cog, commands_ in mapping.items():
         if cog and cog.qualified_name not in COG_EXCEPTIONS:
-            cmds = ", ".join(
-                [
-                    f"`{command.name}`"
-                    for command in sorted(commands_, key=lambda x: x.name)
-                ]
-            )
+            visible_commands = [
+                command
+                for command in sorted(commands_, key=lambda x: x.name)
+                if not command.hidden
+            ]
+            if not visible_commands:
+                continue
+
+            cmds = ", ".join([f"`{command.name}`" for command in visible_commands])
             cog_emoji = cog.emoji if hasattr(cog, "emoji") else ""
 
             em.add_field(
-                name=f"{cog_emoji} {cog.qualified_name}", value=cmds, inline=False
+                name=f"{cog_emoji} {cog.qualified_name}".strip(),
+                value=cmds,
+                inline=False,
             )
 
     return em
@@ -129,7 +136,14 @@ class HelpDropdown(ui.Select):
                 cog = c
                 break
 
-        await interaction.response.edit_message(embed=cog_help_embed(cog))
+        embed = cog_help_embed(cog)
+        if embed is None:
+            await interaction.response.send_message(
+                content="Unable to load that category.", ephemeral=True
+            )
+            return
+
+        await interaction.response.edit_message(embed=embed)
 
 
 class HelpView(ui.View):
@@ -145,7 +159,10 @@ class HelpView(ui.View):
             for child in self.children:
                 child.disabled = True  # type: ignore
 
-            await self.message.edit(view=self)  # type: ignore
+            try:
+                await self.message.edit(view=self)  # type: ignore
+            except discord.HTTPException:
+                pass
 
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user == self.ctx.author:
@@ -173,30 +190,44 @@ class HelpView(ui.View):
             self.stop()
 
 
-class MyHelp(commands.HelpCommand):
-    def __init__(self):
-        super().__init__(
-            command_attrs={
-                "help": "Help command for the bot",
-                "cooldown": commands.CooldownMapping.from_cooldown(
-                    1, 3, commands.BucketType.user
-                ),
-                "aliases": ["h"],
-            }
-        )
+class Help(Cog, emoji="\N{BLACK QUESTION MARK ORNAMENT}"):
+    def __init__(self, bot: PizzaHat):
+        self.bot: PizzaHat = bot
+        self.bot.help_command = None
 
-    async def send(self, **kwargs):
-        await self.get_destination().send(**kwargs)
+    def _get_mapping(self) -> dict[Cog, list[commands.Command]]:
+        mapping: dict[Cog, list[commands.Command]] = {}
+        for cog in self.bot.cogs.values():
+            if not isinstance(cog, Cog):
+                continue
 
-    async def send_bot_help(self, mapping):
-        ctx = self.context
+            cog_commands = [cmd for cmd in cog.get_commands() if not cmd.hidden]
+            if cog_commands:
+                mapping[cog] = cog_commands
+
+        return mapping
+
+    def _find_cog(self, name: str) -> Cog | None:
+        lookup = name.casefold()
+        for cog in self.bot.cogs.values():
+            if isinstance(cog, Cog) and cog.qualified_name.casefold() == lookup:
+                return cog
+
+        return None
+
+    async def _send_bot_help(self, ctx: commands.Context) -> None:
+        mapping = self._get_mapping()
         view = HelpView(mapping, ctx)
         view.message = await ctx.send(embed=bot_help_embed(ctx), view=view)  # type: ignore
 
-    async def send_command_help(self, command: commands.Command):
-        # signature = self.get_command_signature(command)
+    async def _send_command_help(
+        self, ctx: commands.Context, command: commands.Command
+    ) -> None:
+        prefix = "/" if ctx.interaction else ctx.clean_prefix
+        title = f"{prefix}{command.qualified_name} {command.signature}".strip()
+
         embed = normal_embed(
-            title=f"{self.context.clean_prefix}{command} {command.signature}",
+            title=title,
             description=(command.help or "No help found...")
             + "\n\n```ml\n<> Required Argument | [] Optional Argument\n```",
         )
@@ -204,7 +235,7 @@ class MyHelp(commands.HelpCommand):
         if command.aliases:
             embed.add_field(
                 name="Aliases",
-                value=", ".join(["`" + str(alias) + "`" for alias in command.aliases]),
+                value=", ".join([f"`{alias}`" for alias in command.aliases]),
                 inline=False,
             )
 
@@ -218,44 +249,116 @@ class MyHelp(commands.HelpCommand):
                 inline=False,
             )
 
-        await self.send(embed=embed)
+        await ctx.send(embed=embed)
 
-    async def send_help_embed(self, title: str, description: str | None, commands):
+    async def _send_group_help(
+        self, ctx: commands.Context, group: commands.Group
+    ) -> None:
+        prefix = "/" if ctx.interaction else ctx.clean_prefix
+        title = f"{prefix}{group.qualified_name} {group.signature}".strip()
+
         embed = normal_embed(
             title=title,
-            description=(description or "No help found...")
+            description=(group.help or "No help found...")
             + "\n\n```ml\n<> Required Argument | [] Optional Argument\n```",
         )
 
-        for command in commands:
+        for command in sorted(group.commands, key=lambda c: c.name):
+            if command.hidden:
+                continue
             cmd_help = command.short_doc if command.short_doc else command.help
             embed.add_field(
-                name=self.get_command_signature(command),
+                name=f"{prefix}{command.qualified_name} {command.signature}".strip(),
                 value=cmd_help or "No help found...",
                 inline=False,
             )
 
-        await self.send(embed=embed)
+        await ctx.send(embed=embed)
 
-    async def send_group_help(self, group: commands.Group):
-        title = self.get_command_signature(group)
-        await self.send_help_embed(title, group.help, group.commands)
+    @commands.hybrid_command(
+        name="help",
+        aliases=["h"],
+        help="Help command for the bot",
+        with_app_command=True,
+    )
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    @app_commands.describe(query="Command or category to get help for")
+    async def help_command(self, ctx: commands.Context, *, query: str | None = None):
+        """Help command for the bot."""
 
-    async def send_cog_help(self, cog):
-        await self.send(embed=cog_help_embed(cog))
+        if not query:
+            await self._send_bot_help(ctx)
+            return
 
-    async def send_error_message(self, error):
-        channel = self.get_destination()
-        await channel.send(error)
+        query = query.strip()
+        if not query:
+            await self._send_bot_help(ctx)
+            return
 
+        command = self.bot.get_command(query)
+        if command:
+            if isinstance(command, commands.Group):
+                await self._send_group_help(ctx, command)
+                return
 
-class Help(Cog, emoji="❓"):
-    def __init__(self, bot: PizzaHat):
-        self.bot: PizzaHat = bot
-        help_command = MyHelp()
-        help_command.cog = self
-        bot.help_command = help_command
+            await self._send_command_help(ctx, command)
+            return
+
+        if cog := self._find_cog(query):
+            embed = cog_help_embed(cog)
+            if embed:
+                await ctx.send(embed=embed)
+                return
+
+        await ctx.send(f'No command or category called "{query}" was found.')
+
+    @help_command.autocomplete("query")
+    async def help_autocomplete(
+        self, interaction: Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
+        current_lower = current.casefold()
+        choices: list[app_commands.Choice[str]] = []
+        seen: set[str] = set()
+
+        for command in self.bot.walk_commands():
+            if command.hidden:
+                continue
+
+            name = command.qualified_name
+            if current_lower and current_lower not in name.casefold():
+                continue
+
+            if name in seen:
+                continue
+
+            choices.append(app_commands.Choice(name=f"Command: {name}", value=name))
+            seen.add(name)
+
+            if len(choices) >= 25:
+                return choices
+
+        for cog in self.bot.cogs.values():
+            if not isinstance(cog, Cog):
+                continue
+            if cog.qualified_name in COG_EXCEPTIONS:
+                continue
+
+            name = cog.qualified_name
+            if current_lower and current_lower not in name.casefold():
+                continue
+
+            if name in seen:
+                continue
+
+            choices.append(app_commands.Choice(name=f"Category: {name}", value=name))
+            seen.add(name)
+
+            if len(choices) >= 25:
+                break
+
+        return choices
 
 
 async def setup(bot):
     await bot.add_cog(Help(bot))
+    await bot.tree.sync()
