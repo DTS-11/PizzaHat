@@ -38,6 +38,7 @@ WUMPUS_VOTE = "https://wumpus.store/bot/860889936914677770/vote"
 
 # OTHERS
 ANTIHOIST_CHARS = "!@#$%^&*()_+-=.,/?;:[]{}`~\"'\\|<>"
+DEFAULT_PREFIX = "p!"
 
 
 # COG EXCEPTIONS
