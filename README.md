@@ -4,7 +4,7 @@ PizzaHat Discord Bot <h1/>
 
 <h4 align="center"> Your ultimate Discord companion! <h4/>
   </a><br>
-  <img src="https://img.shields.io/badge/discord.py-2.4.0-blue?style=flat" />
+  <img src="https://img.shields.io/badge/discord.py-2.7.1-blue?style=flat" />
   <img src="https://img.shields.io/badge/Python-3.11-green?style=flat&logo=python" />
   <img src="https://github.com/DTS-11/PizzaHat/actions/workflows/codeql-analysis.yml/badge.svg" />
 </h1>
@@ -15,13 +15,12 @@ PizzaHat Discord Bot <h1/>
 
 ## <img src="https://cdn.discordapp.com/emojis/800797566471897088.png?size=80" height="30px"> • Features
 
-- 📌 Over 150+ commands! </li>
+- 📌 Over 100+ commands! </li>
 - 🔼 99% uptime. </li>
 - 🏓 Low latency. </li>
+- <img src="https://cdn.discordapp.com/emojis/793774567332118528.webp?size=48" height="19px"> Highly Customizable. </li>
 - <img src="https://cdn.discordapp.com/emojis/847248846526087239.png?size=80" height="19px"> Powerful moderation. </li>
 - 🛡️ Effective automod and antiraid system. </li>
-- 🥳 Fun commands. </li>
-- 🎮 Fun games. </li>
 - ⚒️ Utility commands. </li>
 - 😎 Emoji management. </li>
 - 📔 Advanced logging system. </li>
@@ -52,7 +51,7 @@ I'd prefer if you don't run an instance of this bot. Just use the `invite` comma
 Anyways, if you still want to self host this, here are the steps:
 <b>
 
-- Install [Python 3.8 or higher](https://www.python.org/downloads/)
+- Install [Python 3.10 or higher](https://www.python.org/downloads/)
 
 - Install [Git](https://git-scm.com/downloads)
 
