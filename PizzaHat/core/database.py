@@ -71,7 +71,7 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         (guild_id BIGINT PRIMARY KEY, channel_id BIGINT)""",
         # AUTOMOD
         """CREATE TABLE IF NOT EXISTS automod
-        (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT false)""",
+        (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT false, modules TEXT[] DEFAULT ARRAY['banned_words', 'all_caps', 'message_spam', 'invites', 'mass_mentions', 'emoji_spam', 'zalgo_text'], warn_action TEXT DEFAULT 'none', warn_threshold INT DEFAULT 0)""",
         # ANTIALT
         """CREATE TABLE IF NOT EXISTS antialt
         (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT false, min_age INT, restricted_role BIGINT, level INT)""",
