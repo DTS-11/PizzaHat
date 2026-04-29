@@ -60,17 +60,6 @@ class AutoModModulesView(discord.ui.View):
             button.callback = self.make_callback(module, button)
             self.add_item(button)
 
-        self.add_item(
-            discord.ui.Button(
-                label="Next", style=discord.ButtonStyle.green, custom_id="am_next"
-            )
-        )
-        self.add_item(
-            discord.ui.Button(
-                label="Cancel", style=discord.ButtonStyle.red, custom_id="am_cancel"
-            )
-        )
-
     def make_callback(self, module: str, button: discord.ui.Button):
         async def callback(interaction: discord.Interaction):
             if interaction.user != self.context.author:
