@@ -113,7 +113,7 @@ class AutoModView(discord.ui.View):
         self.done = False
 
     @discord.ui.select(
-        placeholder="<:cooldiamond:1497276086210527242> Select warn action (PREMIUM)",
+        placeholder="Select warn action (PREMIUM)",
         options=[
             discord.SelectOption(
                 label="None",
