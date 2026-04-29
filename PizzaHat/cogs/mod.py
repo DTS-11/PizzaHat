@@ -1536,6 +1536,13 @@ class Mod(Cog, emoji=1268851270136107048):
                 else None
             )
 
+            automod_cog = self.bot.get_cog("AutoModConfig")
+            if automod_cog:
+                if hasattr(automod_cog, "check_warn_threshold"):
+                    await automod_cog.check_warn_threshold(member.id, ctx.guild.id)  # type: ignore
+                if hasattr(automod_cog, "clear_config_cache"):
+                    automod_cog.clear_config_cache(ctx.guild.id)  # type: ignore
+
             em = green_embed(
                 title=f"{self.bot.yes} Warned User",
                 description=f"Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}",

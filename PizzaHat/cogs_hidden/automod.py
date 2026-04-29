@@ -27,6 +27,8 @@ class AutoModConfig(Cog):
     def clear_config_cache(self, guild_id: int | None = None) -> None:
         self.get_logs_channel.cache_clear()
         self.check_if_am_is_enabled.cache_clear()
+        self.get_automod_modules.cache_clear()
+        self.get_warn_config.cache_clear()
 
     def mod_perms(self, m: discord.Message) -> bool:
         p: discord.Permissions = m.author.guild_permissions  # type: ignore
@@ -70,6 +72,78 @@ class AutoModConfig(Cog):
         )
         return data
 
+    @alru_cache()
+    async def get_automod_modules(self, guild_id: int) -> list:
+        if self.bot.db is None:
+            return []
+
+        modules = await self.bot.db.fetchval(
+            "SELECT modules FROM automod WHERE guild_id=$1", guild_id
+        )
+        return modules or []
+
+    @alru_cache()
+    async def get_warn_config(self, guild_id: int) -> dict:
+        if self.bot.db is None:
+            return {"warn_action": "none", "warn_threshold": 0}
+
+        row = await self.bot.db.fetchrow(
+            "SELECT warn_action, warn_threshold FROM automod WHERE guild_id=$1",
+            guild_id,
+        )
+
+        if not row:
+            return {"warn_action": "none", "warn_threshold": 0}
+
+        return {
+            "warn_action": row["warn_action"] or "none",
+            "warn_threshold": row["warn_threshold"] or 0,
+        }
+
+    async def check_warn_threshold(self, user_id: int, guild_id: int):
+        """Check if user has reached warn threshold and take action."""
+        if not self.bot.db:
+            return
+
+        warn_config = await self.get_warn_config(guild_id)
+        threshold = warn_config["warn_threshold"]
+        action = warn_config["warn_action"]
+
+        if threshold <= 0 or action == "none":
+            return
+
+        warn_count = await self.bot.db.fetchval(
+            "SELECT COUNT(*) FROM warnlogs WHERE user_id=$1 AND guild_id=$2",
+            user_id,
+            guild_id,
+        )
+
+        if warn_count and warn_count >= threshold:
+            guild = self.bot.get_guild(guild_id)
+            if not guild:
+                return
+
+            member = guild.get_member(user_id)
+            if not member:
+                return
+
+            reason = f"AutoMod: Reached {threshold} warns"
+
+            try:
+                if action == "timeout":
+                    await member.timeout(
+                        discord.utils.utcnow() + datetime.timedelta(hours=1),
+                        reason=reason,
+                    )
+                elif action == "kick":
+                    if guild.me.guild_permissions.kick_members:
+                        await member.kick(reason=reason)
+                elif action == "ban":
+                    if guild.me.guild_permissions.ban_members:
+                        await member.ban(reason=reason)
+            except discord.HTTPException:
+                pass
+
     @Cog.listener()
     async def on_automod_trigger(self, msg: discord.Message, module: str):
         if not msg.guild:
@@ -103,6 +177,50 @@ class AutoModConfig(Cog):
 
         if not am_enabled_guild:
             return
+
+        active_modules = await self.get_automod_modules(msg.guild.id)
+
+        if "banned_words" in active_modules:
+            triggered = await self.banned_words(msg)
+            if triggered:
+                await self.on_automod_trigger(msg, "banned_words")
+                return
+
+        if "all_caps" in active_modules:
+            triggered = await self.all_caps(msg)
+            if triggered:
+                await self.on_automod_trigger(msg, "all_caps")
+                return
+
+        if "message_spam" in active_modules:
+            triggered = await self.message_spam(msg)
+            if triggered:
+                await self.on_automod_trigger(msg, "message_spam")
+                return
+
+        if "invites" in active_modules:
+            triggered = await self.invites(msg)
+            if triggered:
+                await self.on_automod_trigger(msg, "invites")
+                return
+
+        if "mass_mentions" in active_modules:
+            triggered = await self.mass_mentions(msg)
+            if triggered:
+                await self.on_automod_trigger(msg, "mass_mentions")
+                return
+
+        if "emoji_spam" in active_modules:
+            triggered = await self.emoji_spam(msg)
+            if triggered:
+                await self.on_automod_trigger(msg, "emoji_spam")
+                return
+
+        if "zalgo_text" in active_modules:
+            triggered = await self.zalgo_text(msg)
+            if triggered:
+                await self.on_automod_trigger(msg, "zalgo_text")
+                return
 
     async def banned_words(self, msg: discord.Message) -> bool:
         banned_words = BANNED_WORDS.copy()
@@ -187,7 +305,7 @@ class AutoModConfig(Cog):
             return True
         return False
 
-    async def invites(self, msg: discord.Message, m: dict) -> bool:
+    async def invites(self, msg: discord.Message) -> bool:
         invite_match = self.invite_regex.findall(msg.content)
 
         if invite_match and msg.guild is not None:
