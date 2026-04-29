@@ -90,8 +90,8 @@ class Tier(IntEnum):
 
 
 description = f"""
-I'm PizzaHat —— Your Ultimate Discord Companion, a bot made by @itsdts.
-I have features such as moderation, utiltity, games and more!
+I'm PizzaHat —— Your Ultimate Discord Companion, a bot made by <@710247495334232164>.
+I have features such as moderation, utiltity and more!
 
 I'm also open source. You can see my code on [GitHub]({REPO_LINK})
 """
