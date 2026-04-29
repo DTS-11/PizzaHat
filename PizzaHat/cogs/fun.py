@@ -20,7 +20,6 @@ from utils.config import (
     SUPPORT_SERVER,
     TOPGG_TOKEN,
     TOPGG_VOTE,
-    WUMPUS_VOTE,
 )
 from utils.embed import green_embed, normal_embed, red_embed
 
@@ -496,7 +495,6 @@ class Fun(Cog, emoji=802615573556363284):
 
         b1 = Button(label="Top.gg", url=TOPGG_VOTE)
         b2 = Button(label="DList.gg", url=DLISTGG_VOTE)
-        b3 = Button(label="Wumpus.store", url=WUMPUS_VOTE)
 
         view.add_item(b1).add_item(b2).add_item(b3)
         await ctx.send(embed=em, view=view)

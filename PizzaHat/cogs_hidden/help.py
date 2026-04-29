@@ -7,7 +7,7 @@ from core.bot import PizzaHat
 from core.cog import Cog
 from discord import ButtonStyle, Interaction, app_commands, ui
 from discord.ext import commands
-from utils.config import COG_EXCEPTIONS, REG_INVITE, SUPPORT_SERVER, WUMPUS_VOTE
+from utils.config import COG_EXCEPTIONS, REG_INVITE, SUPPORT_SERVER, TOPGG_VOTE
 from utils.embed import normal_embed
 
 
@@ -31,7 +31,7 @@ Use the dropdown menu to select a category.\n
     )
     em.add_field(
         name="🔗 Links",
-        value=f"**[Invite me]({REG_INVITE})** • **[Vote]({WUMPUS_VOTE})**",
+        value=f"**[Invite me]({REG_INVITE})** • **[Vote]({TOPGG_VOTE})**",
         inline=False,
     )
 
