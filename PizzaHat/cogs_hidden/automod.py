@@ -11,6 +11,7 @@ from urllib import parse
 import discord
 import emojis
 from async_lru import alru_cache
+
 from core.bot import PizzaHat
 from core.cog import Cog
 from utils.bad_words import BANNED_WORDS

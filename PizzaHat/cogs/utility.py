@@ -26,7 +26,7 @@ from utils.config import (
     SUPPORT_SERVER,
 )
 from utils.custom_checks import premium
-from utils.embed import ctx_embed, green_embed, normal_embed, orange_embed, red_embed
+from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
 
 start_time = time.time()
 

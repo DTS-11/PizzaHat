@@ -5,12 +5,13 @@ from typing import List, Union
 
 import discord
 from async_lru import alru_cache
+from discord.utils import escape_markdown
+from humanfriendly import format_timespan
+
 from cogs.utility import format_date
 from core.bot import PizzaHat
 from core.cog import Cog
-from discord.utils import escape_markdown
-from humanfriendly import format_timespan
-from utils.embed import green_embed, normal_embed, orange_embed, red_embed
+from utils.embed import green_embed, guild_embed, orange_embed, red_embed
 
 
 class GuildLogs(Cog):
@@ -358,7 +359,9 @@ class GuildLogs(Cog):
         role_text = role_text[:-2]
 
         if should_log_all or should_log_member:
-            em = normal_embed(
+            em = await guild_embed(
+                self.bot.db,
+                before.guild.id,
                 description=f"Role{'s' if len(roles) > 1 else ''} {role_text} "
                 f"{'were' if len(roles) > 1 else 'was'} "
                 f"{'added to' if len(before.roles) < len(after.roles) else 'removed from'} "

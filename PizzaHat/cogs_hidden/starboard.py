@@ -3,6 +3,7 @@ from typing import Union
 
 import discord
 from async_lru import alru_cache
+
 from core.bot import PizzaHat
 from core.cog import Cog
 

@@ -1,8 +1,14 @@
 import discord
+
 from core.bot import PizzaHat
 from core.cog import Cog
 from utils.config import LOGS_CHANNEL
-from utils.embed import green_embed, normal_embed, red_embed
+from utils.embed import (
+    green_embed,
+    guild_embed,
+    invalidate_theme_cache,
+    red_embed,
+)
 
 
 class Events(Cog):
@@ -52,7 +58,10 @@ class Events(Cog):
                 return
 
             if msg.content in {f"<@{bot_id}>" or f"<@!{bot_id}>"}:
-                em = normal_embed()
+                em = await guild_embed(
+                    self.bot.db,
+                    msg.guild.id if msg.guild else 0,
+                )
                 em.add_field(
                     name="Hello! <a:wave_animated:783393435242463324>",
                     value=f"I'm {self.bot.user.name} — Your Ultimate Discord Companion.\nTo get started, my prefix is `p!` or `P!` or <@{bot_id}>",
@@ -113,6 +122,8 @@ class Events(Cog):
             clear_cache = getattr(cog, "clear_config_cache", None)
             if callable(clear_cache):
                 clear_cache(guild.id)
+
+        invalidate_theme_cache(guild.id)
 
         em = red_embed(
             title="Guild Left",
