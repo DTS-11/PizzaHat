@@ -7,12 +7,13 @@ from typing import Optional, Union
 
 import discord
 import pyfiglet
-from core.bot import PizzaHat
-from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Button, View
 from TagScriptEngine import Interpreter, block
+
+from core.bot import PizzaHat
+from core.cog import Cog
 from utils.config import (
     ADMIN_INVITE,
     DLISTGG_VOTE,
@@ -21,7 +22,7 @@ from utils.config import (
     TOPGG_TOKEN,
     TOPGG_VOTE,
 )
-from utils.embed import green_embed, normal_embed, red_embed
+from utils.embed import ctx_embed, green_embed, red_embed
 
 
 def clean_string(string) -> str:
@@ -196,7 +197,8 @@ class Fun(Cog, emoji=802615573556363284):
             return
 
         else:
-            e = normal_embed(
+            e = await ctx_embed(
+                ctx,
                 title="Choose",
                 description=f"{ctx.author.mention}, I choose `{random.choice(options)}`",
             )
@@ -207,7 +209,7 @@ class Fun(Cog, emoji=802615573556363284):
     async def reverse(self, ctx: Context, *, text):
         """Reverse some text."""
 
-        e = normal_embed()
+        e = await ctx_embed(ctx)
         e.add_field(name="Input", value=f"```\n{text}\n```", inline=False)
         e.add_field(name="Output", value=f"```\n{text[::-1]}\n```", inline=False)
 
@@ -230,7 +232,8 @@ class Fun(Cog, emoji=802615573556363284):
 
         output_string = output.body.replace("{m:", "").replace("}", "")
 
-        embed = normal_embed(
+        embed = await ctx_embed(
+            ctx,
             title=f"Input: `{query}`",
             description=f"Output: `{output_string}`",
         )
@@ -255,7 +258,8 @@ class Fun(Cog, emoji=802615573556363284):
         user_gets_with_commas = "{:,}".format(userGets)
 
         # actual embed
-        embed = normal_embed(
+        embed = await ctx_embed(
+            ctx,
             title="Dank Memer Tax-Calculator",
         )
         embed.add_field(
@@ -297,7 +301,8 @@ class Fun(Cog, emoji=802615573556363284):
             "You may rely on it.",
         ]
 
-        em = normal_embed(
+        em = await ctx_embed(
+            ctx,
             title="Magic 8ball",
             description=f"Question: {question}\nAnswer: {random.choice(responses)}",
         )
@@ -448,7 +453,8 @@ class Fun(Cog, emoji=802615573556363284):
 
         view.add_item(b1).add_item(b2).add_item(b3)
 
-        em = normal_embed(
+        em = await ctx_embed(
+            ctx,
             title="🔗 Links",
             description=(
                 "Click on the links below if you cant see the buttons for some reason.\n"
@@ -483,7 +489,8 @@ class Fun(Cog, emoji=802615573556363284):
 
         view = View()
 
-        em = normal_embed(
+        em = await ctx_embed(
+            ctx,
             title="Vote for me",
             description="Click the buttons below to vote!",
         )
@@ -505,7 +512,8 @@ class Fun(Cog, emoji=802615573556363284):
     async def pressf(self, ctx: Context, *, object: str):
         """Pay respect by pressing the F button."""
 
-        em = normal_embed(
+        em = await ctx_embed(
+            ctx,
             description=f"It's time to pay respect for **{object}**",
             timestamp=True,
         )
@@ -522,7 +530,9 @@ class Fun(Cog, emoji=802615573556363284):
         """Converts normal text to ascii art."""
 
         await ctx.send(
-            embed=normal_embed(description=f"```\n{pyfiglet.figlet_format(text)}\n```")
+            embed=await ctx_embed(
+                ctx, description=f"```\n{pyfiglet.figlet_format(text)}\n```"
+            )
         )
 
     @commands.command()

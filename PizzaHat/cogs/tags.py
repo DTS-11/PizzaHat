@@ -1,9 +1,10 @@
-from core.bot import PizzaHat, Tier
-from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
+
+from core.bot import PizzaHat, Tier
+from core.cog import Cog
 from utils.custom_checks import _tier_cache
-from utils.embed import green_embed, normal_embed, red_embed
+from utils.embed import ctx_embed, green_embed, red_embed
 from utils.ui import Paginator
 
 TAG_LIMITS = {
@@ -132,7 +133,8 @@ class Tags(Cog, emoji=1268850578415681546):
                     chunks = [data[i : i + 10] for i in range(0, len(data), 10)]
 
                     for chunk in chunks:
-                        em = normal_embed(
+                        em = await ctx_embed(
+                            ctx,
                             description="",
                         )
                         for i in chunk:
@@ -143,7 +145,8 @@ class Tags(Cog, emoji=1268850578415681546):
                     await ctx.send(embed=embeds[0], view=paginator)
 
                 else:
-                    em = normal_embed(
+                    em = await ctx_embed(
+                        ctx,
                         description="",
                     )
                     for i in data:
@@ -166,7 +169,8 @@ class Tags(Cog, emoji=1268850578415681546):
                 tag,
             )
 
-            em = normal_embed(
+            em = await ctx_embed(
+                ctx,
                 title=tag,
                 description="",
                 timestamp=True,

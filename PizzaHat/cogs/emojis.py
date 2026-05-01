@@ -5,12 +5,13 @@ from typing import Union
 import discord
 import requests
 import yarl
-from core.bot import PizzaHat
-from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
 from PIL import Image
-from utils.embed import green_embed, normal_embed, red_embed
+
+from core.bot import PizzaHat
+from core.cog import Cog
+from utils.embed import ctx_embed, green_embed, red_embed
 from utils.ui import Paginator
 
 from .utility import format_date
@@ -239,10 +240,13 @@ class Emojis(Cog, emoji=1268867324195246133):
                 )
 
                 embeds.append(
-                    normal_embed(
-                        title=f"{ctx.guild.name} Emojis ({len(emojis)})",
-                        description=description,
-                        timestamp=True,
+                    (
+                        await ctx_embed(
+                            ctx,
+                            title=f"{ctx.guild.name} Emojis ({len(emojis)})",
+                            description=description,
+                            timestamp=True,
+                        )
                     )
                     .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
                     .set_footer(text=f"Page {i}/{len(emoji_chunks)}")

@@ -6,13 +6,14 @@ from typing import List, Optional, Union
 
 import discord
 import humanfriendly
-from core.bot import PizzaHat, Tier
-from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
+
+from core.bot import PizzaHat, Tier
+from core.cog import Cog
 from utils.config import ANTIHOIST_CHARS
 from utils.custom_checks import premium
-from utils.embed import green_embed, normal_embed, orange_embed, red_embed
+from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
 from utils.ui import ConfirmationView, Paginator
 
 
@@ -284,7 +285,8 @@ class Mod(Cog, emoji=1268851270136107048):
             def check_enabled(val):
                 return f"{self.bot.yes} Enabled" if val else f"{self.bot.no} Disabled"
 
-            stats_em = normal_embed(
+            stats_em = await ctx_embed(
+                ctx,
                 title="📊 Server Insights",
                 description=(
                     f"**{guild.name}**\n\n"
@@ -299,7 +301,8 @@ class Mod(Cog, emoji=1268851270136107048):
             )
             stats_em.set_thumbnail(url=guild.icon.url if guild.icon else None)
 
-            mod_em = normal_embed(
+            mod_em = await ctx_embed(
+                ctx,
                 title="<:certified_mod_badge:1268876753883889706> Moderation Insights",
                 description=(
                     f"**Most Warned Users**\n"
@@ -312,7 +315,8 @@ class Mod(Cog, emoji=1268851270136107048):
             )
             mod_em.set_thumbnail(url=guild.icon.url if guild.icon else None)
 
-            ticket_em = normal_embed(
+            ticket_em = await ctx_embed(
+                ctx,
                 title="<:ticketbadge:1268879389324611595> Ticket Analytics",
                 description=(
                     f"**Stats**\n"
@@ -327,7 +331,8 @@ class Mod(Cog, emoji=1268851270136107048):
             )
             ticket_em.set_thumbnail(url=guild.icon.url if guild.icon else None)
 
-            config_em = normal_embed(
+            config_em = await ctx_embed(
+                ctx,
                 title="<:discordcog:1497265278550016110> Configuration Status",
                 description=(
                     f"<:wrench:1268855253768339476> **AutoMod:** {check_enabled(automod_config)}\n"
@@ -501,8 +506,9 @@ class Mod(Cog, emoji=1268851270136107048):
             if seconds is None:
                 seconds = ctx.channel.slowmode_delay
                 return await ctx.send(
-                    embed=normal_embed(
-                        description=f"The slowmode in this channel is `{seconds}` seconds"
+                    embed=await ctx_embed(
+                        ctx,
+                        description=f"The slowmode in this channel is `{seconds}` seconds",
                     )
                 )
 
@@ -1037,7 +1043,8 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
 
             for i in range(0, len(banned_users), 10):
-                em = normal_embed(
+                em = await ctx_embed(
+                    ctx,
                     title="Banned Users",
                     description="- " + "\n- ".join(banned_users[i : i + 10]),
                     timestamp=True,
@@ -1206,8 +1213,8 @@ class Mod(Cog, emoji=1268851270136107048):
 
         else:
             await ctx.send(
-                embed=normal_embed(
-                    description=f"{user.mention} already has {role.mention} role."
+                embed=await ctx_embed(
+                    ctx, description=f"{user.mention} already has {role.mention} role."
                 )
             )
 
@@ -1230,8 +1237,9 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         else:
             await ctx.send(
-                embed=normal_embed(
-                    description=f"{user.mention} does not have {role.mention} role."
+                embed=await ctx_embed(
+                    ctx,
+                    description=f"{user.mention} does not have {role.mention} role.",
                 )
             )
 
@@ -1332,10 +1340,13 @@ class Mod(Cog, emoji=1268851270136107048):
                     [f"{role.mention} `({role.id})` • {role.name}" for role in chunk]
                 )
                 embeds.append(
-                    normal_embed(
-                        title=f"{ctx.guild.name} Roles ({len(roles)})",
-                        description=description,
-                        timestamp=True,
+                    (
+                        await ctx_embed(
+                            ctx,
+                            title=f"{ctx.guild.name} Roles ({len(roles)})",
+                            description=description,
+                            timestamp=True,
+                        )
                     )
                     .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
                     .set_footer(text=f"Page {i}/{len(role_chunks)}")
@@ -1421,10 +1432,13 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
 
                 embeds.append(
-                    normal_embed(
-                        title=f"{ctx.guild.name} Channels ({len(channels)})",
-                        description=description,
-                        timestamp=True,
+                    (
+                        await ctx_embed(
+                            ctx,
+                            title=f"{ctx.guild.name} Channels ({len(channels)})",
+                            description=description,
+                            timestamp=True,
+                        )
                     )
                     .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
                     .set_footer(text=f"Page 1/{len(channels_by_category) + 1}")
@@ -1449,10 +1463,13 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
 
                 embeds.append(
-                    normal_embed(
-                        title=f"{ctx.guild.name} Channels ({len(channels)})",
-                        description=description,
-                        timestamp=True,
+                    (
+                        await ctx_embed(
+                            ctx,
+                            title=f"{ctx.guild.name} Channels ({len(channels)})",
+                            description=description,
+                            timestamp=True,
+                        )
                     )
                     .set_thumbnail(url=ctx.guild.icon.url)  # type: ignore
                     .set_footer(text=f"Page {i}/{total_category_pages + 1}")
@@ -1671,7 +1688,8 @@ class Mod(Cog, emoji=1268851270136107048):
                     f"Moderator: {mod_str}\n"
                 )
 
-            em = normal_embed(
+            em = await ctx_embed(
+                ctx,
                 title=f"Warnings — {member.name}  ({total} total)",
                 description="\n".join(lines) + threshold_note,
                 timestamp=True,

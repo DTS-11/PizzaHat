@@ -2,12 +2,13 @@ from typing import List, Optional, Union
 
 import chat_exporter
 import discord
-from core.bot import Tier
 from discord import ButtonStyle, Interaction, ui
 from discord.ext import commands
 from discord.ext.commands import Context
+
+from core.bot import Tier
 from utils.custom_checks import _tier_cache
-from utils.embed import normal_embed
+from utils.embed import ctx_embed, normal_embed
 
 
 # credits to Nirlep's EpicBot paginator system!
@@ -159,7 +160,8 @@ class TicketView(ui.View):
                     interaction.user.id,
                 )
 
-            em = normal_embed(
+            em = await ctx_embed(
+                self.ctx,
                 title="Ticket created!",
                 description=f"Welcome {interaction.user.mention} `[{interaction.user}]`. Support team will get back to you shortly.",
                 timestamp=True,

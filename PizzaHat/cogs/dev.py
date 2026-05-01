@@ -8,11 +8,12 @@ from contextlib import redirect_stdout
 from typing import TYPE_CHECKING, Awaitable, Callable, Union
 
 import discord
-from core.bot import INITIAL_EXTENSIONS, SUB_EXTENSIONS, PizzaHat
-from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
-from utils.embed import normal_embed
+
+from core.bot import INITIAL_EXTENSIONS, SUB_EXTENSIONS, PizzaHat
+from core.cog import Cog
+from utils.embed import ctx_embed
 from utils.formats import TabularData, plural
 
 if TYPE_CHECKING:
@@ -75,7 +76,8 @@ class Dev(Cog, emoji=1268856867585658981):
             exec(to_compile, env)
 
         except Exception as e:
-            embed = normal_embed(
+            embed = await ctx_embed(
+                ctx,
                 title="Error",
                 description=f"```py\n{e.__class__.__name__}: {e}\n```",
             )
@@ -89,7 +91,8 @@ class Dev(Cog, emoji=1268856867585658981):
 
         except Exception:
             value = stdout.getvalue()
-            embed = normal_embed(
+            embed = await ctx_embed(
+                ctx,
                 title="Error",
                 description=f"```py\n{value}{traceback.format_exc()}\n```",
             )
@@ -100,7 +103,7 @@ class Dev(Cog, emoji=1268856867585658981):
             if ret is None:
                 if value:
                     try:
-                        embed = normal_embed(description=f"```py\n{value}\n```")
+                        embed = await ctx_embed(ctx, description=f"```py\n{value}\n```")
 
                         await ctx.send(embed=embed)
 
@@ -109,16 +112,22 @@ class Dev(Cog, emoji=1268856867585658981):
 
                         for page in paginated_text:
                             if page == paginated_text[-1]:
-                                embed = normal_embed(description=f"```py\n{page}\n```")
+                                embed = await ctx_embed(
+                                    ctx, description=f"```py\n{page}\n```"
+                                )
                                 await ctx.send(embed=embed)
                                 break
 
-                            embed = normal_embed(description=f"```py\n{page}\n```")
+                            embed = await ctx_embed(
+                                ctx, description=f"```py\n{page}\n```"
+                            )
 
                             await ctx.send(embed=embed)
             else:
                 try:
-                    embed = normal_embed(description=f"```py\n{value}{ret}\n```")
+                    embed = await ctx_embed(
+                        ctx, description=f"```py\n{value}{ret}\n```"
+                    )
                     await ctx.send(embed=embed)
 
                 except:
@@ -126,11 +135,13 @@ class Dev(Cog, emoji=1268856867585658981):
 
                     for page in paginated_text:
                         if page == paginated_text[-1]:
-                            embed = normal_embed(description=f"```py\n{page}\n```")
+                            embed = await ctx_embed(
+                                ctx, description=f"```py\n{page}\n```"
+                            )
                             await ctx.send(embed=embed)
                             break
 
-                        embed = normal_embed(description=f"```py\n{page}\n```")
+                        embed = await ctx_embed(ctx, description=f"```py\n{page}\n```")
 
                         await ctx.send(embed=embed)
 

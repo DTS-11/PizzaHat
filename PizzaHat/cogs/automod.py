@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import discord
-from core.bot import PizzaHat
-from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
-from utils.embed import green_embed, normal_embed, red_embed
+
+from core.bot import PizzaHat
+from core.cog import Cog
+from utils.embed import ctx_embed, green_embed, normal_embed, red_embed
 
 ALL_MODULES = [
     "banned_words",
@@ -246,7 +247,7 @@ def _status_icon(enabled: bool) -> str:
 
 
 def _build_status_embed(
-    guild: discord.Guild, enabled: bool, cfg: dict
+    guild: discord.Guild, enabled: bool, cfg: dict, ctx: Optional[Context] = None
 ) -> discord.Embed:
     em = normal_embed(
         title="<:wrench:1268855253768339476>  AutoMod Configuration",
@@ -344,6 +345,8 @@ class AutoMod(Cog, emoji=1268855303768903733):
         cfg: dict = row.get("config") or {}
 
         em = _build_status_embed(ctx.guild, enabled, cfg)
+        # Apply theming
+        em.color = (await ctx_embed(ctx, color=em.color)).color
         em.add_field(
             name="Sub-commands",
             value=(
@@ -476,7 +479,8 @@ class AutoMod(Cog, emoji=1268855303768903733):
 
         view = ModuleToggleView(ctx, cfg, mode)
         msg = await ctx.send(
-            embed=normal_embed(
+            embed=await ctx_embed(
+                ctx,
                 title="Module Manager",
                 description=f"Select the modules you want to **{mode}**, then click **Confirm**.",
             ),
@@ -541,7 +545,8 @@ class AutoMod(Cog, emoji=1268855303768903733):
 
         view = ThresholdBuilderView(ctx, existing)
         msg = await ctx.send(
-            embed=normal_embed(
+            embed=await ctx_embed(
+                ctx,
                 title="Warn Threshold Builder",
                 description=(
                     "**Current thresholds:**\n" + _threshold_summary(existing) + "\n\n"
@@ -696,7 +701,9 @@ class AutoMod(Cog, emoji=1268855303768903733):
         row = await self._get_row(ctx.guild.id)
         enabled = row.get("enabled", False)
         cfg = row.get("config") or {}
-        await ctx.send(embed=_build_status_embed(ctx.guild, enabled, cfg))
+        em = _build_status_embed(ctx.guild, enabled, cfg)
+        em.color = (await ctx_embed(ctx, color=em.color)).color
+        await ctx.send(embed=em)
 
 
 async def setup(bot: PizzaHat) -> None:

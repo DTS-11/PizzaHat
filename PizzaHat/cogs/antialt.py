@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import discord
 from async_lru import alru_cache
-from core.bot import PizzaHat
-from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
-from utils.embed import green_embed, normal_embed, orange_embed, red_embed
+
+from core.bot import PizzaHat
+from core.cog import Cog
+from utils.embed import ctx_embed, green_embed, normal_embed, orange_embed, red_embed
 
 LEVELS = {
     1: (
@@ -285,8 +286,9 @@ class AntiAlts(Cog, emoji=1268851128548724756):
 
         wizard = SetupWizardView(ctx)
         msg = await ctx.send(
-            embed=normal_embed(
-                title="Anti-Alt Setup  (1/2)",
+            embed=await ctx_embed(
+                ctx,
+                title="Anti-Alt Setup (1/2)",
                 description=(
                     "**Select a protection level** and optionally set the minimum account age.\n\n"
                     + "\n".join(
@@ -306,8 +308,9 @@ class AntiAlts(Cog, emoji=1268851128548724756):
 
         role_view = RoleChoiceView(ctx)
         await msg.edit(
-            embed=normal_embed(
-                title="Anti-Alt Setup  (2/2)",
+            embed=await ctx_embed(
+                ctx,
+                title="Anti-Alt Setup (2/2)",
                 description=(
                     f"**Level:** {LEVELS[wizard.level][0]} Level {wizard.level} — {LEVELS[wizard.level][1]}\n"
                     f"**Min Age:** {wizard.min_age} days\n\n"
@@ -507,14 +510,15 @@ class AntiAlts(Cog, emoji=1268851128548724756):
     @antialt.command(name="status")
     @commands.guild_only()
     async def antialt_status(self, ctx: Context):
-        """Show current Anti-Alt configuration."""
+        """Show the current Anti-Alt configuration."""
 
         if not ctx.guild:
             return
+
         data = await self._get_data(ctx.guild.id)
-        await ctx.send(
-            embed=_build_status_embed(ctx.guild, data, self.bot.yes, self.bot.no)
-        )
+        em = _build_status_embed(ctx.guild, data, self.bot.yes, self.bot.no)
+        em.color = (await ctx_embed(ctx, color=em.color)).color
+        await ctx.send(embed=em)
 
 
 async def setup(bot: PizzaHat) -> None:
