@@ -1,6 +1,7 @@
-from core.bot import Tier
 from discord.ext import commands
 from discord.ext.commands import Context
+
+from core.bot import Tier
 
 
 class PremiumCheck(commands.CheckFailure):
@@ -55,6 +56,26 @@ def premium(tier: Tier = Tier.BASIC):
         )
 
     return commands.check(predicate)
+
+
+async def is_premium_guild(pool, guild_id: int) -> bool:
+    """Check if a guild has premium access."""
+    if pool is None:
+        return False
+
+    cached_tier = _tier_cache.get(guild_id)
+    if cached_tier is None:
+        row = await pool.fetchrow(
+            "SELECT tier FROM premium WHERE guild_id=$1", guild_id
+        )
+        if row:
+            cached_tier = Tier(row["tier"])
+            _tier_cache[guild_id] = cached_tier
+        else:
+            cached_tier = Tier.FREE
+            _tier_cache[guild_id] = Tier.FREE
+
+    return cached_tier >= Tier.BASIC
 
 
 def clear_tier_cache(guild_id: int | None = None):
