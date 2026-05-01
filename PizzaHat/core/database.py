@@ -62,7 +62,7 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         (guild_id BIGINT, user_id BIGINT, reason TEXT)""",
         # WARNLOGS
         """CREATE TABLE IF NOT EXISTS warnlogs
-        (id SERIAL PRIMARY KEY, guild_id BIGINT, user_id BIGINT, mod_id BIGINT, reason TEXT)""",
+        (id SERIAL PRIMARY KEY, guild_id BIGINT, user_id BIGINT, mod_id BIGINT, reason TEXT, created_at TIMESTAMP DEFAULT NOW())""",
         # LOGS_CONFIG
         """CREATE TABLE IF NOT EXISTS logs_config
         (guild_id BIGINT PRIMARY KEY, module TEXT[] DEFAULT ARRAY['all'])""",
@@ -71,7 +71,7 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         (guild_id BIGINT PRIMARY KEY, channel_id BIGINT)""",
         # AUTOMOD
         """CREATE TABLE IF NOT EXISTS automod
-        (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT false, modules TEXT[] DEFAULT ARRAY['banned_words', 'all_caps', 'message_spam', 'invites', 'mass_mentions', 'emoji_spam', 'zalgo_text'], warn_action TEXT DEFAULT 'none', warn_threshold INT DEFAULT 0)""",
+        (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT false, modules TEXT[] DEFAULT ARRAY['banned_words', 'all_caps',  'message_spam', 'invites', 'mass_mentions', 'emoji_spam', 'zalgo_text'], warn_action TEXT DEFAULT 'none', warn_threshold INT DEFAULT 0, config JSONB DEFAULT '{}')""",
         # ANTIALT
         """CREATE TABLE IF NOT EXISTS antialt
         (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT false, min_age INT, restricted_role BIGINT, level INT)""",
@@ -90,6 +90,9 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         # TICKETS
         """CREATE TABLE IF NOT EXISTS ticket_logs
         (guild_id BIGINT, thread_id BIGINT PRIMARY KEY, creator_id BIGINT, opened_at TIMESTAMP DEFAULT NOW(), closed_at TIMESTAMP, closed_by BIGINT)""",
+        # GUILD_THEMES
+        """CREATE TABLE IF NOT EXISTS guild_themes
+        (guild_id BIGINT PRIMARY KEY, accent_color TEXT)""",
     ]
 
     for statement in statements:
@@ -154,5 +157,12 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         """
         CREATE INDEX IF NOT EXISTS star_info_bot_msg_id_idx
         ON star_info (bot_msg_id)
+        """
+    )
+
+    await pool.execute(
+        """
+        CREATE INDEX IF NOT EXISTS warnlogs_created_at_idx
+        ON warnlogs (guild_id, user_id, created_at DESC)
         """
     )
