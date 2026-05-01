@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import uuid
 from typing import List, Optional, Union
@@ -1505,147 +1507,272 @@ class Mod(Cog, emoji=1268851270136107048):
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def warn(self, ctx: Context, member: discord.Member, *, reason: str | None):
-        """Warns a user."""
+    async def warn(
+        self,
+        ctx: Context,
+        member: discord.Member,
+        *,
+        reason: str = "No reason provided.",
+    ):
+        """Warn a member. Triggers auto-actions if thresholds are configured."""
 
-        reason = f"No reason given.\nWarned done by {ctx.author}"
+        if not ctx.guild or not self.bot.db:
+            return
 
-        if ctx.guild is not None:
-            if member == ctx.author or member == self.bot.user:
-                return await ctx.send(
-                    embed=red_embed(description="You cant warn yourself or the bot.")
+        if member.id in (ctx.author.id, self.bot.user.id):  # type: ignore
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} You can't warn yourself or the bot."
                 )
-
-            if not ctx.author.top_role.position == member.top_role.position:  # type: ignore
-                if not ctx.author.top_role.position > member.top_role.position:  # type: ignore
-                    return await ctx.send(
-                        embed=red_embed(
-                            description="You cant warn someone that has higher or same role heirarchy."
-                        )
-                    )
-
-            (
-                await self.bot.db.execute(
-                    "INSERT INTO warnlogs (guild_id, user_id, mod_id, reason) VALUES ($1, $2, $3, $4)",
-                    ctx.guild.id,
-                    member.id,
-                    ctx.author.id,
-                    reason,
-                )
-                if self.bot.db
-                else None
             )
 
-            automod_cog = self.bot.get_cog("AutoModConfig")
-            if automod_cog:
-                if hasattr(automod_cog, "check_warn_threshold"):
-                    await automod_cog.check_warn_threshold(member.id, ctx.guild.id)  # type: ignore
-                if hasattr(automod_cog, "clear_config_cache"):
-                    automod_cog.clear_config_cache(ctx.guild.id)  # type: ignore
+        if (
+            ctx.author.top_role.position <= member.top_role.position  # type: ignore
+            and ctx.guild.owner_id != ctx.author.id
+        ):
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} You can't warn someone with an equal or higher role."
+                )
+            )
 
-            em = green_embed(
-                title=f"{self.bot.yes} Warned User",
-                description=f"Moderator: {ctx.author.mention}\nMember: {member.mention}\nReason: {reason}",
+        if ctx.guild.me.top_role.position <= member.top_role.position:
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} I can't warn someone with a higher or equal role to mine."
+                )
+            )
+
+        full_reason = f"{reason}  [by {ctx.author} ({ctx.author.id})]"
+        await self.bot.db.execute(
+            "INSERT INTO warnlogs (guild_id, user_id, mod_id, reason) VALUES ($1, $2, $3, $4)",
+            ctx.guild.id,
+            member.id,
+            ctx.author.id,
+            full_reason,
+        )
+
+        warn_count: int = (
+            await self.bot.db.fetchval(
+                "SELECT COUNT(*) FROM warnlogs WHERE user_id=$1 AND guild_id=$2",
+                member.id,
+                ctx.guild.id,
+            )
+            or 0
+        )
+
+        automod_cog = self.bot.get_cog("AutoModConfig")
+        thresholds: list[dict] = []
+        if automod_cog and hasattr(automod_cog, "_get_thresholds"):
+            thresholds = await automod_cog._get_thresholds(ctx.guild.id)  # type: ignore[union-attr]
+
+        next_action_str = ""
+        if thresholds:
+            for t in sorted(thresholds, key=lambda x: x["warns"]):
+                if t["warns"] > warn_count:
+                    action = t["action"].replace("_", " ").title()
+                    next_action_str = (
+                        f"\n⚠️ Next action at **{t['warns']} warns**: {action}"
+                    )
+                    break
+
+        em = orange_embed(
+            title="<:warning:1268855244033363968>  Member Warned",
+            description=(
+                f"**Member:** {member.mention}\n"
+                f"**Moderator:** {ctx.author.mention}\n"
+                f"**Reason:** {reason}\n"
+                f"**Total warns:** `{warn_count}`" + next_action_str
+            ),
+            timestamp=True,
+        )
+        em.set_author(name=str(ctx.author), icon_url=ctx.author.display_avatar.url)
+        em.set_thumbnail(url=member.display_avatar.url)
+        await ctx.send(embed=em)
+
+        try:
+            dm_em = orange_embed(
+                title=f"You received a warning in {ctx.guild.name}",
+                description=(
+                    f"**Reason:** {reason}\n"
+                    f"**Moderator:** {ctx.author}\n"
+                    f"**Your total warns:** `{warn_count}`" + next_action_str
+                ),
                 timestamp=True,
             )
-            em.set_author(
-                name=ctx.author,
-                url=ctx.author.avatar.url if ctx.author.avatar else None,
-            )
-            em.set_thumbnail(url=member.avatar.url if member.avatar else None)
+            dm_em.set_thumbnail(url=ctx.guild.icon.url if ctx.guild.icon else None)
+            await member.send(embed=dm_em)
+        except discord.HTTPException:
+            pass
 
-            await ctx.send(embed=em)
+        if automod_cog and hasattr(automod_cog, "check_warn_threshold"):
+            await automod_cog.check_warn_threshold(member.id, ctx.guild.id)  # type: ignore[union-attr]
 
     @commands.command(aliases=["warns"])
     @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def warnings(
-        self, ctx: Context, member: Optional[Union[discord.Member, discord.User]] = None
+        self,
+        ctx: Context,
+        member: Optional[Union[discord.Member, discord.User]] = None,
     ):
-        """
-        Displays the warnings of the user.
-        If no user is given, the bot sends your warnings.
-        """
+        """Show all warnings for a member (defaults to yourself)."""
 
         member = member or ctx.author
+        if not ctx.guild or not self.bot.db:
+            return
 
-        if ctx.guild is not None:
-            records = (
-                await self.bot.db.fetch(
-                    "SELECT * FROM warnlogs WHERE user_id = $1 AND guild_id = $2",
-                    member.id,
-                    ctx.guild.id,
-                )
-                if self.bot.db
-                else None
+        records = await self.bot.db.fetch(
+            "SELECT id, reason, mod_id, (NOW() - created_at) as age "
+            "FROM warnlogs WHERE user_id=$1 AND guild_id=$2 ORDER BY id DESC",
+            member.id,
+            ctx.guild.id,
+        )
+
+        if not records:
+            em = green_embed(
+                title=f"Warnings — {member.name}",
+                description="✨ This member has no warnings.",
+                timestamp=True,
             )
+            em.set_thumbnail(url=member.display_avatar.url)
+            return await ctx.send(embed=em)
 
-            if not records:
-                em = green_embed(
-                    title=f"Warnings of {member.name}",
-                    description="✨ This user has no warns!",
-                    timestamp=True,
-                )
-                em.set_thumbnail(url=member.avatar.url if member.avatar else None)
-                return await ctx.send(embed=em)
+        embeds: list[discord.Embed] = []
+        chunks = [records[i : i + 5] for i in range(0, len(records), 5)]
+        total = len(records)
 
-            else:
-                embeds = []
-                warning_list = [
-                    f"**ID:** {record['id']}\n**Reason:** {record['reason']}\n**Moderator:** {ctx.guild.get_member(record['mod_id'])}\n"
-                    for record in records
-                ]
-                chunks = [
-                    warning_list[i : i + 5] for i in range(0, len(warning_list), 5)
-                ]
+        # Fetch threshold context
+        automod_cog = self.bot.get_cog("AutoModConfig")
+        thresholds: list[dict] = []
+        if automod_cog and hasattr(automod_cog, "_get_thresholds"):
+            thresholds = await automod_cog._get_thresholds(ctx.guild.id)  # type: ignore[union-attr]
 
-                for chunk in chunks:
-                    em = normal_embed(
-                        title=f"Warnings of {member.name} | {len(records)} warns",
-                        description="\n".join(chunk),
-                        timestamp=True,
+        threshold_note = ""
+        if thresholds:
+            for t in sorted(thresholds, key=lambda x: x["warns"]):
+                if total >= t["warns"]:
+                    threshold_note = (
+                        f"\n⚠️ Threshold of **{t['warns']}** warns reached → "
+                        f"**{t['action'].replace('_', ' ').title()}**"
                     )
-                    em.set_thumbnail(url=member.avatar.url if member.avatar else None)
-                    embeds.append(em)
+                    break
 
-                if len(embeds) == 1:
-                    return await ctx.send(embed=embeds[0])
-                else:
-                    paginator = Paginator(ctx, embeds)
-                    return await ctx.send(embed=embeds[0], view=paginator)
+        for i, chunk in enumerate(chunks, 1):
+            lines = []
+            for r in chunk:
+                mod = ctx.guild.get_member(r["mod_id"])
+                mod_str = mod.mention if mod else f"`{r['mod_id']}`"
+                # Strip the "[by ...]" suffix from automod warns for display
+                reason_display = r["reason"].split("  [by ")[0]
+                lines.append(
+                    f"**ID `{r['id']}`**\n"
+                    f"Reason: {reason_display}\n"
+                    f"Moderator: {mod_str}\n"
+                )
+
+            em = normal_embed(
+                title=f"Warnings — {member.name}  ({total} total)",
+                description="\n".join(lines) + threshold_note,
+                timestamp=True,
+            )
+            em.set_thumbnail(url=member.display_avatar.url)
+            em.set_footer(text=f"Page {i}/{len(chunks)}")
+            embeds.append(em)
+
+        if len(embeds) == 1:
+            return await ctx.send(embed=embeds[0])
+
+        view = Paginator(ctx, embeds)
+        await ctx.send(embed=embeds[0], view=view)
 
     @commands.command(aliases=["delwarn"])
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def deletewarn(self, ctx: Context, member: discord.Member, warn_id: int):
-        """Deletes a warn of the user with warn ID."""
+        """Delete a specific warning by ID."""
 
-        result = (
-            await self.bot.db.execute(
-                "DELETE FROM warnlogs WHERE id = $1 AND user_id = $2 AND guild_id = $3",
-                warn_id,
-                member.id,
-                ctx.guild.id,
-            )
-            if self.bot.db and ctx.guild
-            else None
+        if not ctx.guild or not self.bot.db:
+            return
+
+        result = await self.bot.db.execute(
+            "DELETE FROM warnlogs WHERE id=$1 AND user_id=$2 AND guild_id=$3",
+            warn_id,
+            member.id,
+            ctx.guild.id,
         )
 
         if result == "DELETE 0":
-            await ctx.send(
+            return await ctx.send(
                 embed=red_embed(
-                    description=f"{self.bot.no} Warn ID: `{warn_id}` not found for {member.mention}."
+                    description=f"{self.bot.no} Warn ID `{warn_id}` not found for {member.mention}."
+                )
+            )
+        await ctx.send(
+            embed=green_embed(
+                description=f"{self.bot.yes} Warn ID `{warn_id}` for {member.mention} deleted."
+            )
+        )
+
+    @commands.command(aliases=["clearwarn", "warnreset"])
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    async def clearwarns(self, ctx: Context, member: discord.Member):
+        """Clear ALL warnings for a member."""
+
+        if not ctx.guild or not self.bot.db:
+            return
+
+        count: int = (
+            await self.bot.db.fetchval(
+                "SELECT COUNT(*) FROM warnlogs WHERE user_id=$1 AND guild_id=$2",
+                member.id,
+                ctx.guild.id,
+            )
+            or 0
+        )
+
+        if count == 0:
+            return await ctx.send(
+                embed=orange_embed(
+                    description=f"{self.bot.no} {member.mention} has no warnings to clear."
                 )
             )
 
-        else:
-            await ctx.send(
-                embed=green_embed(
-                    description=f"{self.bot.yes} Warn ID `{warn_id}` for {member.mention} has been deleted."
+        from utils.ui import ConfirmationView
+
+        confirm = ConfirmationView(ctx, 30)
+        msg = await ctx.send(
+            embed=orange_embed(
+                description=(
+                    f"<:warning:1268855244033363968> This will delete **{count}** warning(s) "
+                    f"for {member.mention}. Are you sure?"
                 )
+            ),
+            view=confirm,
+        )
+        await confirm.wait()
+
+        if not confirm.value:
+            return await msg.edit(
+                embed=red_embed(description="Cancelled — no warns were deleted."),
+                view=None,
             )
 
+        await self.bot.db.execute(
+            "DELETE FROM warnlogs WHERE user_id=$1 AND guild_id=$2",
+            member.id,
+            ctx.guild.id,
+        )
+        await msg.edit(
+            embed=green_embed(
+                description=f"{self.bot.yes} Cleared **{count}** warning(s) for {member.mention}."
+            ),
+            view=None,
+        )
 
-async def setup(bot):
+
+async def setup(bot: PizzaHat):
     await bot.add_cog(Mod(bot))
