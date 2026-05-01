@@ -10,12 +10,13 @@ import psutil
 import pytz
 import requests
 from colorthief import ColorThief
-from core.bot import PizzaHat
-from core.cog import Cog
-from core.database import get_prefix, invalidate_prefix_cache, set_prefix
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Modal, Select, TextInput, View
+
+from core.bot import PizzaHat
+from core.cog import Cog
+from core.database import get_prefix, invalidate_prefix_cache, set_prefix
 from utils.config import (
     BOOSTER_ROLE,
     CONTRIBUTOR_ROLE,
@@ -25,7 +26,7 @@ from utils.config import (
     SUPPORT_SERVER,
 )
 from utils.custom_checks import premium
-from utils.embed import green_embed, normal_embed, orange_embed, red_embed
+from utils.embed import ctx_embed, green_embed, normal_embed, orange_embed, red_embed
 
 start_time = time.time()
 
@@ -241,7 +242,7 @@ class Utility(Cog, emoji=1268851252565905449):
                             "<:partner:1268852831851642880> PizzaHat's Partner"
                         )
 
-            em = normal_embed(title=f"{member} Badges")
+            em = await ctx_embed(ctx, title=f"{member} Badges")
             em.set_thumbnail(url=member.avatar.url if member.avatar else None)
             em.description = (
                 "\n".join(badges)
@@ -269,7 +270,8 @@ class Utility(Cog, emoji=1268851252565905449):
         if new_prefix is None:
             current = await get_prefix(self.bot.db, ctx.guild.id)
             await ctx.send(
-                embed=normal_embed(
+                embed=await ctx_embed(
+                    ctx,
                     title="Server Prefix",
                     description=f"Current prefix: `{current}`\nTo change it, run `{current}prefix <new_prefix>`",
                 )
@@ -454,6 +456,51 @@ class Utility(Cog, emoji=1268851252565905449):
         await msg.add_reaction(yes_thumb)
         await msg.add_reaction(no_thumb)
 
+    @commands.command()
+    @commands.guild_only()
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.has_permissions(manage_messages=True)
+    @premium()
+    async def customise(self, ctx: Context, *, flags: str):
+        """
+        Customise the bot's appearance.
+
+        Flags:
+            `--embed-color <hex>`: Change the bot's default embed color.
+        """
+
+        if not ctx.guild or not self.bot.db:
+            return
+
+        if not flags:
+            return await ctx.send_help()
+
+        flag, _, value = flags.partition(" ")
+        flag = flag.lstrip("-")
+        value = value.strip()
+
+        if flag == "embed-color":
+            if not value:
+                return await ctx.send("Please provide a hex color value.")
+            try:
+                color = int(value.lstrip("#"), 16)
+            except ValueError:
+                return await ctx.send("Invalid hex color value.")
+
+            await self.bot.db.execute(
+                "INSERT INTO guild_themes VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET accent_color = $2 WHERE guild_id = $1",
+                ctx.guild.id,
+                color,
+            )
+            from utils.embed import invalidate_theme_cache
+
+            invalidate_theme_cache(ctx.guild.id)
+            await ctx.send(
+                embed=green_embed(
+                    f"{self.bot.yes} Embed accent color updated to `{value}`."
+                )
+            )
+
     @commands.command(aliases=["tzset", "timeset"])
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def timezoneset(self, ctx: Context):
@@ -514,14 +561,16 @@ class Utility(Cog, emoji=1268851252565905449):
                 formatted_time = tz_time.strftime("%d-%m-%Y %H:%M:%S %Z")
                 if user == ctx.author:
                     await ctx.send(
-                        embed=normal_embed(
-                            description=f"<:timer:1268872526549745736> Your timezone is `{tz}`.\nCurrent time: `{formatted_time}`"
+                        embed=await ctx_embed(
+                            ctx,
+                            description=f"<:timer:1268872526549745736> Your timezone is `{tz}`.\nCurrent time: `{formatted_time}`",
                         )
                     )
                 else:
                     await ctx.send(
-                        embed=normal_embed(
-                            description=f"<:timer:1268872526549745736> {user.mention}'s timezone is `{tz}`.\nCurrent time: `{formatted_time}`"
+                        embed=await ctx_embed(
+                            ctx,
+                            description=f"<:timer:1268872526549745736> {user.mention}'s timezone is `{tz}`.\nCurrent time: `{formatted_time}`",
                         )
                     )
 
@@ -550,7 +599,25 @@ class Utility(Cog, emoji=1268851252565905449):
         If no user is given, returns info about yourself.
         """
 
+        if not self.bot.db:
+            return
+
         member = member or ctx.author
+
+        tz = await self.bot.db.fetchval(
+            "SELECT timezone FROM user_timezone WHERE user_id = $1", member.id
+        )
+
+        if tz:
+            try:
+                tz_time = datetime.datetime.now(pytz.timezone(tz))
+                # formatted_time = tz_time.strftime("%d-%m-%Y %H:%M:%S %Z")
+                formatted_time = format_date(tz_time)
+            except pytz.UnknownTimeZoneError:
+                formatted_time = "Unknown timezone"
+        else:
+            formatted_time = "No timezone set"
+
         avatar_url = (
             member.avatar.url
             if member.avatar
@@ -628,6 +695,11 @@ class Utility(Cog, emoji=1268851252565905449):
                 name="Roles", value=", ".join(uroles) + user_roles, inline=False
             )
             em.add_field(
+                name="Timezone",
+                value=f"`{pytz.timezone(tz)}` ({formatted_time})" if tz else "N/A",
+                inline=False,
+            )
+            em.add_field(
                 name="Member Bot",
                 value=f"{self.bot.yes} Yes" if member.bot else f"{self.bot.no} No",
                 inline=False,
@@ -675,7 +747,7 @@ class Utility(Cog, emoji=1268851252565905449):
             )
             boosts = f"<:booster:1268853959863570463> {ctx.guild.premium_subscription_count} Boosts ({boost_level})"
 
-            em = normal_embed(title=ctx.guild.name)
+            em = await ctx_embed(ctx, title=ctx.guild.name)
             em.set_thumbnail(
                 url=(
                     ctx.guild.icon.url
@@ -762,7 +834,7 @@ class Utility(Cog, emoji=1268851252565905449):
         channel = channel or ctx.channel
 
         if isinstance(channel, discord.TextChannel):
-            em = normal_embed(title="Channel Information", timestamp=True)
+            em = await ctx_embed(ctx, title="Channel Information", timestamp=True)
             em.set_footer(text=ctx.guild.name)
             em.set_thumbnail(url=ctx.guild.icon.url if ctx.guild.icon else None)
 
@@ -789,7 +861,7 @@ class Utility(Cog, emoji=1268851252565905449):
         if not ctx.guild:
             return
 
-        em = normal_embed(title="VC Information", timestamp=True)
+        em = await ctx_embed(ctx, title="VC Information", timestamp=True)
         em.set_footer(text=ctx.guild.name)
         em.set_thumbnail(url=ctx.guild.icon.url if ctx.guild.icon else None)
 
@@ -905,7 +977,7 @@ class Utility(Cog, emoji=1268851252565905449):
         dpy_version = discord.__version__
         dev = self.bot.get_user(710247495334232164)
 
-        em = normal_embed()
+        em = await ctx_embed(ctx)
         if dev and dev.avatar is not None:
             em.set_author(name=dev, icon_url=dev.avatar.url)
 
@@ -1054,5 +1126,5 @@ class Utility(Cog, emoji=1268851252565905449):
         await ctx.send("\n".join(map(to_string, characters)))
 
 
-async def setup(bot):
+async def setup(bot: PizzaHat):
     await bot.add_cog(Utility(bot))
