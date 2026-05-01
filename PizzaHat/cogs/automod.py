@@ -1,440 +1,703 @@
-from typing import List
+from __future__ import annotations
 
 import discord
-from async_lru import alru_cache
-from core.bot import PizzaHat, Tier
+from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
-from utils.custom_checks import premium
-from utils.embed import normal_embed
-from utils.message import wait_for_msg
+from utils.embed import green_embed, normal_embed, red_embed
 
-AVAILABLE_MODULES = [
+ALL_MODULES = [
     "banned_words",
+    "scam_links",
     "all_caps",
     "message_spam",
     "invites",
     "mass_mentions",
     "emoji_spam",
     "zalgo_text",
+    "newline_spam",
+    "repeated_chars",
+    "username_filter",
+    "default_avatar",
+    "join_rate",
 ]
 
 MODULE_DESCRIPTIONS = {
-    "banned_words": "Deletes messages containing banned words.",
-    "all_caps": "Deletes messages that are mostly uppercase.",
-    "message_spam": "Purges rapid consecutive messages.",
-    "invites": "Deletes messages containing external Discord invite links.",
-    "mass_mentions": "Deletes messages that mention 3 or more users.",
-    "emoji_spam": "Deletes messages with excessive emoji usage.",
-    "zalgo_text": "Deletes messages containing zalgo/corrupted text.",
+    "banned_words": "Delete messages containing blacklisted words",
+    "scam_links": "Delete known phishing/scam domains",
+    "all_caps": "Delete messages exceeding the caps threshold",
+    "message_spam": "Purge rapid repeated messages from one user",
+    "invites": "Delete external Discord invite links",
+    "mass_mentions": "Delete messages with excessive @mentions",
+    "emoji_spam": "Delete messages with too many emojis",
+    "zalgo_text": "Delete zalgo / corrupted unicode text",
+    "newline_spam": "Delete messages with excessive line breaks",
+    "repeated_chars": "Delete messages with repeated character runs",
+    "username_filter": "Kick members with banned words or staff-impersonation names",
+    "default_avatar": "Act on members who join with no avatar",
+    "join_rate": "Detect mass joins and auto-lockdown (raid protection)",
 }
 
-MODULE_EMOJIS = {
-    "banned_words": "🚫",
-    "all_caps": "🔠",
-    "message_spam": "💬",
-    "invites": "🔗",
-    "mass_mentions": "@",
-    "emoji_spam": "😀",
-    "zalgo_text": "👹",
-}
+VALID_ACTIONS = ["timeout", "kick", "tempban", "ban", "role_add", "role_remove", "none"]
 
 
-class AutoModModulesView(discord.ui.View):
-    def __init__(self, context: Context, current_modules: List[str]):
-        super().__init__(timeout=300)
-        self.context = context
-        self.selected_modules = set(current_modules)
-        self.done = False
+class ModuleToggleSelect(discord.ui.Select):
+    """Multi-select dropdown to toggle modules on/off."""
 
-        for module in AVAILABLE_MODULES:
-            default = module in self.selected_modules
-            button = discord.ui.Button(
-                label=f"{MODULE_EMOJIS[module]} {module.replace('_', ' ').title()}",
-                style=discord.ButtonStyle.green
-                if default
-                else discord.ButtonStyle.gray,
-                custom_id=f"am_mod_{module}",
+    def __init__(self, cfg: dict, mode: str):
+        self.mode = mode  # "enable" | "disable"
+        options = [
+            discord.SelectOption(
+                label=mod.replace("_", " ").title(),
+                description=MODULE_DESCRIPTIONS[mod][:100],
+                value=mod,
+                default=self._is_active(cfg, mod),
             )
-            button.callback = self.make_callback(module, button)
-            self.add_item(button)
+            for mod in ALL_MODULES
+        ]
+        super().__init__(
+            placeholder=f"Select modules to {mode}…",
+            min_values=1,
+            max_values=len(ALL_MODULES),
+            options=options,
+        )
 
-    def make_callback(self, module: str, button: discord.ui.Button):
-        async def callback(interaction: discord.Interaction):
-            if interaction.user != self.context.author:
-                return await interaction.response.send_message(
-                    "Not your interaction ._.", ephemeral=True
-                )
+    @staticmethod
+    def _is_active(cfg: dict, mod: str) -> bool:
+        val = cfg.get(mod, {})
+        if isinstance(val, bool):
+            return val
+        if isinstance(val, dict):
+            return bool(val.get("enabled", False))
+        return False
 
-            if module in self.selected_modules:
-                self.selected_modules.discard(module)
-                button.style = discord.ButtonStyle.gray
-            else:
-                self.selected_modules.add(module)
-                button.style = discord.ButtonStyle.green
+    async def callback(self, interaction: discord.Interaction) -> None:
+        self.view.selected_modules = self.values  # type: ignore
+        await interaction.response.defer()
 
-            await interaction.response.edit_message(view=self)
 
-        return callback
+class ModuleToggleView(discord.ui.View):
+    def __init__(self, ctx: Context, cfg: dict, mode: str):
+        super().__init__(timeout=60)
+        self.ctx = ctx
+        self.mode = mode
+        self.selected_modules: list[str] = []
+        self.add_item(ModuleToggleSelect(cfg, mode))
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        if interaction.user != self.context.author:
-            await interaction.response.send_message(
-                "Not your interaction ._.", ephemeral=True
-            )
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message("Not your menu.", ephemeral=True)
             return False
         return True
 
-    @discord.ui.button(custom_id="am_next")
-    async def next_btn(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        if not self.selected_modules:
-            return await interaction.response.send_message(
-                "You must select at least one module!", ephemeral=True
-            )
-        self.done = True
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.success, row=1)
+    async def confirm(self, interaction: discord.Interaction, _: discord.ui.Button):
         self.stop()
+        await interaction.response.defer()
 
-    @discord.ui.button(custom_id="am_cancel")
-    async def cancel_btn(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        self.done = False
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
+    async def cancel(self, interaction: discord.Interaction, _: discord.ui.Button):
+        self.selected_modules = []
         self.stop()
+        await interaction.response.defer()
 
 
-class AutoModView(discord.ui.View):
-    def __init__(self, context: Context):
-        super().__init__(timeout=300)
-        self.context = context
-        self.warn_action = "none"
-        self.done = False
-
-    @discord.ui.select(
-        placeholder="Select warn action (PREMIUM)",
-        options=[
-            discord.SelectOption(
-                label="None",
-                description="No action will be taken on warn threshold.",
-                value="none",
-                emoji="⛔",
-            ),
+class ThresholdActionSelect(discord.ui.Select):
+    def __init__(self):
+        options = [
             discord.SelectOption(
                 label="Timeout",
-                description="Timeout the user when they hit the warn threshold.",
                 value="timeout",
-                emoji="<:timer:1268872526549745736>",
+                description="Temporarily mute the user",
             ),
             discord.SelectOption(
-                label="Kick",
-                description="Kick the user when they hit the warn threshold.",
-                value="kick",
-                emoji="👞",
+                label="Kick", value="kick", description="Kick the user from the server"
             ),
             discord.SelectOption(
-                label="Ban",
-                description="Ban the user when they hit the warn threshold.",
-                value="ban",
-                emoji="<:ban:1268874381648465920>",
+                label="Temp Ban",
+                value="tempban",
+                description="Ban for a set number of days",
             ),
-        ],
-    )
-    async def action_select(
-        self, interaction: discord.Interaction, select: discord.ui.Select
-    ):
-        if interaction.user != self.context.author:
-            return await interaction.response.send_message(
-                "Not your interaction ._.", ephemeral=True
-            )
+            discord.SelectOption(
+                label="Ban", value="ban", description="Permanently ban the user"
+            ),
+            discord.SelectOption(
+                label="Add Role",
+                value="role_add",
+                description="Assign a role to the user",
+            ),
+            discord.SelectOption(
+                label="Remove Role",
+                value="role_remove",
+                description="Remove a role from the user",
+            ),
+        ]
+        super().__init__(placeholder="Select action…", options=options)
 
-        self.warn_action = select.values[0]
+    async def callback(self, interaction: discord.Interaction) -> None:
+        self.view.action = self.values[0]  # type: ignore
+        await interaction.response.defer()
+
+
+class ThresholdModal(discord.ui.Modal, title="Add Warn Threshold"):
+    warn_count = discord.ui.TextInput(
+        label="Warn count",
+        placeholder="e.g. 3",
+        min_length=1,
+        max_length=3,
+    )
+    duration = discord.ui.TextInput(
+        label="Duration (seconds, for timeout/tempban)",
+        placeholder="e.g. 3600  — leave blank for kick/ban",
+        required=False,
+        max_length=10,
+    )
+    unban_days = discord.ui.TextInput(
+        label="Unban after N days (tempban only)",
+        placeholder="e.g. 7",
+        required=False,
+        max_length=3,
+    )
+
+    def __init__(self, view: "ThresholdBuilderView"):
+        super().__init__()
+        self._view = view
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        try:
+            try:
+                warns = int(self.warn_count.value)
+                if warns <= 0:
+                    raise ValueError
+            except ValueError:
+                await interaction.response.send_message(
+                    "Warn count must be a positive integer.", ephemeral=True
+                )
+                return
+
+            entry: dict = {"warns": warns, "action": self._view.action or "kick"}
+
+            if self.duration.value.strip():
+                try:
+                    entry["duration"] = int(self.duration.value)
+                except ValueError:
+                    pass
+
+            if self.unban_days.value.strip():
+                try:
+                    entry["unban_days"] = int(self.unban_days.value)
+                except ValueError:
+                    pass
+
+            self._view.thresholds.append(entry)
+            self._view.action = None
+            await interaction.response.send_message(
+                f"Threshold added: **{warns} warns → {entry['action'].replace('_', ' ').title()}**",
+                ephemeral=True,
+            )
+        except Exception:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(
+                    "An unexpected error occurred while adding the threshold.",
+                    ephemeral=True,
+                )
+
+
+class ThresholdBuilderView(discord.ui.View):
+    def __init__(self, ctx: Context, existing: list[dict]):
+        super().__init__(timeout=120)
+        self.ctx = ctx
+        self.thresholds: list[dict] = list(existing)
+        self.action: str | None = None
+        self.add_item(ThresholdActionSelect())
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message("Not your menu.", ephemeral=True)
+            return False
+        return True
+
+    @discord.ui.button(
+        label="➕ Add threshold", style=discord.ButtonStyle.primary, row=1
+    )
+    async def add(self, interaction: discord.Interaction, _: discord.ui.Button):
+        if not self.action:
+            return await interaction.response.send_message(
+                "Select an action first.", ephemeral=True
+            )
+        await interaction.response.send_modal(ThresholdModal(self))
+
+    @discord.ui.button(label="🗑 Clear all", style=discord.ButtonStyle.danger, row=1)
+    async def clear(self, interaction: discord.Interaction, _: discord.ui.Button):
+        self.thresholds.clear()
         await interaction.response.send_message(
-            f"Warn action set to **{select.values[0]}**. Click Next to continue.",
-            ephemeral=True,
+            "All thresholds cleared.", ephemeral=True
         )
 
-    @discord.ui.button(label="Skip Warn Setup", style=discord.ButtonStyle.gray)
-    async def skip_warn(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        if interaction.user != self.context.author:
-            return await interaction.response.send_message(
-                "Not your interaction ._.", ephemeral=True
-            )
-        self.warn_action = "none"
-        self.done = True
+    @discord.ui.button(label="✅ Save", style=discord.ButtonStyle.success, row=1)
+    async def save(self, interaction: discord.Interaction, _: discord.ui.Button):
         self.stop()
-
-    @discord.ui.button(label="Next", style=discord.ButtonStyle.green)
-    async def next_btn(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        if interaction.user != self.context.author:
-            return await interaction.response.send_message(
-                "Not your interaction ._.", ephemeral=True
-            )
-        self.done = True
-        self.stop()
-
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red)
-    async def cancel_btn(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
-        if interaction.user != self.context.author:
-            return await interaction.response.send_message(
-                "Not your interaction ._.", ephemeral=True
-            )
-        self.done = False
-        self.stop()
+        await interaction.response.defer()
 
 
-class AutoModeration(Cog, emoji=1268880500248936491):
-    """Configure Auto-Moderation in the server."""
+def _status_icon(enabled: bool) -> str:
+    return "🟢" if enabled else "🔴"
+
+
+def _build_status_embed(
+    guild: discord.Guild, enabled: bool, cfg: dict
+) -> discord.Embed:
+    em = normal_embed(
+        title="<:wrench:1268855253768339476>  AutoMod Configuration",
+        description=(
+            f"**Status:** {_status_icon(enabled)} {'Enabled' if enabled else 'Disabled'}\n"
+            f"**Server:** {guild.name}"
+        ),
+        timestamp=True,
+    )
+
+    lines = []
+    for mod in ALL_MODULES:
+        val = cfg.get(mod, {})
+        active = (
+            val if isinstance(val, bool) else bool((val or {}).get("enabled", False))
+        )
+        lines.append(f"{_status_icon(active)} `{mod.replace('_', ' ').title()}`")
+
+    half = len(lines) // 2
+    em.add_field(name="Modules", value="\n".join(lines[:half]), inline=True)
+    em.add_field(name="\u200b", value="\n".join(lines[half:]), inline=True)
+
+    thresholds: list[dict] = sorted(cfg.get("thresholds", []), key=lambda t: t["warns"])
+    if thresholds:
+        t_lines = []
+        for t in thresholds:
+            action = t["action"].replace("_", " ").title()
+            extras = []
+            if "duration" in t:
+                extras.append(f"{t['duration']}s")
+            if "unban_days" in t:
+                extras.append(f"unban in {t['unban_days']}d")
+            extra_str = f" ({', '.join(extras)})" if extras else ""
+            t_lines.append(f"**{t['warns']} warns** → {action}{extra_str}")
+        em.add_field(name="Warn Thresholds", value="\n".join(t_lines), inline=False)
+
+    else:
+        em.add_field(name="Warn Thresholds", value="None configured", inline=False)
+
+    overrides: dict = cfg.get("overrides", {})
+    if overrides:
+        o_lines = [
+            f"<#{ch_id}>: {len(mods)} override(s)" for ch_id, mods in overrides.items()
+        ]
+        em.add_field(
+            name="Channel Overrides", value="\n".join(o_lines[:5]), inline=False
+        )
+
+    em.set_thumbnail(url=guild.icon.url if guild.icon else None)
+    return em
+
+
+class AutoMod(Cog, emoji=1268855303768903733):
+    """Configure the AutoMod system for your server."""
 
     def __init__(self, bot: PizzaHat):
-        self.bot: PizzaHat = bot
+        self.bot = bot
 
-    def clear_config_cache(self, guild_id: int | None = None) -> None:
-        self.check_if_am_is_enabled.cache_clear()
-        self.get_automod_config.cache_clear()
+    def _clear_cache(self, guild_id: int) -> None:
+        cog = self.bot.get_cog("AutoModConfig")
+        if cog and hasattr(cog, "clear_config_cache"):
+            cog.clear_config_cache(guild_id)  # type: ignore
 
-        hidden_cog = self.bot.get_cog("AutoModConfig")
-        clear_cache = getattr(hidden_cog, "clear_config_cache", None)
-        if callable(clear_cache):
-            clear_cache(guild_id)
-
-    @alru_cache()
-    async def check_if_am_is_enabled(self, guild_id: int) -> bool:
-        data: bool = (
-            await self.bot.db.fetchval(
-                "SELECT enabled FROM automod WHERE guild_id=$1", guild_id
-            )
-            if self.bot.db
-            else False
-        )
-        return data
-
-    @alru_cache()
-    async def get_automod_config(self, guild_id: int):
-        if self.bot.db is None:
-            return None
+    async def _get_row(self, guild_id: int) -> dict:
+        if not self.bot.db:
+            return {}
         row = await self.bot.db.fetchrow(
-            "SELECT enabled, modules, warn_action, warn_threshold FROM automod WHERE guild_id=$1",
-            guild_id,
+            "SELECT enabled, config FROM automod WHERE guild_id=$1", guild_id
         )
-        if not row:
-            return None
-        return {
-            "enabled": row["enabled"],
-            "modules": row["modules"] or AVAILABLE_MODULES,
-            "warn_action": row["warn_action"] or "none",
-            "warn_threshold": row["warn_threshold"] or 0,
-        }
+        return dict(row) if row else {}
+
+    async def _upsert_config(self, guild_id: int, cfg: dict) -> None:
+        if not self.bot.db:
+            return
+        await self.bot.db.execute(
+            "INSERT INTO automod (guild_id, config) VALUES ($1, $2) "
+            "ON CONFLICT (guild_id) DO UPDATE SET config=$2",
+            guild_id,
+            cfg,
+        )
+        self._clear_cache(guild_id)
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
-    @commands.bot_has_permissions(manage_guild=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def automod(self, ctx: Context):
-        """Automod config commands."""
+        """AutoMod configuration hub. Run sub-commands to configure."""
 
-        if ctx.subcommand_passed is None:
-            if not ctx.guild or not self.bot.db:
-                return
+        if not ctx.guild:
+            return
 
-            config = await self.get_automod_config(ctx.guild.id)
-            enabled = config["enabled"] if config else False
-            modules = config["modules"] if config else AVAILABLE_MODULES
-            warn_action = config["warn_action"] if config else "none"
-            warn_threshold = config["warn_threshold"] if config else 0
+        row = await self._get_row(ctx.guild.id)
+        enabled: bool = row.get("enabled", False)
+        cfg: dict = row.get("config") or {}
 
-            mod_list = "\n".join(
-                f"{MODULE_EMOJIS.get(m, '•')} **{m.replace('_', ' ').title()}** — {f'{self.bot.yes} Enabled' if m in modules else f'{self.bot.no} Disabled'}"
-                for m in AVAILABLE_MODULES
-            )
-
-            em = normal_embed(
-                title="Auto-Moderation",
-                description=(
-                    f"Status: **{f'{self.bot.yes} Enabled' if enabled else f'{self.bot.no} Disabled'}**\n\n"
-                    f"**Modules**\n{mod_list}\n\n"
-                    f"**Warn Threshold**\n"
-                    f"Action: **{warn_action.title()}** | Threshold: **{warn_threshold} warns**\n"
-                    f"<:cooldiamond:1497276086210527242> *Premium feature (Basic tier required)*"
-                ),
-                timestamp=True,
-            )
-            em.add_field(
-                name="Usage",
-                value=(
-                    "`automod enable` — Enable AutoMod\n"
-                    "`automod disable` — Disable AutoMod\n"
-                    "`automod modules` — Configure modules interactively\n"
-                    "`automod warnsetup` — Configure warn threshold action <:cooldiamond:1497276086210527242>"
-                ),
-                inline=False,
-            )
-            await ctx.send(embed=em)
+        em = _build_status_embed(ctx.guild, enabled, cfg)
+        em.add_field(
+            name="Sub-commands",
+            value=(
+                f"`{ctx.prefix}automod enable/disable` — toggle the system\n"
+                f"`{ctx.prefix}automod enable <module>` — enable a specific module\n"
+                f"`{ctx.prefix}automod disable <module>` — disable a specific module\n"
+                f"`{ctx.prefix}automod modules` — interactive module manager\n"
+                f"`{ctx.prefix}automod thresholds` — manage warn thresholds\n"
+                f"`{ctx.prefix}automod override` — per-channel overrides\n"
+                f"`{ctx.prefix}automod settings <module>` — tweak module settings"
+            ),
+            inline=False,
+        )
+        await ctx.send(embed=em)
 
     @automod.command(name="enable")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
-    @commands.bot_has_permissions(manage_guild=True)
-    @commands.cooldown(1, 60, commands.BucketType.user)
-    async def automod_enable(self, ctx: Context):
-        """Enables automod in the server."""
+    async def automod_enable(self, ctx: Context, module: str | None = None):
+        """Enable the AutoMod system or a specific module."""
 
         if not ctx.guild or not self.bot.db:
             return
 
-        await self.bot.db.execute(
-            "INSERT INTO automod (guild_id, enabled, modules) VALUES ($1, $2, $3) ON CONFLICT (guild_id) DO UPDATE SET enabled=$2",
-            ctx.guild.id,
-            True,
-            AVAILABLE_MODULES,
+        if module is None:
+            # Toggle whole system ON
+            await self.bot.db.execute(
+                "INSERT INTO automod (guild_id, enabled) VALUES ($1, true) "
+                "ON CONFLICT (guild_id) DO UPDATE SET enabled=true",
+                ctx.guild.id,
+            )
+            self._clear_cache(ctx.guild.id)
+            return await ctx.send(
+                embed=green_embed(
+                    description=f"{self.bot.yes} AutoMod has been **enabled**."
+                )
+            )
+
+        module = module.lower()
+        if module not in ALL_MODULES:
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} `{module}` is not a valid module.\n"
+                    f"Valid: {', '.join(f'`{m}`' for m in ALL_MODULES)}"
+                )
+            )
+
+        row = await self._get_row(ctx.guild.id)
+        cfg: dict = dict(row.get("config") or {})
+        entry = cfg.get(module, {})
+        if isinstance(entry, bool):
+            cfg[module] = True
+        else:
+            cfg[module] = {**(entry or {}), "enabled": True}
+
+        await self._upsert_config(ctx.guild.id, cfg)
+        await ctx.send(
+            embed=green_embed(
+                description=f"{self.bot.yes} `{module.replace('_', ' ').title()}` module **enabled**."
+            )
         )
-        self.clear_config_cache(ctx.guild.id)
-        await ctx.send(f"{self.bot.yes} Auto-mod enabled.")
 
     @automod.command(name="disable")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
-    @commands.bot_has_permissions(manage_guild=True)
-    @commands.cooldown(1, 60, commands.BucketType.user)
-    async def automod_disable(self, ctx: Context):
-        """Disables automod in the server."""
+    async def automod_disable(self, ctx: Context, module: str | None = None):
+        """Disable the AutoMod system or a specific module."""
 
         if not ctx.guild or not self.bot.db:
             return
 
-        await self.bot.db.execute(
-            "UPDATE automod SET enabled=$1 WHERE guild_id=$2",
-            False,
-            ctx.guild.id,
+        if module is None:
+            await self.bot.db.execute(
+                "INSERT INTO automod (guild_id, enabled) VALUES ($1, false) "
+                "ON CONFLICT (guild_id) DO UPDATE SET enabled=false",
+                ctx.guild.id,
+            )
+            self._clear_cache(ctx.guild.id)
+            return await ctx.send(
+                embed=green_embed(
+                    description=f"{self.bot.yes} AutoMod has been **disabled**."
+                )
+            )
+
+        module = module.lower()
+        if module not in ALL_MODULES:
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} `{module}` is not a valid module."
+                )
+            )
+
+        row = await self._get_row(ctx.guild.id)
+        cfg: dict = dict(row.get("config") or {})
+        entry = cfg.get(module, {})
+        if isinstance(entry, bool):
+            cfg[module] = False
+        else:
+            cfg[module] = {**(entry or {}), "enabled": False}
+
+        await self._upsert_config(ctx.guild.id, cfg)
+        await ctx.send(
+            embed=green_embed(
+                description=f"{self.bot.yes} `{module.replace('_', ' ').title()}` module **disabled**."
+            )
         )
-        self.clear_config_cache(ctx.guild.id)
-        await ctx.send(f"{self.bot.yes} Auto-mod disabled.")
 
     @automod.command(name="modules")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
-    @commands.bot_has_permissions(manage_guild=True)
-    @commands.cooldown(1, 30, commands.BucketType.user)
-    async def automod_modules(self, ctx: Context):
-        """Configure automod modules interactively."""
+    async def automod_modules(self, ctx: Context, mode: str = "enable"):
+        """
+        Interactive module manager.
+        Usage: `p!automod modules enable` or `p!automod modules disable`
+        """
 
-        if not ctx.guild or not self.bot.db:
+        if not ctx.guild:
             return
 
-        config = await self.get_automod_config(ctx.guild.id)
-        current_modules = config["modules"] if config else AVAILABLE_MODULES
-
-        em = normal_embed(
-            title="AutoMod Modules",
-            description="Click buttons to toggle modules on/off. Press **Next** when done.",
-        )
-        for mod in AVAILABLE_MODULES:
-            em.add_field(
-                name=f"{MODULE_EMOJIS.get(mod, '•')} {mod.replace('_', ' ').title()}",
-                value=MODULE_DESCRIPTIONS[mod],
-                inline=True,
+        mode = mode.lower()
+        if mode not in ("enable", "disable"):
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} Mode must be `enable` or `disable`."
+                )
             )
 
-        view = AutoModModulesView(ctx, current_modules)
-        msg = await ctx.send(embed=em, view=view)
+        row = await self._get_row(ctx.guild.id)
+        cfg: dict = dict(row.get("config") or {})
 
+        view = ModuleToggleView(ctx, cfg, mode)
+        msg = await ctx.send(
+            embed=normal_embed(
+                title="Module Manager",
+                description=f"Select the modules you want to **{mode}**, then click **Confirm**.",
+            ),
+            view=view,
+        )
         await view.wait()
 
-        if not view.done:
-            return await msg.edit(content="Setup cancelled.", view=None)
+        if not view.selected_modules:
+            return await msg.edit(
+                embed=red_embed(description="Cancelled — no changes made."),
+                view=None,
+            )
 
-        modules_list = list(view.selected_modules)
-        await self.bot.db.execute(
-            "UPDATE automod SET modules=$1 WHERE guild_id=$2",
-            modules_list,
-            ctx.guild.id,
+        for mod in view.selected_modules:
+            entry = cfg.get(mod, {})
+            enabled_val = mode == "enable"
+            if isinstance(entry, bool):
+                cfg[mod] = enabled_val
+            else:
+                cfg[mod] = {**(entry or {}), "enabled": enabled_val}
+
+        await self._upsert_config(ctx.guild.id, cfg)
+
+        changed = ", ".join(
+            f"`{m.replace('_', ' ').title()}`" for m in view.selected_modules
         )
-        self.clear_config_cache(ctx.guild.id)
-
-        enabled_str = ", ".join(modules_list)
         await msg.edit(
-            content=f"{self.bot.yes} AutoMod modules updated: **{enabled_str}**",
+            embed=green_embed(description=f"{self.bot.yes} {mode.title()}d: {changed}"),
             view=None,
         )
 
-    @automod.command(name="warnsetup")
+    @automod.command(name="thresholds", aliases=["threshold"])
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
-    @commands.bot_has_permissions(manage_guild=True)
-    @commands.cooldown(1, 30, commands.BucketType.user)
-    @premium(Tier.BASIC)
-    async def automod_warnsetup(self, ctx: Context):
-        """Configure warn threshold and action <:cooldiamond:1497276086210527242>"""
+    async def automod_thresholds(self, ctx: Context):
+        """
+        Interactively manage warn → action thresholds.
+        You can stack multiple thresholds (e.g. 3 warns = timeout, 5 = kick, 7 = ban).
+        """
 
-        if not ctx.guild or not self.bot.db:
+        if not ctx.guild:
             return
 
-        config = await self.get_automod_config(ctx.guild.id)
-        current_action = config["warn_action"] if config else "none"
-        current_threshold = config["warn_threshold"] if config else 0
+        row = await self._get_row(ctx.guild.id)
+        cfg: dict = dict(row.get("config") or {})
+        existing: list[dict] = cfg.get("thresholds", [])
 
-        em = normal_embed(
-            title="Warn Threshold Setup",
-            description=(
-                f"Current action: **{current_action.title()}**\n"
-                f"Current threshold: **{current_threshold} warns**\n\n"
-                "Select an action below, then click **Next**."
+        def _threshold_summary(thresholds: list[dict]) -> str:
+            if not thresholds:
+                return "No thresholds configured yet."
+            lines = []
+            for t in sorted(thresholds, key=lambda x: x["warns"]):
+                action = t["action"].replace("_", " ").title()
+                extras = []
+                if "duration" in t:
+                    extras.append(f"{t['duration']}s timeout")
+                if "unban_days" in t:
+                    extras.append(f"unban after {t['unban_days']}d")
+                extra_str = f" ({', '.join(extras)})" if extras else ""
+                lines.append(f"**{t['warns']} warns** → {action}{extra_str}")
+            return "\n".join(lines)
+
+        view = ThresholdBuilderView(ctx, existing)
+        msg = await ctx.send(
+            embed=normal_embed(
+                title="Warn Threshold Builder",
+                description=(
+                    "**Current thresholds:**\n" + _threshold_summary(existing) + "\n\n"
+                    "1. Pick an **action** from the dropdown.\n"
+                    "2. Click **➕ Add threshold** to set the warn count.\n"
+                    "3. Repeat for multiple thresholds.\n"
+                    "4. Click **✅ Save** when done."
+                ),
             ),
+            view=view,
         )
-
-        view = AutoModView(ctx)
-        msg = await ctx.send(embed=em, view=view)
-
         await view.wait()
 
-        if not view.done:
-            return await msg.edit(content="Setup cancelled.", view=None)
+        cfg["thresholds"] = view.thresholds
+        await self._upsert_config(ctx.guild.id, cfg)
 
         await msg.edit(
-            content="Now enter the number of warns before the action triggers.\nType a number (e.g. `3`) or `cancel`.",
+            embed=green_embed(
+                title="Thresholds Saved",
+                description=_threshold_summary(view.thresholds)
+                or "All thresholds cleared.",
+            ),
             view=None,
         )
 
-        m = await wait_for_msg(ctx, 60, msg)
-        if m == "pain":
+    @automod.command(name="override")
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    async def automod_override(
+        self,
+        ctx: Context,
+        channel: discord.TextChannel,
+        module: str,
+        state: str,
+    ):
+        """
+        Enable or disable a specific module for one channel.
+        Example: `p!automod override #resources invites off`
+        """
+
+        if not ctx.guild:
             return
 
-        try:
-            threshold = int(m.content)  # type: ignore
-            if threshold < 0:
-                return await msg.edit(
-                    content=f"{self.bot.no} Threshold cannot be negative."
-                )
-        except ValueError:
-            return await msg.edit(content=f"{self.bot.no} Please enter a valid number.")
+        module = module.lower()
+        state = state.lower()
 
-        if threshold > 0 and view.warn_action == "none":
-            return await msg.edit(
-                content=f"{self.bot.no} You must select a warn action if threshold is greater than 0."
+        if module not in ALL_MODULES:
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} `{module}` is not a valid module."
+                )
+            )
+        if state not in ("on", "off", "enable", "disable", "true", "false"):
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} State must be `on` or `off`."
+                )
             )
 
-        await self.bot.db.execute(
-            "UPDATE automod SET warn_action=$1, warn_threshold=$2 WHERE guild_id=$3",
-            view.warn_action,
-            threshold,
-            ctx.guild.id,
-        )
-        self.clear_config_cache(ctx.guild.id)
+        enabled = state in ("on", "enable", "true")
 
-        action_display = (
-            view.warn_action.title() if view.warn_action != "none" else "None"
-        )
-        await msg.edit(
-            content=f"{self.bot.yes} Warn setup complete. Action: **{action_display}** | Threshold: **{threshold} warns**"
+        row = await self._get_row(ctx.guild.id)
+        cfg: dict = dict(row.get("config") or {})
+        overrides: dict = cfg.get("overrides", {})
+        ch_cfg: dict = overrides.get(str(channel.id), {})
+        ch_cfg[module] = {"enabled": enabled}
+        overrides[str(channel.id)] = ch_cfg
+        cfg["overrides"] = overrides
+
+        await self._upsert_config(ctx.guild.id, cfg)
+        await ctx.send(
+            embed=green_embed(
+                description=(
+                    f"{self.bot.yes} `{module.replace('_', ' ').title()}` "
+                    f"{'enabled' if enabled else 'disabled'} in {channel.mention}."
+                )
+            )
         )
 
+    @automod.command(name="settings")
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    async def automod_settings(
+        self, ctx: Context, module: str, setting: str, value: str
+    ):
+        """
+        Tweak a numeric/string setting for a module.
 
-async def setup(bot):
-    await bot.add_cog(AutoModeration(bot))
+        **Examples**
+        `p!automod settings all_caps threshold 80`
+        `p!automod settings message_spam threshold 6`
+        `p!automod settings message_spam window_seconds 8`
+        `p!automod settings mass_mentions threshold 5`
+        `p!automod settings emoji_spam threshold 15`
+        `p!automod settings invites whitelist discord.gg/yourserver`
+        `p!automod settings join_rate threshold 8`
+        `p!automod settings join_rate window_seconds 20`
+        `p!automod settings join_rate lockdown_minutes 10`
+        `p!automod settings default_avatar action kick`
+        """
+
+        if not ctx.guild:
+            return
+
+        module = module.lower()
+        if module not in ALL_MODULES:
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} `{module}` is not a valid module."
+                )
+            )
+
+        row = await self._get_row(ctx.guild.id)
+        cfg: dict = dict(row.get("config") or {})
+        mod_entry: dict = cfg.get(module, {})
+        if not isinstance(mod_entry, dict):
+            mod_entry = {"enabled": bool(mod_entry)}
+
+        # Special handling for whitelist (append)
+        if setting == "whitelist":
+            wl: list = mod_entry.get("whitelist", [])
+            if value not in wl:
+                wl.append(value)
+            mod_entry["whitelist"] = wl
+        else:
+            # Try to coerce to int, else store as string
+            try:
+                mod_entry[setting] = int(value)
+            except ValueError:
+                mod_entry[setting] = value
+
+        cfg[module] = mod_entry
+        await self._upsert_config(ctx.guild.id, cfg)
+        await ctx.send(
+            embed=green_embed(
+                description=(
+                    f"{self.bot.yes} `{module.replace('_', ' ').title()}` → "
+                    f"`{setting}` set to `{value}`."
+                )
+            )
+        )
+
+    @automod.command(name="status")
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    async def automod_status(self, ctx: Context):
+        """Show the full AutoMod configuration for this server."""
+
+        if not ctx.guild:
+            return
+
+        row = await self._get_row(ctx.guild.id)
+        enabled = row.get("enabled", False)
+        cfg = row.get("config") or {}
+        await ctx.send(embed=_build_status_embed(ctx.guild, enabled, cfg))
+
+
+async def setup(bot: PizzaHat) -> None:
+    await bot.add_cog(AutoMod(bot))

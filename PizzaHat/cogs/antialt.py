@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from __future__ import annotations
 
 import discord
 from async_lru import alru_cache
@@ -6,414 +6,516 @@ from core.bot import PizzaHat
 from core.cog import Cog
 from discord.ext import commands
 from discord.ext.commands import Context
-from utils.embed import normal_embed
-from utils.message import wait_for_msg
+from utils.embed import green_embed, normal_embed, orange_embed, red_embed
+
+LEVELS = {
+    1: (
+        "🚫",
+        "Restrict",
+        "Add the restricted role — user can't send messages or react.",
+    ),
+    2: ("👞", "Kick", "Kick the suspect. If they rejoin, they're kicked again."),
+    3: ("🔨", "Ban", "Permanently ban the suspect."),
+}
 
 
-class AntiAltsSelectionView(discord.ui.View):
-    def __init__(self, context: Context):
-        super().__init__(timeout=180)
-        self.level = 0
-        self.context: Context = context
-        self.cancelled = False
+class LevelSelect(discord.ui.Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(
+                label=f"Level {lvl}  —  {name}",
+                description=desc,
+                value=str(lvl),
+                emoji=emoji,
+            )
+            for lvl, (emoji, name, desc) in LEVELS.items()
+        ]
+        super().__init__(placeholder="Select a protection level…", options=options)
 
-    @discord.ui.select(
-        placeholder="Please select a level.",
-        options=[
-            discord.SelectOption(
-                label="Level 01",
-                description="Restrict the suspect from sending messages.",
-                value="1",
-                emoji="🚫",
-            ),
-            discord.SelectOption(
-                label="Level 02",
-                description="Kick the suspect from the server.",
-                value="2",
-                emoji="👞",
-            ),
-            discord.SelectOption(
-                label="Level 03",
-                description="Ban the suspect from the server.",
-                value="3",
-                emoji="<:ban:1268874381648465920>",
-            ),
-        ],
+    async def callback(self, interaction: discord.Interaction) -> None:
+        self.view.level = int(self.values[0])  # type: ignore
+        await interaction.response.defer()
+
+
+class SetupModal(discord.ui.Modal, title="Anti-Alt Setup"):
+    min_age = discord.ui.TextInput(
+        label="Minimum account age (days)",
+        placeholder="e.g. 7  — accounts newer than this are flagged",
+        default="7",
+        min_length=1,
+        max_length=4,
     )
-    async def callback(
-        self, interaction: discord.Interaction, select: discord.ui.Select
-    ):
-        if interaction.user != self.context.author:
-            return await interaction.response.send_message(
-                "Not your interaction ._.", ephemeral=True
-            )
 
-        self.level = int(select.values[0])
+    def __init__(self, view: "SetupWizardView"):
+        super().__init__()
+        self._view = view
 
-        await interaction.response.send_message(
-            f"Anti-alt Level **{select.values[0]}** has been selected. Please click the `Next` button to continue.",
-            ephemeral=True,
-        )
-
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red)
-    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user != self.context.author:
-            return await interaction.response.send_message(
-                "Not your interaction ._.", ephemeral=True
-            )
-
-        self.cancelled = True
-        self.stop()
-
-    @discord.ui.button(label="Next", style=discord.ButtonStyle.green)
-    async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user != self.context.author:
-            return await interaction.response.send_message(
-                "Not your interaction ._.", ephemeral=True
-            )
-        if self.level == 0:
-            return await interaction.response.send_message(
-                "Please select a level first!", ephemeral=True
-            )
-
-        self.stop()
-
-
-class AntiAlts(Cog, emoji=1268851128548724756):
-    """Configure Anti-Alt system in your server."""
-
-    def __init__(self, bot):
-        self.bot: PizzaHat = bot
-
-    def clear_config_cache(self, guild_id: int | None = None) -> None:
-        self.get_aa_details.cache_clear()
-
-        hidden_cog = self.bot.get_cog("AntiAltsConfig")
-        clear_cache = getattr(hidden_cog, "clear_config_cache", None)
-        if callable(clear_cache):
-            clear_cache(guild_id)
-
-    @alru_cache()
-    async def get_aa_details(self, guild_id: int) -> Union[dict, None]:
-        if self.bot.db is not None:
-            data = await self.bot.db.fetchrow(
-                "SELECT enabled, min_age, restricted_role, level FROM antialt WHERE guild_id=$1",
-                guild_id,
-            )
-
-            return (
-                {
-                    "enabled": data["enabled"],
-                    "min_age": data["min_age"],
-                    "restricted_role": data["restricted_role"],
-                    "level": data["level"],
-                }
-                if data
-                else None
-            )
-
-    @commands.command(aliases=["antiraid"])
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild=True)
-    @commands.bot_has_permissions(manage_guild=True)
-    @commands.cooldown(1, 60, commands.BucketType.user)
-    async def antialt(
-        self,
-        ctx: Context,
-        config: str | None,
-        setting: Optional[Union[discord.Role, str, int]] = None,
-    ):
-        """Setup anti-alt in your server."""
-
-        if ctx.guild:
-            data = await self.get_aa_details(ctx.guild.id)
-            enabled = False
-            if data is not None:
-                enabled = data["enabled"]
-
-            em = normal_embed(
-                title="Anti Alt Setup",
-                description=f"""
-Anti-alt system is currently **{"enabled" if enabled else "disabled"}**.
-
-**Level:** {data["level"] if data else "0"}
-**Minimum account age:** {data["min_age"] if data else "None"}
-**Restricted role:** {data["restricted_role"] if data else "None"}
-                """,
-                timestamp=True,
-            )
-
-            em.add_field(
-                name="🚫  Level 01",
-                value="The bot will restrict the suspect from sending messages in the server and log their info.",
-                inline=True,
-            )
-            em.add_field(
-                name="👞  Level 02",
-                value="The bot will kick the suspect and log their info, they will be banned if they try to join again.",
-                inline=True,
-            )
-            em.add_field(
-                name="<:ban:1268874381648465920>  Level 03",
-                value="The bot will ban the suspect and log their info.",
-                inline=True,
-            )
-            em.add_field(
-                name="Usage",
-                value="""
-<:certified_mod:1268851128548724756> Anti-alt configuration commands.
-- **enable:** Enable anti-alt system.
-- **disable:** Disable anti-alt system.
-- **minage <time>:** Set minimum account age for newly joined accounts.
-- **level <lvl>:** Set anti-alts protection level.
-- **role <@role>:** Set restricted role to be given to restricted user.
-            """,
-                inline=False,
-            )
-
-            if config is None:
-                return await ctx.send(embed=em)
-
-            if config.lower() == "enable":
-                if enabled:
-                    return await ctx.send(
-                        f"{self.bot.no} Anti-alt system is already enabled."
-                    )
-
-                min_account_age = None
-                restricted_role = None
-
-                view = AntiAltsSelectionView(context=ctx)
-                msg = await ctx.reply(
-                    """
-**Anti-alt setup**
-
-- Level.
-- Minimum account age.
-- Restricted role.
-
-Please select a protection level.""",
-                    view=view,
-                )
-
-                await view.wait()
-
-                if view.cancelled:
-                    return await msg.edit(content="Cancelled")
-
-                await msg.edit(
-                    content=f"""
-**Anti-alt setup**
-
-- Level: {view.level}
-- Minimum account age.
-- Restricted role.
-
-Please enter the minimum account age requirement (in days).
-Type `none` to have the default value (7 days).
-Type `cancel` to cancel the setup.""",
-                    view=None,
-                )
-
-                m = await wait_for_msg(ctx, 60, msg)
-                if m == "pain":
-                    return
-                try:
-                    if m.content.lower() != "none":  # type: ignore
-                        temp_acc_age = int(m.content)  # type: ignore
-                        if temp_acc_age <= 0:
-                            return await msg.edit(
-                                content=f"{self.bot.no} Account age can not be negative!"
-                            )
-                        min_account_age = temp_acc_age
-                    else:
-                        min_account_age = 7
-                except Exception:
-                    return await msg.edit(content=f"{self.bot.no} Integer values only!")
-
-                await msg.edit(
-                    content=f"""
-**Anti-alt setup**
-
-- Level: `{view.level}`
-- Minimum account age: {min_account_age} days.
-- Restricted role.
-
-Please enter a restricted role.
-Type `create` to create one automatically.
-Type `cancel` to cancel the setup.
-            """
-                )
-
-                m = await wait_for_msg(ctx, 60, msg)
-                if m == "pain":
-                    return
-                if m.content.lower() != "create":  # type: ignore
-                    try:
-                        r_role = await commands.RoleConverter().convert(
-                            ctx=ctx,
-                            argument=m.content,  # type: ignore
-                        )
-                    except Exception:
-                        return await msg.edit(
-                            content="Unable to find that role. Please try again."
-                        )
-                    restricted_role = r_role.id
-                else:
-                    await msg.edit(
-                        content="Creating the role, this may take a while..."
-                    )
-                    r_role = await ctx.guild.create_role(
-                        name="Restricted", color=0x818386
-                    )
-
-                    for channel in ctx.guild.channels:
-                        try:
-                            await channel.set_permissions(
-                                r_role,
-                                speak=False,
-                                send_messages=False,
-                                add_reactions=False,
-                            )
-                        except Exception as e:
-                            print(e)
-
-                    restricted_role = r_role.id
-
-                (
-                    await self.bot.db.execute(
-                        "INSERT INTO antialt (guild_id, enabled, min_age, restricted_role, level) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (guild_id) DO UPDATE SET enabled=$2, min_age=$3, restricted_role=$4, level=$5",
-                        ctx.guild.id,
-                        True,
-                        min_account_age,
-                        restricted_role,
-                        int(view.level),
-                    )
-                    if self.bot.db
-                    else None
-                )
-                self.clear_config_cache(ctx.guild.id)
-
-                await msg.edit(
-                    content=f"""
-**Setup complete**
-
-Here are your settings:
-
-- Level: `{view.level}`
-- Minimum account age: {min_account_age} days.
-- Restricted role: <@&{restricted_role}>
-                        """
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        try:
+            try:
+                days = int(self.min_age.value)
+                if days <= 0:
+                    raise ValueError
+            except ValueError:
+                await interaction.response.send_message(
+                    "Account age must be a positive integer.", ephemeral=True
                 )
                 return
 
-            if config.lower() == "disable":
-                if not enabled:
-                    return await ctx.send(
-                        f"{self.bot.no} Anti-alt system is already disabled."
-                    )
-
-                (
-                    await self.bot.db.execute(
-                        "UPDATE antialt SET enabled=$1 WHERE guild_id=$2",
-                        False,
-                        ctx.guild.id,
-                    )
-                    if self.bot.db
-                    else None
-                )
-                self.clear_config_cache(ctx.guild.id)
-                return await ctx.send(
-                    f"{self.bot.yes} Anti-alt system has been disabled."
+            self._view.min_age = days
+            await interaction.response.defer()
+        except Exception:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(
+                    "An unexpected error occurred while setting the minimum account age.",
+                    ephemeral=True,
                 )
 
-            if config.lower() == "minage":
-                if not enabled:
-                    return await ctx.send(
-                        f"{self.bot.no} Anti-alt system is not enabled."
-                    )
-                if config is None:
-                    return await ctx.send(
-                        "Invalid usage.\nPlease use `p!antialt minage <number>`"
-                    )
-                if not isinstance(setting, int):
-                    return await ctx.send("Minimum account age should be an integer!")
-                if setting <= 0:
-                    return await ctx.send("Minimum account age can not be negative!")
 
-                (
-                    await self.bot.db.execute(
-                        "UPDATE antialt SET min_age=$1 WHERE guild_id=$2",
-                        setting,
-                        ctx.guild.id,
-                    )
-                    if self.bot.db
-                    else None
+class RoleChoiceView(discord.ui.View):
+    """Step 3: let the admin pick an existing role or create one."""
+
+    def __init__(self, ctx: Context):
+        super().__init__(timeout=60)
+        self.ctx = ctx
+        self.role: discord.Role | None = None
+        self.create_new = False
+        self.cancelled = False
+        self.add_item(RoleSelect())
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message("Not your menu.", ephemeral=True)
+            return False
+        return True
+
+    @discord.ui.button(
+        label="➕ Create 'Restricted' role", style=discord.ButtonStyle.primary, row=1
+    )
+    async def auto_create(self, interaction: discord.Interaction, _: discord.ui.Button):
+        self.create_new = True
+        self.stop()
+        await interaction.response.defer()
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
+    async def cancel(self, interaction: discord.Interaction, _: discord.ui.Button):
+        self.cancelled = True
+        self.stop()
+        await interaction.response.defer()
+
+    @discord.ui.button(
+        label="✅ Confirm selected role", style=discord.ButtonStyle.success, row=1
+    )
+    async def confirm(self, interaction: discord.Interaction, _: discord.ui.Button):
+        if not self.role:
+            return await interaction.response.send_message(
+                "Please select a role first.", ephemeral=True
+            )
+        self.stop()
+        await interaction.response.defer()
+
+
+class RoleSelect(discord.ui.RoleSelect):
+    def __init__(self):
+        super().__init__(placeholder="Select an existing restricted role…")
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        self.view.role = self.values[0]  # type: ignore
+        await interaction.response.defer()
+
+
+class SetupWizardView(discord.ui.View):
+    """Step 1+2: level + min age."""
+
+    def __init__(self, ctx: Context):
+        super().__init__(timeout=120)
+        self.ctx = ctx
+        self.level = 0
+        self.min_age = 7
+        self.add_item(LevelSelect())
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message("Not your menu.", ephemeral=True)
+            return False
+        return True
+
+    @discord.ui.button(
+        label="Set min account age →", style=discord.ButtonStyle.primary, row=1
+    )
+    async def set_age(self, interaction: discord.Interaction, _: discord.ui.Button):
+        if self.level == 0:
+            return await interaction.response.send_message(
+                "Pick a protection level first.", ephemeral=True
+            )
+        await interaction.response.send_modal(SetupModal(self))
+
+    @discord.ui.button(label="✅ Continue", style=discord.ButtonStyle.success, row=1)
+    async def proceed(self, interaction: discord.Interaction, _: discord.ui.Button):
+        if self.level == 0:
+            return await interaction.response.send_message(
+                "Pick a protection level first.", ephemeral=True
+            )
+        self.stop()
+        await interaction.response.defer()
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
+    async def cancel(self, interaction: discord.Interaction, _: discord.ui.Button):
+        self.level = -1
+        self.stop()
+        await interaction.response.defer()
+
+
+def _build_status_embed(
+    guild: discord.Guild,
+    data: dict | None,
+    bot_yes: str,
+    bot_no: str,
+) -> discord.Embed:
+    enabled = data["enabled"] if data else False
+    icon = "🟢" if enabled else "🔴"
+
+    em = normal_embed(
+        title="<:raidreport:1268857575919714376>  Anti-Alt Configuration",
+        description=(
+            f"**Status:** {icon} {'Enabled' if enabled else 'Disabled'}\n"
+            f"**Server:** {guild.name}"
+        ),
+        timestamp=True,
+    )
+
+    if data:
+        lvl_num = data.get("level", 0) or 0
+        lvl_info = LEVELS.get(lvl_num, (None, "Not set", ""))
+        role_id = data.get("restricted_role")
+        role_str = f"<@&{role_id}>" if role_id else "`Not set`"
+
+        em.add_field(
+            name="Protection Level",
+            value=f"{lvl_info[0] or '❓'} Level {lvl_num} — {lvl_info[1]}",
+            inline=True,
+        )
+        em.add_field(
+            name="Min Account Age",
+            value=f"`{data.get('min_age') or 7}` days",
+            inline=True,
+        )
+        em.add_field(name="Restricted Role", value=role_str, inline=True)
+    else:
+        em.add_field(
+            name="Not configured",
+            value="Run `p!antialt enable` to set up.",
+            inline=False,
+        )
+
+    em.add_field(
+        name="Levels",
+        value="\n".join(
+            f"{emoji} **Level {n}** — {name}: {desc}"
+            for n, (emoji, name, desc) in LEVELS.items()
+        ),
+        inline=False,
+    )
+    em.set_thumbnail(url=guild.icon.url if guild.icon else None)
+    return em
+
+
+class AntiAlts(Cog, emoji=1268851128548724756):
+    """Configure the Anti-Alt / Anti-Raid system."""
+
+    def __init__(self, bot: PizzaHat):
+        self.bot = bot
+
+    def _clear_cache(self, guild_id: int) -> None:
+        for cog_name in ("AntiAltsConfig", "AutoModConfig"):
+            cog = self.bot.get_cog(cog_name)
+            if cog and hasattr(cog, "clear_config_cache"):
+                cog.clear_config_cache(guild_id)  # type: ignore
+
+    @alru_cache()
+    async def _get_data(self, guild_id: int) -> dict | None:
+        if not self.bot.db:
+            return None
+        row = await self.bot.db.fetchrow(
+            "SELECT enabled, min_age, restricted_role, level FROM antialt WHERE guild_id=$1",
+            guild_id,
+        )
+        return dict(row) if row else None
+
+    async def _refresh_data(self, guild_id: int) -> dict | None:
+        """Clear cache then re-fetch."""
+        self._get_data.cache_clear()
+        return await self._get_data(guild_id)
+
+    @commands.group(invoke_without_command=True)
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    @commands.bot_has_permissions(manage_guild=True)
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    async def antialt(self, ctx: Context):
+        """Anti-Alt configuration hub."""
+
+        if not ctx.guild:
+            return
+
+        data = await self._get_data(ctx.guild.id)
+        await ctx.send(
+            embed=_build_status_embed(ctx.guild, data, self.bot.yes, self.bot.no)
+        )
+
+    @antialt.command(name="enable")
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    @commands.bot_has_permissions(manage_guild=True)
+    async def antialt_enable(self, ctx: Context):
+        """Interactively enable and configure the Anti-Alt system."""
+
+        if not ctx.guild or not self.bot.db:
+            return
+
+        data = await self._get_data(ctx.guild.id)
+        enabled = data["enabled"] if data else False
+
+        if enabled:
+            return await ctx.send(
+                embed=orange_embed(
+                    description=f"{self.bot.no} Anti-Alt is already enabled. Use `{ctx.prefix}antialt disable` first."
                 )
-                self.clear_config_cache(ctx.guild.id)
-                return await ctx.send(
-                    f"{self.bot.yes} Minimum account age has been updated to `{setting}` day(s)."
+            )
+
+        wizard = SetupWizardView(ctx)
+        msg = await ctx.send(
+            embed=normal_embed(
+                title="Anti-Alt Setup  (1/2)",
+                description=(
+                    "**Select a protection level** and optionally set the minimum account age.\n\n"
+                    + "\n".join(
+                        f"{emoji} **Level {n} — {name}:** {desc}"
+                        for n, (emoji, name, desc) in LEVELS.items()
+                    )
+                ),
+            ),
+            view=wizard,
+        )
+        await wizard.wait()
+
+        if wizard.level == -1:
+            return await msg.edit(
+                embed=red_embed(description="Setup cancelled."), view=None
+            )
+
+        role_view = RoleChoiceView(ctx)
+        await msg.edit(
+            embed=normal_embed(
+                title="Anti-Alt Setup  (2/2)",
+                description=(
+                    f"**Level:** {LEVELS[wizard.level][0]} Level {wizard.level} — {LEVELS[wizard.level][1]}\n"
+                    f"**Min Age:** {wizard.min_age} days\n\n"
+                    "Now select the **restricted role** (used for Level 1 restrict action), "
+                    "or let the bot create one automatically."
+                ),
+            ),
+            view=role_view,
+        )
+        await role_view.wait()
+
+        if role_view.cancelled:
+            return await msg.edit(
+                embed=red_embed(description="Setup cancelled."), view=None
+            )
+
+        restricted_role: discord.Role | None = role_view.role
+
+        if role_view.create_new:
+            await msg.edit(
+                embed=orange_embed(description="Creating the Restricted role…"),
+                view=None,
+            )
+            try:
+                restricted_role = await ctx.guild.create_role(
+                    name="Restricted",
+                    color=discord.Color.from_str("#818386"),
+                    reason="PizzaHat Anti-Alt setup",
+                )
+                # Deny send/react/speak in every channel
+                for channel in ctx.guild.channels:
+                    try:
+                        await channel.set_permissions(
+                            restricted_role,
+                            send_messages=False,
+                            add_reactions=False,
+                            speak=False,
+                            reason="PizzaHat Anti-Alt: Restricted role setup",
+                        )
+                    except discord.HTTPException:
+                        pass
+            except discord.HTTPException:
+                return await msg.edit(
+                    embed=red_embed(
+                        description=f"{self.bot.no} Failed to create the Restricted role. Please create one manually and run setup again."
+                    ),
+                    view=None,
                 )
 
-            if config.lower() == "level":
-                if not enabled:
-                    return await ctx.send(
-                        f"{self.bot.no} Anti-alt system is not enabled."
-                    )
-                if config is None:
-                    return await ctx.send(
-                        "Invalid usage.\nPlease use `p!antialt level <number>`"
-                    )
-                if not isinstance(setting, int) or not 1 <= setting <= 3:
-                    return await ctx.send(
-                        "Level number should be an integer between 1 and 3."
-                    )
+        await self.bot.db.execute(
+            "INSERT INTO antialt (guild_id, enabled, min_age, restricted_role, level) "
+            "VALUES ($1, $2, $3, $4, $5) "
+            "ON CONFLICT (guild_id) DO UPDATE SET enabled=$2, min_age=$3, restricted_role=$4, level=$5",
+            ctx.guild.id,
+            True,
+            wizard.min_age,
+            restricted_role.id if restricted_role else None,
+            wizard.level,
+        )
+        self._clear_cache(ctx.guild.id)
 
-                (
-                    await self.bot.db.execute(
-                        "UPDATE antialt SET level=$1 WHERE guild_id=$2",
-                        setting,
-                        ctx.guild.id,
-                    )
-                    if self.bot.db
-                    else None
+        em = green_embed(
+            title=f"{self.bot.yes}  Anti-Alt Enabled",
+            description="Your configuration:",
+            timestamp=True,
+        )
+        em.add_field(
+            name="Level",
+            value=f"{LEVELS[wizard.level][0]} Level {wizard.level} — {LEVELS[wizard.level][1]}",
+            inline=True,
+        )
+        em.add_field(name="Min Age", value=f"`{wizard.min_age}` days", inline=True)
+        em.add_field(
+            name="Role",
+            value=restricted_role.mention if restricted_role else "`None`",
+            inline=True,
+        )
+        await msg.edit(embed=em, view=None)
+
+    @antialt.command(name="disable")
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    async def antialt_disable(self, ctx: Context):
+        """Disable the Anti-Alt system."""
+
+        if not ctx.guild or not self.bot.db:
+            return
+
+        data = await self._get_data(ctx.guild.id)
+        if not data or not data["enabled"]:
+            return await ctx.send(
+                embed=orange_embed(
+                    description=f"{self.bot.no} Anti-Alt is already disabled."
                 )
-                self.clear_config_cache(ctx.guild.id)
-                return await ctx.send(
-                    f"{self.bot.yes} Anti-alt protection level has been updated to `{setting}`."
+            )
+
+        await self.bot.db.execute(
+            "UPDATE antialt SET enabled=$1 WHERE guild_id=$2", False, ctx.guild.id
+        )
+        self._clear_cache(ctx.guild.id)
+        await ctx.send(
+            embed=green_embed(
+                description=f"{self.bot.yes} Anti-Alt has been **disabled**."
+            )
+        )
+
+    @antialt.command(name="minage")
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    async def antialt_minage(self, ctx: Context, days: int):
+        """Change the minimum account age threshold (in days)."""
+
+        if not ctx.guild or not self.bot.db:
+            return
+
+        data = await self._get_data(ctx.guild.id)
+        if not data or not data["enabled"]:
+            return await ctx.send(
+                embed=red_embed(description=f"{self.bot.no} Anti-Alt is not enabled.")
+            )
+
+        if days <= 0:
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} Days must be a positive integer."
                 )
+            )
 
-            if config.lower() == "role":
-                if not enabled:
-                    return await ctx.send(
-                        f"{self.bot.no} Anti-alt system has is not enabled."
-                    )
-                if config is None:
-                    return await ctx.send(
-                        "Invalid usage.\nPlease use `p!antialt role @role`"
-                    )
-                if not isinstance(setting, discord.Role):
-                    return await ctx.send(
-                        "I could not find that role. Please try again."
-                    )
+        await self.bot.db.execute(
+            "UPDATE antialt SET min_age=$1 WHERE guild_id=$2", days, ctx.guild.id
+        )
+        self._clear_cache(ctx.guild.id)
+        await ctx.send(
+            embed=green_embed(
+                description=f"{self.bot.yes} Minimum account age updated to **{days}** day(s)."
+            )
+        )
 
-                (
-                    await self.bot.db.execute(
-                        "UPDATE antialt SET restricted_role=$1 WHERE guild_id=$2",
-                        setting.id,
-                        ctx.guild.id,
-                    )
-                    if self.bot.db
-                    else None
-                )
-                self.clear_config_cache(ctx.guild.id)
-                return await ctx.send(
-                    f"{self.bot.yes} Restricted role has been updated to `{setting.name}`."
-                )
+    @antialt.command(name="level")
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    async def antialt_level(self, ctx: Context, level: int):
+        """Change the protection level (1, 2, or 3)."""
 
-            else:
-                return await ctx.reply(embed=em)
+        if not ctx.guild or not self.bot.db:
+            return
+
+        data = await self._get_data(ctx.guild.id)
+        if not data or not data["enabled"]:
+            return await ctx.send(
+                embed=red_embed(description=f"{self.bot.no} Anti-Alt is not enabled.")
+            )
+
+        if level not in LEVELS:
+            return await ctx.send(
+                embed=red_embed(description=f"{self.bot.no} Level must be 1, 2, or 3.")
+            )
+
+        await self.bot.db.execute(
+            "UPDATE antialt SET level=$1 WHERE guild_id=$2", level, ctx.guild.id
+        )
+        self._clear_cache(ctx.guild.id)
+        emoji, name, desc = LEVELS[level]
+        await ctx.send(
+            embed=green_embed(
+                description=f"{self.bot.yes} Protection level updated to **{emoji} Level {level} — {name}**."
+            )
+        )
+
+    @antialt.command(name="role")
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    async def antialt_role(self, ctx: Context, role: discord.Role):
+        """Change the restricted role."""
+
+        if not ctx.guild or not self.bot.db:
+            return
+
+        data = await self._get_data(ctx.guild.id)
+        if not data or not data["enabled"]:
+            return await ctx.send(
+                embed=red_embed(description=f"{self.bot.no} Anti-Alt is not enabled.")
+            )
+
+        await self.bot.db.execute(
+            "UPDATE antialt SET restricted_role=$1 WHERE guild_id=$2",
+            role.id,
+            ctx.guild.id,
+        )
+        self._clear_cache(ctx.guild.id)
+        await ctx.send(
+            embed=green_embed(
+                description=f"{self.bot.yes} Restricted role updated to {role.mention}."
+            )
+        )
+
+    @antialt.command(name="status")
+    @commands.guild_only()
+    async def antialt_status(self, ctx: Context):
+        """Show current Anti-Alt configuration."""
+
+        if not ctx.guild:
+            return
+        data = await self._get_data(ctx.guild.id)
+        await ctx.send(
+            embed=_build_status_embed(ctx.guild, data, self.bot.yes, self.bot.no)
+        )
 
 
-async def setup(bot):
+async def setup(bot: PizzaHat) -> None:
     await bot.add_cog(AntiAlts(bot))
