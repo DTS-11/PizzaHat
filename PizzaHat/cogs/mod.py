@@ -13,7 +13,7 @@ from core.bot import PizzaHat, Tier
 from core.cog import Cog
 from utils.config import ANTIHOIST_CHARS
 from utils.custom_checks import premium
-from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
+from utils.embed import ctx_embed, green_embed, normal_embed, orange_embed, red_embed
 from utils.ui import ConfirmationView, Paginator
 
 
@@ -1531,7 +1531,7 @@ class Mod(Cog, emoji=1268851270136107048):
         *,
         reason: str = "No reason provided.",
     ):
-        """Warn a member. Triggers auto-actions if thresholds are configured."""
+        """Warn a member. Auto-actions fire if warn thresholds are configured."""
 
         if not ctx.guild or not self.bot.db:
             return
@@ -1562,7 +1562,7 @@ class Mod(Cog, emoji=1268851270136107048):
 
         full_reason = f"{reason}  [by {ctx.author} ({ctx.author.id})]"
         await self.bot.db.execute(
-            "INSERT INTO warnlogs (guild_id, user_id, mod_id, reason) VALUES ($1, $2, $3, $4)",
+            "INSERT INTO warnlogs (guild_id, user_id, mod_id, reason) VALUES ($1,$2,$3,$4)",
             ctx.guild.id,
             member.id,
             ctx.author.id,
@@ -1580,18 +1580,18 @@ class Mod(Cog, emoji=1268851270136107048):
 
         automod_cog = self.bot.get_cog("AutoModConfig")
         thresholds: list[dict] = []
+
         if automod_cog and hasattr(automod_cog, "_get_thresholds"):
             thresholds = await automod_cog._get_thresholds(ctx.guild.id)  # type: ignore[union-attr]
 
         next_action_str = ""
-        if thresholds:
-            for t in sorted(thresholds, key=lambda x: x["warns"]):
-                if t["warns"] > warn_count:
-                    action = t["action"].replace("_", " ").title()
-                    next_action_str = (
-                        f"\n⚠️ Next action at **{t['warns']} warns**: {action}"
-                    )
-                    break
+        for t in sorted(thresholds, key=lambda x: x["warns"]):
+            if t["warns"] > warn_count:
+                next_action_str = (
+                    f"\n⚠️ Next action at **{t['warns']} warns**: "
+                    f"{t['action'].replace('_', ' ').title()}"
+                )
+                break
 
         em = orange_embed(
             title="<:warning:1268855244033363968>  Member Warned",
@@ -1640,8 +1640,8 @@ class Mod(Cog, emoji=1268851270136107048):
             return
 
         records = await self.bot.db.fetch(
-            "SELECT id, reason, mod_id, (NOW() - created_at) as age "
-            "FROM warnlogs WHERE user_id=$1 AND guild_id=$2 ORDER BY id DESC",
+            "SELECT id, reason, mod_id, created_at FROM warnlogs "
+            "WHERE user_id=$1 AND guild_id=$2 ORDER BY id DESC",
             member.id,
             ctx.guild.id,
         )
@@ -1655,41 +1655,41 @@ class Mod(Cog, emoji=1268851270136107048):
             em.set_thumbnail(url=member.display_avatar.url)
             return await ctx.send(embed=em)
 
-        embeds: list[discord.Embed] = []
-        chunks = [records[i : i + 5] for i in range(0, len(records), 5)]
-        total = len(records)
-
-        # Fetch threshold context
         automod_cog = self.bot.get_cog("AutoModConfig")
         thresholds: list[dict] = []
         if automod_cog and hasattr(automod_cog, "_get_thresholds"):
             thresholds = await automod_cog._get_thresholds(ctx.guild.id)  # type: ignore[union-attr]
 
+        total = len(records)
         threshold_note = ""
-        if thresholds:
-            for t in sorted(thresholds, key=lambda x: x["warns"]):
-                if total >= t["warns"]:
-                    threshold_note = (
-                        f"\n⚠️ Threshold of **{t['warns']}** warns reached → "
-                        f"**{t['action'].replace('_', ' ').title()}**"
-                    )
-                    break
+        for t in sorted(thresholds, key=lambda x: x["warns"]):
+            if total >= t["warns"]:
+                threshold_note = (
+                    f"\n⚠️ **{t['warns']}-warn threshold** reached → "
+                    f"**{t['action'].replace('_', ' ').title()}**"
+                )
+
+        chunks = [records[i : i + 5] for i in range(0, total, 5)]
+        embeds: list[discord.Embed] = []
 
         for i, chunk in enumerate(chunks, 1):
             lines = []
             for r in chunk:
                 mod = ctx.guild.get_member(r["mod_id"])
                 mod_str = mod.mention if mod else f"`{r['mod_id']}`"
-                # Strip the "[by ...]" suffix from automod warns for display
                 reason_display = r["reason"].split("  [by ")[0]
+                ts = (
+                    f"<t:{int(r['created_at'].timestamp())}:R>"
+                    if r["created_at"]
+                    else ""
+                )
                 lines.append(
-                    f"**ID `{r['id']}`**\n"
+                    f"**ID `{r['id']}`** {ts}\n"
                     f"Reason: {reason_display}\n"
                     f"Moderator: {mod_str}\n"
                 )
 
-            em = await ctx_embed(
-                ctx,
+            em = normal_embed(
                 title=f"Warnings — {member.name}  ({total} total)",
                 description="\n".join(lines) + threshold_note,
                 timestamp=True,
@@ -1709,7 +1709,7 @@ class Mod(Cog, emoji=1268851270136107048):
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def deletewarn(self, ctx: Context, member: discord.Member, warn_id: int):
-        """Delete a specific warning by ID."""
+        """Delete a specific warning by its ID."""
 
         if not ctx.guild or not self.bot.db:
             return
@@ -1729,7 +1729,7 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         await ctx.send(
             embed=green_embed(
-                description=f"{self.bot.yes} Warn ID `{warn_id}` for {member.mention} deleted."
+                description=f"{self.bot.yes} Warn ID `{warn_id}` deleted for {member.mention}."
             )
         )
 
@@ -1737,8 +1737,9 @@ class Mod(Cog, emoji=1268851270136107048):
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
+    @premium(Tier.BASIC)
     async def clearwarns(self, ctx: Context, member: discord.Member):
-        """Clear ALL warnings for a member."""
+        """Clear ALL warnings for a member.  [Basic]"""
 
         if not ctx.guild or not self.bot.db:
             return
@@ -1759,14 +1760,12 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-        from utils.ui import ConfirmationView
-
         confirm = ConfirmationView(ctx, 30)
         msg = await ctx.send(
             embed=orange_embed(
                 description=(
-                    f"<:warning:1268855244033363968> This will delete **{count}** warning(s) "
-                    f"for {member.mention}. Are you sure?"
+                    f"<:warning:1268855244033363968> This will permanently delete "
+                    f"**{count}** warning(s) for {member.mention}. Are you sure?"
                 )
             ),
             view=confirm,
