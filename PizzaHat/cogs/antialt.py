@@ -252,7 +252,6 @@ class AntiAlts(Cog, emoji=1268851128548724756):
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
     async def antialt(self, ctx: Context):
         """Anti-Alt configuration hub."""
 
