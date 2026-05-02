@@ -503,7 +503,7 @@ class Fun(Cog, emoji=802615573556363284):
         b1 = Button(label="Top.gg", url=TOPGG_VOTE)
         b2 = Button(label="DList.gg", url=DLISTGG_VOTE)
 
-        view.add_item(b1).add_item(b2).add_item(b3)
+        view.add_item(b1).add_item(b2)
         await ctx.send(embed=em, view=view)
 
     @commands.command()
