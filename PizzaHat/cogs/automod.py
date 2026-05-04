@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import ast
+import json
+
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
@@ -368,10 +371,27 @@ class AutoModeration(Cog, emoji=1268855303768903733):
     async def _get_row(self, guild_id: int) -> dict:
         if not self.bot.db:
             return {}
+
         row = await self.bot.db.fetchrow(
             "SELECT enabled, config FROM automod WHERE guild_id=$1", guild_id
         )
-        return dict(row) if row else {}
+        if not row:
+            return {}
+
+        data = dict(row)
+        config = data.get("config")
+        if isinstance(config, str):
+            try:
+                data["config"] = json.loads(config)
+            except json.JSONDecodeError:
+                try:
+                    data["config"] = ast.literal_eval(config)
+                except (ValueError, SyntaxError):
+                    data["config"] = {}
+        elif config is None:
+            data["config"] = {}
+
+        return data
 
     async def _upsert_config(self, guild_id: int, cfg: dict) -> None:
         if not self.bot.db:
