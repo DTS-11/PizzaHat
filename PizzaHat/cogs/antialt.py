@@ -174,7 +174,7 @@ def _build_status_embed(
     bot_no: str,
 ) -> discord.Embed:
     enabled = data["enabled"] if data else False
-    icon = "🟢" if enabled else "🔴"
+    icon = bot_yes if enabled else bot_no
 
     em = normal_embed(
         title="<:raidreport:1268857575919714376>  Anti-Alt Configuration",

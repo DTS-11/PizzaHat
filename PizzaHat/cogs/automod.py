@@ -1,12 +1,3 @@
-"""
-cogs/automod.py  —  Public AutoMod configuration commands
-
-Premium gates:
-  FREE    — enable/disable system, 7 basic modules, 1 warn threshold, status
-  BASIC   — unlimited thresholds, 6 advanced modules, per-channel overrides, module settings tweaking
-  PRO     — warn decay, tempban/role_add/role_remove threshold actions, raid lockdown tuning
-"""
-
 from __future__ import annotations
 
 import discord
@@ -291,7 +282,12 @@ async def _guild_tier(bot: PizzaHat, guild_id: int) -> Tier:
 
 
 def _build_status_embed(
-    guild: discord.Guild, enabled: bool, cfg: dict, tier: Tier
+    guild: discord.Guild,
+    enabled: bool,
+    cfg: dict,
+    tier: Tier,
+    bot_yes: str,
+    bot_no: str,
 ) -> discord.Embed:
     tier_label = {Tier.FREE: "Free", Tier.BASIC: "Basic ⭐", Tier.PRO: "Pro 💎"}.get(
         tier, "Free"
@@ -300,7 +296,7 @@ def _build_status_embed(
     em = normal_embed(
         title="<:wrench:1268855253768339476>  AutoMod Configuration",
         description=(
-            f"**Status:** {'🟢 Enabled' if enabled else '🔴 Disabled'}\n"
+            f"**Status:** {f'{bot_yes} Enabled' if enabled else f'{bot_no} Disabled'}\n"
             f"**Plan:** {tier_label}\n"
             f"**Server:** {guild.name}"
         ),
@@ -308,11 +304,11 @@ def _build_status_embed(
     )
 
     free_lines = [
-        f"{'🟢' if _mod_active(cfg, m) else '🔴'} `{m.replace('_', ' ').title()}`"
+        f"{bot_yes if _mod_active(cfg, m) else bot_no} `{m.replace('_', ' ').title()}`"
         for m in FREE_MODULES
     ]
     basic_lines = [
-        f"{'🔒' if tier < Tier.BASIC else ('🟢' if _mod_active(cfg, m) else '🔴')} `{m.replace('_', ' ').title()}`"
+        f"{'🔒' if tier < Tier.BASIC else (bot_yes if _mod_active(cfg, m) else bot_no)} `{m.replace('_', ' ').title()}`"
         for m in BASIC_MODULES
     ]
 
@@ -402,7 +398,9 @@ class AutoModeration(Cog, emoji=1268855303768903733):
         cfg = row.get("config") or {}
         tier = await _guild_tier(self.bot, ctx.guild.id)
 
-        em = _build_status_embed(ctx.guild, enabled, cfg, tier)
+        em = _build_status_embed(
+            ctx.guild, enabled, cfg, tier, self.bot.yes, self.bot.no
+        )
         em.add_field(
             name="Commands",
             value=(
@@ -814,7 +812,11 @@ class AutoModeration(Cog, emoji=1268855303768903733):
         enabled = row.get("enabled", False)
         cfg = row.get("config") or {}
         tier = await _guild_tier(self.bot, ctx.guild.id)
-        await ctx.send(embed=_build_status_embed(ctx.guild, enabled, cfg, tier))
+        await ctx.send(
+            embed=_build_status_embed(
+                ctx.guild, enabled, cfg, tier, self.bot.yes, self.bot.no
+            )
+        )
 
 
 async def setup(bot: PizzaHat) -> None:
