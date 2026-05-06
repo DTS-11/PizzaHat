@@ -13,7 +13,7 @@ from core.bot import PizzaHat, Tier
 from core.cog import Cog
 from utils.config import ANTIHOIST_CHARS
 from utils.custom_checks import premium
-from utils.embed import ctx_embed, green_embed, normal_embed, orange_embed, red_embed
+from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
 from utils.ui import ConfirmationView, Paginator
 
 
@@ -1689,7 +1689,8 @@ class Mod(Cog, emoji=1268851270136107048):
                     f"Moderator: {mod_str}\n"
                 )
 
-            em = normal_embed(
+            em = await ctx_embed(
+                ctx,
                 title=f"Warnings — {member.name}  ({total} total)",
                 description="\n".join(lines) + threshold_note,
                 timestamp=True,

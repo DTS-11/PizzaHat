@@ -7,7 +7,7 @@ from discord.ext.commands import Context
 
 from core.bot import PizzaHat
 from core.cog import Cog
-from utils.embed import ctx_embed, green_embed, normal_embed, orange_embed, red_embed
+from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
 
 LEVELS = {
     1: (
@@ -168,6 +168,7 @@ class SetupWizardView(discord.ui.View):
 
 
 def _build_status_embed(
+    em: discord.Embed,
     guild: discord.Guild,
     data: dict | None,
     bot_yes: str,
@@ -176,13 +177,10 @@ def _build_status_embed(
     enabled = data["enabled"] if data else False
     icon = bot_yes if enabled else bot_no
 
-    em = normal_embed(
-        title="<:raidreport:1268857575919714376>  Anti-Alt Configuration",
-        description=(
-            f"**Status:** {icon} {'Enabled' if enabled else 'Disabled'}\n"
-            f"**Server:** {guild.name}"
-        ),
-        timestamp=True,
+    em.title = "<:raidreport:1268857575919714376>  Anti-Alt Configuration"
+    em.description = (
+        f"**Status:** {icon} {'Enabled' if enabled else 'Disabled'}\n"
+        f"**Server:** {guild.name}"
     )
 
     if data:
@@ -259,8 +257,9 @@ class AntiAlts(Cog, emoji=1268851128548724756):
             return
 
         data = await self._get_data(ctx.guild.id)
+        em = await ctx_embed(ctx, timestamp=True)
         await ctx.send(
-            embed=_build_status_embed(ctx.guild, data, self.bot.yes, self.bot.no)
+            embed=_build_status_embed(em, ctx.guild, data, self.bot.yes, self.bot.no)
         )
 
     @antialt.command(name="enable")
@@ -515,8 +514,8 @@ class AntiAlts(Cog, emoji=1268851128548724756):
             return
 
         data = await self._get_data(ctx.guild.id)
-        em = _build_status_embed(ctx.guild, data, self.bot.yes, self.bot.no)
-        em.color = (await ctx_embed(ctx, color=em.color)).color
+        em = await ctx_embed(ctx, timestamp=True)
+        em = _build_status_embed(em, ctx.guild, data, self.bot.yes, self.bot.no)
         await ctx.send(embed=em)
 
 
