@@ -10,7 +10,7 @@ from discord.ext.commands import Context
 from core.bot import PizzaHat, Tier
 from core.cog import Cog
 from utils.custom_checks import premium
-from utils.embed import green_embed, normal_embed, orange_embed, red_embed
+from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
 
 FREE_MODULES = [
     "banned_words",
@@ -246,6 +246,10 @@ def _mod_active(cfg: dict, module: str) -> bool:
     return False
 
 
+def _default_module_config(modules: list[str]) -> dict:
+    return {module: {"enabled": True} for module in modules}
+
+
 def _threshold_summary(thresholds: list[dict]) -> str:
     if not thresholds:
         return "None configured."
@@ -285,9 +289,10 @@ async def _guild_tier(bot: PizzaHat, guild_id: int) -> Tier:
 
 
 def _build_status_embed(
+    em: discord.Embed,
     guild: discord.Guild,
     enabled: bool,
-    cfg: dict,
+    module_config: dict,
     tier: Tier,
     bot_yes: str,
     bot_no: str,
@@ -296,29 +301,28 @@ def _build_status_embed(
         tier, "Free"
     )
 
-    em = normal_embed(
-        title="<:wrench:1268855253768339476>  AutoMod Configuration",
-        description=(
-            f"**Status:** {f'{bot_yes} Enabled' if enabled else f'{bot_no} Disabled'}\n"
-            f"**Plan:** {tier_label}\n"
-            f"**Server:** {guild.name}"
-        ),
-        timestamp=True,
+    em.title = "<:wrench:1268855253768339476>  AutoMod Configuration"
+    em.description = (
+        f"**Status:** {f'{bot_yes} Enabled' if enabled else f'{bot_no} Disabled'}\n"
+        f"**Plan:** {tier_label}\n"
+        f"**Server:** {guild.name}"
     )
 
     free_lines = [
-        f"{bot_yes if _mod_active(cfg, m) else bot_no} `{m.replace('_', ' ').title()}`"
+        f"{bot_yes if _mod_active(module_config, m) else bot_no} `{m.replace('_', ' ').title()}`"
         for m in FREE_MODULES
     ]
     basic_lines = [
-        f"{'🔒' if tier < Tier.BASIC else (bot_yes if _mod_active(cfg, m) else bot_no)} `{m.replace('_', ' ').title()}`"
+        f"{'🔒' if tier < Tier.BASIC else (bot_yes if _mod_active(module_config, m) else bot_no)} `{m.replace('_', ' ').title()}`"
         for m in BASIC_MODULES
     ]
 
     em.add_field(name="Free Modules", value="\n".join(free_lines), inline=True)
     em.add_field(name="Basic Modules", value="\n".join(basic_lines), inline=True)
 
-    thresholds: list[dict] = sorted(cfg.get("thresholds", []), key=lambda t: t["warns"])
+    thresholds: list[dict] = sorted(
+        module_config.get("thresholds", []), key=lambda t: t["warns"]
+    )
     shown = thresholds[:1] if tier == Tier.FREE else thresholds
     t_text = _threshold_summary(shown)
 
@@ -327,7 +331,7 @@ def _build_status_embed(
 
     em.add_field(name="Warn Thresholds", value=t_text, inline=False)
 
-    overrides: dict = cfg.get("overrides", {})
+    overrides: dict = module_config.get("overrides", {})
     if tier >= Tier.BASIC and overrides:
         lines = [
             f"<#{cid}>: {len(mods)} override(s)"
@@ -340,7 +344,7 @@ def _build_status_embed(
             name="Channel Overrides", value="🔒 Requires **Basic**", inline=False
         )
 
-    decay = cfg.get("warn_decay_days")
+    decay = module_config.get("warn_decay_days")
 
     if tier >= Tier.PRO:
         em.add_field(
@@ -357,7 +361,7 @@ def _build_status_embed(
     return em
 
 
-class AutoModeration(Cog, emoji=1268855303768903733):
+class AutoModeration(Cog, emoji=1268880500248936491):
     """Configure the AutoMod system for your server."""
 
     def __init__(self, bot: PizzaHat):
@@ -373,7 +377,7 @@ class AutoModeration(Cog, emoji=1268855303768903733):
             return {}
 
         row = await self.bot.db.fetchrow(
-            "SELECT enabled, config FROM automod WHERE guild_id=$1", guild_id
+            "SELECT enabled, config, modules FROM automod WHERE guild_id=$1", guild_id
         )
         if not row:
             return {}
@@ -390,6 +394,9 @@ class AutoModeration(Cog, emoji=1268855303768903733):
                     data["config"] = {}
         elif config is None:
             data["config"] = {}
+
+        if not data["config"] and data.get("modules"):
+            data["config"] = _default_module_config(list(data["modules"]))
 
         return data
 
@@ -415,11 +422,12 @@ class AutoModeration(Cog, emoji=1268855303768903733):
 
         row = await self._get_row(ctx.guild.id)
         enabled = row.get("enabled", False)
-        cfg = row.get("config") or {}
+        module_config = row.get("config") or {}
         tier = await _guild_tier(self.bot, ctx.guild.id)
 
+        em = await ctx_embed(ctx, timestamp=True)
         em = _build_status_embed(
-            ctx.guild, enabled, cfg, tier, self.bot.yes, self.bot.no
+            em, ctx.guild, enabled, module_config, tier, self.bot.yes, self.bot.no
         )
         em.add_field(
             name="Commands",
@@ -447,10 +455,21 @@ class AutoModeration(Cog, emoji=1268855303768903733):
             return
 
         if module is None:
+            row = await self._get_row(ctx.guild.id)
+            config_data: dict = dict(row.get("config") or {})
+
+            for mod, default_entry in _default_module_config(FREE_MODULES).items():
+                entry = config_data.get(mod, {})
+                if isinstance(entry, dict):
+                    config_data[mod] = {**default_entry, **entry}
+                else:
+                    config_data[mod] = default_entry
+
             await self.bot.db.execute(
-                "INSERT INTO automod (guild_id, enabled) VALUES ($1, true) "
-                "ON CONFLICT (guild_id) DO UPDATE SET enabled=true",
+                "INSERT INTO automod (guild_id, enabled, config) VALUES ($1, true, $2) "
+                "ON CONFLICT (guild_id) DO UPDATE SET enabled=true, config=$2",
                 ctx.guild.id,
+                config_data,
             )
             self._clear_cache(ctx.guild.id)
             return await ctx.send(
@@ -553,7 +572,8 @@ class AutoModeration(Cog, emoji=1268855303768903733):
 
         view = ModuleToggleView(ctx, cfg, mode, available)
         msg = await ctx.send(
-            embed=normal_embed(
+            embed=await ctx_embed(
+                ctx,
                 title="Module Manager",
                 description=f"Select modules to **{mode}**, then click **Confirm**.",
             ),
@@ -609,7 +629,8 @@ class AutoModeration(Cog, emoji=1268855303768903733):
 
         view = ThresholdBuilderView(ctx, existing, is_pro)
         msg = await ctx.send(
-            embed=normal_embed(
+            embed=await ctx_embed(
+                ctx,
                 title="Warn Threshold Builder",
                 description=(
                     "**Current thresholds:**\n" + _threshold_summary(existing) + "\n\n"
@@ -830,11 +851,12 @@ class AutoModeration(Cog, emoji=1268855303768903733):
 
         row = await self._get_row(ctx.guild.id)
         enabled = row.get("enabled", False)
-        cfg = row.get("config") or {}
+        module_config = row.get("config") or {}
         tier = await _guild_tier(self.bot, ctx.guild.id)
+        em = await ctx_embed(ctx, timestamp=True)
         await ctx.send(
             embed=_build_status_embed(
-                ctx.guild, enabled, cfg, tier, self.bot.yes, self.bot.no
+                em, ctx.guild, enabled, module_config, tier, self.bot.yes, self.bot.no
             )
         )
 
