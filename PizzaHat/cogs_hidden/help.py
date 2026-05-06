@@ -8,19 +8,22 @@ from discord.ext import commands
 
 from core.bot import PizzaHat
 from core.cog import Cog
+from core.database import get_prefix
 from utils.config import COG_EXCEPTIONS, REG_INVITE, SUPPORT_SERVER, TOPGG_VOTE
 from utils.embed import ctx_embed
 
 
 async def bot_help_embed(ctx: commands.Context) -> discord.Embed:
+    prefix = await get_prefix(ctx.bot.db, ctx.guild.id if ctx.guild else 0) or "p!"
     em = await ctx_embed(
         ctx,
         title=f"{ctx.bot.user.name} Help",
         timestamp=True,
     )
-    em.description = """
+    em.description = f"""
 Hello, welcome to the help page!
 Use the dropdown menu to select a category.\n
+- Prefix: `{prefix}` or {ctx.bot.user.mention}
 - Use `help [command]` for more info on a command.
 - Use `help [category]` for more info on a category.
     """

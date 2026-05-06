@@ -2,6 +2,7 @@ import discord
 
 from core.bot import PizzaHat
 from core.cog import Cog
+from core.database import get_prefix
 from utils.config import LOGS_CHANNEL
 from utils.embed import (
     green_embed,
@@ -58,13 +59,15 @@ class Events(Cog):
                 return
 
             if msg.content in {f"<@{bot_id}>" or f"<@!{bot_id}>"}:
+                prefix = (
+                    await get_prefix(self.bot.db, msg.guild.id if msg.guild else 0)
+                    or "p!"
+                )
                 em = await guild_embed(
                     self.bot.db,
                     msg.guild.id if msg.guild else 0,
-                )
-                em.add_field(
-                    name="Hello! <a:wave_animated:783393435242463324>",
-                    value=f"I'm {self.bot.user.name} — Your Ultimate Discord Companion.\nTo get started, my prefix is `p!` or `P!` or <@{bot_id}>",
+                    "Hello! <a:wave_animated:783393435242463324>",
+                    f"I'm {self.bot.user.name} — Your Ultimate Discord Companion!\nTo get started, my prefix is `{prefix}` or <@{bot_id}>",
                 )
 
                 await msg.channel.send(embed=em)
