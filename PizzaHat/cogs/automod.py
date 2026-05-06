@@ -80,8 +80,12 @@ class ModuleToggleView(discord.ui.View):
         super().__init__(timeout=60)
         self.ctx = ctx
         self.mode = mode
-        self.selected_modules: list[str] = []
-        self.add_item(ModuleToggleSelect(cfg, mode, available))
+        self.selected_modules: list[str] = [
+            module for module in available if _mod_active(cfg, module)
+        ]
+        self.cancelled = False
+        self.selector = ModuleToggleSelect(cfg, mode, available)
+        self.add_item(self.selector)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.ctx.author.id:
@@ -91,11 +95,17 @@ class ModuleToggleView(discord.ui.View):
 
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.success, row=1)
     async def confirm(self, interaction: discord.Interaction, _: discord.ui.Button):
+        self.selected_modules = list(self.selector.values or self.selected_modules)
+        if not self.selected_modules:
+            return await interaction.response.send_message(
+                "Select at least one module first.", ephemeral=True
+            )
         self.stop()
         await interaction.response.defer()
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
     async def cancel(self, interaction: discord.Interaction, _: discord.ui.Button):
+        self.cancelled = True
         self.selected_modules = []
         self.stop()
         await interaction.response.defer()
