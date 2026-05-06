@@ -76,10 +76,20 @@ class ModuleToggleSelect(discord.ui.Select):
 
 
 class ModuleToggleView(discord.ui.View):
-    def __init__(self, ctx: Context, cfg: dict, mode: str, available: list[str]):
+    def __init__(
+        self,
+        ctx: Context,
+        cfg: dict,
+        mode: str,
+        available: list[str],
+        *,
+        on_confirm,
+    ):
         super().__init__(timeout=60)
         self.ctx = ctx
         self.mode = mode
+        self.cfg = cfg
+        self.on_confirm = on_confirm
         self.selected_modules: list[str] = [
             module for module in available if _mod_active(cfg, module)
         ]
@@ -100,15 +110,19 @@ class ModuleToggleView(discord.ui.View):
             return await interaction.response.send_message(
                 "Select at least one module first.", ephemeral=True
             )
-        self.stop()
         await interaction.response.defer()
+        await self.on_confirm(interaction, self.selected_modules, self.cfg, self.mode)
+        self.stop()
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
     async def cancel(self, interaction: discord.Interaction, _: discord.ui.Button):
         self.cancelled = True
         self.selected_modules = []
         self.stop()
-        await interaction.response.defer()
+        await interaction.response.edit_message(
+            embed=red_embed(description="Cancelled - no changes made."),
+            view=None,
+        )
 
 
 class ThresholdActionSelect(discord.ui.Select):
@@ -580,36 +594,38 @@ class AutoModeration(Cog, emoji=1268880500248936491):
         row = await self._get_row(ctx.guild.id)
         cfg: dict = dict(row.get("config") or {})
 
-        view = ModuleToggleView(ctx, cfg, mode, available)
-        msg = await ctx.send(
+        async def _save_modules(
+            interaction: discord.Interaction,
+            selected_modules: list[str],
+            current_cfg: dict,
+            current_mode: str,
+        ) -> None:
+            for mod in selected_modules:
+                entry = current_cfg.get(mod, {})
+                current_cfg[mod] = {
+                    **(entry if isinstance(entry, dict) else {}),
+                    "enabled": current_mode == "enable",
+                }
+
+            await self._upsert_config(ctx.guild.id, current_cfg)  # type: ignore
+            changed = ", ".join(
+                f"`{m.replace('_', ' ').title()}`" for m in selected_modules
+            )
+            await interaction.edit_original_response(
+                embed=green_embed(
+                    description=f"{self.bot.yes} {current_mode.title()}d: {changed}"
+                ),
+                view=None,
+            )
+
+        view = ModuleToggleView(ctx, cfg, mode, available, on_confirm=_save_modules)
+        await ctx.send(
             embed=await ctx_embed(
                 ctx,
                 title="Module Manager",
                 description=f"Select modules to **{mode}**, then click **Confirm**.",
             ),
             view=view,
-        )
-        await view.wait()
-
-        if not view.selected_modules:
-            return await msg.edit(
-                embed=red_embed(description="Cancelled — no changes made."), view=None
-            )
-
-        for mod in view.selected_modules:
-            entry = cfg.get(mod, {})
-            cfg[mod] = {
-                **(entry if isinstance(entry, dict) else {}),
-                "enabled": mode == "enable",
-            }
-
-        await self._upsert_config(ctx.guild.id, cfg)
-        changed = ", ".join(
-            f"`{m.replace('_', ' ').title()}`" for m in view.selected_modules
-        )
-        await msg.edit(
-            embed=green_embed(description=f"{self.bot.yes} {mode.title()}d: {changed}"),
-            view=None,
         )
 
     @automod.command(name="thresholds", aliases=["threshold"])
