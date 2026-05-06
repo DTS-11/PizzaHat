@@ -252,7 +252,7 @@ class Utility(Cog, emoji=1268851252565905449):
 
             await ctx.send(embed=em)
 
-    @commands.command()
+    @commands.command(aliases=["changeprefix", "setprefix"])
     @commands.guild_only()
     @commands.cooldown(1, 20, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
@@ -467,9 +467,11 @@ class Utility(Cog, emoji=1268851252565905449):
 
         Flags:
             `--embed-color <hex>`: Change the bot's default embed color.
+            `--bot-avatar <url>`: Change the bot's avatar.
+            `--bot-username <name>`: Change the bot's username.
         """
 
-        if not ctx.guild or not self.bot.db:
+        if not ctx.guild or not self.bot.db or not self.bot.user:
             return
 
         if not flags:
@@ -500,6 +502,44 @@ class Utility(Cog, emoji=1268851252565905449):
                     f"{self.bot.yes} Embed accent color updated to `{value}`."
                 )
             )
+
+        if flag == "bot-avatar":
+            if not value:
+                return await ctx.send("Please provide an image URL.")
+            try:
+                async with self.bot.session.get(value) as resp:
+                    if resp.status != 200:
+                        return await ctx.send("Failed to fetch the image from the URL.")
+                    data = await resp.read()
+            except Exception as e:
+                return await ctx.send(
+                    f"An error occurred while fetching the image: {e}"
+                )
+
+            try:
+                await self.bot.user.edit(avatar=data)
+                await ctx.send(
+                    embed=green_embed(
+                        f"{self.bot.yes} Bot avatar updated successfully."
+                    )
+                )
+            except Exception as e:
+                await ctx.send(f"An error occurred while updating the bot avatar: {e}")
+
+        if flag == "bot-username":
+            if not value:
+                return await ctx.send("Please provide a username.")
+            try:
+                await self.bot.user.edit(username=value)
+                await ctx.send(
+                    embed=green_embed(
+                        f"{self.bot.yes} Bot username updated to `{value}`."
+                    )
+                )
+            except Exception as e:
+                await ctx.send(
+                    f"An error occurred while updating the bot username: {e}"
+                )
 
     @commands.command(aliases=["tzset", "timeset"])
     @commands.cooldown(1, 10, commands.BucketType.user)
