@@ -127,9 +127,7 @@ class PizzaHat(commands.Bot):
             case_insensitive=True,
             strip_after_prefix=True,
             status=discord.Status.online,
-            activity=discord.Activity(
-                type=discord.ActivityType.custom, name="p!help | pizzahat.vercel.app"
-            ),
+            activity=discord.CustomActivity(name="🔗 pizzahat.vercel.app"),
         )
 
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
