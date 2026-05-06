@@ -9,11 +9,12 @@ from discord.ext import commands
 from core.bot import PizzaHat
 from core.cog import Cog
 from utils.config import COG_EXCEPTIONS, REG_INVITE, SUPPORT_SERVER, TOPGG_VOTE
-from utils.embed import ctx_embed, normal_embed
+from utils.embed import ctx_embed
 
 
-def bot_help_embed(ctx: commands.Context) -> discord.Embed:
-    em = normal_embed(
+async def bot_help_embed(ctx: commands.Context) -> discord.Embed:
+    em = await ctx_embed(
+        ctx,
         title=f"{ctx.bot.user.name} Help",
         timestamp=True,
     )
@@ -71,8 +72,9 @@ def cog_help_embed(cog: Cog | None) -> Union[discord.Embed, None]:
     return em
 
 
-def cmds_list_embed(ctx: commands.Context, mapping) -> discord.Embed:
-    em = normal_embed(
+async def cmds_list_embed(ctx: commands.Context, mapping) -> discord.Embed:
+    em = await ctx_embed(
+        ctx,
         title=f"{ctx.bot.user.name} Help",
         timestamp=True,
     )
@@ -176,14 +178,12 @@ class HelpView(ui.View):
 
     @ui.button(label="Home", emoji="🏠", style=ButtonStyle.blurple)
     async def go_home(self, interaction: Interaction, button: ui.Button):
-        embed = bot_help_embed(self.ctx)
-        embed.color = (await ctx_embed(self.ctx, color=embed.color)).color
+        embed = await bot_help_embed(self.ctx)
         await interaction.response.edit_message(embed=embed, view=self)
 
     @ui.button(label="Commands List", emoji="📜", style=ButtonStyle.blurple)
     async def cmds_list(self, interaction: Interaction, button: ui.Button):
-        embed = cmds_list_embed(self.ctx, self.mapping)
-        embed.color = (await ctx_embed(self.ctx, color=embed.color)).color
+        embed = await cmds_list_embed(self.ctx, self.mapping)
         await interaction.response.edit_message(embed=embed, view=self)
 
     @ui.button(label="Delete Menu", emoji="🛑", style=ButtonStyle.red)
@@ -221,8 +221,7 @@ class Help(Cog, emoji="\N{BLACK QUESTION MARK ORNAMENT}"):
     async def _send_bot_help(self, ctx: commands.Context) -> None:
         mapping = self._get_mapping()
         view = HelpView(mapping, ctx)
-        embed = bot_help_embed(ctx)
-        embed.color = (await ctx_embed(ctx, color=embed.color)).color
+        embed = await bot_help_embed(ctx)
         view.message = await ctx.send(embed=embed, view=view)  # type: ignore
 
     async def _send_command_help(
@@ -314,7 +313,6 @@ class Help(Cog, emoji="\N{BLACK QUESTION MARK ORNAMENT}"):
         if cog := self._find_cog(query):
             embed = cog_help_embed(cog)
             if embed:
-                embed.color = (await ctx_embed(ctx, color=embed.color)).color
                 await ctx.send(embed=embed)
                 return
 
