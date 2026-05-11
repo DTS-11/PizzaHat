@@ -78,7 +78,7 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT false, min_age INT, restricted_role BIGINT, level INT)""",
         # TAGS
         """CREATE TABLE IF NOT EXISTS tags
-        (guild_id BIGINT, tag_name TEXT, content TEXT, creator BIGINT)""",
+        (guild_id BIGINT, tag_name TEXT, content TEXT, creator BIGINT, uses INT DEFAULT 0)""",
         # STAR_CONFIG
         """CREATE TABLE IF NOT EXISTS star_config
         (guild_id BIGINT PRIMARY KEY, channel_id BIGINT, star_count INT DEFAULT 5, self_star BOOL DEFAULT true)""",
