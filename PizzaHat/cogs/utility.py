@@ -14,7 +14,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Modal, Select, TextInput, View
 
-from core.bot import PizzaHat
+from core.bot import PizzaHat, Tier
 from core.cog import Cog
 from core.database import get_prefix, invalidate_prefix_cache, set_prefix
 from utils.config import (
@@ -460,7 +460,7 @@ class Utility(Cog, emoji=1268851252565905449):
     @commands.guild_only()
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
-    @premium()
+    @premium(Tier.PRO)
     async def customise(self, ctx: Context, *, flags: str):
         """
         Customise the bot's appearance.
