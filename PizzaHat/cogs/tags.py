@@ -1,3 +1,6 @@
+from typing import Optional
+
+import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
@@ -20,13 +23,116 @@ class Tags(Cog, emoji=1268850578415681546):
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
 
-    @commands.group()
-    @commands.guild_only()
-    async def tag(self, ctx: Context):
-        """Tag commands."""
+    @staticmethod
+    def _chunk_text(content: str, limit: int) -> list[str]:
+        chunks = []
+        remaining = content
 
-        if ctx.subcommand_passed is None:
+        while remaining:
+            if len(remaining) <= limit:
+                chunks.append(remaining)
+                break
+
+            split_at = remaining.rfind("\n", 0, limit)
+            if split_at <= 0:
+                split_at = limit
+
+            chunks.append(remaining[:split_at])
+            remaining = remaining[split_at:].lstrip("\n")
+
+        return chunks or [""]
+
+    async def _fetch_tag_content(
+        self, ctx: Context, tag_name: str, full_info: bool = False
+    ):
+        """Fetch and display tag content. If full_info=True, show creator and timestamp."""
+        if self.bot.db and ctx.guild is not None:
+            data = await self.bot.db.fetchrow(
+                "SELECT tag_name, content, creator, uses FROM tags WHERE guild_id=$1 AND tag_name=$2",
+                ctx.guild.id,
+                tag_name,
+            )
+
+            if not data:
+                await ctx.send(
+                    embed=red_embed(f"{self.bot.no} Tag `{tag_name}` not found.")
+                )
+                return
+
+            content = data["content"]
+
+            if full_info:
+                creator = self.bot.get_user(data["creator"])
+                if data["creator"] is not None and creator is None:
+                    try:
+                        creator = await self.bot.fetch_user(data["creator"])
+                    except discord.HTTPException:
+                        creator = None
+
+                content_chunks = self._chunk_text(content, 4000)
+                embeds = []
+
+                for index, chunk in enumerate(content_chunks):
+                    em = await ctx_embed(
+                        ctx,
+                        title=tag_name if index == 0 else f"{tag_name} (cont.)",
+                        description=chunk,
+                        timestamp=index == 0,
+                    )
+
+                    if index == 0:
+                        em.set_author(
+                            name=ctx.author.display_name,
+                            icon_url=ctx.author.display_avatar.url,
+                        )
+                        if data["creator"] is None:
+                            owner_value = "Unknown"
+                        else:
+                            owner_value = f"<@{data['creator']}>"
+                            if creator is not None:
+                                owner_value += f" `[{creator}]`"
+                        em.add_field(
+                            name="Owner",
+                            value=owner_value,
+                            inline=False,
+                        )
+                        em.add_field(
+                            name="Uses",
+                            value=str(data["uses"]),
+                            inline=False,
+                        )
+
+                    embeds.append(em)
+
+                if len(embeds) == 1:
+                    await ctx.send(embed=embeds[0])
+                else:
+                    paginator = Paginator(ctx, embeds)
+                    await ctx.send(embed=embeds[0], view=paginator)
+            else:
+                await self.bot.db.execute(
+                    "UPDATE tags SET uses = uses + 1 WHERE guild_id=$1 AND tag_name=$2",
+                    ctx.guild.id,
+                    tag_name,
+                )
+                if len(content) > 2000:
+                    chunks = self._chunk_text(content, 2000)
+                    for chunk in chunks:
+                        await ctx.send(chunk)
+                else:
+                    await ctx.send(content)
+
+    @commands.group(invoke_without_command=True)
+    @commands.guild_only()
+    async def tag(self, ctx: Context, *, tag_name: Optional[str] = None):
+        """Tag commands. Pass a tag name to fetch its content."""
+
+        if ctx.invoked_subcommand is not None:
+            return
+        if tag_name is None:
             await ctx.send_help(ctx.command)
+        else:
+            await self._fetch_tag_content(ctx, tag_name)
 
     @tag.command(name="create")
     @commands.guild_only()
@@ -159,39 +265,14 @@ class Tags(Cog, emoji=1268850578415681546):
     @tag.command(name="info")
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def tag_info(self, ctx: Context, tag: str):
+    async def tag_info(self, ctx: Context, *, tag: Optional[str] = None):
         """Get info on a particular tag."""
 
-        if self.bot.db and ctx.guild is not None:
-            data = await self.bot.db.fetchrow(
-                "SELECT tag_name, content, creator FROM tags WHERE guild_id=$1 AND tag_name=$2",
-                ctx.guild.id,
-                tag,
-            )
+        if tag is None:
+            await ctx.send_help(ctx.command)
+            return
 
-            em = await ctx_embed(
-                ctx,
-                title=tag,
-                description="",
-                timestamp=True,
-            )
-            em.set_author(
-                name=ctx.author.display_name,
-                icon_url=ctx.author.avatar if ctx.author.avatar else None,
-            )
-
-            if data:
-                creator = self.bot.get_user(
-                    data["creator"]
-                ) or await self.bot.fetch_user(data["creator"])
-                em.description += data["content"]
-                em.add_field(
-                    name="Owner",
-                    value=f"<@{data['creator']}> `[{creator}]`",
-                    inline=False,
-                )
-
-            await ctx.send(embed=em)
+        await self._fetch_tag_content(ctx, tag, full_info=True)
 
     @tag.command(name="edit")
     @commands.guild_only()
