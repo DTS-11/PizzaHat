@@ -130,9 +130,12 @@ class WorkflowCommands(Cog, emoji="⚙️"):
 
         count = 0
         if self.bot.db:
-            count = await self.bot.db.fetchval(
-                "SELECT COUNT(*) FROM workflows WHERE guild_id=$1", ctx.guild.id
-            ) or 0
+            count = (
+                await self.bot.db.fetchval(
+                    "SELECT COUNT(*) FROM workflows WHERE guild_id=$1", ctx.guild.id
+                )
+                or 0
+            )
 
         session = self._get_session(ctx.guild.id, ctx.author.id)
         session_line = ""
@@ -209,12 +212,16 @@ class WorkflowCommands(Cog, emoji="⚙️"):
                 )
             )
 
-        self._put_session(ctx.guild.id, ctx.author.id, {
-            "name": name,
-            "trigger_type": None,
-            "trigger_config": {},
-            "actions": [],
-        })
+        self._put_session(
+            ctx.guild.id,
+            ctx.author.id,
+            {
+                "name": name,
+                "trigger_type": None,
+                "trigger_config": {},
+                "actions": [],
+            },
+        )
         await ctx.send(
             embed=green_embed(
                 description=(
@@ -230,7 +237,9 @@ class WorkflowCommands(Cog, emoji="⚙️"):
     @workflow.command(name="trigger")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
-    async def workflow_trigger(self, ctx: Context, trigger_type: str, *, value: str = ""):
+    async def workflow_trigger(
+        self, ctx: Context, trigger_type: str, *, value: str = ""
+    ):
         """Set the trigger for the active workflow session."""
 
         if not ctx.guild:
@@ -479,12 +488,16 @@ class WorkflowCommands(Cog, emoji="⚙️"):
 
         session = self._get_session(ctx.guild.id, ctx.author.id)
         if not session:
-            return await ctx.send(embed=orange_embed(description="No active session to cancel."))
+            return await ctx.send(
+                embed=orange_embed(description="No active session to cancel.")
+            )
 
         name = session["name"]
         self._drop_session(ctx.guild.id, ctx.author.id)
         await ctx.send(
-            embed=green_embed(description=f"{self.bot.yes} Session for **{name}** discarded.")
+            embed=green_embed(
+                description=f"{self.bot.yes} Session for **{name}** discarded."
+            )
         )
 
     # ── list / show ───────────────────────────────────────────────────────────
@@ -535,7 +548,9 @@ class WorkflowCommands(Cog, emoji="⚙️"):
         )
         if not row:
             return await ctx.send(
-                embed=red_embed(description=f"{self.bot.no} Workflow `#{workflow_id}` not found.")
+                embed=red_embed(
+                    description=f"{self.bot.no} Workflow `#{workflow_id}` not found."
+                )
             )
 
         status = "✅ Enabled" if row["enabled"] else "❌ Disabled"
@@ -583,10 +598,14 @@ class WorkflowCommands(Cog, emoji="⚙️"):
         )
         if not row:
             return await ctx.send(
-                embed=red_embed(description=f"{self.bot.no} Workflow `#{workflow_id}` not found.")
+                embed=red_embed(
+                    description=f"{self.bot.no} Workflow `#{workflow_id}` not found."
+                )
             )
 
-        await self.bot.db.execute("UPDATE workflows SET enabled=true WHERE id=$1", workflow_id)
+        await self.bot.db.execute(
+            "UPDATE workflows SET enabled=true WHERE id=$1", workflow_id
+        )
         self._clear_workflow_cache(ctx.guild.id)
         await ctx.send(
             embed=green_embed(
@@ -610,10 +629,14 @@ class WorkflowCommands(Cog, emoji="⚙️"):
         )
         if not row:
             return await ctx.send(
-                embed=red_embed(description=f"{self.bot.no} Workflow `#{workflow_id}` not found.")
+                embed=red_embed(
+                    description=f"{self.bot.no} Workflow `#{workflow_id}` not found."
+                )
             )
 
-        await self.bot.db.execute("UPDATE workflows SET enabled=false WHERE id=$1", workflow_id)
+        await self.bot.db.execute(
+            "UPDATE workflows SET enabled=false WHERE id=$1", workflow_id
+        )
         self._clear_workflow_cache(ctx.guild.id)
         await ctx.send(
             embed=green_embed(
@@ -637,7 +660,9 @@ class WorkflowCommands(Cog, emoji="⚙️"):
         )
         if not row:
             return await ctx.send(
-                embed=red_embed(description=f"{self.bot.no} Workflow `#{workflow_id}` not found.")
+                embed=red_embed(
+                    description=f"{self.bot.no} Workflow `#{workflow_id}` not found."
+                )
             )
 
         await self.bot.db.execute("DELETE FROM workflows WHERE id=$1", workflow_id)

@@ -220,7 +220,9 @@ class WorkflowEvents(Cog):
             text = tcfg.get("text", "")
             if not text:
                 return False
-            content = msg.content.lower() if tcfg.get("ignore_case", True) else msg.content
+            content = (
+                msg.content.lower() if tcfg.get("ignore_case", True) else msg.content
+            )
             needle = text.lower() if tcfg.get("ignore_case", True) else text
             return needle in content
 
