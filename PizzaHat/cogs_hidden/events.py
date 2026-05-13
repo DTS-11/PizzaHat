@@ -76,14 +76,38 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
-        # if len([m for m in guild.members if m.bot]) > len(guild.members) / 2:
-        #     try:
-        #         await guild.text_channels[0].send(
-        #             '👋 I have automatically left this server since it has a high bot to member ratio.'
-        #         )
-        #         await guild.leave()
-        #     except:
-        #         pass
+        await guild.chunk()  # ensure member cache is full
+
+        bots = sum(1 for m in guild.members if m.bot)
+        humans = sum(1 for m in guild.members if not m.bot)
+
+        bot_ratio = bots / total if total > 0 else 0
+
+        reason = None
+        if bot_ratio >= 0.70:
+            reason = (
+                f"it has a high bot-to-member ratio ({round(bot_ratio * 100)}% bots)"
+            )
+        elif humans <= 3:
+            reason = f"it has too few real members ({humans} human{'s' if humans != 1 else ''})"
+
+        if reason:
+            try:
+                ch = guild.system_channel or next(
+                    (
+                        c
+                        for c in guild.text_channels
+                        if c.permissions_for(guild.me).send_messages
+                    ),
+                    None,
+                )
+                if ch:
+                    await ch.send(
+                        f"👋 I've automatically left this server because {reason}. Bye!"
+                    )
+                await guild.leave()
+            except:
+                pass
 
         em = green_embed(
             title="Guild Joined",
