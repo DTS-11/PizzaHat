@@ -26,6 +26,7 @@ INITIAL_EXTENSIONS = [
     "cogs.tags",
     "cogs.tickets",
     "cogs.utility",
+    "cogs.workflows",
 ]
 
 SUB_EXTENSIONS = [
@@ -35,6 +36,7 @@ SUB_EXTENSIONS = [
     "cogs_hidden.guild_logs",
     "cogs_hidden.help",
     "cogs_hidden.starboard",
+    "cogs_hidden.workflows",
 ]
 
 LOGGING_CONFIG = {

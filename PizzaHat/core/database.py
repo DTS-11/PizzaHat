@@ -167,3 +167,18 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         ON warnlogs (guild_id, user_id, created_at DESC)
         """
     )
+
+    # WORKFLOWS
+    await pool.execute(
+        """CREATE TABLE IF NOT EXISTS workflows
+        (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, name TEXT NOT NULL,
+        trigger_type TEXT NOT NULL, trigger_config JSONB DEFAULT '{}',
+        actions JSONB DEFAULT '[]', enabled BOOL DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT NOT NULL)"""
+    )
+    await pool.execute(
+        """
+        CREATE INDEX IF NOT EXISTS workflows_guild_id_idx
+        ON workflows (guild_id)
+        """
+    )
