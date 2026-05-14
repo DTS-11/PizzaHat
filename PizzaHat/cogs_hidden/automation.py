@@ -1,34 +1,32 @@
 from __future__ import annotations
 
 import datetime
-import re
+import time
 
 import discord
 from async_lru import alru_cache
+from discord.ext import tasks
 
 from core.bot import PizzaHat
 from core.cog import Cog
 
-INVITE_REGEX = re.compile(
-    r"((http(s|):\/\/|)(discord)(\.(gg|io|me)\/|app\.com\/invite\/)([0-z]+))"
-)
+# Per-user cooldown tracking: (guild_id, responder_id, user_id) → last-fired monotonic
+_cooldown_map: dict[tuple[int, int, int], float] = {}
 
 
 def _render(text: str, **kwargs: str) -> str:
-    """Replace {key} placeholders with values."""
     for k, v in kwargs.items():
         text = text.replace(f"{{{k}}}", v)
     return text
 
 
-def _template_vars(
+def _tvars(
     guild: discord.Guild,
     member: discord.Member | discord.User | None = None,
-    message: discord.Message | None = None,
 ) -> dict[str, str]:
-    tvars: dict[str, str] = {"guild": guild.name, "guild.id": str(guild.id)}
+    out: dict[str, str] = {"guild": guild.name, "guild.id": str(guild.id)}
     if member:
-        tvars.update(
+        out.update(
             {
                 "user": str(member),
                 "user.mention": member.mention,
@@ -36,207 +34,309 @@ def _template_vars(
                 "user.id": str(member.id),
             }
         )
-    if message and hasattr(message.channel, "mention"):
-        tvars["channel"] = message.channel.mention  # type: ignore
-        tvars["channel.name"] = getattr(message.channel, "name", "")
-    return tvars
+    return out
 
 
-class WorkflowEvents(Cog):
-    """Background event listeners for the workflow/automation system."""
+class AutomationEvents(Cog):
+    """Background listeners and tasks for the automation system."""
 
     def __init__(self, bot: PizzaHat):
         self.bot = bot
+        self._schedule_task.start()
+
+    def cog_unload(self) -> None:
+        self._schedule_task.cancel()
+
+    # ── Cache management ──────────────────────────────────────────────────────
 
     def clear_cache(self, guild_id: int | None = None) -> None:
-        self._get_workflows.cache_clear()
+        # guild_id parameter is accepted but alru_cache only supports full clear
+        self._fetch_responders.cache_clear()
+        self._fetch_join_config.cache_clear()
+        self._fetch_event_actions.cache_clear()
 
     @alru_cache()
-    async def _get_workflows(self, guild_id: int) -> list[dict]:
+    async def _fetch_responders(self, guild_id: int) -> list[dict]:
         if not self.bot.db:
             return []
         rows = await self.bot.db.fetch(
-            "SELECT id, trigger_type, trigger_config, actions "
-            "FROM workflows WHERE guild_id=$1 AND enabled=true",
+            "SELECT id, trigger_text, trigger_type, response, "
+            "channel_ids, role_ids, cooldown_seconds "
+            "FROM auto_responders WHERE guild_id=$1 AND enabled=TRUE ORDER BY id",
             guild_id,
         )
         return [dict(r) for r in rows]
 
-    async def _run_workflows(
-        self,
-        guild: discord.Guild,
-        trigger_type: str,
-        *,
-        member: discord.Member | discord.User | None = None,
-        message: discord.Message | None = None,
-        trigger_config_check=None,
-    ) -> None:
-        workflows = await self._get_workflows(guild.id)
-        for wf in workflows:
-            if wf["trigger_type"] != trigger_type:
-                continue
-            if trigger_config_check and not trigger_config_check(
-                dict(wf["trigger_config"]) if wf["trigger_config"] else {}
-            ):
-                continue
-            for action in list(wf["actions"] or []):
-                try:
-                    await self._execute(
-                        guild,
-                        action["type"],
-                        action.get("config", {}),
-                        member=member,
-                        message=message,
-                    )
-                except (discord.HTTPException, Exception):
-                    pass
+    @alru_cache()
+    async def _fetch_join_config(self, guild_id: int) -> dict | None:
+        if not self.bot.db:
+            return None
+        row = await self.bot.db.fetchrow(
+            "SELECT auto_role_ids, welcome_channel_id, welcome_message, welcome_dm "
+            "FROM join_automation WHERE guild_id=$1 AND enabled=TRUE",
+            guild_id,
+        )
+        return dict(row) if row else None
 
-    async def _execute(
-        self,
-        guild: discord.Guild,
-        action_type: str,
-        config: dict,
-        *,
-        member: discord.Member | discord.User | None = None,
-        message: discord.Message | None = None,
-    ) -> None:
-        tvars = _template_vars(guild, member, message)
+    @alru_cache()
+    async def _fetch_event_actions(self, guild_id: int) -> list[dict]:
+        if not self.bot.db:
+            return []
+        rows = await self.bot.db.fetch(
+            "SELECT id, event_type, actions "
+            "FROM event_actions WHERE guild_id=$1 AND enabled=TRUE",
+            guild_id,
+        )
+        return [dict(r) for r in rows]
 
-        if action_type == "send_message":
-            channel_id = config.get("channel_id")
-            if not channel_id:
-                return
-            ch = guild.get_channel(channel_id)
-            if isinstance(ch, discord.TextChannel):
-                await ch.send(_render(config.get("message", ""), **tvars))
-
-        elif action_type == "give_role":
-            if not isinstance(member, discord.Member):
-                return
-            role = guild.get_role(config.get("role_id", 0))
-            if role:
-                await member.add_roles(role, reason="Workflow automation")
-
-        elif action_type == "remove_role":
-            if not isinstance(member, discord.Member):
-                return
-            role = guild.get_role(config.get("role_id", 0))
-            if role:
-                await member.remove_roles(role, reason="Workflow automation")
-
-        elif action_type == "dm_user":
-            if not member:
-                return
-            text = _render(config.get("message", ""), **tvars)
-            try:
-                await member.send(text)
-            except discord.HTTPException:
-                pass
-
-        elif action_type == "delete_message":
-            if message:
-                try:
-                    await message.delete()
-                except discord.HTTPException:
-                    pass
-
-        elif action_type == "warn":
-            if not member or not self.bot.db:
-                return
-            reason = _render(config.get("reason", "Workflow automation"), **tvars)
-            await self.bot.db.execute(
-                "INSERT INTO warnlogs (guild_id, user_id, mod_id, reason) VALUES ($1,$2,$3,$4)",
-                guild.id,
-                member.id,
-                self.bot.user.id,  # type: ignore
-                reason,
-            )
-            automod_cog = self.bot.get_cog("AutoModConfig")
-            if automod_cog and hasattr(automod_cog, "check_warn_threshold"):
-                await automod_cog.check_warn_threshold(member.id, guild.id)  # type: ignore
-
-        elif action_type == "timeout":
-            if not isinstance(member, discord.Member):
-                return
-            until = discord.utils.utcnow() + datetime.timedelta(
-                seconds=config.get("duration", 600)
-            )
-            await member.timeout(until, reason="Workflow automation")
-
-        elif action_type == "kick":
-            if not isinstance(member, discord.Member):
-                return
-            reason = _render(config.get("reason", "Workflow automation"), **tvars)
-            await member.kick(reason=reason)
-
-        elif action_type == "ban":
-            if not isinstance(member, discord.Member):
-                return
-            reason = _render(config.get("reason", "Workflow automation"), **tvars)
-            await member.ban(reason=reason, delete_message_days=0)
-
-        elif action_type == "log":
-            channel_id = config.get("channel_id")
-            if not channel_id:
-                return
-            ch = guild.get_channel(channel_id)
-            if not isinstance(ch, discord.TextChannel):
-                return
-            text = _render(config.get("message", "Workflow action triggered."), **tvars)
-            em = discord.Embed(
-                description=text,
-                color=0x456DD4,
-                timestamp=datetime.datetime.now(datetime.timezone.utc),
-            )
-            if member:
-                em.set_author(name=str(member), icon_url=member.display_avatar.url)
-            await self.bot.send_log(ch, embed=em)
-
-    @Cog.listener()
-    async def on_member_join(self, member: discord.Member) -> None:
-        if member.bot:
-            return
-        await self._run_workflows(member.guild, "member_join", member=member)
-
-    @Cog.listener()
-    async def on_member_remove(self, member: discord.Member) -> None:
-        if member.bot:
-            return
-        await self._run_workflows(member.guild, "member_leave", member=member)
+    # ── Auto Responders ───────────────────────────────────────────────────────
 
     @Cog.listener()
     async def on_message(self, msg: discord.Message) -> None:
         if msg.author.bot or not msg.guild or not msg.content:
             return
 
-        # message_contains trigger
-        def _contains_check(tcfg: dict) -> bool:
-            text = tcfg.get("text", "")
-            if not text:
-                return False
-            content = (
-                msg.content.lower() if tcfg.get("ignore_case", True) else msg.content
-            )
-            needle = text.lower() if tcfg.get("ignore_case", True) else text
-            return needle in content
+        responders = await self._fetch_responders(msg.guild.id)
+        if not responders:
+            return
 
-        await self._run_workflows(
-            msg.guild,
-            "message_contains",
-            member=msg.author,
-            message=msg,
-            trigger_config_check=_contains_check,
+        content_lower = msg.content.lower()
+        now = time.monotonic()
+
+        for r in responders:
+            trigger: str = r["trigger_text"]
+            ttype: str = r["trigger_type"]
+
+            # Trigger match
+            if ttype == "exact":
+                if content_lower != trigger:
+                    continue
+            else:
+                if trigger not in content_lower:
+                    continue
+
+            # Channel restriction (Basic+)
+            channel_ids: list[int] = list(r.get("channel_ids") or [])
+            if channel_ids and msg.channel.id not in channel_ids:
+                continue
+
+            # Role restriction (Basic+)
+            role_ids: list[int] = list(r.get("role_ids") or [])
+            if role_ids:
+                member_roles = {role.id for role in getattr(msg.author, "roles", [])}
+                if not member_roles.intersection(set(role_ids)):
+                    continue
+
+            # Cooldown (Basic+)
+            cooldown: int = r.get("cooldown_seconds") or 0
+            if cooldown > 0:
+                key = (msg.guild.id, r["id"], msg.author.id)
+                last = _cooldown_map.get(key, 0.0)
+                if now - last < cooldown:
+                    continue
+                _cooldown_map[key] = now
+
+            try:
+                await msg.channel.send(r["response"])
+                if self.bot.db:
+                    await self.bot.db.execute(
+                        "UPDATE auto_responders SET use_count = use_count + 1 WHERE id=$1",
+                        r["id"],
+                    )
+            except discord.HTTPException:
+                pass
+            break  # only fire first match per message
+
+    # ── Join Automation ───────────────────────────────────────────────────────
+
+    @Cog.listener()
+    async def on_member_join(self, member: discord.Member) -> None:
+        if member.bot:
+            return
+
+        guild = member.guild
+        tvars = _tvars(guild, member)
+
+        config = await self._fetch_join_config(guild.id)
+        if config:
+            for role_id in list(config.get("auto_role_ids") or []):
+                role = guild.get_role(role_id)
+                if role:
+                    try:
+                        await member.add_roles(role, reason="Join automation")
+                    except discord.HTTPException:
+                        pass
+
+            ch_id = config.get("welcome_channel_id")
+            msg_text = config.get("welcome_message")
+            if ch_id and msg_text:
+                ch = guild.get_channel(ch_id)
+                if isinstance(ch, discord.TextChannel):
+                    try:
+                        await ch.send(_render(msg_text, **tvars))
+                    except discord.HTTPException:
+                        pass
+
+            dm_text = config.get("welcome_dm")
+            if dm_text:
+                try:
+                    await member.send(_render(dm_text, **tvars))
+                except discord.HTTPException:
+                    pass
+
+        await self._fire_event_actions(guild, "member_join", member=member)
+
+    @Cog.listener()
+    async def on_member_remove(self, member: discord.Member) -> None:
+        if member.bot:
+            return
+        await self._fire_event_actions(member.guild, "member_leave", member=member)
+
+    # ── Event Actions ─────────────────────────────────────────────────────────
+
+    async def _fire_event_actions(
+        self,
+        guild: discord.Guild,
+        event_type: str,
+        *,
+        member: discord.Member | discord.User | None = None,
+    ) -> None:
+        event_actions = await self._fetch_event_actions(guild.id)
+        for ea in event_actions:
+            if ea["event_type"] != event_type:
+                continue
+            for action in list(ea["actions"] or []):
+                try:
+                    await self._execute_action(
+                        guild,
+                        action["type"],
+                        action.get("config", {}),
+                        member=member,
+                    )
+                except Exception:
+                    pass
+            if self.bot.db:
+                await self.bot.db.execute(
+                    "UPDATE event_actions SET run_count = run_count + 1 WHERE id=$1",
+                    ea["id"],
+                )
+
+    async def _execute_action(
+        self,
+        guild: discord.Guild,
+        action_type: str,
+        config: dict,
+        *,
+        member: discord.Member | discord.User | None = None,
+    ) -> None:
+        tvars = _tvars(guild, member)
+
+        if action_type == "send_message":
+            ch = guild.get_channel(config.get("channel_id", 0))
+            if isinstance(ch, discord.TextChannel):
+                await ch.send(_render(config.get("message", ""), **tvars))
+
+        elif action_type == "give_role":
+            if isinstance(member, discord.Member):
+                role = guild.get_role(config.get("role_id", 0))
+                if role:
+                    await member.add_roles(role, reason="Event action")
+
+        elif action_type == "remove_role":
+            if isinstance(member, discord.Member):
+                role = guild.get_role(config.get("role_id", 0))
+                if role:
+                    await member.remove_roles(role, reason="Event action")
+
+        elif action_type == "dm_user":
+            if member:
+                try:
+                    await member.send(_render(config.get("message", ""), **tvars))
+                except discord.HTTPException:
+                    pass
+
+        elif action_type == "log":
+            ch = guild.get_channel(config.get("channel_id", 0))
+            if isinstance(ch, discord.TextChannel):
+                text = _render(
+                    config.get("message", "{user} triggered an event."), **tvars
+                )
+                em = discord.Embed(
+                    description=text,
+                    color=0x456DD4,
+                    timestamp=datetime.datetime.now(datetime.timezone.utc),
+                )
+                if member:
+                    em.set_author(name=str(member), icon_url=member.display_avatar.url)
+                await self.bot.send_log(ch, embed=em)
+
+    # ── External dispatch hooks ───────────────────────────────────────────────
+    # Other cogs can call bot.dispatch("automation_event", guild, event_type, member=...)
+    # to trigger event actions programmatically (e.g. from tickets/mod cogs).
+
+    @Cog.listener()
+    async def on_automation_event(
+        self,
+        guild: discord.Guild,
+        event_type: str,
+        member: discord.Member | discord.User | None = None,
+    ) -> None:
+        await self._fire_event_actions(guild, event_type, member=member)
+
+    # ── Scheduled Messages ────────────────────────────────────────────────────
+
+    @tasks.loop(minutes=1)
+    async def _schedule_task(self) -> None:
+        if not self.bot.db:
+            return
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+        rows = await self.bot.db.fetch(
+            "SELECT id, guild_id, channel_id, message, schedule_type, interval_type "
+            "FROM scheduled_messages WHERE enabled=TRUE AND next_run <= $1",
+            now,
         )
 
-        # discord_invite trigger
-        if INVITE_REGEX.search(msg.content):
-            await self._run_workflows(
-                msg.guild,
-                "discord_invite",
-                member=msg.author,
-                message=msg,
-            )
+        for row in rows:
+            guild = self.bot.get_guild(row["guild_id"])
+            if guild:
+                ch = guild.get_channel(row["channel_id"])
+                if isinstance(ch, discord.TextChannel):
+                    try:
+                        await ch.send(row["message"])
+                    except discord.HTTPException:
+                        pass
+
+            if row["schedule_type"] == "recurring":
+                interval = row["interval_type"]
+                if interval == "daily":
+                    next_run = now + datetime.timedelta(days=1)
+                elif interval == "weekly":
+                    next_run = now + datetime.timedelta(weeks=1)
+                elif interval == "monthly":
+                    next_run = now + datetime.timedelta(days=30)
+                else:
+                    next_run = now + datetime.timedelta(days=1)
+
+                await self.bot.db.execute(
+                    "UPDATE scheduled_messages "
+                    "SET next_run=$1, last_run=$2, run_count=run_count+1 WHERE id=$3",
+                    next_run,
+                    now,
+                    row["id"],
+                )
+            else:
+                await self.bot.db.execute(
+                    "UPDATE scheduled_messages "
+                    "SET enabled=FALSE, last_run=$1, run_count=run_count+1 WHERE id=$2",
+                    now,
+                    row["id"],
+                )
+
+    @_schedule_task.before_loop
+    async def _before_schedule(self) -> None:
+        await self.bot.wait_until_ready()
 
 
 async def setup(bot: PizzaHat) -> None:
-    await bot.add_cog(WorkflowEvents(bot))
+    await bot.add_cog(AutomationEvents(bot))
