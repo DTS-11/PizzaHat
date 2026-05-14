@@ -17,6 +17,7 @@ from utils.embed import golden_embed
 
 INITIAL_EXTENSIONS = [
     "cogs.antialt",
+    "cogs.automation",
     "cogs.automod",
     "cogs.dev",
     "cogs.emojis",
@@ -26,17 +27,16 @@ INITIAL_EXTENSIONS = [
     "cogs.tags",
     "cogs.tickets",
     "cogs.utility",
-    "cogs.workflows",
 ]
 
 SUB_EXTENSIONS = [
     "cogs_hidden.antialt",
+    "cogs_hidden.automation",
     "cogs_hidden.automod",
     "cogs_hidden.events",
     "cogs_hidden.guild_logs",
     "cogs_hidden.help",
     "cogs_hidden.starboard",
-    "cogs_hidden.workflows",
 ]
 
 LOGGING_CONFIG = {
