@@ -76,7 +76,7 @@ class PollOptionsModal(Modal):
             return True
 
         await interaction.response.send_message(
-            content="This interaction is not for you.", ephemeral=True
+            content="Not your interaction ._.", ephemeral=True
         )
         return False
 

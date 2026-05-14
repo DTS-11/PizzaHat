@@ -350,11 +350,11 @@ class Fun(Cog, emoji=802615573556363284):
 
         if member is ctx.author:
             ctx.command.reset_cooldown(ctx)  # type: ignore
-            return await ctx.send("You can't hack yourself.")
+            return await ctx.send("You can't hack yourself bruh ._.")
 
         if member.bot:
             ctx.command.reset_cooldown(ctx)  # type: ignore
-            return await ctx.send("You can't hack a bot.")
+            return await ctx.send("You can't hack a bot ._.")
 
         random_things = ""
 

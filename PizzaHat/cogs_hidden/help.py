@@ -167,7 +167,7 @@ class HelpView(ui.View):
             return True
 
         await interaction.response.send_message(
-            content="This help menu belongs to someone else.", ephemeral=True
+            content="Not your help command ._.", ephemeral=True
         )
         return False
 

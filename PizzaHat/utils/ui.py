@@ -90,7 +90,7 @@ class Paginator(ui.View):
         if interaction.user == self.ctx.author:
             return True
         await interaction.response.send_message(
-            content="This menu belongs to someone else.", ephemeral=True
+            content="Not your command ._.", ephemeral=True
         )
         return False
 
@@ -120,7 +120,7 @@ class ConfirmationView(ui.View):
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user != self.user:
             await interaction.response.send_message(
-                "This confirmation dialog is not for you.", ephemeral=True
+                "This confirmation dialog is not for you ._.", ephemeral=True
             )
             return False
         return True
