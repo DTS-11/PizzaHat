@@ -10,7 +10,7 @@ from core.bot import PizzaHat
 from core.cog import Cog
 from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
 
-SESSION_TIMEOUT = 600  # seconds
+SESSION_TIMEOUT = 600
 
 VALID_TRIGGERS: dict[str, str] = {
     "member_join": "Member joins the server",
@@ -86,14 +86,12 @@ async def _resolve_role(ctx: Context, text: str) -> discord.Role | None:
         return None
 
 
-class WorkflowCommands(Cog, emoji="⚙️"):
+class Automation(Cog, emoji=1504381117174644867):
     """Create automated workflows and server automation rules."""
 
     def __init__(self, bot: PizzaHat):
         self.bot = bot
         self._sessions: dict[tuple[int, int], dict] = {}
-
-    # ── session helpers ──────────────────────────────────────────────────────
 
     def _get_session(self, guild_id: int, user_id: int) -> dict | None:
         key = (guild_id, user_id)
@@ -116,8 +114,6 @@ class WorkflowCommands(Cog, emoji="⚙️"):
         cog = self.bot.get_cog("WorkflowEvents")
         if cog and hasattr(cog, "clear_cache"):
             cog.clear_cache(guild_id)  # type: ignore
-
-    # ── command group ────────────────────────────────────────────────────────
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
@@ -190,8 +186,6 @@ class WorkflowCommands(Cog, emoji="⚙️"):
         )
         await ctx.send(embed=em)
 
-    # ── create ───────────────────────────────────────────────────────────────
-
     @workflow.command(name="create")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
@@ -231,8 +225,6 @@ class WorkflowCommands(Cog, emoji="⚙️"):
                 )
             )
         )
-
-    # ── trigger ──────────────────────────────────────────────────────────────
 
     @workflow.command(name="trigger")
     @commands.guild_only()
@@ -291,8 +283,6 @@ class WorkflowCommands(Cog, emoji="⚙️"):
                 )
             )
         )
-
-    # ── action ───────────────────────────────────────────────────────────────
 
     @workflow.command(name="action")
     @commands.guild_only()
@@ -421,8 +411,6 @@ class WorkflowCommands(Cog, emoji="⚙️"):
 
         return {}, f"Unknown action `{action_type}`."
 
-    # ── save / cancel ─────────────────────────────────────────────────────────
-
     @workflow.command(name="save")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
@@ -499,8 +487,6 @@ class WorkflowCommands(Cog, emoji="⚙️"):
                 description=f"{self.bot.yes} Session for **{name}** discarded."
             )
         )
-
-    # ── list / show ───────────────────────────────────────────────────────────
 
     @workflow.command(name="list")
     @commands.guild_only()
@@ -579,8 +565,6 @@ class WorkflowCommands(Cog, emoji="⚙️"):
         )
         em.set_footer(text=f"Created by {creator_str}")
         await ctx.send(embed=em)
-
-    # ── enable / disable / delete ─────────────────────────────────────────────
 
     @workflow.command(name="enable")
     @commands.guild_only()
@@ -675,4 +659,4 @@ class WorkflowCommands(Cog, emoji="⚙️"):
 
 
 async def setup(bot: PizzaHat) -> None:
-    await bot.add_cog(WorkflowCommands(bot))
+    await bot.add_cog(Automation(bot))

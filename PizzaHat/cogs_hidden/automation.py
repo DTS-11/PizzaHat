@@ -48,8 +48,6 @@ class WorkflowEvents(Cog):
     def __init__(self, bot: PizzaHat):
         self.bot = bot
 
-    # ── cache ─────────────────────────────────────────────────────────────────
-
     def clear_cache(self, guild_id: int | None = None) -> None:
         self._get_workflows.cache_clear()
 
@@ -63,8 +61,6 @@ class WorkflowEvents(Cog):
             guild_id,
         )
         return [dict(r) for r in rows]
-
-    # ── action executor ───────────────────────────────────────────────────────
 
     async def _run_workflows(
         self,
@@ -195,8 +191,6 @@ class WorkflowEvents(Cog):
             if member:
                 em.set_author(name=str(member), icon_url=member.display_avatar.url)
             await self.bot.send_log(ch, embed=em)
-
-    # ── event listeners ───────────────────────────────────────────────────────
 
     @Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
