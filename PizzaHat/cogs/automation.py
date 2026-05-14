@@ -90,7 +90,7 @@ def _event_action_line(action: dict) -> str:
     return t
 
 
-class Automation(Cog, emoji=1504381117174644867):
+class Automations(Cog, emoji=1504381117174644867):
     """⚡ Server automation — responders, schedules, join rules, and event actions."""
 
     def __init__(self, bot: PizzaHat):
@@ -1252,4 +1252,4 @@ async def _parse_event_action(
 
 
 async def setup(bot: PizzaHat) -> None:
-    await bot.add_cog(Automation(bot))
+    await bot.add_cog(Automations(bot))
