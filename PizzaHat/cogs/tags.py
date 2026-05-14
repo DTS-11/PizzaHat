@@ -299,5 +299,5 @@ class Tags(Cog, emoji=1268850578415681546):
                 await ctx.send(embed=green_embed(f"{self.bot.yes} Tag updated!"))
 
 
-async def setup(bot):
+async def setup(bot: PizzaHat) -> None:
     await bot.add_cog(Tags(bot))

@@ -368,6 +368,6 @@ class Help(Cog, emoji="\N{BLACK QUESTION MARK ORNAMENT}"):
         return choices
 
 
-async def setup(bot):
+async def setup(bot: PizzaHat) -> None:
     await bot.add_cog(Help(bot))
     await bot.tree.sync()

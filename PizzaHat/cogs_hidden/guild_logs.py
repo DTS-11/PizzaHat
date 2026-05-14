@@ -1236,5 +1236,5 @@ class GuildLogs(Cog):
             await self.bot.send_log(channel, embed=em)
 
 
-async def setup(bot):
+async def setup(bot: PizzaHat) -> None:
     await bot.add_cog(GuildLogs(bot))

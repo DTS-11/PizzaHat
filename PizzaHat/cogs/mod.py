@@ -1792,5 +1792,5 @@ class Mod(Cog, emoji=1268851270136107048):
         )
 
 
-async def setup(bot: PizzaHat):
+async def setup(bot: PizzaHat) -> None:
     await bot.add_cog(Mod(bot))

@@ -616,5 +616,5 @@ class Fun(Cog, emoji=802615573556363284):
         await ctx.reply(embed=embed)
 
 
-async def setup(bot):
+async def setup(bot: PizzaHat) -> None:
     await bot.add_cog(Fun(bot))

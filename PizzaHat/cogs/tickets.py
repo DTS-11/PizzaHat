@@ -129,5 +129,5 @@ class Tickets(Cog, emoji=1268867314292625469):
             )
 
 
-async def setup(bot):
+async def setup(bot: PizzaHat) -> None:
     await bot.add_cog(Tickets(bot))

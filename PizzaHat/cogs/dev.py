@@ -229,5 +229,5 @@ class Dev(Cog, emoji=1268856867585658981):
         await ctx.send(f"{self.bot.yes} Bad words file updated successfully!")
 
 
-async def setup(bot):
+async def setup(bot: PizzaHat) -> None:
     await bot.add_cog(Dev(bot))

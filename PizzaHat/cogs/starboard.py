@@ -122,5 +122,5 @@ class Starboard(Cog, emoji=1268881885480620075):
         )
 
 
-async def setup(bot):
+async def setup(bot: PizzaHat) -> None:
     await bot.add_cog(Starboard(bot))

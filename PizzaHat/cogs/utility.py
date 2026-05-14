@@ -1166,5 +1166,5 @@ class Utility(Cog, emoji=1268851252565905449):
         await ctx.send("\n".join(map(to_string, characters)))
 
 
-async def setup(bot: PizzaHat):
+async def setup(bot: PizzaHat) -> None:
     await bot.add_cog(Utility(bot))

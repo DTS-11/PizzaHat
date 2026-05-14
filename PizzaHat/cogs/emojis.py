@@ -296,5 +296,5 @@ class Emojis(Cog, emoji=1268867324195246133):
         await ctx.send(result)
 
 
-async def setup(bot):
+async def setup(bot: PizzaHat) -> None:
     await bot.add_cog(Emojis(bot))

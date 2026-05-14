@@ -263,5 +263,5 @@ class StarboardEvents(Cog):
                     print(f"Error in starboard msg delete event: {e}")
 
 
-async def setup(bot):
+async def setup(bot: PizzaHat) -> None:
     await bot.add_cog(StarboardEvents(bot))
