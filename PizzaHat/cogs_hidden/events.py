@@ -81,6 +81,7 @@ class Events(Cog):
         bots = sum(1 for m in guild.members if m.bot)
         humans = sum(1 for m in guild.members if not m.bot)
 
+        total = bots + humans
         bot_ratio = bots / total if total > 0 else 0
 
         reason = None
@@ -232,5 +233,5 @@ class Events(Cog):
                     await msg.channel.send(embed=em)
 
 
-async def setup(bot):
+async def setup(bot: PizzaHat) -> None:
     await bot.add_cog(Events(bot))
