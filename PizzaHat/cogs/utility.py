@@ -76,7 +76,7 @@ class PollOptionsModal(Modal):
             return True
 
         await interaction.response.send_message(
-            content="Not your interaction ._.", ephemeral=True
+            content="This interaction is not for you.", ephemeral=True
         )
         return False
 
@@ -101,7 +101,7 @@ class PollOptionsModal(Modal):
         async def end_poll_callback(interaction: discord.Interaction):
             if interaction.user != self.ctx.author:
                 return await interaction.response.send_message(
-                    "Not your interaction ._.", ephemeral=True
+                    "This interaction is not for you.", ephemeral=True
                 )
 
             try:
@@ -148,14 +148,17 @@ class Utility(Cog, emoji=1268851252565905449):
         """Shows latency of bot."""
 
         time1 = time.perf_counter()
-        msg = await ctx.send("Pinging...")
+        msg = await ctx.send(
+            embed=discord.Embed(description="Measuring latency...", color=0x456DD4)
+        )
         time2 = time.perf_counter()
 
-        await msg.edit(
-            content="🏓 Pong!"
-            f"\nAPI: `{round(self.bot.latency * 1000)}ms`"
-            f"\nBot: `{round((time2 - time1) * 1000)}ms`"
-        )
+        api_ms = round(self.bot.latency * 1000)
+        bot_ms = round((time2 - time1) * 1000)
+        em = discord.Embed(title="🏓 Pong!", color=0x456DD4)
+        em.add_field(name="API Latency", value=f"`{api_ms} ms`", inline=True)
+        em.add_field(name="Response Time", value=f"`{bot_ms} ms`", inline=True)
+        await msg.edit(content=None, embed=em)
 
     @commands.command(name="premium")
     @commands.cooldown(1, 3, commands.BucketType.user)
@@ -1017,35 +1020,36 @@ class Utility(Cog, emoji=1268851252565905449):
         dpy_version = discord.__version__
         dev = self.bot.get_user(710247495334232164)
 
-        em = await ctx_embed(ctx)
-        if dev and dev.avatar is not None:
-            em.set_author(name=dev, icon_url=dev.avatar.url)
-
-        em.title = "About"
+        em = await ctx_embed(ctx, title="About PizzaHat")
         em.description = self.bot.description
-
-        em.add_field(
-            name="Users", value=f"{total_members} total\n{total_unique} unique"
-        )
-
-        em.add_field(
-            name="Channels", value=f"{text + voice} total\n{text} text\n{voice} voice"
-        )
-
-        em.add_field(
-            name="Process", value=f"{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU"
-        )
-
-        em.add_field(name="Guilds", value=guilds)
-
-        em.add_field(name="Commands", value=len(my_commands))
-
-        em.add_field(name="Uptime", value=self.get_bot_uptime(brief=True))
 
         if self.bot.user and self.bot.user.avatar is not None:
             em.set_thumbnail(url=self.bot.user.avatar.url)
+
+        if dev and dev.avatar is not None:
+            em.set_author(name=f"Developed by {dev}", icon_url=dev.avatar.url)
+
+        em.add_field(
+            name="👥 Users",
+            value=f"`{total_members:,}` total\n`{total_unique:,}` unique",
+            inline=True,
+        )
+        em.add_field(
+            name="📡 Channels",
+            value=f"`{text}` text\n`{voice}` voice",
+            inline=True,
+        )
+        em.add_field(name="🏠 Guilds", value=f"`{guilds:,}`", inline=True)
+        em.add_field(name="⚡ Commands", value=f"`{len(my_commands)}`", inline=True)
+        em.add_field(name="⏱ Uptime", value=f"`{self.get_bot_uptime(brief=True)}`", inline=True)
+        em.add_field(
+            name="🖥 Process",
+            value=f"`{memory_usage:.1f} MiB`  `{cpu_usage:.1f}% CPU`",
+            inline=True,
+        )
+
         em.set_footer(
-            text=f"Made with 💖 with discord.py v{dpy_version}",
+            text=f"discord.py v{dpy_version}",
             icon_url="http://i.imgur.com/5BFecvA.png",
         )
 
@@ -1077,20 +1081,21 @@ class Utility(Cog, emoji=1268851252565905449):
 
         await channel.send(embed=em)  # type: ignore
 
-    # show perms
     async def say_permissions(self, ctx: Context, member, channel):
         permissions = channel.permissions_for(member)
-        e = discord.Embed()
+        e = await ctx_embed(ctx, title=f"Permissions — {member.display_name}")
         allowed, denied = [], []
         for name, value in permissions:
             name = name.replace("_", " ").title()
             if value:
-                allowed.append(name)
+                allowed.append(f"✅ {name}")
             else:
-                denied.append(name)
+                denied.append(f"❌ {name}")
 
-        e.add_field(name="Allowed", value="\n".join(allowed))
-        e.add_field(name="Denied", value="\n".join(denied))
+        if allowed:
+            e.add_field(name="Allowed", value="\n".join(allowed[:20]), inline=True)
+        if denied:
+            e.add_field(name="Denied", value="\n".join(denied[:20]), inline=True)
         await ctx.send(embed=e)
 
     @commands.command(aliases=["perms"])
@@ -1131,12 +1136,16 @@ class Utility(Cog, emoji=1268851252565905449):
         """
 
         member = member or ctx.author
-        em = discord.Embed(title=f"Avatar of {member.name}", color=member.color)
+        em = discord.Embed(title=f"{member.display_name}'s Avatar", color=member.color)
 
         if member.avatar is not None:
             em.set_image(url=member.avatar.url)
+            em.description = f"[PNG]({member.avatar.with_format('png').url})  •  [JPG]({member.avatar.with_format('jpeg').url})  •  [WEBP]({member.avatar.with_format('webp').url})"
 
-        em.set_footer(text=f"Requested by {ctx.author.name}")
+        em.set_footer(
+            text=f"Requested by {ctx.author}",
+            icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
+        )
 
         await ctx.send(embed=em)
 

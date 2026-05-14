@@ -207,9 +207,9 @@ class Emojis(Cog, emoji=1268867324195246133):
         """
 
             embed = discord.Embed(
-                title=f"**Emoji Information for:** `{emoji.name}`",
+                title=f":{emoji.name}:",
                 description=description,
-                color=0xADD8E6,
+                color=0x456DD4,
                 timestamp=ctx.message.created_at,
             )
             embed.set_thumbnail(url=emoji.url)

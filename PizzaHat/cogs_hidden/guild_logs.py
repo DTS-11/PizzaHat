@@ -433,17 +433,17 @@ class GuildLogs(Cog):
                 em.description = (
                     f"{member.mention} joined voice channel {after.channel.mention}"  # type: ignore
                 )
-                em.color = discord.Color.green()
+                em.color = 0x57F287
 
             elif after.channel is None:
                 em.description = (
                     f"{member.mention} left voice channel {before.channel.mention}"
                 )
-                em.color = discord.Color.red()
+                em.color = 0xED4245
 
             else:
                 em.description = f"{member.mention} moved from {before.channel.mention} to {after.channel.mention}"
-                em.color = discord.Color.orange()
+                em.color = 0xFAA61A
 
             await self.bot.send_log(channel, embed=em)
 

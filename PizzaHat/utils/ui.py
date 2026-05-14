@@ -25,6 +25,18 @@ class Paginator(ui.View):
         self.embeds = embeds
         self.file_paths = file_paths
         self.current = 0
+        self._original_footers = [
+            (e.footer.text, e.footer.icon_url) for e in embeds
+        ]
+        self._update_button_states()
+
+    def _update_button_states(self):
+        is_first = self.current == 0
+        is_last = self.current == len(self.embeds) - 1
+        self.first.disabled = is_first
+        self.back.disabled = is_first
+        self.next.disabled = is_last
+        self.last.disabled = is_last
 
     def get_current_file(self):
         if self.file_paths and self.current < len(self.file_paths):
@@ -38,48 +50,39 @@ class Paginator(ui.View):
         embed = self.embeds[self.current]
         if file:
             embed.set_image(url=f"attachment://image_{self.current + 1}.png")
+
+        orig_text, orig_icon = self._original_footers[self.current]
+        page_info = f"Page {self.current + 1} of {len(self.embeds)}"
+        footer_text = f"{orig_text}  •  {page_info}" if orig_text else page_info
+        embed.set_footer(text=footer_text, icon_url=orig_icon)
+
+        self._update_button_states()
         await interaction.response.edit_message(
             embed=embed, attachments=[file] if file else [], view=self
         )
 
-    @ui.button(label="<<", style=ButtonStyle.gray)
+    @ui.button(emoji="⏮", style=ButtonStyle.gray)
     async def first(self, interaction: Interaction, button: ui.Button):
-        if self.current == 0:
-            return await interaction.response.send_message(
-                "Already at the first page ._.", ephemeral=True
-            )
         self.current = 0
         await self.update_message(interaction)
 
-    @ui.button(label="Back", style=ButtonStyle.blurple)
+    @ui.button(emoji="◀", style=ButtonStyle.blurple)
     async def back(self, interaction: Interaction, button: ui.Button):
-        if self.current == 0:
-            return await interaction.response.send_message(
-                "Already at the first page ._.", ephemeral=True
-            )
         self.current -= 1
         await self.update_message(interaction)
 
-    @ui.button(emoji="🛑", style=ButtonStyle.red)
+    @ui.button(emoji="🗑", style=ButtonStyle.red)
     async def delete(self, interaction: Interaction, button: ui.Button):
         if interaction.message is not None:
             await interaction.message.delete()
 
-    @ui.button(label="Next", style=ButtonStyle.blurple)
+    @ui.button(emoji="▶", style=ButtonStyle.blurple)
     async def next(self, interaction: Interaction, button: ui.Button):
-        if self.current + 1 == len(self.embeds):
-            return await interaction.response.send_message(
-                "Already at the last page ._.", ephemeral=True
-            )
         self.current += 1
         await self.update_message(interaction)
 
-    @ui.button(label=">>", style=ButtonStyle.gray)
+    @ui.button(emoji="⏭", style=ButtonStyle.gray)
     async def last(self, interaction: Interaction, button: ui.Button):
-        if self.current + 1 == len(self.embeds):
-            return await interaction.response.send_message(
-                "Already at the last page ._.", ephemeral=True
-            )
         self.current = len(self.embeds) - 1
         await self.update_message(interaction)
 
@@ -87,7 +90,7 @@ class Paginator(ui.View):
         if interaction.user == self.ctx.author:
             return True
         await interaction.response.send_message(
-            content="Not your command ._.", ephemeral=True
+            content="This menu belongs to someone else.", ephemeral=True
         )
         return False
 
@@ -104,12 +107,12 @@ class ConfirmationView(ui.View):
         self.ctx = ctx
         self.user = user or self.ctx.author
 
-    @ui.button(label="Confirm", style=ButtonStyle.green)
+    @ui.button(label="Confirm", emoji="✅", style=ButtonStyle.green)
     async def confirm(self, interaction: Interaction, button: ui.Button):
         self.value = True
         self.stop()
 
-    @ui.button(label="Abort", style=ButtonStyle.red)
+    @ui.button(label="Cancel", emoji="✖", style=ButtonStyle.red)
     async def abort(self, interaction: Interaction, button: ui.Button):
         self.value = False
         self.stop()
@@ -130,7 +133,10 @@ class TicketView(ui.View):
         super().__init__(timeout=None)
 
     @ui.button(
-        emoji="<:ticketbadge:1268879389324611595>", custom_id="create_ticket_btn"
+        label="Open Ticket",
+        emoji="<:ticketbadge:1268879389324611595>",
+        style=ButtonStyle.blurple,
+        custom_id="create_ticket_btn",
     )
     @commands.bot_has_permissions(create_private_threads=True)
     async def create_ticket(self, interaction: Interaction, button: ui.Button):
@@ -140,7 +146,7 @@ class TicketView(ui.View):
         for thread in interaction.guild.threads:
             if thread.name == f"ticket-{interaction.user}" and not thread.archived:
                 return await interaction.response.send_message(
-                    f"You already have a ticket opened: {thread.mention}",
+                    f"You already have an open ticket: {thread.mention}",
                     ephemeral=True,
                 )
 
@@ -160,14 +166,17 @@ class TicketView(ui.View):
                     interaction.user.id,
                 )
 
-            em = await ctx_embed(
-                self.ctx,
-                title="Ticket created!",
-                description=f"Welcome {interaction.user.mention} `[{interaction.user}]`. Support team will get back to you shortly.",
-                timestamp=True,
+            em = discord.Embed(
+                title="Ticket Opened",
+                description=(
+                    f"Welcome, {interaction.user.mention}!\n\n"
+                    "Please describe your issue in detail and a member of our support team will be with you shortly.\n\n"
+                    "Use the **Close Ticket** button below when your issue has been resolved."
+                ),
+                color=0x57F287,
             )
             em.set_footer(
-                text=interaction.user,
+                text=str(interaction.user),
                 icon_url=(
                     interaction.user.avatar.url if interaction.user.avatar else None
                 ),
@@ -179,6 +188,11 @@ class TicketView(ui.View):
                 view=TicketSettings(thread.id, self.bot),
             )
             self.thread_id = thread.id
+
+            await interaction.response.send_message(
+                f"Your ticket has been created: {thread.mention}",
+                ephemeral=True,
+            )
 
 
 class TicketSettings(ui.View):
@@ -204,7 +218,7 @@ class TicketSettings(ui.View):
 
     @ui.button(
         label="Close Ticket",
-        emoji="🔐",
+        emoji="🔒",
         style=ButtonStyle.red,
         custom_id="close_ticket_btn",
     )
@@ -225,9 +239,11 @@ class TicketSettings(ui.View):
         thread = interaction.guild.get_thread(self.thread_id)
 
         if thread:
-            await interaction.response.send_message(
-                content="Ticket thread has been archived!"
+            close_em = discord.Embed(
+                description="🔒 This ticket has been closed and archived.",
+                color=0xED4245,
             )
+            await interaction.response.send_message(embed=close_em)
             await thread.edit(archived=True, locked=True)
 
             if self.bot.db:
@@ -238,12 +254,14 @@ class TicketSettings(ui.View):
                     interaction.guild.id,
                 )
         else:
-            await interaction.followup.send(content="Unable to find ticket thread!")
+            await interaction.response.send_message(
+                content="Unable to find the ticket thread.", ephemeral=True
+            )
 
     @ui.button(
         label="Transcript",
-        emoji="📝",
-        style=ButtonStyle.blurple,
+        emoji="📄",
+        style=ButtonStyle.gray,
         custom_id="ticket_transcript_btn",
     )
     async def ticket_transcript(self, interaction: Interaction, button: ui.Button):
@@ -253,16 +271,17 @@ class TicketSettings(ui.View):
         is_premium = await self.check_premium(interaction.guild.id)
         if not is_premium:
             return await interaction.response.send_message(
-                "This feature is for **Basic** or **Pro** tiers only.\n"
-                "Purchase [here](https://pizzahat.vercel.app/premium)",
+                "Transcripts are available on **Basic** and **Pro** tiers.\n"
+                "Upgrade at [pizzahat.vercel.app/premium](https://pizzahat.vercel.app/premium).",
                 ephemeral=True,
             )
 
         thread = interaction.guild.get_thread(self.thread_id)
 
         if thread:
+            await interaction.response.defer(ephemeral=True)
             await chat_exporter.quick_export(thread)
         else:
-            await interaction.followup.send(
-                content="Unable to generate transcript for this ticket."
+            await interaction.response.send_message(
+                content="Unable to generate a transcript for this ticket.", ephemeral=True
             )

@@ -216,9 +216,9 @@ class Events(Cog):
 
                 if d2 and mention.id != msg.author.id:
                     em = discord.Embed(
-                        title="Member AFK",
-                        description=f"{mention.name} is AFK\n**Reason:** {d2['reason']}",
-                        color=discord.Color.og_blurple(),
+                        title="💤 Member is AFK",
+                        description=f"{mention.mention} is currently away.\n**Reason:** {d2['reason']}",
+                        color=0x456DD4,
                         timestamp=msg.created_at,
                     )
                     em.set_author(
