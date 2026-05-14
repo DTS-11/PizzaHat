@@ -11,10 +11,10 @@ from core.cog import Cog
 def create_starboard_embed(message: discord.Message) -> discord.Embed:
     em = discord.Embed(
         description=message.content or "",
-        color=discord.Color.blurple(),
+        color=0xFFD700,
         timestamp=datetime.datetime.now(),
     )
-    em.set_footer(text=f"Message ID: {message.id}")
+    em.set_footer(text=f"ID: {message.id}")
 
     em.add_field(
         name="Source",

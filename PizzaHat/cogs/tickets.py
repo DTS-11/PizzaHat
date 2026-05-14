@@ -26,11 +26,15 @@ class Tickets(Cog, emoji=1268867314292625469):
         """
 
         em = discord.Embed(
-            title="Create a ticket!",
-            description="Click <:ticketbadge:1268879389324611595> to create/open a new ticket.",
-            color=discord.Color.gold(),
+            title="Support Tickets",
+            description=(
+                "Need help? Click the button below to open a private support ticket.\n\n"
+                "A member of our team will assist you as soon as possible."
+            ),
+            color=0x456DD4,
         )
         em.set_thumbnail(url="https://i.imgur.com/mOTlTBy.png")
+        em.set_footer(text="One ticket per user at a time.")
 
         view = TicketView(self.bot)
         await channel.send(embed=em, view=view)

@@ -40,7 +40,7 @@ def green_embed(
     return Embed(
         title=title,
         description=description,
-        color=Color.green(),
+        color=0x57F287,
         timestamp=datetime.datetime.now() if timestamp else None,
     )
 
@@ -56,7 +56,7 @@ def red_embed(
     return Embed(
         title=title,
         description=description,
-        color=Color.red(),
+        color=0xED4245,
         timestamp=datetime.datetime.now() if timestamp else None,
     )
 
@@ -72,7 +72,7 @@ def orange_embed(
     return Embed(
         title=title,
         description=description,
-        color=Color.orange(),
+        color=0xFAA61A,
         timestamp=datetime.datetime.now() if timestamp else None,
     )
 
@@ -88,7 +88,7 @@ def golden_embed(
     return Embed(
         title=title,
         description=description,
-        color=Color.gold(),
+        color=0xFFD700,
         timestamp=datetime.datetime.now() if timestamp else None,
     )
 

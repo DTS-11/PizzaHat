@@ -151,7 +151,7 @@ class AutoModConfig(Cog):
         *,
         title: str,
         description: str,
-        color: discord.Color = discord.Color.orange(),
+        color: discord.Color = 0xFAA61A,
         member: discord.Member | discord.User | None = None,
         fields: list[tuple[str, str, bool]] | None = None,
         warn_count: int | None = None,
@@ -313,7 +313,7 @@ class AutoModConfig(Cog):
                 f"{member.mention} triggered the **{warns_needed}-warn threshold** "
                 f"and received an automatic **{human_action}**."
             ),
-            color=discord.Color.dark_red(),
+            color=0xED4245,
             member=member,
             fields=[
                 ("Action", human_action, True),
@@ -392,7 +392,7 @@ class AutoModConfig(Cog):
             msg.guild.id,
             title="AutoMod Triggered",
             description=f"**Message:**\n{discord.utils.escape_markdown(preview)}",
-            color=discord.Color.orange(),
+            color=0xFAA61A,
             member=msg.author,  # type: ignore
             fields=[
                 ("Module", f"`{module.replace('_', ' ').title()}`", True),
@@ -596,7 +596,7 @@ class AutoModConfig(Cog):
                         title="Username Filter — Kicked",
                         description=f"{member.mention} was kicked for having a banned word in their username.",
                         member=member,
-                        color=discord.Color.red(),
+                        color=0xED4245,
                         fields=[
                             (
                                 "Username",
@@ -637,7 +637,7 @@ class AutoModConfig(Cog):
                             f"(similarity `{similarity:.0%}`)."
                         ),
                         member=member,
-                        color=discord.Color.dark_red(),
+                        color=0xED4245,
                     )
                 except discord.HTTPException:
                     pass
@@ -676,7 +676,7 @@ class AutoModConfig(Cog):
             title="Default Avatar Detected",
             description=f"{member.mention} joined with no avatar. Action: **{action.title()}**.",
             member=member,
-            color=discord.Color.gold(),
+            color=0xFFD700,
         )
 
     async def _track_join_rate(self, member: discord.Member, cfg: dict) -> None:
@@ -723,7 +723,7 @@ class AutoModConfig(Cog):
                     f"Verification level raised to **High**.\n"
                     f"Lockdown lifts in `{lockdown_minutes}` minute(s)."
                 ),
-                color=discord.Color.dark_red(),
+                color=0xED4245,
                 timestamp=datetime.datetime.now(datetime.timezone.utc),
             )
             em.set_footer(text=guild.name)

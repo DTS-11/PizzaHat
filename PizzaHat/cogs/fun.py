@@ -143,20 +143,16 @@ class Fun(Cog, emoji=802615573556363284):
         if self.bot.user and self.bot.user.avatar is not None:
             em = green_embed(
                 title="Credits",
-                description="- **Contributors:** [View on GitHub](https://github.com/DTS-11/PizzaHat/graphs/contributors)\n- **Bot avatar made by:** <@619936982486876227>",
+                description=(
+                    "**Contributors**\n"
+                    "[View all contributors on GitHub](https://github.com/DTS-11/PizzaHat/graphs/contributors)\n\n"
+                    "**Bot Avatar**\n"
+                    "Designed by <@619936982486876227>"
+                ),
                 timestamp=True,
             )
             em.set_thumbnail(url=self.bot.user.avatar.url)
-
-            # em.add_field(
-            #     name="Contributors",
-            #     value="[View on GitHub](https://github.com/DTS-11/PizzaHat/graphs/contributors)",
-            #     inline=False,
-            # )
-            # em.add_field(
-            #     name="Bot avatar made by", value="Potato Jesus#1950", inline=False
-            # )
-
+            em.set_footer(text="Thank you to everyone who has contributed!")
             await ctx.send(embed=em)
 
     @commands.command()
@@ -301,12 +297,14 @@ class Fun(Cog, emoji=802615573556363284):
             "You may rely on it.",
         ]
 
-        em = await ctx_embed(
-            ctx,
-            title="Magic 8ball",
-            description=f"Question: {question}\nAnswer: {random.choice(responses)}",
+        answer = random.choice(responses)
+        em = await ctx_embed(ctx, title="🎱 Magic 8-Ball")
+        em.add_field(name="Question", value=question, inline=False)
+        em.add_field(name="Answer", value=f"*{answer}*", inline=False)
+        em.set_footer(
+            text=ctx.author.display_name,
+            icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
         )
-
         await ctx.send(embed=em)
 
     @commands.command()
@@ -421,15 +419,19 @@ class Fun(Cog, emoji=802615573556363284):
     async def coinflip(self, ctx: Context):
         """Flips a coin."""
 
+        result = random.choice(["Heads", "Tails"])
         em = discord.Embed(
-            title="Flipping...",
-            description=f"{ctx.author.mention} flipped a coin and got **{random.choice(['heads', 'tails'])}!**",
-            color=discord.Color.gold(),
+            title="Coin Flip",
+            description=f"{ctx.author.mention} flipped a coin and got **{result}!**",
+            color=0xFFD700,
         )
         em.set_thumbnail(
             url="https://i.pinimg.com/originals/d7/49/06/d74906d39a1964e7d07555e7601b06ad.gif"
         )
-
+        em.set_footer(
+            text=ctx.author.display_name,
+            icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
+        )
         await ctx.send(embed=em)
 
     @commands.command(name="invite")
@@ -439,37 +441,30 @@ class Fun(Cog, emoji=802615573556363284):
 
         view = View()
 
-        b1 = Button(
-            label="Invite (admin)",
-            emoji="✉️",
-            url=ADMIN_INVITE,
-        )
-        b2 = Button(
-            label="Invite (recommended)",
-            emoji="✉️",
-            url=REG_INVITE,
-        )
-        b3 = Button(label="Support", emoji="📨", url=SUPPORT_SERVER)
+        b1 = Button(label="Invite", emoji="🔗", url=REG_INVITE)
+        b2 = Button(label="Invite (Admin)", emoji="⚙️", url=ADMIN_INVITE)
+        b3 = Button(label="Support Server", emoji="💬", url=SUPPORT_SERVER)
 
         view.add_item(b1).add_item(b2).add_item(b3)
 
         em = await ctx_embed(
             ctx,
-            title="🔗 Links",
+            title="Invite PizzaHat",
             description=(
-                "Click on the links below if you cant see the buttons for some reason.\n"
-                f"[Invite (admin)]({ADMIN_INVITE})\n"
-                f"[Invite (recommended)]({REG_INVITE})\n"
-                f"[Support]({SUPPORT_SERVER})"
+                "Add PizzaHat to your server using the buttons below.\n\n"
+                f"**[Invite (Recommended)]({REG_INVITE})**\n"
+                f"**[Invite (Admin)]({ADMIN_INVITE})**\n"
+                f"**[Support Server]({SUPPORT_SERVER})**"
             ),
         )
-        em.set_footer(text="Thank you for inviting me! <3")
+        em.set_footer(text="Thank you for inviting PizzaHat!")
 
         if self.bot.user is not None:
             em.set_author(
                 name=self.bot.user.name,
                 icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None,
             )
+            em.set_thumbnail(url=self.bot.user.avatar.url if self.bot.user.avatar else None)
 
         await ctx.send(embed=em, view=view)
 
@@ -491,17 +486,21 @@ class Fun(Cog, emoji=802615573556363284):
 
         em = await ctx_embed(
             ctx,
-            title="Vote for me",
-            description="Click the buttons below to vote!",
+            title="Vote for PizzaHat",
+            description=(
+                "Your vote helps PizzaHat reach more servers!\n\n"
+                f"**[Top.gg]({TOPGG_VOTE})**\n"
+                f"**[DList.gg]({DLISTGG_VOTE})**"
+            ),
         )
 
         if self.bot.user and self.bot.user.avatar is not None:
             em.set_thumbnail(url=self.bot.user.avatar.url)
 
-        em.set_footer(text="Make sure to leave a nice review too!")
+        em.set_footer(text="Votes reset every 12 hours. Thank you!")
 
-        b1 = Button(label="Top.gg", url=TOPGG_VOTE)
-        b2 = Button(label="DList.gg", url=DLISTGG_VOTE)
+        b1 = Button(label="Top.gg", emoji="⬆️", url=TOPGG_VOTE)
+        b2 = Button(label="DList.gg", emoji="⬆️", url=DLISTGG_VOTE)
 
         view.add_item(b1).add_item(b2)
         await ctx.send(embed=em, view=view)
@@ -593,26 +592,33 @@ class Fun(Cog, emoji=802615573556363284):
     async def _send_result(self, ctx: Context, result: dict):
         if "message" in result:
             return await ctx.reply(
-                embed=discord.Embed(title="Uh-oh", description=result["message"])
+                embed=red_embed(title="Error", description=result["message"])
             )
         output = result["output"]
         if len(output) > 2000:
-            return await ctx.reply("Your output was too long.")
-            # url = await create_guest_paste_bin(self.session, output)
-            # return await ctx.reply("Your output was too long, so here's the pastebin link " + url)
+            return await ctx.reply(
+                embed=red_embed(description="Output was too long to display.")
+            )
 
         embed = green_embed(
-            title=f"Ran your {result['language']} code",
+            title=f"Ran {result['language']} code",
             timestamp=True,
         )
         output = output[:500].strip()
-        shortened = len(output) > 500
         lines = output.splitlines()
-        shortened = shortened or (len(lines) > 15)
+        shortened = len(output) >= 500 or len(lines) > 15
         output = "\n".join(lines[:15])
-        output += shortened * "\n\n**Output shortened**"
-        embed.add_field(name="Output", value=f"```{output}```" or "**<No output>**")
-
+        if shortened:
+            output += "\n\n*Output truncated...*"
+        embed.add_field(
+            name="Output",
+            value=f"```\n{output or '<no output>'}\n```",
+            inline=False,
+        )
+        embed.set_footer(
+            text=ctx.author.display_name,
+            icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
+        )
         await ctx.reply(embed=embed)
 
 

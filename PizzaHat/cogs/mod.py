@@ -345,7 +345,130 @@ class Mod(Cog, emoji=1268851270136107048):
             )
             config_em.set_thumbnail(url=guild.icon.url if guild.icon else None)
 
-            embeds = [stats_em, mod_em, ticket_em, config_em]
+            # Automations analytics
+            responder_total = await db.fetchval(
+                "SELECT COUNT(*) FROM auto_responders WHERE guild_id=$1", guild.id
+            ) or 0
+            responder_active = await db.fetchval(
+                "SELECT COUNT(*) FROM auto_responders WHERE guild_id=$1 AND enabled=TRUE", guild.id
+            ) or 0
+            responder_uses = await db.fetchval(
+                "SELECT COALESCE(SUM(use_count), 0) FROM auto_responders WHERE guild_id=$1", guild.id
+            ) or 0
+            top_responder = await db.fetchrow(
+                "SELECT trigger_text, use_count FROM auto_responders "
+                "WHERE guild_id=$1 ORDER BY use_count DESC LIMIT 1",
+                guild.id,
+            )
+
+            schedule_total = await db.fetchval(
+                "SELECT COUNT(*) FROM scheduled_messages WHERE guild_id=$1", guild.id
+            ) or 0
+            schedule_active = await db.fetchval(
+                "SELECT COUNT(*) FROM scheduled_messages WHERE guild_id=$1 AND enabled=TRUE", guild.id
+            ) or 0
+            schedule_sent = await db.fetchval(
+                "SELECT COALESCE(SUM(run_count), 0) FROM scheduled_messages WHERE guild_id=$1", guild.id
+            ) or 0
+            next_schedule = await db.fetchrow(
+                "SELECT channel_id, next_run FROM scheduled_messages "
+                "WHERE guild_id=$1 AND enabled=TRUE ORDER BY next_run ASC LIMIT 1",
+                guild.id,
+            )
+
+            join_row = await db.fetchrow(
+                "SELECT enabled, auto_role_ids, welcome_channel_id, welcome_message, welcome_dm "
+                "FROM join_automation WHERE guild_id=$1",
+                guild.id,
+            )
+
+            event_total = await db.fetchval(
+                "SELECT COUNT(*) FROM event_actions WHERE guild_id=$1", guild.id
+            ) or 0
+            event_active = await db.fetchval(
+                "SELECT COUNT(*) FROM event_actions WHERE guild_id=$1 AND enabled=TRUE", guild.id
+            ) or 0
+            event_runs = await db.fetchval(
+                "SELECT COALESCE(SUM(run_count), 0) FROM event_actions WHERE guild_id=$1", guild.id
+            ) or 0
+            top_event = await db.fetchrow(
+                "SELECT name, event_type, run_count FROM event_actions "
+                "WHERE guild_id=$1 ORDER BY run_count DESC LIMIT 1",
+                guild.id,
+            )
+
+            # Build join automation status line
+            if join_row and join_row["enabled"]:
+                join_parts = []
+                role_count = len(join_row["auto_role_ids"] or [])
+                if role_count:
+                    join_parts.append(f"`{role_count}` auto-role(s)")
+                if join_row["welcome_channel_id"]:
+                    join_parts.append("welcome msg")
+                if join_row["welcome_dm"]:
+                    join_parts.append("welcome DM")
+                join_status = f"{self.bot.yes} Active — " + ", ".join(join_parts) if join_parts else f"{self.bot.yes} Active"
+            elif join_row:
+                join_status = f"{self.bot.no} Paused"
+            else:
+                join_status = f"{self.bot.no} Not configured"
+
+            top_responder_str = (
+                f"`{top_responder['trigger_text']}` — `{top_responder['use_count']}` uses"
+                if top_responder and top_responder["use_count"] > 0
+                else "`None`"
+            )
+            next_schedule_str = (
+                f"<#{next_schedule['channel_id']}> — <t:{int(next_schedule['next_run'].timestamp())}:R>"
+                if next_schedule
+                else "`None`"
+            )
+            top_event_str = (
+                f"**{top_event['name']}** (`{top_event['event_type']}`) — `{top_event['run_count']}` runs"
+                if top_event and top_event["run_count"] > 0
+                else "`None`"
+            )
+
+            automation_em = await ctx_embed(
+                ctx,
+                title="⚡ Automation Analytics",
+                timestamp=True,
+            )
+            automation_em.set_thumbnail(url=guild.icon.url if guild.icon else None)
+            automation_em.add_field(
+                name="📣 Auto Responders",
+                value=(
+                    f"`{responder_active}` active / `{responder_total}` total\n"
+                    f"`{responder_uses:,}` total triggers\n"
+                    f"Top: {top_responder_str}"
+                ),
+                inline=False,
+            )
+            automation_em.add_field(
+                name="🕐 Scheduled Messages",
+                value=(
+                    f"`{schedule_active}` active / `{schedule_total}` total\n"
+                    f"`{schedule_sent:,}` messages sent\n"
+                    f"Next: {next_schedule_str}"
+                ),
+                inline=False,
+            )
+            automation_em.add_field(
+                name="👋 Join Automation",
+                value=join_status,
+                inline=False,
+            )
+            automation_em.add_field(
+                name="⚙️ Event Actions",
+                value=(
+                    f"`{event_active}` active / `{event_total}` total\n"
+                    f"`{event_runs:,}` total runs\n"
+                    f"Top: {top_event_str}"
+                ),
+                inline=False,
+            )
+
+            embeds = [stats_em, mod_em, ticket_em, config_em, automation_em]
             for i, em in enumerate(embeds, 1):
                 em.set_footer(text=f"Page {i}/{len(embeds)}")
 
