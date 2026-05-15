@@ -91,7 +91,7 @@ def _event_action_line(action: dict) -> str:
 
 
 class Automations(Cog, emoji=1504381117174644867):
-    """⚡ Server automation — responders, schedules, join rules, and event actions."""
+    """Server automation — responders, schedules, join rules, and event actions."""
 
     def __init__(self, bot: PizzaHat):
         self.bot = bot
@@ -109,7 +109,7 @@ class Automations(Cog, emoji=1504381117174644867):
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def automation(self, ctx: Context):
-        """⚡ Automation hub — overview of all active automations."""
+        """Automation hub — overview of all active automations."""
         if not ctx.guild or not self.bot.db:
             return
 
