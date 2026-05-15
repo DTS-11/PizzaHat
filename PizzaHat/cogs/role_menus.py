@@ -55,7 +55,7 @@ async def _resolve_menu(ctx: Context, menu_id: int) -> Optional[dict]:
 
 
 class RoleMenus(Cog, emoji="🎭"):
-    """🎭 Self-assignable role menus — buttons and dropdowns."""
+    """Self-assignable role menus — buttons and dropdowns."""
 
     def __init__(self, bot: PizzaHat):
         self.bot = bot
@@ -70,7 +70,7 @@ class RoleMenus(Cog, emoji="🎭"):
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     async def rolemenu(self, ctx: Context):
-        """🎭 Role menu management."""
+        """Role menu management."""
         if not ctx.guild or not self.bot.db:
             return
 
