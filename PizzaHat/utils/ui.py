@@ -25,9 +25,7 @@ class Paginator(ui.View):
         self.embeds = embeds
         self.file_paths = file_paths
         self.current = 0
-        self._original_footers = [
-            (e.footer.text, e.footer.icon_url) for e in embeds
-        ]
+        self._original_footers = [(e.footer.text, e.footer.icon_url) for e in embeds]
         self._update_button_states()
 
     def _update_button_states(self):
@@ -127,8 +125,7 @@ class ConfirmationView(ui.View):
 
 
 class TicketView(ui.View):
-    def __init__(self, bot: PizzaHat, ctx: Context):
-        self.ctx = ctx
+    def __init__(self, bot: PizzaHat):
         self.bot = bot
         self.thread_id = None
         super().__init__(timeout=None)
@@ -273,7 +270,7 @@ class TicketSettings(ui.View):
         if not is_premium:
             return await interaction.response.send_message(
                 "Transcripts are available on **Basic** and **Pro** tiers.\n"
-                "Upgrade at [pizzahat.vercel.app/premium](https://pizzahat.vercel.app/premium).",
+                "[Upgrade now](https://pizzahat.vercel.app/premium).",
                 ephemeral=True,
             )
 
@@ -284,5 +281,6 @@ class TicketSettings(ui.View):
             await chat_exporter.quick_export(thread)
         else:
             await interaction.response.send_message(
-                content="Unable to generate a transcript for this ticket.", ephemeral=True
+                content="Unable to generate a transcript for this ticket.",
+                ephemeral=True,
             )
