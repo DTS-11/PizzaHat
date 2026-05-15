@@ -15,73 +15,65 @@ from utils.embed import ctx_embed
 
 async def bot_help_embed(ctx: commands.Context) -> discord.Embed:
     prefix = await get_prefix(ctx.bot.db, ctx.guild.id if ctx.guild else 0) or "p!"
-    em = await ctx_embed(
-        ctx,
-        title=f"{ctx.bot.user.name} Help",
-        timestamp=True,
-    )
-    em.description = f"""
-Hello, welcome to the help page!
-Use the dropdown menu to select a category.\n
-- Prefix: `{prefix}` or {ctx.bot.user.mention}
-- Use `help [command]` for more info on a command.
-- Use `help [category]` for more info on a category.
-    """
-
-    em.add_field(name="About me", value=ctx.bot.description, inline=False)
-    em.add_field(
-        name="Support Server",
-        value=f"For more help, consider joining the official server over by [clicking here]({SUPPORT_SERVER}).",
-        inline=False,
+    em = await ctx_embed(ctx, title=f"{ctx.bot.user.name}", timestamp=True)
+    em.description = (
+        f"{ctx.bot.description}\n\n"
+        f"**Getting Started**\n"
+        f"↳ Prefix: `{prefix}` or {ctx.bot.user.mention}\n"
+        f"↳ Use `help [command]` for detailed command info\n"
+        f"↳ Use `help [category]` to browse a category\n\n"
+        f"**Links**\n"
+        f"[Invite]({REG_INVITE})  •  [Vote]({TOPGG_VOTE})  •  [Support]({SUPPORT_SERVER})"
     )
     em.add_field(
-        name="🔗 Links",
-        value=f"**[Invite me]({REG_INVITE})** • **[Vote]({TOPGG_VOTE})**",
+        name="📂 Browse Categories",
+        value="Use the dropdown below to explore all available command categories.",
         inline=False,
     )
-
     em.set_thumbnail(url=ctx.bot.user.avatar.url)
+    em.set_author(
+        name=ctx.bot.user.name,
+        icon_url=ctx.bot.user.avatar.url if ctx.bot.user.avatar else None,
+    )
     em.set_footer(
         text=f"Requested by {ctx.author}",
         icon_url=ctx.author.avatar.url if ctx.author.avatar else None,
     )
-
     return em
 
 
 def cog_help_embed(cog: Cog | None) -> Union[discord.Embed, None]:
     if cog is None:
-        return
+        return None
 
     em = discord.Embed(
-        title=cog.qualified_name,
-        description=(cog.description if cog.description else "No description..."),
+        title=f"{cog.qualified_name}",
+        description=cog.description if cog.description else "No description available.",
         color=cog.color,
     )
     em.set_thumbnail(url=cog.emoji.url if cog.emoji else "")
-    em.set_footer(text="Use help [command] for more info.")
+    em.set_footer(text="Use help [command] for detailed info on any command.")
 
     commands_info = []
     for cmd in sorted(cog.get_commands(), key=lambda c: c.name):
         if cmd.hidden:
             continue
-        cmd_help = cmd.short_doc if cmd.short_doc else cmd.help
-        commands_info.append(f"<:arrow:1267380018116563016> `{cmd.name}` - {cmd_help}")
+        cmd_help = cmd.short_doc if cmd.short_doc else cmd.help or "No description."
+        commands_info.append(f"`{cmd.name}` — {cmd_help}")
 
-    commands_value = "\n".join(commands_info)
-    if commands_value:
-        em.description += f"\n### Commands\n{commands_value}"  # type: ignore
+    if commands_info:
+        em.add_field(
+            name=f"Commands  [{len(commands_info)}]",
+            value="\n".join(commands_info),
+            inline=False,
+        )
 
     return em
 
 
 async def cmds_list_embed(ctx: commands.Context, mapping) -> discord.Embed:
-    em = await ctx_embed(
-        ctx,
-        title=f"{ctx.bot.user.name} Help",
-        timestamp=True,
-    )
-
+    em = await ctx_embed(ctx, title="All Commands", timestamp=True)
+    em.description = "A full listing of every available command, grouped by category."
     em.set_thumbnail(url=ctx.bot.user.avatar.url)
     em.set_footer(
         text=f"Requested by {ctx.author}",
@@ -98,7 +90,7 @@ async def cmds_list_embed(ctx: commands.Context, mapping) -> discord.Embed:
             if not visible_commands:
                 continue
 
-            cmds = ", ".join([f"`{command.name}`" for command in visible_commands])
+            cmds = "  ".join([f"`{command.name}`" for command in visible_commands])
             cog_emoji = cog.emoji if hasattr(cog, "emoji") else ""
 
             em.add_field(
@@ -121,13 +113,13 @@ class HelpDropdown(ui.Select):
                 options.append(
                     discord.SelectOption(
                         label=cog.qualified_name,
-                        description=cog.description,
+                        description=cog.description[:100] if cog.description else None,
                         emoji=cog.emoji if hasattr(cog, "emoji") else None,
                     )
                 )
 
         super().__init__(
-            placeholder="Choose a category...",
+            placeholder="Select a category...",
             min_values=1,
             max_values=1,
             options=sorted(options, key=lambda x: x.label),
@@ -184,12 +176,12 @@ class HelpView(ui.View):
         embed = await bot_help_embed(self.ctx)
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @ui.button(label="Commands List", emoji="📜", style=ButtonStyle.blurple)
+    @ui.button(label="All Commands", emoji="📋", style=ButtonStyle.gray)
     async def cmds_list(self, interaction: Interaction, button: ui.Button):
         embed = await cmds_list_embed(self.ctx, self.mapping)
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @ui.button(label="Delete Menu", emoji="🛑", style=ButtonStyle.red)
+    @ui.button(emoji="🗑", style=ButtonStyle.red)
     async def delete_menu(self, interaction: Interaction, button: ui.Button):
         if interaction.message is not None:
             await interaction.message.delete()
@@ -233,28 +225,27 @@ class Help(Cog, emoji="\N{BLACK QUESTION MARK ORNAMENT}"):
         prefix = "/" if ctx.interaction else ctx.clean_prefix
         title = f"{prefix}{command.qualified_name} {command.signature}".strip()
 
-        embed = await ctx_embed(
-            ctx,
-            title=title,
-            description=(command.help or "No help found...")
-            + "\n\n```ml\n<> Required Argument | [] Optional Argument\n```",
-        )
+        embed = await ctx_embed(ctx, title=title)
+
+        description_parts = [command.help or "No description available."]
+        description_parts.append("\n```\n<> Required  |  [] Optional\n```")
+        embed.description = "\n".join(description_parts)
 
         if command.aliases:
             embed.add_field(
                 name="Aliases",
-                value=", ".join([f"`{alias}`" for alias in command.aliases]),
+                value="  ".join([f"`{alias}`" for alias in command.aliases]),
                 inline=False,
             )
 
         if cog := command.cog:
-            embed.add_field(name="Category", value=cog.qualified_name, inline=False)
+            embed.add_field(name="Category", value=cog.qualified_name, inline=True)
 
         if command._buckets and (cooldown := command._buckets._cooldown):
             embed.add_field(
                 name="Cooldown",
-                value=f"{cooldown.rate} per {cooldown.per:.0f} seconds",
-                inline=False,
+                value=f"{cooldown.rate}x per {cooldown.per:.0f}s",
+                inline=True,
             )
 
         await ctx.send(embed=embed)
@@ -268,8 +259,8 @@ class Help(Cog, emoji="\N{BLACK QUESTION MARK ORNAMENT}"):
         embed = await ctx_embed(
             ctx,
             title=title,
-            description=(group.help or "No help found...")
-            + "\n\n```ml\n<> Required Argument | [] Optional Argument\n```",
+            description=(group.help or "No description available.")
+            + "\n\n```\n<> Required  |  [] Optional\n```",
         )
 
         for command in sorted(group.commands, key=lambda c: c.name):
@@ -277,8 +268,8 @@ class Help(Cog, emoji="\N{BLACK QUESTION MARK ORNAMENT}"):
                 continue
             cmd_help = command.short_doc if command.short_doc else command.help
             embed.add_field(
-                name=f"{prefix}{command.qualified_name} {command.signature}".strip(),
-                value=cmd_help or "No help found...",
+                name=f"`{prefix}{command.qualified_name} {command.signature}`.strip()",
+                value=cmd_help or "No description.",
                 inline=False,
             )
 
@@ -319,7 +310,12 @@ class Help(Cog, emoji="\N{BLACK QUESTION MARK ORNAMENT}"):
                 await ctx.send(embed=embed)
                 return
 
-        await ctx.send(f'No command or category called "{query}" was found.')
+        await ctx.send(
+            embed=discord.Embed(
+                description=f"No command or category called `{query}` was found.",
+                color=0xED4245,
+            )
+        )
 
     @help_command.autocomplete("query")
     async def help_autocomplete(

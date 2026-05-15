@@ -281,36 +281,54 @@ class PizzaHat(commands.Bot):
             pass
 
         elif isinstance(error, commands.NoPrivateMessage):
-            await ctx.author.send("This command cannot be used in private messages.")
+            await ctx.author.send(
+                embed=discord.Embed(
+                    description="This command cannot be used in direct messages.",
+                    color=0xED4245,
+                )
+            )
 
         elif isinstance(error, commands.DisabledCommand):
-            await ctx.send("Sorry. This command is disabled and cannot be used.")
+            await ctx.send(
+                embed=discord.Embed(
+                    description="This command is currently disabled.",
+                    color=0xFAA61A,
+                )
+            )
 
         elif isinstance(error, commands.BotMissingPermissions):
             if error.missing_permissions[0] == "send_messages":
                 return await ctx.message.add_reaction(self.no)
 
+            perm_name = " ".join(error.missing_permissions[0].split("_")).title()
             await ctx.send(
-                "I am missing **{}** permissions.".format(
-                    " ".join(error.missing_permissions[0].split("_")).title()
+                embed=discord.Embed(
+                    description=f"I'm missing the **{perm_name}** permission to do that.",
+                    color=0xED4245,
                 )
             )
 
         elif isinstance(error, commands.MissingPermissions):
+            perm_name = " ".join(error.missing_permissions[0].split("_")).title()
             await ctx.send(
-                "You need **{}** perms to run this command.".format(
-                    " ".join(error.missing_permissions[0].split("_")).title()
+                embed=discord.Embed(
+                    description=f"You need the **{perm_name}** permission to use this command.",
+                    color=0xED4245,
                 )
             )
 
         elif isinstance(error, commands.MaxConcurrencyReached):
             await ctx.send(
-                "An instance of this command is already running...\n"
-                f"You can only run `{error.number}` instances at the same time."
+                embed=discord.Embed(
+                    description=f"This command is already running. You can only have `{error.number}` instance(s) active at once.",
+                    color=0xFAA61A,
+                )
             )
 
         elif isinstance(error, commands.ArgumentParsingError):
-            await ctx.send(str(error))
+            await ctx.send(
+                embed=discord.Embed(description=str(error), color=0xED4245)
+            )
 
         elif isinstance(error, commands.CommandInvokeError):
             original = error.original
@@ -325,9 +343,13 @@ class PizzaHat(commands.Bot):
         elif isinstance(error, commands.MissingRequiredArgument):
             if ctx.command is not None:
                 em = discord.Embed(
-                    title=f"{ctx.command.name} {ctx.command.signature}",
-                    description=ctx.command.help,
-                    color=discord.Color.og_blurple(),
+                    title=f"Missing Argument — {ctx.command.name}",
+                    description=(
+                        f"```\n{ctx.command.name} {ctx.command.signature}\n```\n"
+                        + (ctx.command.help or "No description available.")
+                        + "\n\n```\n<> Required  |  [] Optional\n```"
+                    ),
+                    color=0xFAA61A,
                 )
 
                 ctx.command.reset_cooldown(ctx)
@@ -335,7 +357,10 @@ class PizzaHat(commands.Bot):
 
         elif isinstance(error, commands.CommandOnCooldown):
             await ctx.send(
-                f"Whoopsie! This command needs a timeout. Hang tight while it takes a siesta. 😴⏳\nTry again after `{error.retry_after:.0f}s`",
+                embed=discord.Embed(
+                    description=f"⏳ This command is on cooldown. Try again in `{error.retry_after:.0f}s`.",
+                    color=0xFAA61A,
+                ),
                 delete_after=5,
             )
 
