@@ -44,12 +44,13 @@ DEFAULT_PREFIX = "p!"
 # COG EXCEPTIONS
 COG_EXCEPTIONS = [
     "AntiAltsConfig",
+    "AutomationEvents",
     "AutoModConfig",
     "Dev",
     "Events",
     "GuildLogs",
     "Help",
     "Jishaku",
+    "RoleMenuEvents",
     "StarboardEvents",
-    "WelcomeEvents",
 ]
