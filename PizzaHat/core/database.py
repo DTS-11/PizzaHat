@@ -94,9 +94,6 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         # GUILD_THEMES
         """CREATE TABLE IF NOT EXISTS guild_themes
         (guild_id BIGINT PRIMARY KEY, accent_color TEXT)""",
-        # WORKFLOWS (legacy — kept for backwards compat, superseded by event_actions)
-        """CREATE TABLE IF NOT EXISTS workflows
-        (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, name TEXT NOT NULL, trigger_type TEXT NOT NULL, trigger_config JSONB DEFAULT '{}', actions JSONB DEFAULT '[]', enabled BOOL DEFAULT TRUE, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT NOT NULL)""",
         # AUTO_RESPONDERS
         """CREATE TABLE IF NOT EXISTS auto_responders
         (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, trigger_text TEXT NOT NULL, trigger_type TEXT DEFAULT 'contains', response TEXT NOT NULL, channel_ids BIGINT[] DEFAULT '{}', role_ids BIGINT[] DEFAULT '{}', cooldown_seconds INT DEFAULT 0, enabled BOOL DEFAULT TRUE, use_count INT DEFAULT 0, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT NOT NULL)""",
@@ -109,6 +106,12 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         # EVENT_ACTIONS
         """CREATE TABLE IF NOT EXISTS event_actions
         (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, name TEXT NOT NULL, event_type TEXT NOT NULL, actions JSONB DEFAULT '[]', enabled BOOL DEFAULT TRUE, run_count INT DEFAULT 0, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT NOT NULL)""",
+        # ROLE MENUS
+        """CREATE TABLE IF NOT EXISTS role_menus
+        (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, channel_id BIGINT, message_id BIGINT, name TEXT NOT NULL, title TEXT, description TEXT, type TEXT NOT NULL DEFAULT 'button', mode TEXT NOT NULL DEFAULT 'multi', max_selections INT, required_role_id BIGINT, enabled BOOL DEFAULT TRUE, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT)""",
+        # ROLE MENU ITEMS
+        """CREATE TABLE IF NOT EXISTS role_menu_items
+        (menu_id INT NOT NULL REFERENCES role_menus(id) ON DELETE CASCADE, role_id BIGINT NOT NULL, label TEXT, emoji TEXT, description TEXT, position INT DEFAULT 0, PRIMARY KEY (menu_id, role_id))""",
     ]
 
     for statement in statements:
@@ -119,11 +122,11 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         "CREATE INDEX IF NOT EXISTS warnlogs_created_at_idx ON warnlogs (guild_id, user_id, created_at DESC)",
         "CREATE INDEX IF NOT EXISTS star_info_guild_id_idx ON star_info (guild_id)",
         "CREATE INDEX IF NOT EXISTS star_info_bot_msg_id_idx ON star_info (bot_msg_id)",
-        "CREATE INDEX IF NOT EXISTS workflows_guild_id_idx ON workflows (guild_id)",
         "CREATE INDEX IF NOT EXISTS auto_responders_guild_id_idx ON auto_responders (guild_id)",
         "CREATE INDEX IF NOT EXISTS scheduled_messages_guild_id_idx ON scheduled_messages (guild_id)",
         "CREATE INDEX IF NOT EXISTS scheduled_messages_next_run_idx ON scheduled_messages (next_run) WHERE enabled = TRUE",
         "CREATE INDEX IF NOT EXISTS event_actions_guild_id_idx ON event_actions (guild_id)",
+        "CREATE INDEX IF NOT EXISTS role_menus_guild_id_idx ON role_menus (guild_id)",
     ]
 
     for index in indexes:

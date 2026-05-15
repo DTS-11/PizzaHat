@@ -23,6 +23,7 @@ INITIAL_EXTENSIONS = [
     "cogs.emojis",
     "cogs.fun",
     "cogs.mod",
+    "cogs.role_menus",
     "cogs.starboard",
     "cogs.tags",
     "cogs.tickets",
@@ -36,6 +37,7 @@ SUB_EXTENSIONS = [
     "cogs_hidden.events",
     "cogs_hidden.guild_logs",
     "cogs_hidden.help",
+    "cogs_hidden.role_menus",
     "cogs_hidden.starboard",
 ]
 
@@ -326,9 +328,7 @@ class PizzaHat(commands.Bot):
             )
 
         elif isinstance(error, commands.ArgumentParsingError):
-            await ctx.send(
-                embed=discord.Embed(description=str(error), color=0xED4245)
-            )
+            await ctx.send(embed=discord.Embed(description=str(error), color=0xED4245))
 
         elif isinstance(error, commands.CommandInvokeError):
             original = error.original
