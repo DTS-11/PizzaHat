@@ -464,7 +464,9 @@ class Fun(Cog, emoji=802615573556363284):
                 name=self.bot.user.name,
                 icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None,
             )
-            em.set_thumbnail(url=self.bot.user.avatar.url if self.bot.user.avatar else None)
+            em.set_thumbnail(
+                url=self.bot.user.avatar.url if self.bot.user.avatar else None
+            )
 
         await ctx.send(embed=em, view=view)
 

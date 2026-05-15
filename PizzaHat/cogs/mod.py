@@ -346,30 +346,53 @@ class Mod(Cog, emoji=1268851270136107048):
             config_em.set_thumbnail(url=guild.icon.url if guild.icon else None)
 
             # Automations analytics
-            responder_total = await db.fetchval(
-                "SELECT COUNT(*) FROM auto_responders WHERE guild_id=$1", guild.id
-            ) or 0
-            responder_active = await db.fetchval(
-                "SELECT COUNT(*) FROM auto_responders WHERE guild_id=$1 AND enabled=TRUE", guild.id
-            ) or 0
-            responder_uses = await db.fetchval(
-                "SELECT COALESCE(SUM(use_count), 0) FROM auto_responders WHERE guild_id=$1", guild.id
-            ) or 0
+            responder_total = (
+                await db.fetchval(
+                    "SELECT COUNT(*) FROM auto_responders WHERE guild_id=$1", guild.id
+                )
+                or 0
+            )
+            responder_active = (
+                await db.fetchval(
+                    "SELECT COUNT(*) FROM auto_responders WHERE guild_id=$1 AND enabled=TRUE",
+                    guild.id,
+                )
+                or 0
+            )
+            responder_uses = (
+                await db.fetchval(
+                    "SELECT COALESCE(SUM(use_count), 0) FROM auto_responders WHERE guild_id=$1",
+                    guild.id,
+                )
+                or 0
+            )
             top_responder = await db.fetchrow(
                 "SELECT trigger_text, use_count FROM auto_responders "
                 "WHERE guild_id=$1 ORDER BY use_count DESC LIMIT 1",
                 guild.id,
             )
 
-            schedule_total = await db.fetchval(
-                "SELECT COUNT(*) FROM scheduled_messages WHERE guild_id=$1", guild.id
-            ) or 0
-            schedule_active = await db.fetchval(
-                "SELECT COUNT(*) FROM scheduled_messages WHERE guild_id=$1 AND enabled=TRUE", guild.id
-            ) or 0
-            schedule_sent = await db.fetchval(
-                "SELECT COALESCE(SUM(run_count), 0) FROM scheduled_messages WHERE guild_id=$1", guild.id
-            ) or 0
+            schedule_total = (
+                await db.fetchval(
+                    "SELECT COUNT(*) FROM scheduled_messages WHERE guild_id=$1",
+                    guild.id,
+                )
+                or 0
+            )
+            schedule_active = (
+                await db.fetchval(
+                    "SELECT COUNT(*) FROM scheduled_messages WHERE guild_id=$1 AND enabled=TRUE",
+                    guild.id,
+                )
+                or 0
+            )
+            schedule_sent = (
+                await db.fetchval(
+                    "SELECT COALESCE(SUM(run_count), 0) FROM scheduled_messages WHERE guild_id=$1",
+                    guild.id,
+                )
+                or 0
+            )
             next_schedule = await db.fetchrow(
                 "SELECT channel_id, next_run FROM scheduled_messages "
                 "WHERE guild_id=$1 AND enabled=TRUE ORDER BY next_run ASC LIMIT 1",
@@ -382,15 +405,26 @@ class Mod(Cog, emoji=1268851270136107048):
                 guild.id,
             )
 
-            event_total = await db.fetchval(
-                "SELECT COUNT(*) FROM event_actions WHERE guild_id=$1", guild.id
-            ) or 0
-            event_active = await db.fetchval(
-                "SELECT COUNT(*) FROM event_actions WHERE guild_id=$1 AND enabled=TRUE", guild.id
-            ) or 0
-            event_runs = await db.fetchval(
-                "SELECT COALESCE(SUM(run_count), 0) FROM event_actions WHERE guild_id=$1", guild.id
-            ) or 0
+            event_total = (
+                await db.fetchval(
+                    "SELECT COUNT(*) FROM event_actions WHERE guild_id=$1", guild.id
+                )
+                or 0
+            )
+            event_active = (
+                await db.fetchval(
+                    "SELECT COUNT(*) FROM event_actions WHERE guild_id=$1 AND enabled=TRUE",
+                    guild.id,
+                )
+                or 0
+            )
+            event_runs = (
+                await db.fetchval(
+                    "SELECT COALESCE(SUM(run_count), 0) FROM event_actions WHERE guild_id=$1",
+                    guild.id,
+                )
+                or 0
+            )
             top_event = await db.fetchrow(
                 "SELECT name, event_type, run_count FROM event_actions "
                 "WHERE guild_id=$1 ORDER BY run_count DESC LIMIT 1",
@@ -407,7 +441,11 @@ class Mod(Cog, emoji=1268851270136107048):
                     join_parts.append("welcome msg")
                 if join_row["welcome_dm"]:
                     join_parts.append("welcome DM")
-                join_status = f"{self.bot.yes} Active — " + ", ".join(join_parts) if join_parts else f"{self.bot.yes} Active"
+                join_status = (
+                    f"{self.bot.yes} Active — " + ", ".join(join_parts)
+                    if join_parts
+                    else f"{self.bot.yes} Active"
+                )
             elif join_row:
                 join_status = f"{self.bot.no} Paused"
             else:
