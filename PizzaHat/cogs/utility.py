@@ -1041,7 +1041,9 @@ class Utility(Cog, emoji=1268851252565905449):
         )
         em.add_field(name="🏠 Guilds", value=f"`{guilds:,}`", inline=True)
         em.add_field(name="⚡ Commands", value=f"`{len(my_commands)}`", inline=True)
-        em.add_field(name="⏱ Uptime", value=f"`{self.get_bot_uptime(brief=True)}`", inline=True)
+        em.add_field(
+            name="⏱ Uptime", value=f"`{self.get_bot_uptime(brief=True)}`", inline=True
+        )
         em.add_field(
             name="🖥 Process",
             value=f"`{memory_usage:.1f} MiB`  `{cpu_usage:.1f}% CPU`",
