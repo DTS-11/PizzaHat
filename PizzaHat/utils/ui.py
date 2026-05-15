@@ -6,7 +6,7 @@ from discord import ButtonStyle, Interaction, ui
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Tier
+from core.bot import PizzaHat, Tier
 from utils.custom_checks import _tier_cache
 from utils.embed import ctx_embed
 
@@ -124,7 +124,8 @@ class ConfirmationView(ui.View):
 
 
 class TicketView(ui.View):
-    def __init__(self, bot):
+    def __init__(self, bot: PizzaHat, ctx: Context):
+        self.ctx = ctx
         self.bot = bot
         self.thread_id = None
         super().__init__(timeout=None)
