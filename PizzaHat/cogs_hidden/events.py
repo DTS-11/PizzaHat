@@ -17,6 +17,7 @@ class Events(Cog):
 
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
+        self._auto_left: dict[int, str] = {}  # guild_id -> leave reason
         # bot.loop.create_task(self.update_stats())
 
     # @tasks.loop(hours=24)
@@ -93,6 +94,7 @@ class Events(Cog):
             reason = f"it has too few real members ({humans} human{'s' if humans != 1 else ''})"
 
         if reason:
+            self._auto_left[guild.id] = reason
             try:
                 ch = guild.system_channel or next(
                     (
@@ -109,6 +111,7 @@ class Events(Cog):
                 await guild.leave()
             except:
                 pass
+            return
 
         em = green_embed(
             title="Guild Joined",
@@ -133,7 +136,9 @@ class Events(Cog):
             else "N/A"
         )
 
-        channel = self.bot.get_channel(LOGS_CHANNEL)
+        channel = self.bot.get_channel(LOGS_CHANNEL) or await self.bot.fetch_channel(
+            LOGS_CHANNEL
+        )
         await channel.send(embed=em)  # type: ignore
 
     @Cog.listener()
@@ -156,6 +161,8 @@ class Events(Cog):
 
         invalidate_theme_cache(guild.id)
 
+        auto_reason = self._auto_left.pop(guild.id, None)
+
         em = red_embed(
             title="Guild Left",
             timestamp=True,
@@ -170,8 +177,17 @@ class Events(Cog):
             if guild.owner
             else "N/A"
         )
+        em.add_field(
+            name="Reason",
+            value=f"Auto-left: {auto_reason}"
+            if auto_reason
+            else "Kicked / manually removed",
+            inline=False,
+        )
 
-        channel = self.bot.get_channel(LOGS_CHANNEL)
+        channel = self.bot.get_channel(LOGS_CHANNEL) or await self.bot.fetch_channel(
+            LOGS_CHANNEL
+        )
         await channel.send(embed=em)  # type: ignore
 
     # ====== MEMBER PING - AFK EVENT ======
