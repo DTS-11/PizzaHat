@@ -141,13 +141,16 @@ class Events(Cog):
         for cog_name in (
             "AntiAlts",
             "AntiAltsConfig",
+            "AutomationEvents",
             "AutoModeration",
             "AutoModConfig",
             "GuildLogs",
             "StarboardEvents",
         ):
             cog = self.bot.get_cog(cog_name)
-            clear_cache = getattr(cog, "clear_config_cache", None)
+            clear_cache = getattr(cog, "clear_config_cache", None) or getattr(
+                cog, "clear_cache", None
+            )
             if callable(clear_cache):
                 clear_cache(guild.id)
 
