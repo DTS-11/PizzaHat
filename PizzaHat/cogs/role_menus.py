@@ -64,13 +64,12 @@ class RoleMenus(Cog, emoji="🎭"):
     # HUB / LIST
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    @commands.group(
-        name="rolemenu", aliases=["rm", "rolemenus"], invoke_without_command=True
-    )
+    @commands.group(name="rolemenu", aliases=["rm"], invoke_without_command=True)
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     async def rolemenu(self, ctx: Context):
         """Role menu management."""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -125,6 +124,7 @@ class RoleMenus(Cog, emoji="🎭"):
         self, ctx: Context, name: str, type_: str = "button", mode: str = "multi"
     ):
         """Create a new role menu. Type: `button` or `dropdown`. Mode: `single` or `multi`."""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -189,6 +189,7 @@ class RoleMenus(Cog, emoji="🎭"):
     @commands.has_permissions(manage_roles=True)
     async def rm_delete(self, ctx: Context, menu_id: int):
         """Delete a role menu and unposts its message."""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -217,6 +218,7 @@ class RoleMenus(Cog, emoji="🎭"):
     @commands.has_permissions(manage_roles=True)
     async def rm_toggle(self, ctx: Context, menu_id: int):
         """Toggle a role menu on or off."""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -241,6 +243,7 @@ class RoleMenus(Cog, emoji="🎭"):
     @commands.has_permissions(manage_roles=True)
     async def rm_show(self, ctx: Context, menu_id: int):
         """Show full details of a role menu."""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -316,6 +319,7 @@ class RoleMenus(Cog, emoji="🎭"):
         self, ctx: Context, menu_id: int, role: discord.Role, *, label: str = ""
     ):
         """Add a role to a menu. Optional label overrides the role name."""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -375,6 +379,7 @@ class RoleMenus(Cog, emoji="🎭"):
     @commands.has_permissions(manage_roles=True)
     async def rm_rmrole(self, ctx: Context, menu_id: int, role: discord.Role):
         """Remove a role from a menu."""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -409,6 +414,7 @@ class RoleMenus(Cog, emoji="🎭"):
         self, ctx: Context, menu_id: int, role: discord.Role, emoji: str
     ):
         """Set the emoji for a role in a menu. (Basic+)"""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -444,6 +450,7 @@ class RoleMenus(Cog, emoji="🎭"):
         self, ctx: Context, menu_id: int, role: discord.Role, *, label: str
     ):
         """Set a custom label for a role in the menu. (Basic+)"""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -479,6 +486,7 @@ class RoleMenus(Cog, emoji="🎭"):
         self, ctx: Context, menu_id: int, role: discord.Role, *, description: str
     ):
         """Set a per-role description (shown in dropdowns). (Basic+)"""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -515,6 +523,7 @@ class RoleMenus(Cog, emoji="🎭"):
     @commands.has_permissions(manage_roles=True)
     async def rm_mode(self, ctx: Context, menu_id: int, mode: str):
         """Set selection mode: `single` (one role only) or `multi`."""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -546,6 +555,7 @@ class RoleMenus(Cog, emoji="🎭"):
     @premium(tier=Tier.BASIC)
     async def rm_title(self, ctx: Context, menu_id: int, *, title: str):
         """Set the embed title for a menu. (Basic+)"""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -569,6 +579,7 @@ class RoleMenus(Cog, emoji="🎭"):
     @premium(tier=Tier.BASIC)
     async def rm_description(self, ctx: Context, menu_id: int, *, description: str):
         """Set the embed description body for a menu. (Basic+)"""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -594,6 +605,7 @@ class RoleMenus(Cog, emoji="🎭"):
     @premium(tier=Tier.PRO)
     async def rm_max(self, ctx: Context, menu_id: int, limit: int):
         """Set the max number of roles a user can pick from this menu. `0` to clear. (Pro)"""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -631,6 +643,7 @@ class RoleMenus(Cog, emoji="🎭"):
         self, ctx: Context, menu_id: int, role: Optional[discord.Role] = None
     ):
         """Require members to already have a role before using a menu. Pass no role to clear. (Pro)"""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -661,6 +674,7 @@ class RoleMenus(Cog, emoji="🎭"):
     )
     async def rm_post(self, ctx: Context, menu_id: int, channel: discord.TextChannel):
         """Post (or repost) a role menu into a channel."""
+
         if not ctx.guild or not self.bot.db:
             return
 
@@ -712,6 +726,7 @@ class RoleMenus(Cog, emoji="🎭"):
     @commands.has_permissions(manage_roles=True)
     async def rm_refresh(self, ctx: Context, menu_id: int):
         """Re-render the posted message (after manual edits to roles/labels)."""
+
         if not ctx.guild or not self.bot.db:
             return
 
