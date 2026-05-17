@@ -54,7 +54,7 @@ async def _resolve_menu(ctx: Context, menu_id: int) -> Optional[dict]:
     return menu
 
 
-class RoleMenus(Cog, emoji="🎭"):
+class RoleMenus(Cog, emoji=1268853457855709255):
     """Self-assignable role menus — buttons and dropdowns."""
 
     def __init__(self, bot: PizzaHat):
