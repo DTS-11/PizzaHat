@@ -106,12 +106,15 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         # EVENT_ACTIONS
         """CREATE TABLE IF NOT EXISTS event_actions
         (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, name TEXT NOT NULL, event_type TEXT NOT NULL, actions JSONB DEFAULT '[]', enabled BOOL DEFAULT TRUE, run_count INT DEFAULT 0, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT NOT NULL)""",
-        # ROLE MENUS
+        # ROLE_MENUS
         """CREATE TABLE IF NOT EXISTS role_menus
         (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, channel_id BIGINT, message_id BIGINT, name TEXT NOT NULL, title TEXT, description TEXT, type TEXT NOT NULL DEFAULT 'button', mode TEXT NOT NULL DEFAULT 'multi', max_selections INT, required_role_id BIGINT, enabled BOOL DEFAULT TRUE, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT)""",
-        # ROLE MENU ITEMS
+        # ROLE_MENU_ITEMS
         """CREATE TABLE IF NOT EXISTS role_menu_items
         (menu_id INT NOT NULL REFERENCES role_menus(id) ON DELETE CASCADE, role_id BIGINT NOT NULL, label TEXT, emoji TEXT, description TEXT, position INT DEFAULT 0, PRIMARY KEY (menu_id, role_id))""",
+        # EMBED_TEMPLATES
+        """CREATE TABLE embed_templates
+        (id SERIAL PRIMARY KEY, guild_id BIGINT, name TEXT, data JSONB, created_by BIGINT, created_at TIMESTAMP DEFAULT NOW())""",
     ]
 
     for statement in statements:
