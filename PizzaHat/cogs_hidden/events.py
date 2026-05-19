@@ -79,6 +79,34 @@ class Events(Cog):
     async def on_guild_join(self, guild: discord.Guild):
         await guild.chunk()  # ensure member cache is full
 
+        em = green_embed(
+            title="Guild Joined",
+            timestamp=True,
+        )
+        em.set_author(name=guild.name, icon_url=guild.icon.url if guild.icon else None)
+
+        em.add_field(name="Guild Name", value=guild.name, inline=False)
+        em.add_field(
+            name="Members",
+            value=len([m for m in guild.members if not m.bot]),
+            inline=False,
+        )
+        em.add_field(
+            name="Bots", value=sum(member.bot for member in guild.members), inline=False
+        )
+        (
+            em.add_field(
+                name="Owner", value=f"{guild.owner} ({guild.owner.id})", inline=False
+            )
+            if guild.owner
+            else "N/A"
+        )
+
+        channel = self.bot.get_channel(LOGS_CHANNEL) or await self.bot.fetch_channel(
+            LOGS_CHANNEL
+        )
+        await channel.send(embed=em)  # type: ignore
+
         bots = sum(1 for m in guild.members if m.bot)
         humans = sum(1 for m in guild.members if not m.bot)
 
@@ -112,34 +140,6 @@ class Events(Cog):
             except:
                 pass
             return
-
-        em = green_embed(
-            title="Guild Joined",
-            timestamp=True,
-        )
-        em.set_author(name=guild.name, icon_url=guild.icon.url if guild.icon else None)
-
-        em.add_field(name="Guild Name", value=guild.name, inline=False)
-        em.add_field(
-            name="Members",
-            value=len([m for m in guild.members if not m.bot]),
-            inline=False,
-        )
-        em.add_field(
-            name="Bots", value=sum(member.bot for member in guild.members), inline=False
-        )
-        (
-            em.add_field(
-                name="Owner", value=f"{guild.owner} ({guild.owner.id})", inline=False
-            )
-            if guild.owner
-            else "N/A"
-        )
-
-        channel = self.bot.get_channel(LOGS_CHANNEL) or await self.bot.fetch_channel(
-            LOGS_CHANNEL
-        )
-        await channel.send(embed=em)  # type: ignore
 
     @Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild):
