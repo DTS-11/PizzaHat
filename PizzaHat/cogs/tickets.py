@@ -1,3 +1,5 @@
+from typing import Optional
+
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
@@ -19,11 +21,22 @@ class Tickets(Cog, emoji=1268867314292625469):
     @commands.has_permissions(manage_threads=True)
     @commands.bot_has_permissions(manage_threads=True)
     @commands.cooldown(1, 60, commands.BucketType.user)
-    async def tsetup(self, ctx: Context, channel: discord.TextChannel):
+    async def tsetup(
+        self,
+        ctx: Context,
+        channel: discord.TextChannel,
+        name: str,
+        support_role: Optional[discord.Role] = None,
+    ):
         """
-        Setup the Ticket system.
-        This sends the `Create Ticket` message which enables users to open a ticket.
+        Setup a Ticket panel in a channel.
+
+        `name` is a label used to identify the panel.
+        Optionally pass a `support_role` to be mentioned when a ticket is opened.
         """
+
+        if not ctx.guild:
+            return
 
         em = discord.Embed(
             title="Support Tickets",
@@ -37,8 +50,115 @@ class Tickets(Cog, emoji=1268867314292625469):
         em.set_footer(text="One ticket per user at a time.")
 
         view = TicketView(self.bot)
-        await channel.send(embed=em, view=view)
+        msg = await channel.send(embed=em, view=view)
+
+        if self.bot.db:
+            await self.bot.db.execute(
+                """INSERT INTO ticket_panels (guild_id, channel_id, message_id, name, support_role_id)
+                   VALUES ($1, $2, $3, $4, $5)""",
+                ctx.guild.id,
+                channel.id,
+                msg.id,
+                name,
+                support_role.id if support_role else None,
+            )
+
         await ctx.message.add_reaction(self.bot.yes)
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_threads=True)
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    async def tpanels(self, ctx: Context):
+        """Lists all ticket panels for this server."""
+
+        if not ctx.guild:
+            return
+
+        if not self.bot.db:
+            return await ctx.send(
+                embed=red_embed(f"{self.bot.no} Database unavailable.")
+            )
+
+        panels = await self.bot.db.fetch(
+            "SELECT * FROM ticket_panels WHERE guild_id=$1 ORDER BY id",
+            ctx.guild.id,
+        )
+
+        if not panels:
+            return await ctx.send(
+                embed=red_embed(f"{self.bot.no} No ticket panels set up yet.")
+            )
+
+        em = discord.Embed(title="Ticket Panels", color=0x456DD4)
+        for panel in panels:
+            channel = ctx.guild.get_channel(panel["channel_id"])
+            role = (
+                ctx.guild.get_role(panel["support_role_id"])
+                if panel["support_role_id"]
+                else None
+            )
+            status = (
+                f"{self.bot.yes} Enabled"
+                if panel["enabled"]
+                else f"{self.bot.no} Disabled"
+            )
+            em.add_field(
+                name=f"#{panel['id']} — {panel['name']}",
+                value=(
+                    f"Channel: {channel.mention if channel else 'Unknown'}\n"
+                    f"Support Role: {role.mention if role else 'None'}\n"
+                    f"Status: {status}"
+                ),
+                inline=False,
+            )
+
+        await ctx.send(embed=em)
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_threads=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    async def tdelete(self, ctx: Context, panel_id: int):
+        """Deletes a ticket panel by its ID (see `tpanels`)."""
+
+        if not ctx.guild:
+            return
+
+        if not self.bot.db:
+            return await ctx.send(
+                embed=red_embed(f"{self.bot.no} Database unavailable.")
+            )
+
+        panel = await self.bot.db.fetchrow(
+            "SELECT * FROM ticket_panels WHERE id=$1 AND guild_id=$2",
+            panel_id,
+            ctx.guild.id,
+        )
+
+        if not panel:
+            return await ctx.send(
+                embed=red_embed(f"{self.bot.no} Panel `#{panel_id}` not found.")
+            )
+
+        channel = ctx.guild.get_channel(panel["channel_id"])
+        if isinstance(channel, discord.TextChannel):
+            try:
+                msg = await channel.fetch_message(panel["message_id"])
+                await msg.delete()
+            except discord.NotFound:
+                pass
+
+        await self.bot.db.execute(
+            "DELETE FROM ticket_panels WHERE id=$1 AND guild_id=$2",
+            panel_id,
+            ctx.guild.id,
+        )
+
+        await ctx.send(
+            embed=green_embed(f"{self.bot.yes} Deleted panel **{panel['name']}**.")
+        )
 
     @commands.command()
     @commands.guild_only()
