@@ -60,7 +60,7 @@ class AutomationEvents(Cog):
         if not self.bot.db:
             return []
         rows = await self.bot.db.fetch(
-            "SELECT id, trigger_text, trigger_type, response, "
+            "SELECT id, trigger_text, trigger_type, response, template_id, "
             "channel_ids, role_ids, cooldown_seconds "
             "FROM auto_responders WHERE guild_id=$1 AND enabled=TRUE ORDER BY id",
             guild_id,
@@ -72,7 +72,8 @@ class AutomationEvents(Cog):
         if not self.bot.db:
             return None
         row = await self.bot.db.fetchrow(
-            "SELECT auto_role_ids, welcome_channel_id, welcome_message, welcome_dm "
+            "SELECT auto_role_ids, welcome_channel_id, welcome_message, "
+            "welcome_template_id, welcome_dm, welcome_dm_template_id "
             "FROM join_automation WHERE guild_id=$1 AND enabled=TRUE",
             guild_id,
         )
@@ -83,7 +84,7 @@ class AutomationEvents(Cog):
         if not self.bot.db:
             return []
         rows = await self.bot.db.fetch(
-            "SELECT id, event_type, actions "
+            "SELECT id, event_type, actions, template_id "
             "FROM event_actions WHERE guild_id=$1 AND enabled=TRUE",
             guild_id,
         )
@@ -137,7 +138,18 @@ class AutomationEvents(Cog):
                 _cooldown_map[key] = now
 
             try:
-                await msg.channel.send(r["response"])
+                template_id: int | None = r.get("template_id")
+                if template_id:
+                    from utils.embed import resolve_template
+
+                    tvars = _tvars(msg.guild, msg.author)
+                    fallback = discord.Embed(description=r["response"], color=0x456DD4)
+                    em = await resolve_template(
+                        self.bot.db, template_id, fallback, **tvars
+                    )
+                    await msg.channel.send(embed=em)
+                else:
+                    await msg.channel.send(r["response"])
                 if self.bot.db:
                     await self.bot.db.execute(
                         "UPDATE auto_responders SET use_count = use_count + 1 WHERE id=$1",
@@ -169,18 +181,44 @@ class AutomationEvents(Cog):
 
             ch_id = config.get("welcome_channel_id")
             msg_text = config.get("welcome_message")
-            if ch_id and msg_text:
+            welcome_tmpl = config.get("welcome_template_id")
+            if ch_id and (msg_text or welcome_tmpl):
                 ch = guild.get_channel(ch_id)
                 if isinstance(ch, discord.TextChannel):
                     try:
-                        await ch.send(_render(msg_text, **tvars))
+                        if welcome_tmpl:
+                            from utils.embed import resolve_template
+
+                            fallback = discord.Embed(
+                                description=_render(msg_text or "", **tvars),
+                                color=0x456DD4,
+                            )
+                            em = await resolve_template(
+                                self.bot.db, welcome_tmpl, fallback, **tvars
+                            )
+                            await ch.send(embed=em)
+                        else:
+                            await ch.send(_render(msg_text, **tvars))
                     except discord.HTTPException:
                         pass
 
             dm_text = config.get("welcome_dm")
-            if dm_text:
+            dm_tmpl = config.get("welcome_dm_template_id")
+            if dm_text or dm_tmpl:
                 try:
-                    await member.send(_render(dm_text, **tvars))
+                    if dm_tmpl:
+                        from utils.embed import resolve_template
+
+                        fallback = discord.Embed(
+                            description=_render(dm_text or "", **tvars),
+                            color=0x456DD4,
+                        )
+                        em = await resolve_template(
+                            self.bot.db, dm_tmpl, fallback, **tvars
+                        )
+                        await member.send(embed=em)
+                    else:
+                        await member.send(_render(dm_text, **tvars))
                 except discord.HTTPException:
                     pass
 
@@ -212,6 +250,7 @@ class AutomationEvents(Cog):
                         action["type"],
                         action.get("config", {}),
                         member=member,
+                        template_id=ea.get("template_id"),
                     )
                 except Exception:
                     pass
@@ -228,13 +267,24 @@ class AutomationEvents(Cog):
         config: dict,
         *,
         member: discord.Member | discord.User | None = None,
+        template_id: int | None = None,
     ) -> None:
         tvars = _tvars(guild, member)
 
         if action_type == "send_message":
             ch = guild.get_channel(config.get("channel_id", 0))
             if isinstance(ch, discord.TextChannel):
-                await ch.send(_render(config.get("message", ""), **tvars))
+                text = _render(config.get("message", ""), **tvars)
+                if template_id:
+                    from utils.embed import resolve_template
+
+                    fallback = discord.Embed(description=text, color=0x456DD4)
+                    em = await resolve_template(
+                        self.bot.db, template_id, fallback, **tvars
+                    )
+                    await ch.send(embed=em)
+                else:
+                    await ch.send(text)
 
         elif action_type == "give_role":
             if isinstance(member, discord.Member):
@@ -251,7 +301,17 @@ class AutomationEvents(Cog):
         elif action_type == "dm_user":
             if member:
                 try:
-                    await member.send(_render(config.get("message", ""), **tvars))
+                    text = _render(config.get("message", ""), **tvars)
+                    if template_id:
+                        from utils.embed import resolve_template
+
+                        fallback = discord.Embed(description=text, color=0x456DD4)
+                        em = await resolve_template(
+                            self.bot.db, template_id, fallback, **tvars
+                        )
+                        await member.send(embed=em)
+                    else:
+                        await member.send(text)
                 except discord.HTTPException:
                     pass
 
@@ -261,13 +321,23 @@ class AutomationEvents(Cog):
                 text = _render(
                     config.get("message", "{user} triggered an event."), **tvars
                 )
-                em = discord.Embed(
+                fallback = discord.Embed(
                     description=text,
                     color=0x456DD4,
                     timestamp=datetime.datetime.now(datetime.timezone.utc),
                 )
                 if member:
-                    em.set_author(name=str(member), icon_url=member.display_avatar.url)
+                    fallback.set_author(
+                        name=str(member), icon_url=member.display_avatar.url
+                    )
+                if template_id:
+                    from utils.embed import resolve_template
+
+                    em = await resolve_template(
+                        self.bot.db, template_id, fallback, **tvars
+                    )
+                else:
+                    em = fallback
                 await self.bot.send_log(ch, embed=em)
 
     # ── External dispatch hooks ───────────────────────────────────────────────
@@ -292,7 +362,7 @@ class AutomationEvents(Cog):
 
         now = datetime.datetime.now(datetime.timezone.utc)
         rows = await self.bot.db.fetch(
-            "SELECT id, guild_id, channel_id, message, schedule_type, interval_type "
+            "SELECT id, guild_id, channel_id, message, schedule_type, interval_type, template_id "
             "FROM scheduled_messages WHERE enabled=TRUE AND next_run <= $1",
             now,
         )
@@ -303,7 +373,20 @@ class AutomationEvents(Cog):
                 ch = guild.get_channel(row["channel_id"])
                 if isinstance(ch, discord.TextChannel):
                     try:
-                        await ch.send(row["message"])
+                        template_id = row.get("template_id")
+                        if template_id:
+                            from utils.embed import resolve_template
+
+                            tvars = _tvars(guild)
+                            fallback = discord.Embed(
+                                description=row["message"], color=0x456DD4
+                            )
+                            em = await resolve_template(
+                                self.bot.db, template_id, fallback, **tvars
+                            )
+                            await ch.send(embed=em)
+                        else:
+                            await ch.send(row["message"])
                     except discord.HTTPException:
                         pass
 

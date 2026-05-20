@@ -187,7 +187,15 @@ class TicketView(ui.View):
             if panel and panel["support_role_id"]:
                 support_role = interaction.guild.get_role(panel["support_role_id"])
 
-            em = discord.Embed(
+            tvars = {
+                "user": str(interaction.user),
+                "user.mention": interaction.user.mention,
+                "user.name": interaction.user.name,
+                "user.id": str(interaction.user.id),
+                "guild": interaction.guild.name,
+                "guild.id": str(interaction.guild.id),
+            }
+            fallback_em = discord.Embed(
                 title="Ticket Opened",
                 description=(
                     f"Welcome, {interaction.user.mention}!\n\n"
@@ -196,12 +204,20 @@ class TicketView(ui.View):
                 ),
                 color=0x57F287,
             )
-            em.set_footer(
+            fallback_em.set_footer(
                 text=str(interaction.user),
                 icon_url=(
                     interaction.user.avatar.url if interaction.user.avatar else None
                 ),
             )
+            if panel and panel.get("template_id"):
+                from utils.embed import resolve_template
+
+                em = await resolve_template(
+                    self.bot.db, panel["template_id"], fallback_em, **tvars
+                )
+            else:
+                em = fallback_em
 
             content = interaction.user.mention
             if support_role:

@@ -26,6 +26,7 @@ INITIAL_EXTENSIONS = [
     "cogs.role_menus",
     "cogs.starboard",
     "cogs.tags",
+    "cogs.templates",
     "cogs.tickets",
     "cogs.utility",
 ]

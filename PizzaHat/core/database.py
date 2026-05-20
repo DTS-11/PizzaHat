@@ -52,6 +52,9 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         return
 
     statements = [
+        # EMBED_TEMPLATES
+        """CREATE TABLE IF NOT EXISTS embed_templates
+        (id SERIAL PRIMARY KEY, guild_id BIGINT, name TEXT, data JSONB, created_by BIGINT, created_at TIMESTAMP DEFAULT NOW())""",
         # PREMIUM
         """CREATE TABLE IF NOT EXISTS premium
         (guild_id BIGINT PRIMARY KEY, user_id BIGINT NOT NULL, polar_subscription_id TEXT NOT NULL UNIQUE, polar_customer_id TEXT NOT NULL, tier INT DEFAULT 1, status TEXT DEFAULT 'active', current_period_start TIMESTAMP, current_period_end TIMESTAMP, cancel_at_period_end BOOL DEFAULT FALSE, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW())""",
@@ -90,7 +93,7 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         (user_id BIGINT PRIMARY KEY, timezone TEXT)""",
         # TICKET_PANEL
         """CREATE TABLE IF NOT EXISTS ticket_panels
-        (id SERIAL PRIMARY KEY, guild_id BIGINT, channel_id BIGINT, message_id BIGINT, name TEXT, template_id INT, button_label TEXT DEFAULT 'Create Ticket', button_emoji TEXT, support_role_id BIGINT, enabled BOOL DEFAULT TRUE)""",
+        (id SERIAL PRIMARY KEY, guild_id BIGINT, channel_id BIGINT, message_id BIGINT, name TEXT, template_id INT REFERENCES embed_templates(id) ON DELETE SET NULL, button_label TEXT DEFAULT 'Create Ticket', button_emoji TEXT, support_role_id BIGINT, enabled BOOL DEFAULT TRUE)""",
         # TICKET_LOGS
         """CREATE TABLE IF NOT EXISTS ticket_logs
         (guild_id BIGINT, thread_id BIGINT PRIMARY KEY, creator_id BIGINT, opened_at TIMESTAMP DEFAULT NOW(), closed_at TIMESTAMP, closed_by BIGINT)""",
@@ -115,9 +118,6 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         # ROLE_MENU_ITEMS
         """CREATE TABLE IF NOT EXISTS role_menu_items
         (menu_id INT NOT NULL REFERENCES role_menus(id) ON DELETE CASCADE, role_id BIGINT NOT NULL, label TEXT, emoji TEXT, description TEXT, position INT DEFAULT 0, PRIMARY KEY (menu_id, role_id))""",
-        # EMBED_TEMPLATES
-        """CREATE TABLE IF NOT EXISTS embed_templates
-        (id SERIAL PRIMARY KEY, guild_id BIGINT, name TEXT, data JSONB, created_by BIGINT, created_at TIMESTAMP DEFAULT NOW())""",
     ]
 
     for statement in statements:

@@ -160,3 +160,101 @@ async def guild_embed(
     return await get_themed_embed(
         pool, guild_id, title, description, timestamp=timestamp
     )
+
+
+def embed_from_data(data: dict) -> Embed:
+    """Build a discord.Embed from stored template JSONB data.
+
+    Supported keys: title, description, color (int or #hex), url,
+    footer {text, icon_url}, author {name, url, icon_url},
+    image {url} or "url", thumbnail {url} or "url",
+    fields [{name, value, inline}].
+    """
+
+    raw_color = data.get("color")
+    if isinstance(raw_color, str) and raw_color.startswith("#"):
+        color = int(raw_color.lstrip("#"), 16)
+    elif isinstance(raw_color, (int, float)):
+        color = int(raw_color)
+    else:
+        color = 0x456DD4
+
+    em = Embed(
+        title=data.get("title"),
+        description=data.get("description"),
+        color=color,
+        url=data.get("url"),
+    )
+
+    if footer := data.get("footer"):
+        em.set_footer(
+            text=footer.get("text") if isinstance(footer, dict) else str(footer),
+            icon_url=footer.get("icon_url") if isinstance(footer, dict) else None,
+        )
+    if author := data.get("author"):
+        em.set_author(
+            name=author.get("name", "") if isinstance(author, dict) else str(author),
+            url=author.get("url") if isinstance(author, dict) else None,
+            icon_url=author.get("icon_url") if isinstance(author, dict) else None,
+        )
+    if image := data.get("image"):
+        url = image.get("url") if isinstance(image, dict) else image
+        if url:
+            em.set_image(url=url)
+    if thumbnail := data.get("thumbnail"):
+        url = thumbnail.get("url") if isinstance(thumbnail, dict) else thumbnail
+        if url:
+            em.set_thumbnail(url=url)
+    for field in data.get("fields", []):
+        em.add_field(
+            name=field.get("name", ""),
+            value=field.get("value", ""),
+            inline=bool(field.get("inline", False)),
+        )
+    return em
+
+
+def render_template_vars(em: Embed, **kwargs: str) -> Embed:
+    """Substitute {key} placeholders in an embed's text fields (modifies in-place)."""
+
+    def sub(text: Optional[str]) -> Optional[str]:
+        if not text:
+            return text
+        for k, v in kwargs.items():
+            text = text.replace(f"{{{k}}}", v)
+        return text
+
+    em.title = sub(em.title)
+    em.description = sub(em.description)
+    if em.footer.text:
+        em.set_footer(text=sub(em.footer.text), icon_url=em.footer.icon_url)
+    old_fields = [(f.name, f.value, f.inline) for f in em.fields]
+    em.clear_fields()
+    for name, value, inline in old_fields:
+        em.add_field(name=sub(name) or "", value=sub(value) or "", inline=inline)
+    return em
+
+
+async def resolve_template(
+    pool: Any,
+    template_id: Optional[int],
+    fallback: Embed,
+    **render_vars: str,
+) -> Embed:
+    """Return a built Embed from an embed_templates row, or *fallback* if unavailable.
+
+    Template vars (e.g. user, user.mention, guild) are substituted when provided.
+    ON DELETE SET NULL on the FK means a deleted template silently returns the fallback.
+    """
+
+    if not pool or not template_id:
+        return fallback
+    row = await pool.fetchrow(
+        "SELECT data FROM embed_templates WHERE id=$1", template_id
+    )
+    if not row or not row["data"]:
+        return fallback
+    em = embed_from_data(dict(row["data"]))
+    if render_vars:
+        render_template_vars(em, **render_vars)
+    return em

@@ -144,6 +144,20 @@ def build_embed(
     return discord.Embed(title=title, description=description, color=0x456DD4)
 
 
+async def _build_embed_with_template(
+    bot: PizzaHat,
+    menu: dict,
+    items: list[dict],
+    guild: Optional[discord.Guild],
+) -> discord.Embed:
+    """Build the menu embed, falling back to the inline title/description if no template."""
+
+    from utils.embed import resolve_template
+
+    fallback = build_embed(menu, items, guild)
+    return await resolve_template(bot.db, menu.get("template_id"), fallback)
+
+
 async def publish_menu(
     bot: PizzaHat,
     menu: dict,
@@ -151,9 +165,10 @@ async def publish_menu(
     channel: discord.abc.Messageable,
 ) -> discord.Message:
     """Post a new menu message and persist its IDs. Returns the sent message."""
+
     guild = getattr(channel, "guild", None)
     view = RoleMenuView(menu, items, guild)
-    embed = build_embed(menu, items, guild)
+    embed = await _build_embed_with_template(bot, menu, items, guild)
     message = await channel.send(embed=embed, view=view)
     if bot.db:
         await bot.db.execute(
@@ -168,6 +183,7 @@ async def publish_menu(
 
 async def refresh_menu(bot: PizzaHat, menu_id: int) -> bool:
     """Rebuild the embed + view for an existing posted menu. No-op if not posted."""
+
     menu = await _fetch_menu(bot, menu_id)
     if not menu or not menu.get("message_id") or not menu.get("channel_id"):
         return False
@@ -179,7 +195,7 @@ async def refresh_menu(bot: PizzaHat, menu_id: int) -> bool:
 
     items = await _fetch_items(bot, menu_id)
     view = RoleMenuView(menu, items, guild)
-    embed = build_embed(menu, items, guild)
+    embed = await _build_embed_with_template(bot, menu, items, guild)
     try:
         message = await channel.fetch_message(menu["message_id"])
         await message.edit(embed=embed, view=view)
