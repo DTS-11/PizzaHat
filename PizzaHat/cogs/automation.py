@@ -105,7 +105,7 @@ class Automations(Cog, emoji=1504381117174644867):
     # HUB
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    @commands.group(name="automation", aliases=["auto"], invoke_without_command=True)
+    @commands.group(name="automation", invoke_without_command=True)
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def automation(self, ctx: Context):

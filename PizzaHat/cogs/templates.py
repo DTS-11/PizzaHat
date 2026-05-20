@@ -34,9 +34,7 @@ class Templates(Cog, emoji=1497265635183431770):
     def __init__(self, bot: PizzaHat):
         self.bot = bot
 
-    @commands.group(
-        name="template", aliases=["templates", "tpl"], invoke_without_command=True
-    )
+    @commands.group(name="template", invoke_without_command=True)
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def template(self, ctx: Context):
