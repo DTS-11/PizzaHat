@@ -268,7 +268,7 @@ class Help(Cog, emoji="\N{BLACK QUESTION MARK ORNAMENT}"):
                 continue
             cmd_help = command.short_doc if command.short_doc else command.help
             embed.add_field(
-                name=f"`{prefix}{command.qualified_name} {command.signature}`.strip()",
+                name=f"`{prefix}{command.qualified_name} {command.signature}`".strip(),
                 value=cmd_help or "No description.",
                 inline=False,
             )
