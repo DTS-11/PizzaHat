@@ -125,10 +125,17 @@ class ConfirmationView(ui.View):
 
 
 class TicketView(ui.View):
-    def __init__(self, bot: PizzaHat):
+    def __init__(
+        self,
+        bot: PizzaHat,
+        button_label: str = "Open Ticket",
+        button_emoji: str = "<:ticketbadge:1268879389324611595>",
+    ):
         self.bot = bot
         self.thread_id = None
         super().__init__(timeout=None)
+        self.create_ticket.label = button_label
+        self.create_ticket.emoji = button_emoji  # type: ignore
 
     @ui.button(
         label="Open Ticket",
@@ -140,6 +147,18 @@ class TicketView(ui.View):
     async def create_ticket(self, interaction: Interaction, button: ui.Button):
         if not interaction.guild:
             return
+
+        panel = None
+        if self.bot.db and interaction.message:
+            panel = await self.bot.db.fetchrow(
+                "SELECT * FROM ticket_panels WHERE message_id=$1 AND guild_id=$2",
+                interaction.message.id,
+                interaction.guild.id,
+            )
+            if panel and not panel["enabled"]:
+                return await interaction.response.send_message(
+                    "This ticket panel is currently disabled.", ephemeral=True
+                )
 
         for thread in interaction.guild.threads:
             if thread.name == f"ticket-{interaction.user}" and not thread.archived:
@@ -164,6 +183,10 @@ class TicketView(ui.View):
                     interaction.user.id,
                 )
 
+            support_role = None
+            if panel and panel["support_role_id"]:
+                support_role = interaction.guild.get_role(panel["support_role_id"])
+
             em = discord.Embed(
                 title="Ticket Opened",
                 description=(
@@ -180,8 +203,12 @@ class TicketView(ui.View):
                 ),
             )
 
+            content = interaction.user.mention
+            if support_role:
+                content += f" {support_role.mention}"
+
             await thread.send(
-                content=f"{interaction.user.mention}",
+                content=content,
                 embed=em,
                 view=TicketSettings(thread.id, self.bot),
             )
