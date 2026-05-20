@@ -28,7 +28,7 @@ def _strip_codeblock(text: str) -> str:
     return text
 
 
-class Templates(Cog, emoji="📋"):
+class Templates(Cog, emoji=1497265635183431770):
     """Embed templates — store reusable rich embeds and link them to any module."""
 
     def __init__(self, bot: PizzaHat):
