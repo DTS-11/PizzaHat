@@ -88,7 +88,10 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         # USER_TIMEZONE
         """CREATE TABLE IF NOT EXISTS user_timezone
         (user_id BIGINT PRIMARY KEY, timezone TEXT)""",
-        # TICKETS
+        # TICKET_PANEL
+        """CREATE TABLE IF NOT EXISTS ticket_panels
+        (id SERIAL PRIMARY KEY, guild_id BIGINT, channel_id BIGINT, message_id BIGINT, name TEXT, template_id INT, button_label TEXT DEFAULT 'Create Ticket', button_emoji TEXT, support_role_id BIGINT, enabled BOOL DEFAULT TRUE)""",
+        # TICKET_LOGS
         """CREATE TABLE IF NOT EXISTS ticket_logs
         (guild_id BIGINT, thread_id BIGINT PRIMARY KEY, creator_id BIGINT, opened_at TIMESTAMP DEFAULT NOW(), closed_at TIMESTAMP, closed_by BIGINT)""",
         # GUILD_THEMES
@@ -96,24 +99,24 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         (guild_id BIGINT PRIMARY KEY, accent_color TEXT)""",
         # AUTO_RESPONDERS
         """CREATE TABLE IF NOT EXISTS auto_responders
-        (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, trigger_text TEXT NOT NULL, trigger_type TEXT DEFAULT 'contains', response TEXT NOT NULL, channel_ids BIGINT[] DEFAULT '{}', role_ids BIGINT[] DEFAULT '{}', cooldown_seconds INT DEFAULT 0, enabled BOOL DEFAULT TRUE, use_count INT DEFAULT 0, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT NOT NULL)""",
+        (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, trigger_text TEXT NOT NULL, trigger_type TEXT DEFAULT 'contains', response TEXT NOT NULL, template_id INT REFERENCES embed_templates(id) ON DELETE SET NULL, channel_ids BIGINT[] DEFAULT '{}', role_ids BIGINT[] DEFAULT '{}', cooldown_seconds INT DEFAULT 0, enabled BOOL DEFAULT TRUE, use_count INT DEFAULT 0, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT NOT NULL)""",
         # SCHEDULED_MESSAGES
         """CREATE TABLE IF NOT EXISTS scheduled_messages
-        (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, channel_id BIGINT NOT NULL, message TEXT NOT NULL, schedule_type TEXT DEFAULT 'once', interval_type TEXT, next_run TIMESTAMPTZ NOT NULL, timezone TEXT DEFAULT 'UTC', enabled BOOL DEFAULT TRUE, last_run TIMESTAMPTZ, run_count INT DEFAULT 0, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT NOT NULL)""",
+        (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, channel_id BIGINT NOT NULL, message TEXT, template_id INT REFERENCES embed_templates(id) ON DELETE SET NULL, schedule_type TEXT DEFAULT 'once', interval_type TEXT, next_run TIMESTAMPTZ NOT NULL, timezone TEXT DEFAULT 'UTC', enabled BOOL DEFAULT TRUE, last_run TIMESTAMPTZ, run_count INT DEFAULT 0, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT NOT NULL)""",
         # JOIN_AUTOMATION
         """CREATE TABLE IF NOT EXISTS join_automation
-        (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT TRUE, auto_role_ids BIGINT[] DEFAULT '{}', welcome_channel_id BIGINT, welcome_message TEXT, welcome_dm TEXT, created_at TIMESTAMP DEFAULT NOW())""",
+        (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT TRUE, auto_role_ids BIGINT[] DEFAULT '{}', welcome_channel_id BIGINT, welcome_message TEXT, welcome_template_id INT REFERENCES embed_templates(id) ON DELETE SET NULL, welcome_dm TEXT, welcome_dm_template_id INT REFERENCES embed_templates(id) ON DELETE SET NULL, created_at TIMESTAMP DEFAULT NOW())""",
         # EVENT_ACTIONS
         """CREATE TABLE IF NOT EXISTS event_actions
-        (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, name TEXT NOT NULL, event_type TEXT NOT NULL, actions JSONB DEFAULT '[]', enabled BOOL DEFAULT TRUE, run_count INT DEFAULT 0, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT NOT NULL)""",
+        (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, name TEXT NOT NULL, event_type TEXT NOT NULL, actions JSONB DEFAULT '[]', template_id INT REFERENCES embed_templates(id) ON DELETE SET NULL, enabled BOOL DEFAULT TRUE, run_count INT DEFAULT 0, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT NOT NULL)""",
         # ROLE_MENUS
         """CREATE TABLE IF NOT EXISTS role_menus
-        (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, channel_id BIGINT, message_id BIGINT, name TEXT NOT NULL, title TEXT, description TEXT, type TEXT NOT NULL DEFAULT 'button', mode TEXT NOT NULL DEFAULT 'multi', max_selections INT, required_role_id BIGINT, enabled BOOL DEFAULT TRUE, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT)""",
+        (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, channel_id BIGINT, message_id BIGINT, name TEXT NOT NULL, title TEXT, description TEXT, template_id INT REFERENCES embed_templates(id) ON DELETE SET NULL, type TEXT NOT NULL DEFAULT 'button', mode TEXT NOT NULL DEFAULT 'multi', max_selections INT, required_role_id BIGINT, enabled BOOL DEFAULT TRUE, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT)""",
         # ROLE_MENU_ITEMS
         """CREATE TABLE IF NOT EXISTS role_menu_items
         (menu_id INT NOT NULL REFERENCES role_menus(id) ON DELETE CASCADE, role_id BIGINT NOT NULL, label TEXT, emoji TEXT, description TEXT, position INT DEFAULT 0, PRIMARY KEY (menu_id, role_id))""",
         # EMBED_TEMPLATES
-        """CREATE TABLE embed_templates
+        """CREATE TABLE IF NOT EXISTS embed_templates
         (id SERIAL PRIMARY KEY, guild_id BIGINT, name TEXT, data JSONB, created_by BIGINT, created_at TIMESTAMP DEFAULT NOW())""",
     ]
 
