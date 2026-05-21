@@ -77,7 +77,10 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
-        await guild.chunk()  # ensure member cache is full
+        try:
+            await guild.chunk()
+        except Exception:
+            pass
 
         em = green_embed(
             title="Guild Joined",
@@ -94,18 +97,18 @@ class Events(Cog):
         em.add_field(
             name="Bots", value=sum(member.bot for member in guild.members), inline=False
         )
-        (
+        if guild.owner:
             em.add_field(
                 name="Owner", value=f"{guild.owner} ({guild.owner.id})", inline=False
             )
-            if guild.owner
-            else "N/A"
-        )
 
-        channel = self.bot.get_channel(LOGS_CHANNEL) or await self.bot.fetch_channel(
-            LOGS_CHANNEL
-        )
-        await channel.send(embed=em)  # type: ignore
+        try:
+            channel = self.bot.get_channel(
+                LOGS_CHANNEL
+            ) or await self.bot.fetch_channel(LOGS_CHANNEL)
+            await channel.send(embed=em)  # type: ignore
+        except Exception:
+            pass
 
         bots = sum(1 for m in guild.members if m.bot)
         humans = sum(1 for m in guild.members if not m.bot)
@@ -137,7 +140,7 @@ class Events(Cog):
                         f"👋 I've automatically left this server because {reason}. Bye!"
                     )
                 await guild.leave()
-            except:
+            except Exception:
                 pass
             return
 
@@ -170,13 +173,15 @@ class Events(Cog):
         em.set_author(name=guild.name, icon_url=guild.icon.url if guild.icon else None)
 
         em.add_field(name="Guild Name", value=guild.name, inline=False)
-        (
+        em.add_field(
+            name="Members",
+            value=guild.member_count or len(guild.members),
+            inline=False,
+        )
+        if guild.owner:
             em.add_field(
                 name="Owner", value=f"{guild.owner} ({guild.owner.id})", inline=False
             )
-            if guild.owner
-            else "N/A"
-        )
         em.add_field(
             name="Reason",
             value=f"Auto-left: {auto_reason}"
