@@ -258,3 +258,23 @@ async def resolve_template(
     if render_vars:
         render_template_vars(em, **render_vars)
     return em
+
+
+async def resolve_template_or_none(
+    pool: Any,
+    template_id: Optional[int],
+    **render_vars: str,
+) -> Optional[Embed]:
+    """Return a built Embed from an embed_templates row, or None if unavailable."""
+
+    if not pool or not template_id:
+        return None
+    row = await pool.fetchrow(
+        "SELECT data FROM embed_templates WHERE id=$1", template_id
+    )
+    if not row or not row["data"]:
+        return None
+    em = embed_from_data(dict(row["data"]))
+    if render_vars:
+        render_template_vars(em, **render_vars)
+    return em
