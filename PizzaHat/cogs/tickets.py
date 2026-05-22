@@ -37,6 +37,10 @@ class Tickets(Cog, emoji=1268867314292625469):
 
         if not ctx.guild:
             return
+        if not self.bot.db:
+            return await ctx.send(
+                embed=red_embed(f"{self.bot.no} Database unavailable.")
+            )
 
         em = discord.Embed(
             title="Support Tickets",
@@ -52,16 +56,15 @@ class Tickets(Cog, emoji=1268867314292625469):
         view = TicketView(self.bot)
         msg = await channel.send(embed=em, view=view)
 
-        if self.bot.db:
-            await self.bot.db.execute(
-                """INSERT INTO ticket_panels (guild_id, channel_id, message_id, name, support_role_id)
-                   VALUES ($1, $2, $3, $4, $5)""",
-                ctx.guild.id,
-                channel.id,
-                msg.id,
-                name,
-                support_role.id if support_role else None,
-            )
+        await self.bot.db.execute(
+            """INSERT INTO ticket_panels (guild_id, channel_id, message_id, name, support_role_id)
+               VALUES ($1, $2, $3, $4, $5)""",
+            ctx.guild.id,
+            channel.id,
+            msg.id,
+            name,
+            support_role.id if support_role else None,
+        )
 
         await ctx.message.add_reaction(self.bot.yes)
 
