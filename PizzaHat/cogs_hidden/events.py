@@ -20,6 +20,54 @@ class Events(Cog):
         self._auto_left: dict[int, str] = {}  # guild_id -> leave reason
         # bot.loop.create_task(self.update_stats())
 
+    async def _get_bot_logs_channel(self) -> discord.TextChannel | None:
+        channel = self.bot.get_channel(LOGS_CHANNEL)
+
+        if channel is None:
+            try:
+                channel = await self.bot.fetch_channel(LOGS_CHANNEL)
+            except (discord.Forbidden, discord.HTTPException, discord.NotFound):
+                return None
+
+        return channel if isinstance(channel, discord.TextChannel) else None
+
+    async def _send_bot_logs_embed(self, embed: discord.Embed) -> None:
+        channel = await self._get_bot_logs_channel()
+        if channel is None:
+            return
+
+        await self.bot.send_log(channel, embed=embed)
+
+    async def _get_leave_reason(self, guild: discord.Guild) -> tuple[str, bool]:
+        auto_reason = self._auto_left.pop(guild.id, None)
+        if auto_reason:
+            return f"Auto-left: {auto_reason}", True
+
+        if self.bot.user is None:
+            return "Removed or left. Audit details unavailable.", False
+
+        bot_remove_action = getattr(discord.AuditLogAction, "bot_remove", None)
+        if bot_remove_action is None:
+            return "Removed or left. Bot removal audit action is unavailable.", False
+
+        try:
+            async for entry in guild.audit_logs(limit=5, action=bot_remove_action):
+                if (
+                    entry.target
+                    and entry.target.id == self.bot.user.id
+                    and (discord.utils.utcnow() - entry.created_at).total_seconds() < 30
+                ):
+                    moderator = str(entry.user) if entry.user else "Unknown moderator"
+                    if entry.reason:
+                        return f"Kicked by {moderator}: {entry.reason}", False
+                    return f"Kicked by {moderator}", False
+        except discord.Forbidden:
+            return "Removed from guild. Missing audit log access.", False
+        except discord.HTTPException:
+            return "Removed from guild. Audit details unavailable.", False
+
+        return "Removed or left. No matching audit entry found.", False
+
     # @tasks.loop(hours=24)
     # async def update_stats(self):
     #     try:
@@ -102,13 +150,7 @@ class Events(Cog):
                 name="Owner", value=f"{guild.owner} ({guild.owner.id})", inline=False
             )
 
-        try:
-            channel = self.bot.get_channel(
-                LOGS_CHANNEL
-            ) or await self.bot.fetch_channel(LOGS_CHANNEL)
-            await channel.send(embed=em)  # type: ignore
-        except Exception:
-            pass
+        await self._send_bot_logs_embed(em)
 
         bots = sum(1 for m in guild.members if m.bot)
         humans = sum(1 for m in guild.members if not m.bot)
@@ -163,8 +205,7 @@ class Events(Cog):
                 clear_cache(guild.id)
 
         invalidate_theme_cache(guild.id)
-
-        auto_reason = self._auto_left.pop(guild.id, None)
+        leave_reason, was_auto_left = await self._get_leave_reason(guild)
 
         em = red_embed(
             title="Guild Left",
@@ -183,17 +224,13 @@ class Events(Cog):
                 name="Owner", value=f"{guild.owner} ({guild.owner.id})", inline=False
             )
         em.add_field(
-            name="Reason",
-            value=f"Auto-left: {auto_reason}"
-            if auto_reason
-            else "Kicked / manually removed",
+            name="Leave Type",
+            value="Auto-left" if was_auto_left else "Removed / left",
             inline=False,
         )
+        em.add_field(name="Reason", value=leave_reason, inline=False)
 
-        channel = self.bot.get_channel(LOGS_CHANNEL) or await self.bot.fetch_channel(
-            LOGS_CHANNEL
-        )
-        await channel.send(embed=em)  # type: ignore
+        await self._send_bot_logs_embed(em)
 
     # ====== MEMBER PING - AFK EVENT ======
 
