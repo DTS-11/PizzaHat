@@ -15,7 +15,7 @@ PizzaHat Discord Bot <h1/>
 
 ## <img src="https://cdn.discordapp.com/emojis/800797566471897088.png?size=80" height="30px"> • Features
 
-- 📌 Over 100+ commands! </li>
+- 📌 Over 150+ commands! </li>
 - 🔼 99% uptime. </li>
 - 🏓 Low latency. </li>
 - <img src="https://cdn.discordapp.com/emojis/793774567332118528.webp?size=48" height="19px"> Highly Customizable. </li>
@@ -29,6 +29,15 @@ PizzaHat Discord Bot <h1/>
 - 🏷 Tag system </li>
 - 🎟 Ticket system </li>
 - <img src="https://cdn.discordapp.com/emojis/809170074006192130.png?size=80" height="19px"> Updated and maintained! </li>
+- 🔄 Self-assignable role menus (buttons & dropdowns). </li>
+- 🤖 Auto responder system. </li>
+- 👋 Welcome / join automation (autorole, welcome messages, DMs). </li>
+- ⏰ Scheduled messages. </li>
+- 🧩 Embed templates. </li>
+- 💤 AFK system. </li>
+- 🎛️ Interactive help system. </li>
+- ⏱ Timezone support. </li>
+- 🔧 Customizable prefix. </li>
 
 ## <img src='https://cdn.discordapp.com/emojis/802615573556363284.png?size=80' height="30px"> • How to contribute?
 
