@@ -9,6 +9,7 @@ from discord.ext import tasks
 
 from core.bot import PizzaHat
 from core.cog import Cog
+from utils.embed import resolve_template, resolve_template_or_none
 
 # Per-user cooldown tracking: (guild_id, responder_id, user_id) → last-fired monotonic
 _cooldown_map: dict[tuple[int, int, int], float] = {}
@@ -140,14 +141,14 @@ class AutomationEvents(Cog):
             try:
                 template_id: int | None = r.get("template_id")
                 if template_id:
-                    from utils.embed import resolve_template
-
                     tvars = _tvars(msg.guild, msg.author)
-                    fallback = discord.Embed(description=r["response"], color=0x456DD4)
-                    em = await resolve_template(
-                        self.bot.db, template_id, fallback, **tvars
+                    em = await resolve_template_or_none(
+                        self.bot.db, template_id, **tvars
                     )
-                    await msg.channel.send(embed=em)
+                    if em is not None:
+                        await msg.channel.send(embed=em)
+                    else:
+                        await msg.channel.send(r["response"])
                 else:
                     await msg.channel.send(r["response"])
                 if self.bot.db:
@@ -187,16 +188,13 @@ class AutomationEvents(Cog):
                 if isinstance(ch, discord.TextChannel):
                     try:
                         if welcome_tmpl:
-                            from utils.embed import resolve_template
-
-                            fallback = discord.Embed(
-                                description=_render(msg_text or "", **tvars),
-                                color=0x456DD4,
+                            em = await resolve_template_or_none(
+                                self.bot.db, welcome_tmpl, **tvars
                             )
-                            em = await resolve_template(
-                                self.bot.db, welcome_tmpl, fallback, **tvars
-                            )
-                            await ch.send(embed=em)
+                            if em is not None:
+                                await ch.send(embed=em)
+                            elif msg_text:
+                                await ch.send(_render(msg_text, **tvars))
                         else:
                             await ch.send(_render(msg_text, **tvars))
                     except discord.HTTPException:
@@ -207,16 +205,13 @@ class AutomationEvents(Cog):
             if dm_text or dm_tmpl:
                 try:
                     if dm_tmpl:
-                        from utils.embed import resolve_template
-
-                        fallback = discord.Embed(
-                            description=_render(dm_text or "", **tvars),
-                            color=0x456DD4,
+                        em = await resolve_template_or_none(
+                            self.bot.db, dm_tmpl, **tvars
                         )
-                        em = await resolve_template(
-                            self.bot.db, dm_tmpl, fallback, **tvars
-                        )
-                        await member.send(embed=em)
+                        if em is not None:
+                            await member.send(embed=em)
+                        elif dm_text:
+                            await member.send(_render(dm_text, **tvars))
                     else:
                         await member.send(_render(dm_text, **tvars))
                 except discord.HTTPException:
@@ -276,13 +271,13 @@ class AutomationEvents(Cog):
             if isinstance(ch, discord.TextChannel):
                 text = _render(config.get("message", ""), **tvars)
                 if template_id:
-                    from utils.embed import resolve_template
-
-                    fallback = discord.Embed(description=text, color=0x456DD4)
-                    em = await resolve_template(
-                        self.bot.db, template_id, fallback, **tvars
+                    em = await resolve_template_or_none(
+                        self.bot.db, template_id, **tvars
                     )
-                    await ch.send(embed=em)
+                    if em is not None:
+                        await ch.send(embed=em)
+                    else:
+                        await ch.send(text)
                 else:
                     await ch.send(text)
 
@@ -303,13 +298,13 @@ class AutomationEvents(Cog):
                 try:
                     text = _render(config.get("message", ""), **tvars)
                     if template_id:
-                        from utils.embed import resolve_template
-
-                        fallback = discord.Embed(description=text, color=0x456DD4)
-                        em = await resolve_template(
-                            self.bot.db, template_id, fallback, **tvars
+                        em = await resolve_template_or_none(
+                            self.bot.db, template_id, **tvars
                         )
-                        await member.send(embed=em)
+                        if em is not None:
+                            await member.send(embed=em)
+                        else:
+                            await member.send(text)
                     else:
                         await member.send(text)
                 except discord.HTTPException:
@@ -331,8 +326,6 @@ class AutomationEvents(Cog):
                         name=str(member), icon_url=member.display_avatar.url
                     )
                 if template_id:
-                    from utils.embed import resolve_template
-
                     em = await resolve_template(
                         self.bot.db, template_id, fallback, **tvars
                     )
@@ -375,16 +368,14 @@ class AutomationEvents(Cog):
                     try:
                         template_id = row.get("template_id")
                         if template_id:
-                            from utils.embed import resolve_template
-
                             tvars = _tvars(guild)
-                            fallback = discord.Embed(
-                                description=row["message"], color=0x456DD4
+                            em = await resolve_template_or_none(
+                                self.bot.db, template_id, **tvars
                             )
-                            em = await resolve_template(
-                                self.bot.db, template_id, fallback, **tvars
-                            )
-                            await ch.send(embed=em)
+                            if em is not None:
+                                await ch.send(embed=em)
+                            else:
+                                await ch.send(row["message"])
                         else:
                             await ch.send(row["message"])
                     except discord.HTTPException:
