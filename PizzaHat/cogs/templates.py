@@ -393,17 +393,12 @@ class Templates(Cog, emoji=1497265635183431770):
         if template_id and not await self._validate_template(ctx, template_id):
             return
 
-        result = await self.bot.db.execute(
-            "UPDATE join_automation SET welcome_template_id=$1 WHERE guild_id=$2",
+        await self.bot.db.execute(
+            "INSERT INTO join_automation (guild_id, welcome_template_id) VALUES ($1,$2) "
+            "ON CONFLICT (guild_id) DO UPDATE SET welcome_template_id=$2",
             template_id,
             ctx.guild.id,
         )
-        if result == "UPDATE 0":
-            return await ctx.send(
-                embed=orange_embed(
-                    description="Join automation is not configured yet. Run `automation join welcome #channel` first."
-                )
-            )
         cog = self.bot.get_cog("AutomationEvents")
         if cog and hasattr(cog, "clear_cache"):
             cog.clear_cache(ctx.guild.id)  # type: ignore
@@ -426,17 +421,12 @@ class Templates(Cog, emoji=1497265635183431770):
         if template_id and not await self._validate_template(ctx, template_id):
             return
 
-        result = await self.bot.db.execute(
-            "UPDATE join_automation SET welcome_dm_template_id=$1 WHERE guild_id=$2",
+        await self.bot.db.execute(
+            "INSERT INTO join_automation (guild_id, welcome_dm_template_id) VALUES ($1,$2) "
+            "ON CONFLICT (guild_id) DO UPDATE SET welcome_dm_template_id=$2",
             template_id,
             ctx.guild.id,
         )
-        if result == "UPDATE 0":
-            return await ctx.send(
-                embed=orange_embed(
-                    description="Join automation is not configured yet. Run `automation join dm <message>` first."
-                )
-            )
         cog = self.bot.get_cog("AutomationEvents")
         if cog and hasattr(cog, "clear_cache"):
             cog.clear_cache(ctx.guild.id)  # type: ignore
