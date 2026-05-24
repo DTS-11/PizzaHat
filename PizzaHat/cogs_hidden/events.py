@@ -69,9 +69,7 @@ class Events(Cog):
                     if entry.user and entry.user.id == self.bot.user.id:
                         return "Left voluntarily", False
 
-                    moderator = (
-                        str(entry.user) if entry.user else "Unknown moderator"
-                    )
+                    moderator = str(entry.user) if entry.user else "Unknown moderator"
                     if entry.reason:
                         return f"Kicked by {moderator}: {entry.reason}", False
                     return f"Kicked by {moderator}", False
