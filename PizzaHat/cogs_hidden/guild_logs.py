@@ -110,9 +110,20 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_messages:
+            description_parts = []
+            if msg.content:
+                description_parts.append(msg.content)
+            if msg.attachments:
+                attachment_lines = "\n".join(
+                    f"[{a.filename}]({a.proxy_url})" for a in msg.attachments
+                )
+                description_parts.append(f"**Attachments:**\n{attachment_lines}")
+            if not description_parts:
+                description_parts.append("*No content*")
+
             em = red_embed(
                 title=f"Message Deleted in #{msg.channel}",
-                description=msg.content,
+                description="\n\n".join(description_parts),
                 timestamp=True,
             )
             em.set_author(
@@ -120,6 +131,14 @@ class GuildLogs(Cog):
                 icon_url=msg.author.avatar.url if msg.author.avatar else None,
             )
             em.set_footer(text=f"User ID: {msg.author.id}")
+
+            first_attachment = msg.attachments[0] if msg.attachments else None
+            if (
+                first_attachment
+                and first_attachment.content_type
+                and first_attachment.content_type.startswith("image/")
+            ):
+                em.set_image(url=first_attachment.proxy_url)
 
             await self.bot.send_log(channel, embed=em)
 
@@ -161,12 +180,25 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_mod:
+            reason = None
+            try:
+                async for entry in guild.audit_logs(
+                    limit=5, action=discord.AuditLogAction.ban
+                ):
+                    if entry.target and entry.target.id == user.id:
+                        reason = entry.reason
+                        break
+            except discord.errors.Forbidden:
+                pass
+
             em = red_embed(
                 title="Member Banned",
                 timestamp=True,
             )
 
-            em.add_field(name="Reason", value=discord.AuditLogAction.ban, inline=False)
+            em.add_field(
+                name="Reason", value=reason or "No reason provided", inline=False
+            )
 
             em.set_author(name=user, icon_url=user.avatar.url if user.avatar else None)
             em.set_footer(text=f"User ID: {user.id}")
@@ -183,13 +215,24 @@ class GuildLogs(Cog):
             return
 
         if should_log_all or should_log_mod:
+            reason = None
+            try:
+                async for entry in guild.audit_logs(
+                    limit=5, action=discord.AuditLogAction.unban
+                ):
+                    if entry.target and entry.target.id == user.id:
+                        reason = entry.reason
+                        break
+            except discord.errors.Forbidden:
+                pass
+
             em = green_embed(
                 title="Member Unbanned",
                 timestamp=True,
             )
 
             em.add_field(
-                name="Reason", value=discord.AuditLogAction.unban, inline=False
+                name="Reason", value=reason or "No reason provided", inline=False
             )
             em.set_author(name=user, icon_url=user.avatar.url if user.avatar else None)
             em.set_footer(text=f"User ID: {user.id}")
@@ -324,7 +367,9 @@ class GuildLogs(Cog):
                 roles = "No roles."
 
             em.add_field(
-                name="Joined:", value=format_date(member.joined_at), inline=False
+                name="Joined:",
+                value=format_date(member.joined_at) if member.joined_at else "Unknown",
+                inline=False,
             )
             em.add_field(name="Roles:", value=roles, inline=False)
             em.add_field(name="Members:", value=member.guild.member_count, inline=False)
@@ -356,7 +401,7 @@ class GuildLogs(Cog):
 
         for role in roles:
             role_text += f"{role.mention} "
-        role_text = role_text[:-2]
+        role_text = role_text.rstrip()
 
         if should_log_all or should_log_member:
             em = await guild_embed(
@@ -413,6 +458,9 @@ class GuildLogs(Cog):
         before: discord.VoiceState,
         after: discord.VoiceState,
     ):
+        if before.channel == after.channel:
+            return
+
         channel = await self.get_logs_channel(member.guild.id)
         should_log_all = await self.check_log_enabled(member.guild.id, "all")
         should_log_voice = await self.check_log_enabled(member.guild.id, "voice")
@@ -942,6 +990,9 @@ class GuildLogs(Cog):
                     inline=False,
                 )
 
+            if em.fields:
+                await self.bot.send_log(channel, embed=em)
+
     # ====== GUILD INTEGRATION EVENTS ======
 
     @Cog.listener()
@@ -955,7 +1006,7 @@ class GuildLogs(Cog):
         if not channel:
             return
 
-        if not should_log_all and not should_log_integrations:
+        if should_log_all or should_log_integrations:
             em = green_embed(
                 title="Integration Created",
                 timestamp=True,
