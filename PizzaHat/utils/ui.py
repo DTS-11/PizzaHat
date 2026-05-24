@@ -8,7 +8,6 @@ from discord.ext.commands import Context
 
 from core.bot import PizzaHat, Tier
 from utils.custom_checks import _tier_cache
-from utils.embed import ctx_embed
 
 
 # credits to Nirlep's EpicBot paginator system!
@@ -69,7 +68,7 @@ class Paginator(ui.View):
         self.current -= 1
         await self.update_message(interaction)
 
-    @ui.button(emoji="🗑", style=ButtonStyle.red)
+    @ui.button(label="Quit", style=ButtonStyle.red)
     async def delete(self, interaction: Interaction, button: ui.Button):
         if interaction.message is not None:
             await interaction.message.delete()
