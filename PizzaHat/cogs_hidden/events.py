@@ -46,18 +46,32 @@ class Events(Cog):
         if self.bot.user is None:
             return "Removed or left. Audit details unavailable.", False
 
-        bot_remove_action = getattr(discord.AuditLogAction, "bot_remove", None)
-        if bot_remove_action is None:
-            return "Removed or left. Bot removal audit action is unavailable.", False
+        actions_to_try: list[discord.AuditLogAction] = []
+        for name in ("bot_remove", "kick"):
+            action = getattr(discord.AuditLogAction, name, None)
+            if action is not None:
+                actions_to_try.append(action)
+
+        if not actions_to_try:
+            return "Left voluntarily", False
 
         try:
-            async for entry in guild.audit_logs(limit=5, action=bot_remove_action):
-                if (
-                    entry.target
-                    and entry.target.id == self.bot.user.id
-                    and (discord.utils.utcnow() - entry.created_at).total_seconds() < 30
-                ):
-                    moderator = str(entry.user) if entry.user else "Unknown moderator"
+            for action in actions_to_try:
+                async for entry in guild.audit_logs(limit=5, action=action):
+                    if not entry.target or entry.target.id != self.bot.user.id:
+                        continue
+                    if (
+                        discord.utils.utcnow() - entry.created_at
+                    ).total_seconds() >= 30:
+                        continue
+
+                    # Bot kicked itself = voluntary leave (e.g. guild.leave())
+                    if entry.user and entry.user.id == self.bot.user.id:
+                        return "Left voluntarily", False
+
+                    moderator = (
+                        str(entry.user) if entry.user else "Unknown moderator"
+                    )
                     if entry.reason:
                         return f"Kicked by {moderator}: {entry.reason}", False
                     return f"Kicked by {moderator}", False
@@ -66,7 +80,7 @@ class Events(Cog):
         except discord.HTTPException:
             return "Removed from guild. Audit details unavailable.", False
 
-        return "Removed or left. No matching audit entry found.", False
+        return "Left voluntarily", False
 
     # @tasks.loop(hours=24)
     # async def update_stats(self):
@@ -107,7 +121,7 @@ class Events(Cog):
             if self.bot.user == msg.author:
                 return
 
-            if msg.content in {f"<@{bot_id}>" or f"<@!{bot_id}>"}:
+            if msg.content in {f"<@{bot_id}>", f"<@!{bot_id}>"}:
                 prefix = (
                     await get_prefix(self.bot.db, msg.guild.id if msg.guild else 0)
                     or "p!"
@@ -125,8 +139,10 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
+        chunked = False
         try:
             await guild.chunk()
+            chunked = True
         except Exception:
             pass
 
@@ -151,6 +167,14 @@ class Events(Cog):
             )
 
         await self._send_bot_logs_embed(em)
+
+        # Auto-leave detection requires a full member view. If chunking failed or
+        # cached members don't cover the whole guild, skip — otherwise we'd
+        # auto-leave every guild we join (only the bot itself would be cached).
+        if not chunked:
+            return
+        if guild.member_count is not None and len(guild.members) < guild.member_count:
+            return
 
         bots = sum(1 for m in guild.members if m.bot)
         humans = sum(1 for m in guild.members if not m.bot)
@@ -183,7 +207,9 @@ class Events(Cog):
                     )
                 await guild.leave()
             except Exception:
-                pass
+                # If leaving failed, drop the stale auto-left marker so a later
+                # legitimate kick doesn't get mislabeled as an auto-leave.
+                self._auto_left.pop(guild.id, None)
             return
 
     @Cog.listener()
