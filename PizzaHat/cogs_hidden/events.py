@@ -1,5 +1,6 @@
-import discord
+import asyncio
 
+import discord
 from core.bot import PizzaHat
 from core.cog import Cog
 from core.database import get_prefix
@@ -17,7 +18,7 @@ class Events(Cog):
 
     def __init__(self, bot: PizzaHat):
         self.bot: PizzaHat = bot
-        self._auto_left: dict[int, str] = {}  # guild_id -> leave reason
+        self._auto_left: set[int] = set()
         # bot.loop.create_task(self.update_stats())
 
     async def _get_bot_logs_channel(self) -> discord.TextChannel | None:
@@ -38,47 +39,12 @@ class Events(Cog):
 
         await self.bot.send_log(channel, embed=embed)
 
-    async def _get_leave_reason(self, guild: discord.Guild) -> tuple[str, bool]:
-        auto_reason = self._auto_left.pop(guild.id, None)
-        if auto_reason:
-            return f"Auto-left: {auto_reason}", True
+    def _get_leave_reason(self, guild: discord.Guild) -> tuple[str, bool]:
+        if guild.id in self._auto_left:
+            self._auto_left.discard(guild.id)
+            return "Left due to higher bot ratio or too few human members", True
 
-        if self.bot.user is None:
-            return "Removed or left. Audit details unavailable.", False
-
-        actions_to_try: list[discord.AuditLogAction] = []
-        for name in ("bot_remove", "kick"):
-            action = getattr(discord.AuditLogAction, name, None)
-            if action is not None:
-                actions_to_try.append(action)
-
-        if not actions_to_try:
-            return "Left voluntarily", False
-
-        try:
-            for action in actions_to_try:
-                async for entry in guild.audit_logs(limit=5, action=action):
-                    if not entry.target or entry.target.id != self.bot.user.id:
-                        continue
-                    if (
-                        discord.utils.utcnow() - entry.created_at
-                    ).total_seconds() >= 30:
-                        continue
-
-                    # Bot kicked itself = voluntary leave (e.g. guild.leave())
-                    if entry.user and entry.user.id == self.bot.user.id:
-                        return "Left voluntarily", False
-
-                    moderator = str(entry.user) if entry.user else "Unknown moderator"
-                    if entry.reason:
-                        return f"Kicked by {moderator}: {entry.reason}", False
-                    return f"Kicked by {moderator}", False
-        except discord.Forbidden:
-            return "Removed from guild. Missing audit log access.", False
-        except discord.HTTPException:
-            return "Removed from guild. Audit details unavailable.", False
-
-        return "Left voluntarily", False
+        return "Manually removed", False
 
     # @tasks.loop(hours=24)
     # async def update_stats(self):
@@ -137,13 +103,6 @@ class Events(Cog):
 
     @Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
-        chunked = False
-        try:
-            await guild.chunk()
-            chunked = True
-        except Exception:
-            pass
-
         em = green_embed(
             title="Guild Joined",
             timestamp=True,
@@ -166,30 +125,20 @@ class Events(Cog):
 
         await self._send_bot_logs_embed(em)
 
-        # Auto-leave detection requires a full member view. If chunking failed or
-        # cached members don't cover the whole guild, skip — otherwise we'd
-        # auto-leave every guild we join (only the bot itself would be cached).
-        if not chunked:
+        try:
+            await asyncio.wait_for(guild.chunk(), timeout=5)
+        except Exception:
             return
+
         if guild.member_count is not None and len(guild.members) < guild.member_count:
             return
 
         bots = sum(1 for m in guild.members if m.bot)
         humans = sum(1 for m in guild.members if not m.bot)
-
         total = bots + humans
-        bot_ratio = bots / total if total > 0 else 0
 
-        reason = None
-        if bot_ratio >= 0.70:
-            reason = (
-                f"it has a high bot-to-member ratio ({round(bot_ratio * 100)}% bots)"
-            )
-        elif humans <= 3:
-            reason = f"it has too few real members ({humans} human{'s' if humans != 1 else ''})"
-
-        if reason:
-            self._auto_left[guild.id] = reason
+        if (total > 0 and bots / total >= 0.70) or humans <= 3:
+            self._auto_left.add(guild.id)
             try:
                 ch = guild.system_channel or next(
                     (
@@ -201,13 +150,11 @@ class Events(Cog):
                 )
                 if ch:
                     await ch.send(
-                        f"👋 I've automatically left this server because {reason}. Bye!"
+                        "👋 I've automatically left this server due to a higher bot-to-member ratio or too few human members. Bye!"
                     )
                 await guild.leave()
             except Exception:
-                # If leaving failed, drop the stale auto-left marker so a later
-                # legitimate kick doesn't get mislabeled as an auto-leave.
-                self._auto_left.pop(guild.id, None)
+                self._auto_left.discard(guild.id)
             return
 
     @Cog.listener()
@@ -229,7 +176,7 @@ class Events(Cog):
                 clear_cache(guild.id)
 
         invalidate_theme_cache(guild.id)
-        leave_reason, was_auto_left = await self._get_leave_reason(guild)
+        leave_reason, was_auto_left = self._get_leave_reason(guild)
 
         em = red_embed(
             title="Guild Left",
