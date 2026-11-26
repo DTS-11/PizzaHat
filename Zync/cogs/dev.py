@@ -7,6 +7,7 @@ extension reloading and bot log access for the bot owner.
 
 from __future__ import annotations
 
+import asyncio
 import builtins
 import io
 import re
@@ -35,12 +36,50 @@ if TYPE_CHECKING:
 _EVAL_BUILTINS: dict[str, Any] = {
     name: getattr(builtins, name)
     for name in (
-        "abs", "all", "any", "bin", "bool", "bytes", "chr", "dict", "dir",
-        "enumerate", "filter", "float", "format", "frozenset", "getattr",
-        "hasattr", "hex", "int", "isinstance", "issubclass", "iter", "len",
-        "list", "map", "max", "min", "next", "object", "oct", "ord", "pow",
-        "print", "range", "repr", "reversed", "round", "set", "slice",
-        "sorted", "str", "sum", "tuple", "type", "zip",
+        "abs",
+        "all",
+        "any",
+        "bin",
+        "bool",
+        "bytes",
+        "chr",
+        "dict",
+        "dir",
+        "enumerate",
+        "filter",
+        "float",
+        "format",
+        "frozenset",
+        "getattr",
+        "hasattr",
+        "hex",
+        "int",
+        "isinstance",
+        "issubclass",
+        "iter",
+        "len",
+        "list",
+        "map",
+        "max",
+        "min",
+        "next",
+        "object",
+        "oct",
+        "ord",
+        "pow",
+        "print",
+        "range",
+        "repr",
+        "reversed",
+        "round",
+        "set",
+        "slice",
+        "sorted",
+        "str",
+        "sum",
+        "tuple",
+        "type",
+        "zip",
     )
 }
 _EVAL_FORBIDDEN = re.compile(
@@ -80,6 +119,22 @@ class Dev(Cog, emoji=1268856867585658981):
 
     def __init__(self, bot: Zync):
         self.bot: Zync = bot
+
+    @commands.command(name="updatecodebase", hidden=True)
+    @commands.is_owner()
+    async def _updatecodebase(self, ctx: Context):
+        """Update the bot."""
+        process = await asyncio.create_subprocess_exec(
+            "git",
+            "pull",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await process.communicate()
+        output = ((stdout or b"") + (stderr or b"")).decode(errors="replace").strip()
+
+        await ctx.send(f"```bash\n{output[:1900]}\n```\nRestarting...")
+        await self.bot.close()
 
     @commands.command(name="eval", hidden=True)
     @commands.is_owner()
@@ -147,9 +202,7 @@ class Dev(Cog, emoji=1268856867585658981):
             return await ctx.send("Evaluated successfully (no output).")
 
         for page in _paginate(output):
-            await ctx.send(
-                embed=await ctx_embed(ctx, description=_code_block(page))
-            )
+            await ctx.send(embed=await ctx_embed(ctx, description=_code_block(page)))
 
     @commands.command(name="sql", hidden=True)
     @commands.is_owner()
@@ -162,7 +215,9 @@ class Dev(Cog, emoji=1268856867585658981):
                 "Only single SELECT, WITH, or EXPLAIN queries are allowed."
             )
         if ";" in query or _MUTATING_SQL.search(query):
-            return await ctx.send("Write statements and multiple statements are blocked.")
+            return await ctx.send(
+                "Write statements and multiple statements are blocked."
+            )
 
         if not self.bot.db:
             return await ctx.send("Database unavailable.")
@@ -226,7 +281,9 @@ class Dev(Cog, emoji=1268856867585658981):
         synced = await self.bot.sync_commands()
         if failed or not synced:
             details = "\n".join(failed) if failed else "Command sync failed."
-            return await ctx.send(f"Reload finished with issues:\n```\n{details[:1500]}\n```")
+            return await ctx.send(
+                f"Reload finished with issues:\n```\n{details[:1500]}\n```"
+            )
         await ctx.send("Reloaded all cogs!")
 
 
