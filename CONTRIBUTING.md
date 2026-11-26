@@ -1,8 +1,79 @@
-## <img src='https://cdn.discordapp.com/emojis/802615573556363284.png?size=80' height="30px"> • How to contribute?
+# Contributing to Zync
 
-- Fork the repo.
-- Create a new branch
-- Add features/changes (with proper docs for help)
-- Format code with Ruff
-- Commit and push the changes
-- Submit pull request
+Thanks for helping improve Zync. Please read the [Code of Conduct](./CODE_OF_CONDUCT.md) before
+opening a pull request.
+
+## Getting started
+
+1. Fork the repository.
+2. Create a focused branch, e.g. `fix/workflow-cooldown` or `feature/ticket-export`.
+3. From `Zync/`, copy the environment template and fill in the values you need:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   `.env` is gitignored. `load_dotenv()` reads from the current working directory, so keep `.env` in
+   `Zync/` when using the project commands.
+
+4. Install dependencies with uv from `Zync/`:
+
+   ```bash
+   uv sync
+   ```
+
+5. If you are working on automod, create the gitignored `Zync/utils/bad_words.py` with a local
+   `BANNED_WORDS` list.
+6. The repo root has a `.venv` link to `Zync/.venv`, plus `cogs`, `cogs_hidden`, `core`, and
+   `utils` links into `Zync/`. This lets editors and language servers discover the environment and
+   first-party imports from the repository root. The link is gitignored; recreate it with
+   `ln -s Zync/.venv .venv` if it is missing. If your editor asks for an interpreter, choose
+   `Zync/.venv/bin/python`. Reopen or reload the project after `uv sync` if imports still appear
+   unresolved.
+7. Make your changes and keep them scoped to the feature or bug.
+
+## Project conventions
+
+- Every Python module starts with a module-level docstring. Use the same concise
+  summary-plus-detail style as `utils/workflow_schema.py`.
+- Public commands live in `Zync/cogs/`.
+- Listeners, runners, and persistent-view registration live in `Zync/cogs_hidden/`.
+- Reusable components live in `Zync/utils/`.
+- New commands must be slash-accessible. Commands should be hybrid where a mention fallback makes
+  sense; do not reintroduce a custom prefix.
+- The bot does not request the Message Content privileged intent. Avoid features that require reading
+  raw guild message content unless the change explicitly addresses that limitation.
+- Workflow payloads must pass through `utils/workflow_schema.py`. Do not bypass validation or tier
+  limits in the runner or command layer.
+- Database changes are additive by default:
+  - update bootstrap SQL in `core/database.py`
+  - add a numbered file under `migrations/`
+  - never drop tables in bootstrap
+  - destructive migrations require explicit review and a backup warning
+
+## Checks
+
+Before opening a pull request, run from `Zync/`:
+
+```bash
+uv run ruff check --select I --fix .
+uv run ruff format .
+uv run python -m compileall cogs cogs_hidden core utils __main__.py
+uv run ruff check --select F821,F811,F402,F632 .
+```
+
+If you changed cogs, also load all extensions in a smoke test with `bot.db` set to `None` and
+`bot.tree.sync` stubbed, so no network or database connection is needed.
+
+## Pull requests
+
+- Describe what changed and why.
+- Mention any manual database migration required.
+- Include the commands you ran to verify the change.
+- Link related issues where applicable.
+- Keep credits, license, and attribution intact.
+
+## Notes
+
+Zync is open source for educational and development purposes. Keep credits, license, and
+attribution intact. Do not reuse the Zync name or logo in derivative bots.
