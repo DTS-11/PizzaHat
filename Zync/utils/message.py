@@ -1,3 +1,9 @@
+"""Message-wait helpers.
+
+Contains the interactive follow-up utility that waits for a user response,
+deletes the response, and supports cancellation.
+"""
+
 import asyncio
 from typing import Union
 

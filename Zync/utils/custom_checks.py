@@ -1,3 +1,9 @@
+"""Reusable command checks.
+
+Provides the premium/tier guard used by cogs plus the shared tier cache used by
+premium and workflow limit checks.
+"""
+
 from discord.ext import commands
 from discord.ext.commands import Context
 

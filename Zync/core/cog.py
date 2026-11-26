@@ -1,3 +1,9 @@
+"""Shared cog base classes.
+
+Defines the project-specific ``Cog`` and ``CogMeta`` used to attach emoji
+metadata and shared behavior to every command module.
+"""
+
 from io import BytesIO
 from typing import Union
 
