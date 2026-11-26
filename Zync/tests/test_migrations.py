@@ -50,3 +50,25 @@ def test_initial_migration_drops_legacy_objects_by_actual_type() -> None:
 def test_drop_block_runs_before_any_create() -> None:
     sql = (MIGRATIONS_DIR / "0001_initial_schema.sql").read_text(encoding="utf-8")
     assert sql.index("DO $zync_drop$") < sql.index("CREATE TABLE guild_config")
+
+
+def test_second_migration_drops_all_orphan_tables() -> None:
+    sql = (MIGRATIONS_DIR / "0002_drop_legacy_orphans.sql").read_text(encoding="utf-8")
+    assert "SELECT c.relkind INTO object_kind" in sql
+    for name in (
+        "afk", "auto_responders", "guild_themes", "join_automation",
+        "prefix", "scheduled_messages", "star_config", "event_actions",
+    ):
+        assert f"'{name}'" in sql
+
+
+def test_no_legacy_table_is_left_for_fresh_deployments() -> None:
+    combined = "\n".join(
+        path.read_text(encoding="utf-8") for _, _, path in _migration_files()
+    )
+    for name in (
+        "warnlogs", "ticket_logs", "guild_logs", "logs_config", "automod",
+        "antialt", "afk", "auto_responders", "guild_themes", "join_automation",
+        "prefix", "scheduled_messages", "star_config", "event_actions",
+    ):
+        assert f"'{name}'" in combined
