@@ -1,3 +1,9 @@
+"""Environment-backed configuration.
+
+Loads ``.env`` and exposes tokens, database settings, channel/role IDs, links,
+and constant collections used throughout the bot.
+"""
+
 import os
 
 from dotenv import load_dotenv
@@ -38,19 +44,17 @@ WUMPUS_VOTE = "https://wumpus.store/bot/860889936914677770/vote"
 
 # OTHERS
 ANTIHOIST_CHARS = "!@#$%^&*()_+-=.,/?;:[]{}`~\"'\\|<>"
-DEFAULT_PREFIX = "p!"
 
 
 # COG EXCEPTIONS
 COG_EXCEPTIONS = [
     "AntiAltsConfig",
-    "AutomationEvents",
     "AutoModConfig",
     "Dev",
     "Events",
     "GuildLogs",
-    "Help",
     "Jishaku",
     "RoleMenuEvents",
-    "StarboardEvents",
+    "TicketInteractions",
+    "WorkflowRunner",
 ]

@@ -1,10 +1,16 @@
+"""Ticket panel commands.
+
+Contains the public ticket setup commands that create persistent panels and
+delegate button interactions to the reusable views in ``utils.ui``.
+"""
+
 from typing import Optional
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import PizzaHat
+from core.bot import Zync
 from core.cog import Cog
 from utils.embed import green_embed, red_embed
 from utils.ui import TicketView
@@ -13,10 +19,10 @@ from utils.ui import TicketView
 class Tickets(Cog, emoji=1268867314292625469):
     """Button ticket system for support and help!"""
 
-    def __init__(self, bot: PizzaHat):
-        self.bot: PizzaHat = bot
+    def __init__(self, bot: Zync):
+        self.bot: Zync = bot
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(manage_threads=True)
     @commands.bot_has_permissions(manage_threads=True)
@@ -66,9 +72,16 @@ class Tickets(Cog, emoji=1268867314292625469):
             support_role.id if support_role else None,
         )
 
-        await ctx.message.add_reaction(self.bot.yes)
+        if ctx.interaction is None and ctx.message is not None:
+            await ctx.message.add_reaction(self.bot.yes)
+        else:
+            await ctx.send(
+                embed=green_embed(
+                    f"{self.bot.yes} Ticket panel **{name}** created in {channel.mention}."
+                )
+            )
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(manage_threads=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -118,7 +131,7 @@ class Tickets(Cog, emoji=1268867314292625469):
 
         await ctx.send(embed=em)
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(manage_threads=True)
     @commands.bot_has_permissions(manage_messages=True)
@@ -163,7 +176,7 @@ class Tickets(Cog, emoji=1268867314292625469):
             embed=green_embed(f"{self.bot.yes} Deleted panel **{panel['name']}**.")
         )
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(manage_threads=True)
     @commands.bot_has_permissions(manage_threads=True)
@@ -184,7 +197,7 @@ class Tickets(Cog, emoji=1268867314292625469):
                 )
             )
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(manage_threads=True)
     @commands.bot_has_permissions(manage_threads=True)
@@ -207,7 +220,7 @@ class Tickets(Cog, emoji=1268867314292625469):
                 )
             )
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(manage_threads=True)
     @commands.bot_has_permissions(manage_threads=True)
@@ -234,7 +247,7 @@ class Tickets(Cog, emoji=1268867314292625469):
                 )
             )
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(manage_threads=True)
     @commands.bot_has_permissions(manage_threads=True)
@@ -256,5 +269,5 @@ class Tickets(Cog, emoji=1268867314292625469):
             )
 
 
-async def setup(bot: PizzaHat) -> None:
+async def setup(bot: Zync) -> None:
     await bot.add_cog(Tickets(bot))

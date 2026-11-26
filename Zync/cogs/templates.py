@@ -1,3 +1,9 @@
+"""Embed template commands.
+
+Contains the ``/template`` command group for creating, editing, previewing,
+listing, and linking reusable embed templates.
+"""
+
 from __future__ import annotations
 
 import json
@@ -6,7 +12,7 @@ from typing import Optional
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import PizzaHat
+from core.bot import Zync
 from core.cog import Cog
 from utils.embed import (
     ctx_embed,
@@ -31,10 +37,10 @@ def _strip_codeblock(text: str) -> str:
 class Templates(Cog, emoji=1497265635183431770):
     """Embed templates — store reusable rich embeds and link them to any module."""
 
-    def __init__(self, bot: PizzaHat):
+    def __init__(self, bot: Zync):
         self.bot = bot
 
-    @commands.group(name="template", invoke_without_command=True)
+    @commands.hybrid_group(name="template", fallback="list")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def template(self, ctx: Context):
@@ -47,25 +53,19 @@ class Templates(Cog, emoji=1497265635183431770):
             ctx.guild.id,
         )
 
-        p = ctx.prefix
         if not rows:
             return await ctx.send(
                 embed=orange_embed(
                     description=(
                         f"No embed templates yet.\n\n"
                         f"**Create one:**\n"
-                        f'`{p}template create "My Template" {{"title":"Hello","description":"World","color":5793266}}`\n\n'
+                        f'`/template create "My Template" {{"title":"Hello","description":"World","color":5793266}}`\n\n'
                         f"**Supported fields:** `title` `description` `color` (int or `#hex`) "
                         f"`url` `footer` `author` `image` `thumbnail` `fields`\n\n"
                         f"**Template variables:** `{{user}}` `{{user.mention}}` `{{user.name}}` `{{user.id}}` `{{guild}}`\n\n"
                         f"**Link to a module:**\n"
-                        f"`{p}template link responder <id> <template_id>`\n"
-                        f"`{p}template link schedule <id> <template_id>`\n"
-                        f"`{p}template link join welcome <template_id>`\n"
-                        f"`{p}template link join dm <template_id>`\n"
-                        f"`{p}template link event <id> <template_id>`\n"
-                        f"`{p}template link rolemenu <id> <template_id>`\n"
-                        f"`{p}template link ticket <panel_id> <template_id>`"
+                        f"`/template link rolemenu <menu_id> <template_id>`\n"
+                        f"`/template link ticket <panel_id> <template_id>`"
                     )
                 )
             )
@@ -80,7 +80,7 @@ class Templates(Cog, emoji=1497265635183431770):
             description=(
                 f"**{len(rows)}** template(s)\n\n"
                 + "\n".join(lines)
-                + f"\n\nUse `{p}template preview <id>` to preview."
+                + f"\n\nUse `/template preview <id>` to preview."
             ),
         )
         await ctx.send(embed=em)
@@ -126,13 +126,12 @@ class Templates(Cog, emoji=1497265635183431770):
             data,
             ctx.author.id,
         )
-        p = ctx.prefix
         await ctx.send(
             embed=green_embed(
                 description=(
                     f"{self.bot.yes} Template `#{row['id']}` **{name}** created!\n\n"
-                    f"Preview: `{p}template preview {row['id']}`\n"
-                    f"Link it: `{p}template link <module> ... {row['id']}`"
+                    f"Preview: `/template preview {row['id']}`\n"
+                    f"Link it: `/template link <module> ... {row['id']}`"
                 )
             )
         )
@@ -259,23 +258,17 @@ class Templates(Cog, emoji=1497265635183431770):
 
     # ── Link subgroup ─────────────────────────────────────────────────────────
 
-    @template.group(name="link", aliases=["set"], invoke_without_command=True)
+    @template.group(name="link", aliases=["set"], fallback="list")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def template_link(self, ctx: Context):
         """Link a template to a module. Run a subcommand for the target module."""
-        p = ctx.prefix
         em = await ctx_embed(
             ctx,
             title="📋  Template Linking",
             description=(
-                f"`{p}template link responder <responder_id> [template_id]`\n"
-                f"`{p}template link schedule <schedule_id> [template_id]`\n"
-                f"`{p}template link join welcome [template_id]`\n"
-                f"`{p}template link join dm [template_id]`\n"
-                f"`{p}template link event <event_id> [template_id]`\n"
-                f"`{p}template link rolemenu <menu_id> [template_id]`\n"
-                f"`{p}template link ticket <panel_id> [template_id]`\n\n"
+                f"`/template link rolemenu <menu_id> [template_id]`\n"
+                f"`/template link ticket <panel_id> [template_id]`\n\n"
                 f"Omit `template_id` to unlink."
             ),
         )
@@ -297,181 +290,6 @@ class Templates(Cog, emoji=1497265635183431770):
                 )
             )
         return bool(exists)
-
-    @template_link.command(name="responder", aliases=["ar"])
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild=True)
-    async def link_responder(
-        self, ctx: Context, responder_id: int, template_id: Optional[int] = None
-    ):
-        """Link (or unlink) an embed template to an auto responder."""
-        if not ctx.guild or not self.bot.db:
-            return
-        if template_id and not await self._validate_template(ctx, template_id):
-            return
-
-        result = await self.bot.db.execute(
-            "UPDATE auto_responders SET template_id=$1 WHERE id=$2 AND guild_id=$3",
-            template_id,
-            responder_id,
-            ctx.guild.id,
-        )
-        if result == "UPDATE 0":
-            return await ctx.send(
-                embed=red_embed(
-                    description=f"{self.bot.no} Responder `#{responder_id}` not found."
-                )
-            )
-        cog = self.bot.get_cog("AutomationEvents")
-        if cog and hasattr(cog, "clear_cache"):
-            cog.clear_cache(ctx.guild.id)  # type: ignore
-        verb = (
-            f"linked template `#{template_id}`" if template_id else "unlinked template"
-        )
-        await ctx.send(
-            embed=green_embed(
-                description=f"{self.bot.yes} Responder `#{responder_id}` {verb}."
-            )
-        )
-
-    @template_link.command(name="schedule", aliases=["sched"])
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild=True)
-    async def link_schedule(
-        self, ctx: Context, schedule_id: int, template_id: Optional[int] = None
-    ):
-        """Link (or unlink) an embed template to a scheduled message."""
-        if not ctx.guild or not self.bot.db:
-            return
-        if template_id and not await self._validate_template(ctx, template_id):
-            return
-
-        result = await self.bot.db.execute(
-            "UPDATE scheduled_messages SET template_id=$1 WHERE id=$2 AND guild_id=$3",
-            template_id,
-            schedule_id,
-            ctx.guild.id,
-        )
-        if result == "UPDATE 0":
-            return await ctx.send(
-                embed=red_embed(
-                    description=f"{self.bot.no} Schedule `#{schedule_id}` not found."
-                )
-            )
-        verb = (
-            f"linked template `#{template_id}`" if template_id else "unlinked template"
-        )
-        await ctx.send(
-            embed=green_embed(
-                description=f"{self.bot.yes} Schedule `#{schedule_id}` {verb}."
-            )
-        )
-
-    @template_link.group(name="join", invoke_without_command=True)
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild=True)
-    async def link_join(self, ctx: Context):
-        """Link templates to join automation. Use `welcome` or `dm` subcommands."""
-        p = ctx.prefix
-        await ctx.send(
-            embed=orange_embed(
-                description=(
-                    f"`{p}template link join welcome [template_id]` — welcome channel embed\n"
-                    f"`{p}template link join dm [template_id]` — DM embed\n\n"
-                    f"Omit `template_id` to unlink."
-                )
-            )
-        )
-
-    @link_join.command(name="welcome")
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild=True)
-    async def link_join_welcome(self, ctx: Context, template_id: Optional[int] = None):
-        """Link (or unlink) an embed template to the join welcome channel message."""
-        if not ctx.guild or not self.bot.db:
-            return
-        if template_id and not await self._validate_template(ctx, template_id):
-            return
-
-        await self.bot.db.execute(
-            "INSERT INTO join_automation (guild_id, welcome_template_id) VALUES ($1,$2) "
-            "ON CONFLICT (guild_id) DO UPDATE SET welcome_template_id=$2",
-            template_id,
-            ctx.guild.id,
-        )
-        cog = self.bot.get_cog("AutomationEvents")
-        if cog and hasattr(cog, "clear_cache"):
-            cog.clear_cache(ctx.guild.id)  # type: ignore
-        verb = (
-            f"linked template `#{template_id}`" if template_id else "unlinked template"
-        )
-        await ctx.send(
-            embed=green_embed(
-                description=f"{self.bot.yes} Join welcome message {verb}."
-            )
-        )
-
-    @link_join.command(name="dm")
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild=True)
-    async def link_join_dm(self, ctx: Context, template_id: Optional[int] = None):
-        """Link (or unlink) an embed template to the join welcome DM."""
-        if not ctx.guild or not self.bot.db:
-            return
-        if template_id and not await self._validate_template(ctx, template_id):
-            return
-
-        await self.bot.db.execute(
-            "INSERT INTO join_automation (guild_id, welcome_dm_template_id) VALUES ($1,$2) "
-            "ON CONFLICT (guild_id) DO UPDATE SET welcome_dm_template_id=$2",
-            template_id,
-            ctx.guild.id,
-        )
-        cog = self.bot.get_cog("AutomationEvents")
-        if cog and hasattr(cog, "clear_cache"):
-            cog.clear_cache(ctx.guild.id)  # type: ignore
-        verb = (
-            f"linked template `#{template_id}`" if template_id else "unlinked template"
-        )
-        await ctx.send(
-            embed=green_embed(description=f"{self.bot.yes} Join welcome DM {verb}.")
-        )
-
-    @template_link.command(name="event")
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild=True)
-    async def link_event(
-        self, ctx: Context, event_id: int, template_id: Optional[int] = None
-    ):
-        """Link (or unlink) an embed template to an event action (affects send/dm/log actions)."""
-        if not ctx.guild or not self.bot.db:
-            return
-        if template_id and not await self._validate_template(ctx, template_id):
-            return
-
-        result = await self.bot.db.execute(
-            "UPDATE event_actions SET template_id=$1 WHERE id=$2 AND guild_id=$3",
-            template_id,
-            event_id,
-            ctx.guild.id,
-        )
-        if result == "UPDATE 0":
-            return await ctx.send(
-                embed=red_embed(
-                    description=f"{self.bot.no} Event action `#{event_id}` not found."
-                )
-            )
-        cog = self.bot.get_cog("AutomationEvents")
-        if cog and hasattr(cog, "clear_cache"):
-            cog.clear_cache(ctx.guild.id)  # type: ignore
-        verb = (
-            f"linked template `#{template_id}`" if template_id else "unlinked template"
-        )
-        await ctx.send(
-            embed=green_embed(
-                description=f"{self.bot.yes} Event action `#{event_id}` {verb}."
-            )
-        )
 
     @template_link.command(name="rolemenu", aliases=["rm"])
     @commands.guild_only()
@@ -497,7 +315,7 @@ class Templates(Cog, emoji=1497265635183431770):
                     description=f"{self.bot.no} Role menu `#{menu_id}` not found."
                 )
             )
-        from cogs_hidden.role_menus import refresh_menu
+        from utils.ui import refresh_menu
 
         await refresh_menu(self.bot, menu_id)
         verb = (
@@ -543,5 +361,5 @@ class Templates(Cog, emoji=1497265635183431770):
         )
 
 
-async def setup(bot: PizzaHat) -> None:
+async def setup(bot: Zync) -> None:
     await bot.add_cog(Templates(bot))

@@ -1,10 +1,16 @@
+"""Tag commands.
+
+Provides creation, lookup, editing, deletion, and listing of reusable guild tags,
+with per-tier tag limits.
+"""
+
 from typing import Optional
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import PizzaHat, Tier
+from core.bot import Tier, Zync
 from core.cog import Cog
 from utils.custom_checks import _tier_cache
 from utils.embed import ctx_embed, green_embed, red_embed
@@ -20,8 +26,8 @@ TAG_LIMITS = {
 class Tags(Cog, emoji=1268850578415681546):
     """Organize and streamline your server's content."""
 
-    def __init__(self, bot: PizzaHat):
-        self.bot: PizzaHat = bot
+    def __init__(self, bot: Zync):
+        self.bot: Zync = bot
 
     @staticmethod
     def _chunk_text(content: str, limit: int) -> list[str]:
@@ -122,7 +128,7 @@ class Tags(Cog, emoji=1268850578415681546):
                 else:
                     await ctx.send(content)
 
-    @commands.group(invoke_without_command=True)
+    @commands.hybrid_group(fallback="get")
     @commands.guild_only()
     async def tag(self, ctx: Context, *, tag_name: Optional[str] = None):
         """Tag commands. Pass a tag name to fetch its content."""
@@ -299,5 +305,5 @@ class Tags(Cog, emoji=1268850578415681546):
                 await ctx.send(embed=green_embed(f"{self.bot.yes} Tag updated!"))
 
 
-async def setup(bot: PizzaHat) -> None:
+async def setup(bot: Zync) -> None:
     await bot.add_cog(Tags(bot))

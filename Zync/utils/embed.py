@@ -1,32 +1,13 @@
+"""Embed construction helpers.
+
+Contains color-specific embed factories, themed embed helpers, template
+rendering utilities, and shared context/guild embed wrappers.
+"""
+
 import datetime
 from typing import Any, Optional
 
 from discord import Color, Embed
-
-theme_cache: dict[int, int] = {}
-
-
-async def get_guild_theme(pool, guild_id: int) -> int:
-    if guild_id in theme_cache:
-        return theme_cache[guild_id]
-
-    accent_color = await pool.fetchval(
-        "SELECT accent_color FROM guild_themes WHERE guild_id = $1", guild_id
-    )
-
-    color = accent_color if accent_color else 0x456DD4
-
-    theme_cache[guild_id] = color
-    return color
-
-
-def invalidate_theme_cache(guild_id: int | None = None):
-    """Invalidate the theme cache for a guild or all guilds."""
-
-    if guild_id:
-        theme_cache.pop(guild_id, None)
-    else:
-        theme_cache.clear()
 
 
 def green_embed(
@@ -118,16 +99,8 @@ async def get_themed_embed(
     *,
     timestamp: Optional[bool] = None,
 ) -> Embed:
-    """Get a normal_embed with guild theme (premium) support."""
-
-    from utils.custom_checks import is_premium_guild
-
-    if await is_premium_guild(pool, guild_id):
-        color = await get_guild_theme(pool, guild_id)
-    else:
-        color = 0x456DD4
-
-    return normal_embed(title, description, color=color, timestamp=timestamp)
+    """Build a normal embed. Kept for call-site compatibility."""
+    return normal_embed(title, description, timestamp=timestamp)
 
 
 async def ctx_embed(

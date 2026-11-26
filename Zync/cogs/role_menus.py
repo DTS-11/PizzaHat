@@ -1,3 +1,9 @@
+"""Role menu commands.
+
+Provides slash/hybrid commands for creating, configuring, publishing, and
+refreshing button/dropdown role menus with tier limits.
+"""
+
 from __future__ import annotations
 
 from typing import Optional
@@ -6,17 +12,17 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from cogs_hidden.role_menus import (
+from core.bot import Tier, Zync
+from core.cog import Cog
+from utils.custom_checks import _tier_cache, premium
+from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
+from utils.ui import (
     DISCORD_MAX_ITEMS,
     _fetch_items,
     _fetch_menu,
     publish_menu,
     refresh_menu,
 )
-from core.bot import PizzaHat, Tier
-from core.cog import Cog
-from utils.custom_checks import _tier_cache, premium
-from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
 
 TIER_LIMITS: dict[Tier, int] = {
     Tier.FREE: 3,
@@ -28,7 +34,7 @@ VALID_TYPES = {"button", "dropdown"}
 VALID_MODES = {"single", "multi"}
 
 
-async def _guild_tier(bot: PizzaHat, guild_id: int) -> Tier:
+async def _guild_tier(bot: Zync, guild_id: int) -> Tier:
     cached = _tier_cache.get(guild_id)
     if cached is not None:
         return cached
@@ -57,14 +63,14 @@ async def _resolve_menu(ctx: Context, menu_id: int) -> Optional[dict]:
 class RoleMenus(Cog, emoji=1268853457855709255):
     """Self-assignable role menus — buttons and dropdowns."""
 
-    def __init__(self, bot: PizzaHat):
+    def __init__(self, bot: Zync):
         self.bot = bot
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # HUB / LIST
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    @commands.group(name="rolemenu", aliases=["rm"], invoke_without_command=True)
+    @commands.hybrid_group(name="rolemenu", aliases=["rm"], fallback="list")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     async def rolemenu(self, ctx: Context):
@@ -81,15 +87,14 @@ class RoleMenus(Cog, emoji=1268853457855709255):
         )
         tier = await _guild_tier(self.bot, ctx.guild.id)
         limit = TIER_LIMITS[tier]
-        p = ctx.prefix
 
         if not rows:
             return await ctx.send(
                 embed=orange_embed(
                     description=(
                         f"No role menus yet.\n\n"
-                        f"**Create one:** `{p}rolemenu create <name> [button|dropdown]`\n"
-                        f'Example: `{p}rolemenu create "Game Roles" button`'
+                        f"**Create one:** `/rolemenu create <name> [button|dropdown]`\n"
+                        f'Example: `/rolemenu create "Game Roles" button`'
                     )
                 )
             )
@@ -171,15 +176,14 @@ class RoleMenus(Cog, emoji=1268853457855709255):
             mode,
             ctx.author.id,
         )
-        p = ctx.prefix
         await ctx.send(
             embed=green_embed(
                 description=(
                     f"{self.bot.yes} Created role menu `#{row['id']}` — **{name}**\n"
                     f"Type: `{type_}` · Mode: `{mode}`\n\n"
                     f"Next:\n"
-                    f"• `{p}rolemenu add {row['id']} @role` — add roles\n"
-                    f"• `{p}rolemenu post {row['id']} #channel` — post it"
+                    f"• `/rolemenu add {row['id']} @role` — add roles\n"
+                    f"• `/rolemenu post {row['id']} #channel` — post it"
                 )
             )
         )
@@ -688,7 +692,7 @@ class RoleMenus(Cog, emoji=1268853457855709255):
                 embed=red_embed(
                     description=(
                         f"{self.bot.no} Add at least one role first: "
-                        f"`{ctx.prefix}rolemenu add {menu_id} @role`"
+                        f"`/rolemenu add {menu_id} @role`"
                     )
                 )
             )
@@ -740,7 +744,7 @@ class RoleMenus(Cog, emoji=1268853457855709255):
                 embed=orange_embed(
                     description=(
                         f"Couldn't refresh `#{menu_id}` — has it been posted yet? "
-                        f"Use `{ctx.prefix}rolemenu post {menu_id} #channel`."
+                        f"Use `/rolemenu post {menu_id} #channel`."
                     )
                 )
             )
@@ -749,5 +753,5 @@ class RoleMenus(Cog, emoji=1268853457855709255):
         )
 
 
-async def setup(bot: PizzaHat) -> None:
+async def setup(bot: Zync) -> None:
     await bot.add_cog(RoleMenus(bot))
