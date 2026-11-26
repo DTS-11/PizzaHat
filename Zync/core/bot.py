@@ -1,8 +1,13 @@
+"""Bot bootstrap and shared application state.
+
+Defines :class:`Zync`, its intents/session setup, extension lists, database
+lifecycle, command error handling, and the ``Tier`` enum used by premium checks.
+"""
+
 import datetime
 import sys
 import traceback
 from enum import IntEnum
-from importlib import import_module
 from logging.config import dictConfig
 
 import aiohttp
@@ -11,35 +16,29 @@ from discord.ext import commands
 from discord.ext.commands import CommandError, Context
 from discord.ext.commands.errors import ExtensionAlreadyLoaded
 
-from core.database import bootstrap_database, create_db_pool, get_prefix
-from utils.config import DEFAULT_PREFIX, REPO_LINK
+from core.database import bootstrap_database, create_db_pool
+from utils.config import REPO_LINK
 from utils.embed import golden_embed
 
 INITIAL_EXTENSIONS = [
-    "cogs.antialt",
-    "cogs.automation",
-    "cogs.automod",
     "cogs.dev",
     "cogs.emojis",
-    "cogs.fun",
     "cogs.mod",
     "cogs.role_menus",
-    "cogs.starboard",
+    "cogs.safety",
+    "cogs.system",
     "cogs.tags",
     "cogs.templates",
     "cogs.tickets",
-    "cogs.utility",
+    "cogs.workflows",
 ]
 
 SUB_EXTENSIONS = [
-    "cogs_hidden.antialt",
-    "cogs_hidden.automation",
-    "cogs_hidden.automod",
     "cogs_hidden.events",
     "cogs_hidden.guild_logs",
-    "cogs_hidden.help",
-    "cogs_hidden.role_menus",
-    "cogs_hidden.starboard",
+    "cogs_hidden.interactions",
+    "cogs_hidden.safety_hooks",
+    "cogs_hidden.workflow_runner",
 ]
 
 LOGGING_CONFIG = {
@@ -96,41 +95,37 @@ class Tier(IntEnum):
 
 
 description = f"""
-I'm PizzaHat —— Your Ultimate Discord Companion, a bot made by <@710247495334232164>.
-I have features such as moderation, utiltity and more!
+I'm Zync —— Your Ultimate Discord Companion, made by <@710247495334232164>.
+Build deterministic Trigger → Condition → Action workflows, automate moderation and onboarding, and manage your staff tools from one place.
 
 I'm also open source. You can see my code on [GitHub]({REPO_LINK})
 """
 
 
-class PizzaHat(commands.Bot):
+class Zync(commands.Bot):
     def __init__(self):
         allowed_mentions = discord.AllowedMentions(
             roles=False, everyone=False, users=True, replied_user=True
         )
         intents = discord.Intents(
             guilds=True,
-            emojis=True,
             invites=True,
             members=True,
             messages=True,
-            webhooks=True,
             reactions=True,
             moderation=True,
             integrations=True,
             voice_states=True,
-            message_content=True,
             auto_moderation=True,
             emojis_and_stickers=True,
         )
 
         super().__init__(
-            command_prefix=self.get_custom_prefix,
+            command_prefix=commands.when_mentioned,
             description=description,
             intents=intents,
             allowed_mentions=allowed_mentions,
             case_insensitive=True,
-            strip_after_prefix=True,
             status=discord.Status.online,
             activity=discord.CustomActivity(name="🔗 pizzahat.vercel.app"),
         )
@@ -140,17 +135,6 @@ class PizzaHat(commands.Bot):
         self.no = "<:no:1268859614129295514>"
         self.color = 0x456DD4
         self.logging_webhooks: dict[int, discord.Webhook] = {}
-
-    async def get_custom_prefix(
-        self, bot: "PizzaHat", message: discord.Message
-    ) -> list[str]:
-        bot_mention = [f"<@{bot.user.id}>", f"<@!{bot.user.id}>"] if bot.user else []
-
-        if message.guild is None:
-            return [DEFAULT_PREFIX] + bot_mention
-
-        prefix = await get_prefix(self.db, message.guild.id)
-        return [prefix] + bot_mention
 
     async def setup_hook(self) -> None:
         if not hasattr(self, "uptime"):
@@ -163,9 +147,7 @@ class PizzaHat(commands.Bot):
         # Create aiohttp session
         self.session = aiohttp.ClientSession()
 
-        # Make the tickets view persistent
-        ticket_view = import_module("utils.ui").TicketView(self)
-        self.add_view(ticket_view)
+        # Persistent ticket/role-menu views are registered by cogs_hidden.interactions.
 
         # Loading cogs...
         success = fail = 0
@@ -300,7 +282,10 @@ class PizzaHat(commands.Bot):
             )
 
         elif isinstance(error, commands.BotMissingPermissions):
-            if error.missing_permissions[0] == "send_messages":
+            if (
+                error.missing_permissions[0] == "send_messages"
+                and ctx.interaction is None
+            ):
                 return await ctx.message.add_reaction(self.no)
 
             perm_name = " ".join(error.missing_permissions[0].split("_")).title()

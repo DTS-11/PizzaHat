@@ -1,3 +1,9 @@
+"""Formatting helpers.
+
+Provides date formatting, pluralization, human-readable joins, and tabular data
+rendering used by command output.
+"""
+
 from __future__ import annotations
 
 import datetime
@@ -80,3 +86,8 @@ def format_dt(dt: datetime.datetime, style: Optional[str] | None) -> str:
     if style is None:
         return f"<t:{int(dt.timestamp())}>"
     return f"<t:{int(dt.timestamp())}:{style}>"
+
+
+def format_date(dt: datetime.datetime | None) -> str:
+    """Render a datetime as a Discord timestamp (moved out of the deleted utility cog)."""
+    return "N/A" if dt is None else f"<t:{int(dt.timestamp())}>"

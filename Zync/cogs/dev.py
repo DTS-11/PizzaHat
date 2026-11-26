@@ -1,3 +1,9 @@
+"""Owner-only development commands.
+
+This module provides hidden commands for evaluating Python, querying PostgreSQL,
+reloading extensions, viewing bot logs, and updating the local banned-word list.
+"""
+
 import inspect
 import io
 import os
@@ -5,13 +11,13 @@ import textwrap
 import time
 import traceback
 from contextlib import redirect_stdout
-from typing import TYPE_CHECKING, Awaitable, Callable, Union
+from typing import TYPE_CHECKING, Awaitable, Callable, Optional, Union
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import INITIAL_EXTENSIONS, SUB_EXTENSIONS, PizzaHat
+from core.bot import INITIAL_EXTENSIONS, SUB_EXTENSIONS, Zync
 from core.cog import Cog
 from utils.embed import ctx_embed
 from utils.formats import TabularData, plural
@@ -23,8 +29,8 @@ if TYPE_CHECKING:
 class Dev(Cog, emoji=1268856867585658981):
     """Developer commands."""
 
-    def __init__(self, bot: PizzaHat):
-        self.bot: PizzaHat = bot
+    def __init__(self, bot: Zync):
+        self.bot: Zync = bot
 
     def cleanup_code(self, content: str) -> str:
         """Automatically removes code blocks from the code."""
@@ -35,7 +41,7 @@ class Dev(Cog, emoji=1268856867585658981):
         else:
             return content
 
-    @commands.command(name="eval", hidden=True)
+    @commands.hybrid_command(name="eval", hidden=True)
     @commands.is_owner()
     async def _eval(self, ctx: Context, *, body: str):
         """Eval command."""
@@ -145,7 +151,7 @@ class Dev(Cog, emoji=1268856867585658981):
 
                         await ctx.send(embed=embed)
 
-    @commands.command(hidden=True)
+    @commands.hybrid_command(hidden=True)
     @commands.is_owner()
     async def sql(self, ctx: Context, *, query: str):
         """Run some SQL."""
@@ -189,7 +195,7 @@ class Dev(Cog, emoji=1268856867585658981):
         else:
             await ctx.send(fmt)
 
-    @commands.command(hidden=True)
+    @commands.hybrid_command(hidden=True)
     @commands.is_owner()
     async def botlogs(self, ctx: Context):
         """Send bot.log file."""
@@ -197,7 +203,7 @@ class Dev(Cog, emoji=1268856867585658981):
         f = open("bot.log", "r")
         await ctx.send(f"```ruby\n{f.read()}\n```")
 
-    @commands.command(hidden=True)
+    @commands.hybrid_command(hidden=True)
     @commands.is_owner()
     async def reloadall(self, ctx: Context):
         """Reloads all cogs."""
@@ -211,23 +217,27 @@ class Dev(Cog, emoji=1268856867585658981):
         await self.bot.reload_extension("jishaku")
         await ctx.send("Reloaded all cogs!")
 
-    @commands.command(hidden=True)
+    @commands.hybrid_command(hidden=True)
     @commands.is_owner()
-    async def update_badwords(self, ctx: Context):
+    async def update_badwords(
+        self, ctx: Context, attachment: Optional[discord.Attachment] = None
+    ):
         """Update the bad words file."""
 
-        if not ctx.message.attachments:
+        source = attachment
+        if source is None and ctx.interaction is None:
+            source = ctx.message.attachments[0] if ctx.message.attachments else None
+        if source is None:
             return await ctx.send(f"{self.bot.no} No file attached.")
 
-        attachment = ctx.message.attachments[0]
         file_path = os.path.join(os.getcwd(), "utils/bad_words.py")
 
-        if not attachment.filename.endswith(".py"):
+        if not source.filename.endswith(".py"):
             return await ctx.send(f"{self.bot.no} Not a Python file.")
 
-        await attachment.save(file_path)  # type: ignore
+        await source.save(file_path)  # type: ignore
         await ctx.send(f"{self.bot.yes} Bad words file updated successfully!")
 
 
-async def setup(bot: PizzaHat) -> None:
+async def setup(bot: Zync) -> None:
     await bot.add_cog(Dev(bot))

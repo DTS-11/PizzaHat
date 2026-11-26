@@ -1,42 +1,15 @@
+"""PostgreSQL connection and schema bootstrap.
+
+Creates the asyncpg pool from ``PG_URL`` and ensures all active application
+tables and indexes exist at startup.
+"""
+
 import ssl
 from typing import Union
 
 import asyncpg
 
-from utils.config import DEFAULT_PREFIX, PG_URL
-
-_prefix_cache: dict[int, str] = {}
-
-
-async def get_prefix(pool, guild_id: int) -> str:
-    if guild_id in _prefix_cache:
-        return _prefix_cache[guild_id]
-
-    if pool is None:
-        return DEFAULT_PREFIX
-
-    prefix = await pool.fetchval(
-        "SELECT prefix FROM prefix WHERE guild_id = $1", guild_id
-    )
-    result = prefix if prefix else DEFAULT_PREFIX
-    _prefix_cache[guild_id] = result
-    return result
-
-
-async def set_prefix(pool, guild_id: int, prefix: str) -> None:
-    if pool:
-        await pool.execute(
-            "INSERT INTO prefix (guild_id, prefix) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET prefix = $2",
-            guild_id,
-            prefix,
-        )
-
-    _prefix_cache[guild_id] = prefix
-
-
-async def invalidate_prefix_cache(guild_id: int) -> None:
-    """Remove a guild's prefix from cache, e.g. when the prefix row is deleted."""
-    _prefix_cache.pop(guild_id, None)
+from utils.config import PG_URL
 
 
 async def create_db_pool() -> Union[asyncpg.pool.Pool, None]:
@@ -58,12 +31,6 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         # PREMIUM
         """CREATE TABLE IF NOT EXISTS premium
         (guild_id BIGINT PRIMARY KEY, user_id BIGINT NOT NULL, polar_subscription_id TEXT NOT NULL UNIQUE, polar_customer_id TEXT NOT NULL, tier INT DEFAULT 1, status TEXT DEFAULT 'active', current_period_start TIMESTAMP, current_period_end TIMESTAMP, cancel_at_period_end BOOL DEFAULT FALSE, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW())""",
-        # PREFIX
-        """CREATE TABLE IF NOT EXISTS prefix
-        (guild_id BIGINT PRIMARY KEY, prefix TEXT DEFAULT 'p!')""",
-        # AFK
-        """CREATE TABLE IF NOT EXISTS afk
-        (guild_id BIGINT, user_id BIGINT, reason TEXT, UNIQUE (guild_id, user_id))""",
         # WARNLOGS
         """CREATE TABLE IF NOT EXISTS warnlogs
         (id SERIAL PRIMARY KEY, guild_id BIGINT, user_id BIGINT, mod_id BIGINT, reason TEXT, created_at TIMESTAMP DEFAULT NOW())""",
@@ -82,9 +49,6 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         # TAGS
         """CREATE TABLE IF NOT EXISTS tags
         (guild_id BIGINT, tag_name TEXT, content TEXT, creator BIGINT, uses INT DEFAULT 0, PRIMARY KEY (guild_id, tag_name))""",
-        # STAR_CONFIG
-        """CREATE TABLE IF NOT EXISTS star_config
-        (guild_id BIGINT PRIMARY KEY, channel_id BIGINT, star_count INT DEFAULT 5, self_star BOOL DEFAULT true)""",
         # STAR_INFO
         """CREATE TABLE IF NOT EXISTS star_info
         (guild_id BIGINT, user_msg_id BIGINT PRIMARY KEY, bot_msg_id BIGINT)""",
@@ -97,27 +61,24 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         # TICKET_LOGS
         """CREATE TABLE IF NOT EXISTS ticket_logs
         (guild_id BIGINT, thread_id BIGINT PRIMARY KEY, creator_id BIGINT, opened_at TIMESTAMP DEFAULT NOW(), closed_at TIMESTAMP, closed_by BIGINT)""",
-        # GUILD_THEMES
-        """CREATE TABLE IF NOT EXISTS guild_themes
-        (guild_id BIGINT PRIMARY KEY, accent_color TEXT)""",
-        # AUTO_RESPONDERS
-        """CREATE TABLE IF NOT EXISTS auto_responders
-        (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, trigger_text TEXT NOT NULL, trigger_type TEXT DEFAULT 'contains', response TEXT NOT NULL, template_id INT REFERENCES embed_templates(id) ON DELETE SET NULL, channel_ids BIGINT[] DEFAULT '{}', role_ids BIGINT[] DEFAULT '{}', cooldown_seconds INT DEFAULT 0, enabled BOOL DEFAULT TRUE, use_count INT DEFAULT 0, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT NOT NULL)""",
-        # SCHEDULED_MESSAGES
-        """CREATE TABLE IF NOT EXISTS scheduled_messages
-        (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, channel_id BIGINT NOT NULL, message TEXT, template_id INT REFERENCES embed_templates(id) ON DELETE SET NULL, schedule_type TEXT DEFAULT 'once', interval_type TEXT, next_run TIMESTAMPTZ NOT NULL, timezone TEXT DEFAULT 'UTC', enabled BOOL DEFAULT TRUE, last_run TIMESTAMPTZ, run_count INT DEFAULT 0, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT NOT NULL)""",
-        # JOIN_AUTOMATION
-        """CREATE TABLE IF NOT EXISTS join_automation
-        (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT TRUE, auto_role_ids BIGINT[] DEFAULT '{}', welcome_channel_id BIGINT, welcome_message TEXT, welcome_template_id INT REFERENCES embed_templates(id) ON DELETE SET NULL, welcome_dm TEXT, welcome_dm_template_id INT REFERENCES embed_templates(id) ON DELETE SET NULL, created_at TIMESTAMP DEFAULT NOW())""",
-        # EVENT_ACTIONS
-        """CREATE TABLE IF NOT EXISTS event_actions
-        (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, name TEXT NOT NULL, event_type TEXT NOT NULL, actions JSONB DEFAULT '[]', template_id INT REFERENCES embed_templates(id) ON DELETE SET NULL, enabled BOOL DEFAULT TRUE, run_count INT DEFAULT 0, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT NOT NULL)""",
         # ROLE_MENUS
         """CREATE TABLE IF NOT EXISTS role_menus
         (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, channel_id BIGINT, message_id BIGINT, name TEXT NOT NULL, title TEXT, description TEXT, template_id INT REFERENCES embed_templates(id) ON DELETE SET NULL, type TEXT NOT NULL DEFAULT 'button', mode TEXT NOT NULL DEFAULT 'multi', max_selections INT, required_role_id BIGINT, enabled BOOL DEFAULT TRUE, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT)""",
         # ROLE_MENU_ITEMS
         """CREATE TABLE IF NOT EXISTS role_menu_items
         (menu_id INT NOT NULL REFERENCES role_menus(id) ON DELETE CASCADE, role_id BIGINT NOT NULL, label TEXT, emoji TEXT, description TEXT, position INT DEFAULT 0, PRIMARY KEY (menu_id, role_id))""",
+        # WORKFLOWS (unified Trigger -> Condition -> Action engine)
+        """CREATE TABLE IF NOT EXISTS workflows
+        (id SERIAL PRIMARY KEY,
+         guild_id BIGINT NOT NULL,
+         name TEXT NOT NULL,
+         enabled BOOLEAN DEFAULT TRUE,
+         trigger_type TEXT NOT NULL,
+         trigger_config JSONB NOT NULL DEFAULT '{}'::jsonb,
+         conditions JSONB NOT NULL DEFAULT '[]'::jsonb,
+         actions JSONB NOT NULL DEFAULT '[]'::jsonb,
+         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())""",
     ]
 
     for statement in statements:
@@ -128,11 +89,10 @@ async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
         "CREATE INDEX IF NOT EXISTS warnlogs_created_at_idx ON warnlogs (guild_id, user_id, created_at DESC)",
         "CREATE INDEX IF NOT EXISTS star_info_guild_id_idx ON star_info (guild_id)",
         "CREATE INDEX IF NOT EXISTS star_info_bot_msg_id_idx ON star_info (bot_msg_id)",
-        "CREATE INDEX IF NOT EXISTS auto_responders_guild_id_idx ON auto_responders (guild_id)",
-        "CREATE INDEX IF NOT EXISTS scheduled_messages_guild_id_idx ON scheduled_messages (guild_id)",
-        "CREATE INDEX IF NOT EXISTS scheduled_messages_next_run_idx ON scheduled_messages (next_run) WHERE enabled = TRUE",
-        "CREATE INDEX IF NOT EXISTS event_actions_guild_id_idx ON event_actions (guild_id)",
         "CREATE INDEX IF NOT EXISTS role_menus_guild_id_idx ON role_menus (guild_id)",
+        "CREATE INDEX IF NOT EXISTS workflows_guild_id_idx ON workflows (guild_id)",
+        "CREATE INDEX IF NOT EXISTS workflows_guild_enabled_idx ON workflows (guild_id, enabled) WHERE enabled = TRUE",
+        "CREATE INDEX IF NOT EXISTS workflows_guild_trigger_idx ON workflows (guild_id, trigger_type)",
     ]
 
     for index in indexes:

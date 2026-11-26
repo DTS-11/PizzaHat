@@ -1,15 +1,22 @@
+"""Moderation and server-insight commands.
+
+Contains the public ``Mod`` cog for staff actions such as bans, timeouts, warnings,
+prune, slowmode, and the ``/insights`` overview with workflow analytics.
+"""
+
 from __future__ import annotations
 
 import datetime
+import re
 import uuid
-from typing import List, Optional, Union
+from typing import List, Optional, cast
 
 import discord
 import humanfriendly
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import PizzaHat, Tier
+from core.bot import Tier, Zync
 from core.cog import Cog
 from utils.config import ANTIHOIST_CHARS
 from utils.custom_checks import premium
@@ -20,8 +27,8 @@ from utils.ui import ConfirmationView, Paginator
 class Mod(Cog, emoji=1268851270136107048):
     """Keep your server safe!"""
 
-    def __init__(self, bot: PizzaHat):
-        self.bot: PizzaHat = bot
+    def __init__(self, bot: Zync):
+        self.bot: Zync = bot
 
     def clear_log_config_cache(self, guild_id: int | None = None) -> None:
         guild_logs_cog = self.bot.get_cog("GuildLogs")
@@ -35,7 +42,51 @@ class Mod(Cog, emoji=1268851270136107048):
             if callable(clear_cache):
                 clear_cache(guild_id)
 
-    @commands.command()
+    @staticmethod
+    def _extract_ids(value: str) -> list[int]:
+        """Extract Discord snowflakes from mentions, raw IDs, or a mixed string."""
+        return [int(match) for match in re.findall(r"\d{17,20}", value)]
+
+    @classmethod
+    def _parse_members(cls, ctx: Context, value: str) -> list[discord.Member]:
+        """Resolve space/comma separated member mentions or IDs in this guild."""
+        if not ctx.guild:
+            return []
+
+        members: list[discord.Member] = []
+        for member_id in cls._extract_ids(value):
+            member = ctx.guild.get_member(member_id)
+            if member is not None and member not in members:
+                members.append(member)
+        return members
+
+    @classmethod
+    def _parse_roles(cls, ctx: Context, value: str) -> list[discord.Role] | None:
+        """Resolve role mentions or IDs, returning None if any token is invalid."""
+        if not ctx.guild:
+            return []
+
+        roles: list[discord.Role] = []
+        for token in value.replace(",", " ").split():
+            ids = cls._extract_ids(token)
+            role = ctx.guild.get_role(ids[0]) if ids else None
+            if role is None:
+                return None
+            if role not in roles:
+                roles.append(role)
+        return roles
+
+    @staticmethod
+    def _parse_channel(
+        ctx: Context, value: str
+    ) -> discord.abc.GuildChannel | discord.Thread | None:
+        """Resolve a channel mention or ID in this guild."""
+        ids = Mod._extract_ids(value)
+        if not ids or ctx.guild is None:
+            return None
+        return ctx.guild.get_channel_or_thread(ids[0])
+
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.cooldown(2, 60, commands.BucketType.user)
     @commands.has_permissions(manage_guild=True)
@@ -66,11 +117,11 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         )
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.cooldown(1, 30, commands.BucketType.user)
     @commands.has_permissions(manage_guild=True)
-    async def logconfig(self, ctx: Context, *log_modules: str):
+    async def logconfig(self, ctx: Context, modules: str = ""):
         """
         Choose what events the bot needs to log.
 
@@ -88,12 +139,14 @@ class Mod(Cog, emoji=1268851270136107048):
         `Voice:` Log every voice state updates
 
         **Usage**
-        `1.` `p!logconfig messages mod ...`
-        `2.` `p!logconfig all`
+        `1.` `/logconfig modules:messages mod ...`
+        `2.` `/logconfig modules:all`
         """
 
         if not ctx.guild or self.bot.db is None:
             return
+
+        log_modules = modules.replace(",", " ").split()
 
         available_modules = [
             "all",
@@ -165,7 +218,7 @@ class Mod(Cog, emoji=1268851270136107048):
             )
             await ctx.send(embed=disabled_confirmation_em)
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @premium(Tier.PRO)
@@ -177,6 +230,9 @@ class Mod(Cog, emoji=1268851270136107048):
 
         guild = ctx.guild
         db = self.bot.db
+
+        if ctx.interaction is not None:
+            await ctx.defer()
 
         async with ctx.typing():
             today = datetime.datetime.utcnow().date()
@@ -275,9 +331,6 @@ class Mod(Cog, emoji=1268851270136107048):
             antialt_config = await db.fetchval(
                 "SELECT enabled FROM antialt WHERE guild_id=$1", guild.id
             )
-            star_config = await db.fetchval(
-                "SELECT channel_id FROM star_config WHERE guild_id=$1", guild.id
-            )
             logs_config = await db.fetchval(
                 "SELECT channel_id FROM guild_logs WHERE guild_id=$1", guild.id
             )
@@ -337,7 +390,6 @@ class Mod(Cog, emoji=1268851270136107048):
                 description=(
                     f"<:wrench:1268855253768339476> **AutoMod:** {check_enabled(automod_config)}\n"
                     f"<:raidreport:1268857575919714376> **Anti-Alt:** {check_enabled(antialt_config)}\n"
-                    f"<:star:1268881885480620075> **Starboard:** {check_enabled(star_config)}\n"
                     f"<:logs:1497265635183431770> **Logs:** {check_enabled(logs_config)}\n"
                     f"<:ticketbadge:1268879389324611595> **Tickets:** {self.bot.yes} Enabled"
                 ),
@@ -345,188 +397,78 @@ class Mod(Cog, emoji=1268851270136107048):
             )
             config_em.set_thumbnail(url=guild.icon.url if guild.icon else None)
 
-            # Automations analytics
-            responder_total = (
+            # Workflow analytics
+            workflow_total = (
                 await db.fetchval(
-                    "SELECT COUNT(*) FROM auto_responders WHERE guild_id=$1", guild.id
+                    "SELECT COUNT(*) FROM workflows WHERE guild_id=$1", guild.id
                 )
                 or 0
             )
-            responder_active = (
+            workflow_active = (
                 await db.fetchval(
-                    "SELECT COUNT(*) FROM auto_responders WHERE guild_id=$1 AND enabled=TRUE",
+                    "SELECT COUNT(*) FROM workflows WHERE guild_id=$1 AND enabled=TRUE",
                     guild.id,
                 )
                 or 0
             )
-            responder_uses = (
-                await db.fetchval(
-                    "SELECT COALESCE(SUM(use_count), 0) FROM auto_responders WHERE guild_id=$1",
-                    guild.id,
-                )
-                or 0
-            )
-            top_responder = await db.fetchrow(
-                "SELECT trigger_text, use_count FROM auto_responders "
-                "WHERE guild_id=$1 ORDER BY use_count DESC LIMIT 1",
+            top_trigger = await db.fetchrow(
+                "SELECT trigger_type, COUNT(*) AS count FROM workflows "
+                "WHERE guild_id=$1 GROUP BY trigger_type ORDER BY count DESC LIMIT 1",
                 guild.id,
             )
-
-            schedule_total = (
-                await db.fetchval(
-                    "SELECT COUNT(*) FROM scheduled_messages WHERE guild_id=$1",
-                    guild.id,
-                )
-                or 0
-            )
-            schedule_active = (
-                await db.fetchval(
-                    "SELECT COUNT(*) FROM scheduled_messages WHERE guild_id=$1 AND enabled=TRUE",
-                    guild.id,
-                )
-                or 0
-            )
-            schedule_sent = (
-                await db.fetchval(
-                    "SELECT COALESCE(SUM(run_count), 0) FROM scheduled_messages WHERE guild_id=$1",
-                    guild.id,
-                )
-                or 0
-            )
-            next_schedule = await db.fetchrow(
-                "SELECT channel_id, next_run FROM scheduled_messages "
-                "WHERE guild_id=$1 AND enabled=TRUE ORDER BY next_run ASC LIMIT 1",
-                guild.id,
-            )
-
-            join_row = await db.fetchrow(
-                "SELECT enabled, auto_role_ids, welcome_channel_id, welcome_message, welcome_dm "
-                "FROM join_automation WHERE guild_id=$1",
-                guild.id,
-            )
-
-            event_total = (
-                await db.fetchval(
-                    "SELECT COUNT(*) FROM event_actions WHERE guild_id=$1", guild.id
-                )
-                or 0
-            )
-            event_active = (
-                await db.fetchval(
-                    "SELECT COUNT(*) FROM event_actions WHERE guild_id=$1 AND enabled=TRUE",
-                    guild.id,
-                )
-                or 0
-            )
-            event_runs = (
-                await db.fetchval(
-                    "SELECT COALESCE(SUM(run_count), 0) FROM event_actions WHERE guild_id=$1",
-                    guild.id,
-                )
-                or 0
-            )
-            top_event = await db.fetchrow(
-                "SELECT name, event_type, run_count FROM event_actions "
-                "WHERE guild_id=$1 ORDER BY run_count DESC LIMIT 1",
-                guild.id,
-            )
-
-            # Build join automation status line
-            if join_row and join_row["enabled"]:
-                join_parts = []
-                role_count = len(join_row["auto_role_ids"] or [])
-                if role_count:
-                    join_parts.append(f"`{role_count}` auto-role(s)")
-                if join_row["welcome_channel_id"]:
-                    join_parts.append("welcome msg")
-                if join_row["welcome_dm"]:
-                    join_parts.append("welcome DM")
-                join_status = (
-                    f"{self.bot.yes} Active — " + ", ".join(join_parts)
-                    if join_parts
-                    else f"{self.bot.yes} Active"
-                )
-            elif join_row:
-                join_status = f"{self.bot.no} Paused"
-            else:
-                join_status = f"{self.bot.no} Not configured"
-
-            top_responder_str = (
-                f"`{top_responder['trigger_text']}` — `{top_responder['use_count']}` uses"
-                if top_responder and top_responder["use_count"] > 0
-                else "`None`"
-            )
-            next_schedule_str = (
-                f"<#{next_schedule['channel_id']}> — <t:{int(next_schedule['next_run'].timestamp())}:R>"
-                if next_schedule
-                else "`None`"
-            )
-            top_event_str = (
-                f"**{top_event['name']}** (`{top_event['event_type']}`) — `{top_event['run_count']}` runs"
-                if top_event and top_event["run_count"] > 0
+            top_trigger_str = (
+                f"`{top_trigger['trigger_type']}` — `{top_trigger['count']}`"
+                if top_trigger
                 else "`None`"
             )
 
-            automation_em = await ctx_embed(
+            workflow_em = await ctx_embed(
                 ctx,
-                title="⚡ Automation Analytics",
+                title="⚡ Workflow Analytics",
                 timestamp=True,
             )
-            automation_em.set_thumbnail(url=guild.icon.url if guild.icon else None)
-            automation_em.add_field(
-                name="📣 Auto Responders",
+            workflow_em.set_thumbnail(url=guild.icon.url if guild.icon else None)
+            workflow_em.add_field(
+                name="Workflows",
                 value=(
-                    f"`{responder_active}` active / `{responder_total}` total\n"
-                    f"`{responder_uses:,}` total triggers\n"
-                    f"Top: {top_responder_str}"
-                ),
-                inline=False,
-            )
-            automation_em.add_field(
-                name="🕐 Scheduled Messages",
-                value=(
-                    f"`{schedule_active}` active / `{schedule_total}` total\n"
-                    f"`{schedule_sent:,}` messages sent\n"
-                    f"Next: {next_schedule_str}"
-                ),
-                inline=False,
-            )
-            automation_em.add_field(
-                name="👋 Join Automation",
-                value=join_status,
-                inline=False,
-            )
-            automation_em.add_field(
-                name="⚙️ Event Actions",
-                value=(
-                    f"`{event_active}` active / `{event_total}` total\n"
-                    f"`{event_runs:,}` total runs\n"
-                    f"Top: {top_event_str}"
+                    f"`{workflow_active}` active / `{workflow_total}` total\n"
+                    f"Top trigger: {top_trigger_str}"
                 ),
                 inline=False,
             )
 
-            embeds = [stats_em, mod_em, ticket_em, config_em, automation_em]
+            embeds = [stats_em, mod_em, ticket_em, config_em, workflow_em]
             for i, em in enumerate(embeds, 1):
                 em.set_footer(text=f"Page {i}/{len(embeds)}")
 
             paginator = Paginator(ctx, embeds)
             await ctx.send(embed=stats_em, view=paginator)
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(kick_members=True, manage_guild=True)
     @commands.bot_has_permissions(kick_members=True, manage_guild=True)
     @commands.cooldown(1, 10, commands.BucketType.guild)
-    async def prune(self, ctx: Context, days: int, *roles: discord.Role):
-        """Kicks inactive members."""
+    async def prune(self, ctx: Context, days: int, roles: str = ""):
+        """Kicks inactive members. Roles are space/comma separated mentions or IDs."""
 
         if not ctx.guild:
             return
 
+        parsed_roles = self._parse_roles(ctx, roles)
+        if parsed_roles is None:
+            return await ctx.send(
+                embed=red_embed(description=f"{self.bot.no} Invalid role provided.")
+            )
+
+        if ctx.interaction is not None:
+            await ctx.defer()
+
         reason = f"Prune members initiated by {ctx.author}"
         confirm = ConfirmationView(ctx, 60)
-        est_pruned = await ctx.guild.estimate_pruned_members(days=days, roles=roles)
+        est_pruned = await ctx.guild.estimate_pruned_members(
+            days=days, roles=parsed_roles
+        )
         msg = await ctx.send(
             embed=orange_embed(
                 description=f"<:warning:1268855244033363968> Are you sure that you want to prune **{est_pruned}** members?"
@@ -544,7 +486,7 @@ class Mod(Cog, emoji=1268851270136107048):
 
         try:
             await ctx.guild.prune_members(
-                days=days, roles=roles, reason=reason, compute_prune_count=False
+                days=days, roles=parsed_roles, reason=reason, compute_prune_count=False
             )
 
         except discord.HTTPException:
@@ -559,7 +501,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.command(aliases=["mn"])
+    @commands.hybrid_command(aliases=["mn"])
     @commands.guild_only()
     @commands.has_permissions(manage_nicknames=True)
     @commands.bot_has_permissions(manage_nicknames=True)
@@ -581,7 +523,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 embed=red_embed(description=f"{self.bot.no} Something went wrong.")
             )
 
-    @commands.command(aliases=["sn"])
+    @commands.hybrid_command(aliases=["sn"])
     @commands.guild_only()
     @commands.has_permissions(manage_nicknames=True)
     @commands.bot_has_permissions(manage_nicknames=True)
@@ -602,7 +544,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 embed=red_embed(description=f"{self.bot.no} Something went wrong.")
             )
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(manage_nicknames=True)
     @commands.bot_has_permissions(manage_nicknames=True)
@@ -639,7 +581,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 embed=red_embed(description=f"{self.bot.no} Something went wrong.")
             )
 
-    @commands.command(aliases=["sm"])
+    @commands.hybrid_command(aliases=["sm"])
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
@@ -657,12 +599,12 @@ class Mod(Cog, emoji=1268851270136107048):
 
         if isinstance(
             ctx.channel,
-            Union[
+            (
                 discord.TextChannel,
                 discord.StageChannel,
                 discord.ForumChannel,
                 discord.Thread,
-            ],
+            ),
         ):
             if seconds is None:
                 seconds = ctx.channel.slowmode_delay
@@ -687,7 +629,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.group(aliases=["lockdown"])
+    @commands.hybrid_group(aliases=["lockdown"])
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
@@ -705,8 +647,8 @@ class Mod(Cog, emoji=1268851270136107048):
     async def lock_channel(
         self,
         ctx: Context,
-        role: Optional[discord.Role] = None,
-        channel: Optional[Union[discord.TextChannel, discord.abc.Messageable]] = None,
+        role: discord.Role | None = None,
+        channel: discord.TextChannel | None = None,
     ):
         """
         Locks a channel with role requirement.
@@ -715,7 +657,8 @@ class Mod(Cog, emoji=1268851270136107048):
 
         if ctx.guild is not None:
             role = role or ctx.guild.default_role
-            channel = channel or ctx.channel
+            if channel is None and isinstance(ctx.channel, discord.TextChannel):
+                channel = ctx.channel
 
             if isinstance(channel, discord.TextChannel):
                 overwrite = channel.overwrites_for(role)
@@ -723,7 +666,8 @@ class Mod(Cog, emoji=1268851270136107048):
                 overwrite.add_reactions = False
 
                 await channel.set_permissions(role, overwrite=overwrite)
-                await ctx.message.add_reaction("🔒")
+                if ctx.interaction is None:
+                    await ctx.message.add_reaction("🔒")
                 await ctx.send(
                     embed=green_embed(
                         title="🔒 Locked",
@@ -753,6 +697,8 @@ class Mod(Cog, emoji=1268851270136107048):
         if ctx.guild is not None:
             role = ctx.guild.default_role or role
             reason = f"Action done by {ctx.author}"
+            if ctx.interaction is not None:
+                await ctx.defer()
             confirm = ConfirmationView(ctx, 60)
             msg = await ctx.send(
                 embed=orange_embed(
@@ -799,7 +745,7 @@ class Mod(Cog, emoji=1268851270136107048):
 
             await m.edit(embed=em)
 
-    @commands.group()
+    @commands.hybrid_group()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
@@ -817,8 +763,8 @@ class Mod(Cog, emoji=1268851270136107048):
     async def unlock_channel(
         self,
         ctx: Context,
-        role: Optional[discord.Role] = None,
-        channel: Optional[Union[discord.TextChannel, discord.abc.Messageable]] = None,
+        role: discord.Role | None = None,
+        channel: discord.TextChannel | None = None,
     ):
         """
         Unlocks a channel with role requirement.
@@ -827,7 +773,8 @@ class Mod(Cog, emoji=1268851270136107048):
 
         if ctx.guild is not None:
             role = role or ctx.guild.default_role
-            channel = channel or ctx.channel
+            if channel is None and isinstance(ctx.channel, discord.TextChannel):
+                channel = ctx.channel
 
             if isinstance(channel, discord.TextChannel):
                 overwrite = channel.overwrites_for(role)
@@ -835,7 +782,8 @@ class Mod(Cog, emoji=1268851270136107048):
                 overwrite.add_reactions = True
 
                 await channel.set_permissions(role, overwrite=overwrite)
-                await ctx.message.add_reaction("🔓")
+                if ctx.interaction is None:
+                    await ctx.message.add_reaction("🔓")
                 await ctx.send(
                     embed=green_embed(
                         title="🔓 Unlocked",
@@ -865,6 +813,8 @@ class Mod(Cog, emoji=1268851270136107048):
         if ctx.guild is not None:
             role = ctx.guild.default_role or role
             reason = f"Action done by {ctx.author}"
+            if ctx.interaction is not None:
+                await ctx.defer()
             confirm = ConfirmationView(ctx, 60)
             msg = await ctx.send(
                 embed=orange_embed(
@@ -913,7 +863,7 @@ class Mod(Cog, emoji=1268851270136107048):
 
             await m.edit(embed=em)
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
@@ -921,8 +871,8 @@ class Mod(Cog, emoji=1268851270136107048):
     async def hide(
         self,
         ctx: Context,
-        role: Optional[discord.Role] = None,
-        channel: Optional[Union[discord.TextChannel, discord.abc.Messageable]] = None,
+        role: discord.Role | None = None,
+        channel: discord.TextChannel | None = None,
     ):
         """
         Hides a channel.
@@ -931,7 +881,8 @@ class Mod(Cog, emoji=1268851270136107048):
 
         if ctx.guild is not None:
             role = role or ctx.guild.default_role
-            channel = channel or ctx.channel
+            if channel is None and isinstance(ctx.channel, discord.TextChannel):
+                channel = ctx.channel
 
             if isinstance(channel, discord.TextChannel):
                 overwrite = channel.overwrites_for(role)
@@ -953,7 +904,7 @@ class Mod(Cog, emoji=1268851270136107048):
                     )
                 )
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
@@ -961,8 +912,8 @@ class Mod(Cog, emoji=1268851270136107048):
     async def expose(
         self,
         ctx: Context,
-        role: Optional[discord.Role] = None,
-        channel: Optional[Union[discord.TextChannel, discord.abc.Messageable]] = None,
+        role: discord.Role | None = None,
+        channel: discord.TextChannel | None = None,
     ):
         """
         Exposes a channel.
@@ -970,7 +921,8 @@ class Mod(Cog, emoji=1268851270136107048):
 
         if ctx.guild is not None:
             role = role or ctx.guild.default_role
-            channel = channel or ctx.channel
+            if channel is None and isinstance(ctx.channel, discord.TextChannel):
+                channel = ctx.channel
 
             if isinstance(channel, discord.TextChannel):
                 overwrite = channel.overwrites_for(role)
@@ -992,7 +944,7 @@ class Mod(Cog, emoji=1268851270136107048):
                     )
                 )
 
-    @commands.command(aliases=["purge"])
+    @commands.hybrid_command(aliases=["purge"])
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
@@ -1025,15 +977,16 @@ class Mod(Cog, emoji=1268851270136107048):
             )
 
         else:
-            await ctx.message.delete()
+            if ctx.interaction is None:
+                await ctx.message.delete()
             if isinstance(
                 ctx.channel,
-                Union[
+                (
                     discord.TextChannel,
                     discord.StageChannel,
                     discord.VoiceChannel,
                     discord.Thread,
-                ],
+                ),
             ):
                 await ctx.channel.purge(limit=amount)
                 await ctx.send(
@@ -1049,7 +1002,7 @@ class Mod(Cog, emoji=1268851270136107048):
                     )
                 )
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
@@ -1078,12 +1031,12 @@ class Mod(Cog, emoji=1268851270136107048):
         else:
             if isinstance(
                 ctx.channel,
-                Union[
+                (
                     discord.TextChannel,
                     discord.StageChannel,
                     discord.ForumChannel,
                     discord.Thread,
-                ],
+                ),
             ):
                 await ctx.channel.purge(limit=amount, check=is_bot)
                 await ctx.send(
@@ -1099,7 +1052,7 @@ class Mod(Cog, emoji=1268851270136107048):
                     )
                 )
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
@@ -1113,7 +1066,7 @@ class Mod(Cog, emoji=1268851270136107048):
             embed=green_embed(description=f"{self.bot.yes} Kicked {member.mention}")
         )
 
-    @commands.command(aliases=["mk"])
+    @commands.hybrid_command(aliases=["mk"])
     @commands.guild_only()
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
@@ -1121,63 +1074,76 @@ class Mod(Cog, emoji=1268851270136107048):
     async def masskick(
         self,
         ctx: Context,
-        members: commands.Greedy[discord.Member],
+        members: str,
         *,
         reason: str | None,
     ):
         """
         Kick multiple members.
         You can only kick users who are in the server.
+        Supply space/comma separated member mentions or IDs.
         """
 
-        if not len(members):
+        targets = self._parse_members(ctx, members)
+        if not targets:
             return await ctx.send(
                 embed=red_embed(
                     description=f"{self.bot.no} One or more required arguments are missing."
                 )
             )
 
-        for member in members:
+        for member in targets:
             reason = reason or f"Kicked by {ctx.author} (ID: {ctx.author.id})"
             await member.kick(reason=reason)
         await ctx.send(
             embed=green_embed(
-                description=f"{self.bot.yes} Kicked {len(members)} members"
+                description=f"{self.bot.yes} Kicked {len(targets)} members"
             )
         )
 
-    @commands.command(aliases=["b"])
+    @commands.hybrid_command(aliases=["b"])
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
-    async def ban(
-        self, ctx: Context, member: Union[discord.Member, int], *, reason: str | None
-    ):
+    async def ban(self, ctx: Context, member: str, *, reason: str | None):
         """
         Bans a member whether or not they're in the server.
-        You can ban the member using their ID or my mentioning them.
+        Supply a member mention or a user ID.
         """
 
         reason = reason or f"Banned by {ctx.author} (ID: {ctx.author.id})"
 
-        if ctx.guild is not None:
-            if isinstance(member, int):
-                await ctx.guild.ban(discord.Object(id=member), reason=f"{reason}")
-                user = await self.bot.fetch_user(member)
-                await ctx.send(
-                    embed=green_embed(description=f"{self.bot.yes} Banned {user}")
-                )
+        if ctx.guild is None:
+            return
 
-            else:
-                await member.ban(reason=f"{reason}")
-                await ctx.send(
-                    embed=green_embed(
-                        description=f"{self.bot.yes} Banned {member.mention}"
-                    )
+        ids = self._extract_ids(member)
+        if not ids:
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} Could not resolve a member mention or user ID."
                 )
+            )
 
-    @commands.command()
+        user_id = ids[0]
+        target = ctx.guild.get_member(user_id)
+        if target is not None:
+            await target.ban(reason=f"{reason}")
+            await ctx.send(
+                embed=green_embed(description=f"{self.bot.yes} Banned {target.mention}")
+            )
+        else:
+            await ctx.guild.ban(discord.Object(id=user_id), reason=f"{reason}")
+            try:
+                user = await self.bot.fetch_user(user_id)
+            except discord.HTTPException:
+                user = None
+            display = str(user) if user is not None else f"<@{user_id}>"
+            await ctx.send(
+                embed=green_embed(description=f"{self.bot.yes} Banned {display}")
+            )
+
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @commands.cooldown(1, 10, commands.BucketType.guild)
@@ -1228,7 +1194,7 @@ class Mod(Cog, emoji=1268851270136107048):
         except Exception as e:
             await ctx.send(f"An unexpected error occurred: {str(e)}")
 
-    @commands.command(aliases=["mb"])
+    @commands.hybrid_command(aliases=["mb"])
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
@@ -1236,16 +1202,18 @@ class Mod(Cog, emoji=1268851270136107048):
     async def massban(
         self,
         ctx: Context,
-        members: commands.Greedy[discord.Member],
+        members: str,
         *,
         reason: str | None,
     ):
         """
         Mass bans multiple members.
         You can only ban users, who are in the server.
+        Supply space/comma separated member mentions or IDs.
         """
 
-        if not len(members):
+        targets = self._parse_members(ctx, members)
+        if not targets:
             return await ctx.send(
                 embed=red_embed(
                     description=f"{self.bot.no} One or more required arguments are missing."
@@ -1253,14 +1221,14 @@ class Mod(Cog, emoji=1268851270136107048):
             )
 
         else:
-            for target in members:
+            for target in targets:
                 reason = f"Banned by {ctx.author} (ID: {ctx.author.id})"
                 await target.ban(reason=reason)
                 await ctx.send(
                     embed=green_embed(description=f"{self.bot.yes} Banned {target}")
                 )
 
-    @commands.command(aliases=["sb"])
+    @commands.hybrid_command(aliases=["sb"])
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
@@ -1287,7 +1255,7 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         )
 
-    @commands.command(aliases=["ub"])
+    @commands.hybrid_command(aliases=["ub"])
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
@@ -1313,13 +1281,18 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.command(aliases=["timeout"])
+    @commands.hybrid_command(aliases=["timeout"])
     @commands.guild_only()
     @commands.has_permissions(moderate_members=True)
     @commands.bot_has_permissions(moderate_members=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def mute(
-        self, ctx: Context, member: discord.Member, duration, *, reason: str | None
+        self,
+        ctx: Context,
+        member: discord.Member,
+        duration: str,
+        *,
+        reason: str | None,
     ):
         """
         Mutes or timeouts a member for specific time.
@@ -1340,7 +1313,7 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         )
 
-    @commands.command(aliases=["untimeout"])
+    @commands.hybrid_command(aliases=["untimeout"])
     @commands.guild_only()
     @commands.has_permissions(moderate_members=True)
     @commands.bot_has_permissions(moderate_members=True)
@@ -1356,7 +1329,7 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         )
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
@@ -1379,7 +1352,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
@@ -1404,7 +1377,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.command(name="clonerole")
+    @commands.hybrid_command(name="clonerole")
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_roles=True)
@@ -1436,7 +1409,7 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         )
 
-    @commands.command(name="createrole")
+    @commands.hybrid_command(name="createrole")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
@@ -1446,16 +1419,32 @@ class Mod(Cog, emoji=1268851270136107048):
         ctx: Context,
         *,
         role: discord.Role,
-        color: discord.Color = discord.Color.default(),
+        color: str | None = None,
         hoist: bool = False,
     ):
         """Create a new role with color and hoist options."""
+
+        parsed_color: discord.Color = discord.Color.default()
+        if color:
+            try:
+                parsed_color = discord.Color.from_str(color)
+            except ValueError:
+                named = getattr(
+                    discord.Color, color.strip().lower().replace(" ", "_"), None
+                )
+                if not callable(named):
+                    return await ctx.send(
+                        embed=red_embed(
+                            description=f"{self.bot.no} Invalid color: `{color}`."
+                        )
+                    )
+                parsed_color = cast(discord.Color, named())
 
         if ctx.guild is not None:
             await ctx.guild.create_role(
                 reason=f"Role created by {ctx.author}",
                 name=role.name,
-                color=color,
+                color=parsed_color,
                 hoist=hoist,
             )
             await ctx.send(
@@ -1464,7 +1453,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.command(name="deleterole")
+    @commands.hybrid_command(name="deleterole")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
@@ -1481,7 +1470,7 @@ class Mod(Cog, emoji=1268851270136107048):
                     )
                 )
 
-    @commands.command(name="rolelist")
+    @commands.hybrid_command(name="rolelist")
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def role_list(self, ctx: Context):
@@ -1522,7 +1511,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 view = Paginator(ctx, embeds)
                 return await ctx.send(embed=embeds[0], view=view)
 
-    @commands.command(name="createchannel")
+    @commands.hybrid_command(name="createchannel")
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
@@ -1538,7 +1527,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.command(name="deletechannel")
+    @commands.hybrid_command(name="deletechannel")
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
@@ -1553,7 +1542,7 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         )
 
-    @commands.command(name="channellist")
+    @commands.hybrid_command(name="channellist")
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def channel_list(self, ctx: Context):
@@ -1645,7 +1634,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 view = Paginator(ctx, embeds)
                 return await ctx.send(embed=embeds[0], view=view)
 
-    @commands.command(name="channeltopic")
+    @commands.hybrid_command(name="channeltopic")
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
@@ -1653,19 +1642,28 @@ class Mod(Cog, emoji=1268851270136107048):
     async def channel_topic(
         self,
         ctx: Context,
-        channel: Optional[Union[discord.TextChannel, discord.ForumChannel]] = None,
+        channel: str | None = None,
         *,
         text: str,
     ):
         """
         Change the channel topic.
         If no channel is given, it will default to the current channel.
+        Supply a channel mention or ID when specifying one.
         """
 
-        channel = channel or ctx.channel  # type: ignore
+        target = self._parse_channel(ctx, channel) if channel else ctx.channel
+        if target is None or not isinstance(
+            target, (discord.TextChannel, discord.ForumChannel)
+        ):
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} You can only change the topic of text/forum channels."
+                )
+            )
 
         try:
-            await channel.edit(topic=text)  # type: ignore
+            await target.edit(topic=text)  # type: ignore
 
         except discord.HTTPException:
             await ctx.send(
@@ -1681,7 +1679,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -1786,13 +1784,13 @@ class Mod(Cog, emoji=1268851270136107048):
         if automod_cog and hasattr(automod_cog, "check_warn_threshold"):
             await automod_cog.check_warn_threshold(member.id, ctx.guild.id)  # type: ignore[union-attr]
 
-    @commands.command(aliases=["warns"])
+    @commands.hybrid_command(aliases=["warns"])
     @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def warnings(
         self,
         ctx: Context,
-        member: Optional[Union[discord.Member, discord.User]] = None,
+        member: discord.User | discord.Member | None = None,
     ):
         """Show all warnings for a member (defaults to yourself)."""
 
@@ -1866,7 +1864,7 @@ class Mod(Cog, emoji=1268851270136107048):
         view = Paginator(ctx, embeds)
         await ctx.send(embed=embeds[0], view=view)
 
-    @commands.command(aliases=["delwarn"])
+    @commands.hybrid_command(aliases=["delwarn"])
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -1895,7 +1893,7 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         )
 
-    @commands.command(aliases=["clearwarn", "warnreset"])
+    @commands.hybrid_command(aliases=["clearwarn", "warnreset"])
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -1922,6 +1920,8 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
+        if ctx.interaction is not None:
+            await ctx.defer()
         confirm = ConfirmationView(ctx, 30)
         msg = await ctx.send(
             embed=orange_embed(
@@ -1953,5 +1953,5 @@ class Mod(Cog, emoji=1268851270136107048):
         )
 
 
-async def setup(bot: PizzaHat) -> None:
+async def setup(bot: Zync) -> None:
     await bot.add_cog(Mod(bot))

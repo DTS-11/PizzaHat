@@ -1,23 +1,24 @@
+"""Core guild and member event listeners.
+
+Handles bot/guild lifecycle logging, member join/leave notices, and shared
+guild-state cleanup. This cog is internal and exposes no public commands.
+"""
+
 import asyncio
 
 import discord
-from core.bot import PizzaHat
+
+from core.bot import Zync
 from core.cog import Cog
-from core.database import get_prefix
 from utils.config import LOGS_CHANNEL
-from utils.embed import (
-    green_embed,
-    guild_embed,
-    invalidate_theme_cache,
-    red_embed,
-)
+from utils.embed import green_embed, guild_embed, red_embed
 
 
 class Events(Cog):
     """Events cog"""
 
-    def __init__(self, bot: PizzaHat):
-        self.bot: PizzaHat = bot
+    def __init__(self, bot: Zync):
+        self.bot: Zync = bot
         self._auto_left: set[int] = set()
         # bot.loop.create_task(self.update_stats())
 
@@ -86,15 +87,11 @@ class Events(Cog):
                 return
 
             if msg.content in {f"<@{bot_id}>", f"<@!{bot_id}>"}:
-                prefix = (
-                    await get_prefix(self.bot.db, msg.guild.id if msg.guild else 0)
-                    or "p!"
-                )
                 em = await guild_embed(
                     self.bot.db,
                     msg.guild.id if msg.guild else 0,
                     "Hello! <a:wave_animated:783393435242463324>",
-                    f"I'm {self.bot.user.name} — Your Ultimate Discord Companion!\nTo get started, my prefix is `{prefix}` or <@{bot_id}>",
+                    f"I'm {self.bot.user.name} — Your Ultimate Discord Companion.\nUse `/help` to get started, or mention me for text commands.",
                 )
 
                 await msg.channel.send(embed=em)
@@ -162,11 +159,10 @@ class Events(Cog):
         for cog_name in (
             "AntiAlts",
             "AntiAltsConfig",
-            "AutomationEvents",
+            "WorkflowRunner",
             "AutoModeration",
             "AutoModConfig",
             "GuildLogs",
-            "StarboardEvents",
         ):
             cog = self.bot.get_cog(cog_name)
             clear_cache = getattr(cog, "clear_config_cache", None) or getattr(
@@ -175,7 +171,6 @@ class Events(Cog):
             if callable(clear_cache):
                 clear_cache(guild.id)
 
-        invalidate_theme_cache(guild.id)
         leave_reason, was_auto_left = self._get_leave_reason(guild)
 
         em = red_embed(
@@ -203,67 +198,6 @@ class Events(Cog):
 
         await self._send_bot_logs_embed(em)
 
-    # ====== MEMBER PING - AFK EVENT ======
 
-    @Cog.listener(name="on_message")
-    async def member_ping_in_afk(self, msg: discord.Message):
-        if msg.author.bot or not msg.guild:
-            return
-
-        data = (
-            await self.bot.db.fetchrow(
-                "SELECT reason FROM afk WHERE guild_id=$1 AND user_id=$2",
-                msg.guild.id,
-                msg.author.id,
-            )
-            if self.bot.db
-            else None
-        )
-
-        if data:
-            (
-                await self.bot.db.execute(
-                    "DELETE FROM afk WHERE user_id=$1 AND guild_id=$2",
-                    msg.author.id,
-                    msg.guild.id,
-                )
-                if self.bot.db
-                else None
-            )
-            return await msg.channel.send(
-                f"Welcome back {msg.author.mention}.\nI have removed your AFK status."
-            )
-
-        if msg.mentions:
-            for mention in msg.mentions:
-                d2 = (
-                    await self.bot.db.fetchrow(
-                        "SELECT reason FROM afk WHERE guild_id=$1 AND user_id=$2",
-                        msg.guild.id,
-                        mention.id,
-                    )
-                    if self.bot.db
-                    else None
-                )
-
-                if d2 and mention.id != msg.author.id:
-                    em = discord.Embed(
-                        title="💤 Member is AFK",
-                        description=f"{mention.mention} is currently away.\n**Reason:** {d2['reason']}",
-                        color=0x456DD4,
-                        timestamp=msg.created_at,
-                    )
-                    em.set_author(
-                        name=mention.name,
-                        icon_url=mention.avatar.url if mention.avatar else None,
-                    )
-                    em.set_footer(
-                        text=msg.author,
-                        icon_url=msg.author.avatar.url if msg.author.avatar else None,
-                    )
-
-                    await msg.channel.send(embed=em)
-
-
-async def setup(bot: PizzaHat) -> None:
+async def setup(bot: Zync) -> None:
     await bot.add_cog(Events(bot))

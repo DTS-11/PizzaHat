@@ -1,3 +1,9 @@
+"""Configurable guild logging listeners.
+
+Contains the internal cog that records moderation, role, channel, emoji, and
+member changes to configured log channels.
+"""
+
 import asyncio
 import datetime
 from collections import defaultdict
@@ -8,17 +14,17 @@ from async_lru import alru_cache
 from discord.utils import escape_markdown
 from humanfriendly import format_timespan
 
-from cogs.utility import format_date
-from core.bot import PizzaHat
+from core.bot import Zync
 from core.cog import Cog
 from utils.embed import green_embed, guild_embed, orange_embed, red_embed
+from utils.formats import format_date
 
 
 class GuildLogs(Cog):
     """Log everything in your server!"""
 
-    def __init__(self, bot: PizzaHat):
-        self.bot: PizzaHat = bot
+    def __init__(self, bot: Zync):
+        self.bot: Zync = bot
         self.recent_kicks = defaultdict(set)
         self.lock = asyncio.Lock()
 
@@ -1287,5 +1293,5 @@ class GuildLogs(Cog):
             await self.bot.send_log(channel, embed=em)
 
 
-async def setup(bot: PizzaHat) -> None:
+async def setup(bot: Zync) -> None:
     await bot.add_cog(GuildLogs(bot))

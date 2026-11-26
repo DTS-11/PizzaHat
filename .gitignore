@@ -122,6 +122,8 @@ celerybeat.pid
 # Environments
 .env
 .venv
+# Keep the root interpreter link for IDE auto-discovery; real venvs stay ignored.
+!/.venv
 env/
 venv/
 ENV/
@@ -153,4 +155,4 @@ dmypy.json
 cython_debug/
 
 # custom
-PizzaHat/utils/bad_words.py
+Zync/utils/bad_words.py

@@ -1,130 +1,216 @@
 <h1 align="center">
-    <img src="./PizzaHat/assets/images/bot-logo.png" width="300" height="300"/> <br>
-PizzaHat Discord Bot <h1/>
-
-<h4 align="center"> Your ultimate Discord companion! <h4/>
-  </a><br>
-  <img src="https://img.shields.io/badge/discord.py-2.7.1-blue?style=flat" />
-  <img src="https://img.shields.io/badge/Python-3.11-green?style=flat&logo=python" />
-  <img src="https://github.com/DTS-11/PizzaHat/actions/workflows/codeql-analysis.yml/badge.svg" />
+  <img src="./Zync/assets/images/bot-logo.png" width="260" height="260" alt="Zync logo"><br>
+  Zync
 </h1>
 
-## ℹ️ • Info
+<h4 align="center">Your Ultimate Discord Companion</h4>
 
-[PizzaHat](https://pizzahat.vercel.app) is a multi-purpose bot, made to satisfy your needs, as well as your server's needs too! This project is open source so that other developers could work on it and make it even better!
+<p align="center">
+  <img src="https://img.shields.io/badge/discord.py-2.7.1-blue?style=flat" alt="discord.py 2.7.1">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-green?style=flat&logo=python" alt="Python 3.10+">
+  <img src="https://img.shields.io/badge/uv-managed-purple?style=flat" alt="uv managed">
+  <img src="https://github.com/DTS-11/PizzaHat/actions/workflows/codeql-analysis.yml/badge.svg" alt="CodeQL">
+</p>
 
-## <img src="https://cdn.discordapp.com/emojis/800797566471897088.png?size=80" height="30px"> • Features
+## Info
 
-- 📌 Over 150+ commands! </li>
-- 🔼 99% uptime. </li>
-- 🏓 Low latency. </li>
-- <img src="https://cdn.discordapp.com/emojis/793774567332118528.webp?size=48" height="19px"> Highly Customizable. </li>
-- <img src="https://cdn.discordapp.com/emojis/847248846526087239.png?size=80" height="19px"> Powerful moderation. </li>
-- 🛡️ Effective automod and antiraid system. </li>
-- ⚒️ Utility commands. </li>
-- 😎 Emoji management. </li>
-- 📔 Advanced logging system. </li>
-- 🌟 Starboard system. </li>
-- 🗳 Poll voting system </li>
-- 🏷 Tag system </li>
-- 🎟 Ticket system </li>
-- <img src="https://cdn.discordapp.com/emojis/809170074006192130.png?size=80" height="19px"> Updated and maintained! </li>
-- 🔄 Self-assignable role menus (buttons & dropdowns). </li>
-- 🤖 Auto responder system. </li>
-- 👋 Welcome / join automation (autorole, welcome messages, DMs). </li>
-- ⏰ Scheduled messages. </li>
-- 🧩 Embed templates. </li>
-- 💤 AFK system. </li>
-- 🎛️ Interactive help system. </li>
-- ⏱ Timezone support. </li>
-- 🔧 Customizable prefix. </li>
+[Zync](https://pizzahat.vercel.app) is a slash-first Discord bot built around a deterministic
+**Trigger → Condition → Action** workflow engine, with moderation, safety, tickets, tags, role menus,
+embed templates, logging, and staff utilities in one place.
 
-## <img src='https://cdn.discordapp.com/emojis/802615573556363284.png?size=80' height="30px"> • How to contribute?
+The public command surface is slash commands. The bot mention (`@Zync`) remains as a text-command
+fallback where Discord delivers message content; there is no custom prefix.
 
-- Fork the repo.
-- Create a new branch
-- Add features/changes (with proper docs for help)
-- Format code & sort imports with Ruff
+The project is open source for educational and development purposes. This README is for contributors;
+start with [Development setup](#development-setup) and see [CONTRIBUTING.md](./CONTRIBUTING.md)
+before opening a pull request.
+
+## Features
+
+### Workflow engine
+
+- Create, list, toggle, and delete workflows with `/workflow`
+- Five starter templates:
+  - new-account raid shield
+  - auto-responder
+  - welcome and onboarding
+  - starboard / highlight reel
+  - timezone-aware scheduled reminder
+- Triggers:
+  - `member_join`
+  - `message_create`
+  - `reaction_add`
+  - `role_update`
+  - `schedule`
+  - `safety_alert`
+- Conditions:
+  - `account_age_lt`
+  - `contains_link`
+  - `contains_text`
+  - `has_role`
+  - `channel_in`
+  - `cooldown_sec`
+  - `is_bot`
+  - `emoji_is`
+  - `reaction_count_gte`
+  - `not_self_react`
+- Actions:
+  - `add_role`
+  - `remove_role`
+  - `send_embed`
+  - `send_message`
+  - `send_dm`
+  - `timeout_member`
+  - `open_ticket`
+  - `log_channel`
+- Strict schema validation in `utils/workflow_schema.py`
+- Cached evaluation in `cogs_hidden/workflow_runner.py`
+- Tier limits:
+  - Free: 5 active workflows, 2 actions per workflow
+  - Basic: 25 active workflows, 5 actions per workflow
+  - Pro: unlimited
+
+### Moderation and staff tools
+
+- Moderation: bans, kicks, mutes, timeouts, warnings, prune, nick management, slowmode, lock/unlock,
+  hide/expose, role and channel management
+- Server insights with workflow analytics
+- Configurable guild logging in `cogs_hidden/guild_logs.py`
+- Anti-alt and automod command surfaces merged into `/antialt` and `/automod`
+- Persistent safety listeners in `cogs_hidden/safety_hooks.py`, including `safety_alert` workflow triggers
+
+### Community tools
+
+- Ticket panels, persistent ticket buttons, and thread logs
+- Button/dropdown role menus with persistent view registration
+- Tags with create, edit, delete, list, info, and lookup
+- Embed templates with preview and template linking for role menus and ticket panels
+- Emoji management with `/emoji create`, `delete`, `info`, and `list`
+- Image-to-emoji helpers with `/emojify` and `/emojifyav`
+
+### System commands
+
+The system cog exposes only:
+
+- `/help` with a cog/category selector and button navigation
+- `/status`
+- `/timezone`
+- `/premium`
+- `/credits`
+- `/invite`
+- `/support`
+- `/vote`
+
+All other user-facing commands are hybrid commands, registered as slash commands.
+
+## Project layout
+
+```txt
+Zync/                     uv project root
+  cogs/                   public command surfaces
+  cogs_hidden/            listeners, runners, and persistent view registration
+  core/                   bot bootstrap, database bootstrap, shared cog base
+  utils/                  reusable UI components, embeds, validation, config, checks
+  migrations/             manual PostgreSQL migrations
+  pyproject.toml          uv project metadata and dependency groups
+  uv.lock                 locked dependency set
+  .env.example            local environment template
+README.md                 project overview and contributor guide
+```
+
+Reusable UI components live in `utils/ui.py`; `cogs_hidden/interactions.py` only registers persistent
+views. There is no custom prefix system, and the bot does not request the Message Content privileged
+intent. Slash commands work normally; message-content-based automod checks need that intent enabled
+separately to be effective in guilds.
+
+## Development setup
+
+This section is for contributors. Use it to set up a local development environment; it is not a
+deployment or self-hosting guide.
+
+### Prerequisites
+
+- Python 3.10+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- Git
+- PostgreSQL, only if you are working on database-backed behavior locally
+
+### Clone and install
+
+From the repository root:
 
 ```bash
-ruff check --select I --fix .
-ruff format .
+git clone https://github.com/DTS-11/PizzaHat.git
+cd Zync/Zync
+uv sync
 ```
 
-- Commit and push the changes
-- Submit pull request
-
-## <img src="https://cdn.discordapp.com/emojis/802615572080099378.png?size=80" height="30px"> • Self hosting
-
-I'd prefer if you don't run an instance of this bot. Just use the `invite` command to invite the bot to your server. The code here is for **_educational an developmental purposes only!_** <br>\
-Anyways, if you still want to self host this, here are the steps:
-<b>
-
-- Install [Python 3.10 or higher](https://www.python.org/downloads/)
-
-- Install [Git](https://git-scm.com/downloads)
-
-- Clone the repo
+`uv sync` reads `Zync/pyproject.toml` and `Zync/uv.lock`, creates `Zync/.venv`, and
+installs runtime and dev dependencies. Add packages later from `Zync/` with:
 
 ```bash
-$ git clone https://github.com/DTS-11/PizzaHat.git
+uv add <package>
 ```
 
-- Install the dependencies
+### Local environment
+
+From `Zync/`, copy the environment template and fill in the values you need:
 
 ```bash
-cd PizzaHat
-pip install -r requirements.txt
+cp .env.example .env
 ```
 
-- Configuring the bot <br>
-  Create a `.env` file with the following format
+`.env` is gitignored. `load_dotenv()` reads from the current working directory, so keep `.env` in
+`Zync/` when using the project commands.
 
-```
-TOKEN = your_bot_token
-PG_URL = postgresql_connection_url
-```
+For automod work, create the gitignored `Zync/utils/bad_words.py` with a local list:
 
-Create a `bad_words.py` file in the `utils` directory
-
-```py
+```python
 BANNED_WORDS = [
-  "list of",
-  "banned words",
-  "for automod",
+    "example",
+    "words",
+    "to block",
 ]
 ```
 
-- Running the bot
+### Checks
+
+Run these from `Zync/` before opening a pull request:
 
 ```bash
-python .
+uv run ruff check --select I .
+uv run ruff format --check .
+uv run python -m compileall cogs cogs_hidden core utils __main__.py
 ```
 
-Run this command in 'PizzaHat/PizzaHat' directory \
-<br>
+To apply import sorting and formatting first:
 
----
+```bash
+uv run ruff check --select I --fix .
+uv run ruff format .
+```
 
-Note:
+## Contributing
 
-- We do not provide support for self-hosting. If you are unable to self host PizzaHat by yourself, just use the bot itself which we put lot's of work into.
+1. Read the [Code of Conduct](./CODE_OF_CONDUCT.md).
+2. Fork the repository and create a focused branch.
+3. Keep changes scoped:
+   - public commands belong in `cogs/`
+   - listeners/runners belong in `cogs_hidden/`
+   - reusable components belong in `utils/`
+4. New commands must be slash-accessible. Do not reintroduce a custom prefix.
+5. Workflow changes must go through `utils/workflow_schema.py`; do not bypass validation.
+6. Database changes must be additive by default. Update both `core/database.py` bootstrap SQL and a
+   numbered migration under `migrations/`.
+7. Do not drop tables in bootstrap. Destructive changes require an explicit migration and review.
+8. Run the checks above before opening a pull request.
+9. Commit, push, and open a PR describing the behavior changed and any manual migration required.
 
-- You also CANNOT USE self-hosted version commercially (ie: public bot or using this code for money).
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the short checklist.
 
-- You CANNOT USE PizzaHat's name, logo in your bot.
+## Links
 
-- You MUST give credits to the repository and to the contributors.
-
-- You are also NOT ALLOWED to change/remove the `credits` command.
-
----
-
-<br>
-
-<!-- Please DON'T run an instance of this bot. The code here is for **educational and development purpose only!** Instead, I'd recommend inviting the bot. And the bot is not made to be configurable.
-
-If you decide to run your own instance, you should change the necessary things and give credits to the repo and it's contributors.We **WILL NOT** provide support on self-hosting -->
-
-<br>
-<h2 align="center"> <a href="https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot">Invite Bot</a> | <a href="https://discord.gg/WhNVDTF">Discord server</a> <h2/>
+- [Website](https://pizzahat.vercel.app)
+- [Invite bot](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot)
+- [Support server](https://discord.gg/WhNVDTF)
+- [Source](https://github.com/DTS-11/PizzaHat)
