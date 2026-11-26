@@ -6,28 +6,29 @@ configure safety thresholds, actions, and allowed roles or channels.
 
 from __future__ import annotations
 
-import ast
-import json
-
 import discord
-from async_lru import alru_cache
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Tier, Zync
+from core.bot import Zync
+from core.entitlements import Tier
 from core.cog import Cog
+from services import get_protection
+from services.protection import (
+    ALL_MODULES,
+    ANTIALT_LEVELS,
+    BASIC_MODULES,
+    DEFAULT_ANTIALT,
+    FREE_MODULES,
+    MODULE_DESCRIPTIONS,
+    PRO_ACTIONS,
+    ProtectionService,
+    default_module_config,
+)
 from utils.custom_checks import premium
 from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
 
-LEVELS = {
-    1: (
-        "🚫",
-        "Restrict",
-        "Add the restricted role — user can't send messages or react.",
-    ),
-    2: ("👞", "Kick", "Kick the suspect. If they rejoin, they're kicked again."),
-    3: ("🔨", "Ban", "Permanently ban the suspect."),
-}
+LEVELS = ANTIALT_LEVELS
 
 
 class LevelSelect(discord.ui.Select):
@@ -51,8 +52,8 @@ class LevelSelect(discord.ui.Select):
 class SetupModal(discord.ui.Modal, title="Anti-Alt Setup"):
     min_age = discord.ui.TextInput(
         label="Minimum account age (days)",
-        placeholder="e.g. 7  — accounts newer than this are flagged",
-        default="7",
+        placeholder=f"e.g. {DEFAULT_ANTIALT['min_age']}  — accounts newer than this are flagged",
+        default=str(DEFAULT_ANTIALT["min_age"]),
         min_length=1,
         max_length=4,
     )
@@ -234,26 +235,19 @@ class AntiAlts(Cog, emoji=1268851128548724756):
 
     def __init__(self, bot: Zync):
         self.bot = bot
+        self.protection: ProtectionService = get_protection(bot)
 
     def _clear_cache(self, guild_id: int) -> None:
-        for cog_name in ("AntiAltsConfig", "AutoModConfig"):
-            cog = self.bot.get_cog(cog_name)
-            if cog and hasattr(cog, "clear_config_cache"):
-                cog.clear_config_cache(guild_id)  # type: ignore
+        self.protection.invalidate(guild_id)
 
-    @alru_cache()
     async def _get_data(self, guild_id: int) -> dict | None:
-        if not self.bot.db:
+        if not await self.protection.is_configured(guild_id, "antialt"):
             return None
-        row = await self.bot.db.fetchrow(
-            "SELECT enabled, min_age, restricted_role, level FROM antialt WHERE guild_id=$1",
-            guild_id,
-        )
-        return dict(row) if row else None
+        return await self.protection.antialt(guild_id)
 
     async def _refresh_data(self, guild_id: int) -> dict | None:
         """Clear cache then re-fetch."""
-        self._get_data.cache_clear()
+        self.protection.invalidate(guild_id)
         return await self._get_data(guild_id)
 
     @commands.hybrid_group(fallback="overview")
@@ -370,15 +364,14 @@ class AntiAlts(Cog, emoji=1268851128548724756):
                     view=None,
                 )
 
-        await self.bot.db.execute(
-            "INSERT INTO antialt (guild_id, enabled, min_age, restricted_role, level) "
-            "VALUES ($1, $2, $3, $4, $5) "
-            "ON CONFLICT (guild_id) DO UPDATE SET enabled=$2, min_age=$3, restricted_role=$4, level=$5",
+        await self.protection.set_antialt(
             ctx.guild.id,
-            True,
-            wizard.min_age,
-            restricted_role.id if restricted_role else None,
-            wizard.level,
+            {
+                "enabled": True,
+                "min_age": wizard.min_age,
+                "restricted_role": restricted_role.id if restricted_role else None,
+                "level": wizard.level,
+            },
         )
         self._clear_cache(ctx.guild.id)
 
@@ -417,9 +410,9 @@ class AntiAlts(Cog, emoji=1268851128548724756):
                 )
             )
 
-        await self.bot.db.execute(
-            "UPDATE antialt SET enabled=$1 WHERE guild_id=$2", False, ctx.guild.id
-        )
+        config = await self.protection.antialt(ctx.guild.id)
+        config["enabled"] = False
+        await self.protection.set_antialt(ctx.guild.id, config)
         self._clear_cache(ctx.guild.id)
         await ctx.send(
             embed=green_embed(
@@ -449,9 +442,9 @@ class AntiAlts(Cog, emoji=1268851128548724756):
                 )
             )
 
-        await self.bot.db.execute(
-            "UPDATE antialt SET min_age=$1 WHERE guild_id=$2", days, ctx.guild.id
-        )
+        config = await self.protection.antialt(ctx.guild.id)
+        config["min_age"] = days
+        await self.protection.set_antialt(ctx.guild.id, config)
         self._clear_cache(ctx.guild.id)
         await ctx.send(
             embed=green_embed(
@@ -479,9 +472,9 @@ class AntiAlts(Cog, emoji=1268851128548724756):
                 embed=red_embed(description=f"{self.bot.no} Level must be 1, 2, or 3.")
             )
 
-        await self.bot.db.execute(
-            "UPDATE antialt SET level=$1 WHERE guild_id=$2", level, ctx.guild.id
-        )
+        config = await self.protection.antialt(ctx.guild.id)
+        config["level"] = level
+        await self.protection.set_antialt(ctx.guild.id, config)
         self._clear_cache(ctx.guild.id)
         emoji, name, desc = LEVELS[level]
         await ctx.send(
@@ -505,11 +498,9 @@ class AntiAlts(Cog, emoji=1268851128548724756):
                 embed=red_embed(description=f"{self.bot.no} Anti-Alt is not enabled.")
             )
 
-        await self.bot.db.execute(
-            "UPDATE antialt SET restricted_role=$1 WHERE guild_id=$2",
-            role.id,
-            ctx.guild.id,
-        )
+        config = await self.protection.antialt(ctx.guild.id)
+        config["restricted_role"] = role.id
+        await self.protection.set_antialt(ctx.guild.id, config)
         self._clear_cache(ctx.guild.id)
         await ctx.send(
             embed=green_embed(
@@ -529,46 +520,6 @@ class AntiAlts(Cog, emoji=1268851128548724756):
         em = await ctx_embed(ctx, timestamp=True)
         em = _build_antialt_status_embed(em, ctx.guild, data, self.bot.yes, self.bot.no)
         await ctx.send(embed=em)
-
-
-FREE_MODULES = [
-    "banned_words",
-    "all_caps",
-    "message_spam",
-    "invites",
-    "mass_mentions",
-    "emoji_spam",
-    "zalgo_text",
-]
-
-BASIC_MODULES = [
-    "newline_spam",
-    "repeated_chars",
-    "scam_links",
-    "username_filter",
-    "default_avatar",
-    "join_rate",
-]
-
-ALL_MODULES = FREE_MODULES + BASIC_MODULES
-
-PRO_ACTIONS = {"tempban", "role_add", "role_remove"}
-
-MODULE_DESCRIPTIONS = {
-    "banned_words": "Delete messages containing blacklisted words",
-    "all_caps": "Delete messages exceeding the caps % threshold",
-    "message_spam": "Purge rapid repeated messages from one user",
-    "invites": "Delete external Discord invite links",
-    "mass_mentions": "Delete messages with excessive @mentions",
-    "emoji_spam": "Delete messages with too many emojis",
-    "zalgo_text": "Delete zalgo / corrupted unicode text",
-    "newline_spam": "Delete messages with excessive line breaks  [Basic]",
-    "repeated_chars": "Delete messages with repeated character runs  [Basic]",
-    "scam_links": "Delete known phishing/scam domains  [Basic]",
-    "username_filter": "Kick members with banned words or staff impersonation  [Basic]",
-    "default_avatar": "Act on members who join with no avatar  [Basic]",
-    "join_rate": "Detect mass joins and trigger auto-lockdown  [Basic]",
-}
 
 
 class ModuleToggleSelect(discord.ui.Select):
@@ -790,7 +741,7 @@ def _mod_active(cfg: dict, module: str) -> bool:
 
 
 def _default_module_config(modules: list[str]) -> dict:
-    return {module: {"enabled": True} for module in modules}
+    return default_module_config(modules)
 
 
 def _threshold_summary(thresholds: list[dict]) -> str:
@@ -815,20 +766,12 @@ def _threshold_summary(thresholds: list[dict]) -> str:
 
 
 async def _guild_tier(bot: Zync, guild_id: int) -> Tier:
-    if not bot.db:
-        return Tier.FREE
+    """Tiers come from the bot's entitlement service, never a local cache."""
 
-    row = await bot.db.fetchrow(
-        "SELECT tier, status FROM premium WHERE guild_id=$1", guild_id
-    )
-
-    if not row or row["status"] != "active":
+    service = getattr(bot, "entitlements", None)
+    if service is None:
         return Tier.FREE
-
-    try:
-        return Tier(row["tier"])
-    except ValueError:
-        return Tier.FREE
+    return await service.tier_for(guild_id)
 
 
 def _build_automod_status_embed(
@@ -909,49 +852,25 @@ class AutoModeration(Cog, emoji=1268880500248936491):
 
     def __init__(self, bot: Zync):
         self.bot = bot
+        self.protection: ProtectionService = get_protection(bot)
 
     def _clear_cache(self, guild_id: int) -> None:
-        cog = self.bot.get_cog("AutoModConfig")
-        if cog and hasattr(cog, "clear_config_cache"):
-            cog.clear_config_cache(guild_id)  # type: ignore
+        self.protection.invalidate(guild_id)
 
     async def _get_row(self, guild_id: int) -> dict:
-        if not self.bot.db:
+        if not await self.protection.is_configured(guild_id, "automod"):
             return {}
+        config = await self.protection.automod(guild_id)
+        return {"enabled": config["enabled"], "config": config}
 
-        row = await self.bot.db.fetchrow(
-            "SELECT enabled, config, modules FROM automod WHERE guild_id=$1", guild_id
-        )
-        if not row:
-            return {}
-
-        data = dict(row)
-        config = data.get("config")
-        if isinstance(config, str):
-            try:
-                data["config"] = json.loads(config)
-            except json.JSONDecodeError:
-                try:
-                    data["config"] = ast.literal_eval(config)
-                except (ValueError, SyntaxError):
-                    data["config"] = {}
-        elif config is None:
-            data["config"] = {}
-
-        if not data["config"] and data.get("modules"):
-            data["config"] = _default_module_config(list(data["modules"]))
-
-        return data
-
-    async def _upsert_config(self, guild_id: int, cfg: dict) -> None:
-        if not self.bot.db:
-            return
-        await self.bot.db.execute(
-            "INSERT INTO automod (guild_id, config) VALUES ($1,$2) "
-            "ON CONFLICT (guild_id) DO UPDATE SET config=$2",
-            guild_id,
-            cfg,
-        )
+    async def _upsert_config(
+        self, guild_id: int, cfg: dict, *, enabled: bool | None = None
+    ) -> None:
+        config = await self.protection.automod(guild_id)
+        config.update(cfg)
+        if enabled is not None:
+            config["enabled"] = enabled
+        await self.protection.set_automod(guild_id, config)
         self._clear_cache(guild_id)
 
     @commands.hybrid_group(fallback="overview")
@@ -1009,13 +928,7 @@ class AutoModeration(Cog, emoji=1268880500248936491):
                 else:
                     config_data[mod] = default_entry
 
-            await self.bot.db.execute(
-                "INSERT INTO automod (guild_id, enabled, config) VALUES ($1, true, $2) "
-                "ON CONFLICT (guild_id) DO UPDATE SET enabled=true, config=$2",
-                ctx.guild.id,
-                config_data,
-            )
-            self._clear_cache(ctx.guild.id)
+            await self._upsert_config(ctx.guild.id, config_data, enabled=True)
             return await ctx.send(
                 embed=green_embed(description=f"{self.bot.yes} AutoMod **enabled**.")
             )
@@ -1062,12 +975,7 @@ class AutoModeration(Cog, emoji=1268880500248936491):
             return
 
         if module is None:
-            await self.bot.db.execute(
-                "INSERT INTO automod (guild_id, enabled) VALUES ($1, false) "
-                "ON CONFLICT (guild_id) DO UPDATE SET enabled=false",
-                ctx.guild.id,
-            )
-            self._clear_cache(ctx.guild.id)
+            await self._upsert_config(ctx.guild.id, {}, enabled=False)
             return await ctx.send(
                 embed=green_embed(description=f"{self.bot.yes} AutoMod **disabled**.")
             )
@@ -1205,12 +1113,13 @@ class AutoModeration(Cog, emoji=1268880500248936491):
 
         if not is_pro:
             for t in new_thresholds:
-                if t.get("action") in PRO_ACTIONS:
+                original_action = t.get("action")
+                if original_action in PRO_ACTIONS:
                     t["action"] = "kick"
                     await ctx.send(
                         embed=orange_embed(
                             description=(
-                                f"💎 `{t['action']}` requires **Pro** — replaced with `kick`. "
+                                f"💎 `{original_action}` requires **Pro** — replaced with `kick`. "
                                 "Upgrade to use Temp Ban, Add Role, or Remove Role."
                             )
                         )

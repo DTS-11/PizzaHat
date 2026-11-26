@@ -1,8 +1,10 @@
 """Ticket panel commands.
 
-Contains the public ticket setup commands that create persistent panels and
-delegate button interactions to the reusable views in ``utils.ui``.
+Panel setup and thread management go through :class:`TicketService`; Discord
+UI and transcript rendering stay in ``utils.ui``.
 """
+
+from __future__ import annotations
 
 from typing import Optional
 
@@ -12,6 +14,8 @@ from discord.ext.commands import Context
 
 from core.bot import Zync
 from core.cog import Cog
+from services import get_tickets
+from services.tickets import TicketError
 from utils.embed import green_embed, red_embed
 from utils.ui import TicketView
 
@@ -21,6 +25,23 @@ class Tickets(Cog, emoji=1268867314292625469):
 
     def __init__(self, bot: Zync):
         self.bot: Zync = bot
+        self.tickets = get_tickets(bot)
+
+    async def _fail(self, ctx: Context, message: str) -> None:
+        await ctx.send(embed=red_embed(f"{self.bot.no} {message}"))
+
+    async def _managed_thread(self, ctx: Context) -> discord.Thread | None:
+        """Ensure the current thread is a registered, open ticket."""
+
+        if not isinstance(ctx.channel, discord.Thread) or ctx.guild is None:
+            await self._fail(ctx, "You can only do this in a ticket thread.")
+            return None
+        try:
+            await self.tickets.require_ticket(ctx.guild.id, ctx.channel.id)
+        except TicketError as exc:
+            await self._fail(ctx, str(exc))
+            return None
+        return ctx.channel
 
     @commands.hybrid_command()
     @commands.guild_only()
@@ -41,12 +62,8 @@ class Tickets(Cog, emoji=1268867314292625469):
         Optionally pass a `support_role` to be mentioned when a ticket is opened.
         """
 
-        if not ctx.guild:
-            return
-        if not self.bot.db:
-            return await ctx.send(
-                embed=red_embed(f"{self.bot.no} Database unavailable.")
-            )
+        if not ctx.guild or not self.bot.db:
+            return await self._fail(ctx, "Database unavailable.")
 
         em = discord.Embed(
             title="Support Tickets",
@@ -61,23 +78,23 @@ class Tickets(Cog, emoji=1268867314292625469):
 
         view = TicketView(self.bot)
         msg = await channel.send(embed=em, view=view)
-
-        await self.bot.db.execute(
-            """INSERT INTO ticket_panels (guild_id, channel_id, message_id, name, support_role_id)
-               VALUES ($1, $2, $3, $4, $5)""",
+        panel = await self.tickets.create_panel(
             ctx.guild.id,
             channel.id,
             msg.id,
             name,
-            support_role.id if support_role else None,
+            support_role_id=support_role.id if support_role else None,
         )
+        if panel is None:
+            return await self._fail(ctx, "Database unavailable.")
+        self.bot.add_view(view, message_id=msg.id)
 
         if ctx.interaction is None and ctx.message is not None:
             await ctx.message.add_reaction(self.bot.yes)
         else:
             await ctx.send(
                 embed=green_embed(
-                    f"{self.bot.yes} Ticket panel **{name}** created in {channel.mention}."
+                    f"{self.bot.yes} Ticket panel **{panel['name']}** created in {channel.mention}."
                 )
             )
 
@@ -91,20 +108,9 @@ class Tickets(Cog, emoji=1268867314292625469):
         if not ctx.guild:
             return
 
-        if not self.bot.db:
-            return await ctx.send(
-                embed=red_embed(f"{self.bot.no} Database unavailable.")
-            )
-
-        panels = await self.bot.db.fetch(
-            "SELECT * FROM ticket_panels WHERE guild_id=$1 ORDER BY id",
-            ctx.guild.id,
-        )
-
+        panels = await self.tickets.list_panels(ctx.guild.id)
         if not panels:
-            return await ctx.send(
-                embed=red_embed(f"{self.bot.no} No ticket panels set up yet.")
-            )
+            return await self._fail(ctx, "No ticket panels set up yet.")
 
         em = discord.Embed(title="Ticket Panels", color=0x456DD4)
         for panel in panels:
@@ -142,21 +148,9 @@ class Tickets(Cog, emoji=1268867314292625469):
         if not ctx.guild:
             return
 
-        if not self.bot.db:
-            return await ctx.send(
-                embed=red_embed(f"{self.bot.no} Database unavailable.")
-            )
-
-        panel = await self.bot.db.fetchrow(
-            "SELECT * FROM ticket_panels WHERE id=$1 AND guild_id=$2",
-            panel_id,
-            ctx.guild.id,
-        )
-
+        panel = await self.tickets.get_panel(ctx.guild.id, panel_id)
         if not panel:
-            return await ctx.send(
-                embed=red_embed(f"{self.bot.no} Panel `#{panel_id}` not found.")
-            )
+            return await self._fail(ctx, f"Panel `#{panel_id}` not found.")
 
         channel = ctx.guild.get_channel(panel["channel_id"])
         if isinstance(channel, discord.TextChannel):
@@ -166,12 +160,7 @@ class Tickets(Cog, emoji=1268867314292625469):
             except discord.NotFound:
                 pass
 
-        await self.bot.db.execute(
-            "DELETE FROM ticket_panels WHERE id=$1 AND guild_id=$2",
-            panel_id,
-            ctx.guild.id,
-        )
-
+        await self.tickets.delete_panel(ctx.guild.id, panel_id)
         await ctx.send(
             embed=green_embed(f"{self.bot.yes} Deleted panel **{panel['name']}**.")
         )
@@ -184,18 +173,13 @@ class Tickets(Cog, emoji=1268867314292625469):
     async def tadd(self, ctx: Context, user: discord.Member):
         """Adds a user to the current ticket thread."""
 
-        if isinstance(ctx.channel, discord.Thread):
-            await ctx.channel.add_user(user)
-            await ctx.send(
-                embed=green_embed(f"{self.bot.yes} Added {user.mention} to the ticket.")
-            )
-
-        else:
-            await ctx.send(
-                embed=red_embed(
-                    f"{self.bot.no} You can only add people to a ticket thread."
-                )
-            )
+        thread = await self._managed_thread(ctx)
+        if thread is None:
+            return
+        await thread.add_user(user)
+        await ctx.send(
+            embed=green_embed(f"{self.bot.yes} Added {user.mention} to the ticket.")
+        )
 
     @commands.hybrid_command()
     @commands.guild_only()
@@ -205,20 +189,13 @@ class Tickets(Cog, emoji=1268867314292625469):
     async def tremove(self, ctx: Context, user: discord.Member):
         """Removes a user from the current ticket thread."""
 
-        if isinstance(ctx.channel, discord.Thread):
-            await ctx.channel.remove_user(user)
-            await ctx.send(
-                embed=green_embed(
-                    f"{self.bot.yes} Removed {user.mention} to the ticket."
-                )
-            )
-
-        else:
-            await ctx.send(
-                embed=red_embed(
-                    f"{self.bot.no} You can only remove people from a ticket thread."
-                )
-            )
+        thread = await self._managed_thread(ctx)
+        if thread is None:
+            return
+        await thread.remove_user(user)
+        await ctx.send(
+            embed=green_embed(f"{self.bot.yes} Removed {user.mention} from the ticket.")
+        )
 
     @commands.hybrid_command()
     @commands.guild_only()
@@ -228,24 +205,12 @@ class Tickets(Cog, emoji=1268867314292625469):
     async def tclose(self, ctx: Context):
         """Archives and locks the current ticket thread."""
 
-        if isinstance(ctx.channel, discord.Thread):
-            await ctx.send(embed=green_embed(f"{self.bot.yes} Closed the ticket."))
-            await ctx.channel.edit(archived=True, locked=True)
-
-            if self.bot.db and ctx.guild:
-                await self.bot.db.execute(
-                    "UPDATE ticket_logs SET closed_at=NOW(), closed_by=$1 WHERE thread_id=$2 AND guild_id=$3",
-                    ctx.author.id,
-                    ctx.channel.id,
-                    ctx.guild.id,
-                )
-
-        else:
-            await ctx.send(
-                embed=red_embed(
-                    f"{self.bot.no} You can only close tickets from ticket threads."
-                )
-            )
+        thread = await self._managed_thread(ctx)
+        if thread is None or ctx.guild is None:
+            return
+        await ctx.channel.edit(archived=True, locked=True)
+        await self.tickets.close_ticket(ctx.guild.id, thread.id, ctx.author.id)
+        await ctx.send(embed=green_embed(f"{self.bot.yes} Closed the ticket."))
 
     @commands.hybrid_command()
     @commands.guild_only()
@@ -255,18 +220,14 @@ class Tickets(Cog, emoji=1268867314292625469):
     async def trename(self, ctx: Context, name: str):
         """Rename the current ticket thread."""
 
-        if isinstance(ctx.channel, discord.Thread):
-            await ctx.channel.edit(name=name)
-            await ctx.send(
-                embed=green_embed(
-                    f"{self.bot.yes} Renamed the ticket thread to `{name}`"
-                )
-            )
-
-        else:
-            await ctx.send(
-                embed=red_embed(f"{self.bot.no} You can only rename ticket threads.")
-            )
+        thread = await self._managed_thread(ctx)
+        if thread is None or ctx.guild is None:
+            return
+        await thread.edit(name=name)
+        await self.tickets.set_subject(ctx.guild.id, thread.id, name)
+        await ctx.send(
+            embed=green_embed(f"{self.bot.yes} Renamed the ticket thread to `{name}`")
+        )
 
 
 async def setup(bot: Zync) -> None:

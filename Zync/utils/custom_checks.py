@@ -1,92 +1,75 @@
-"""Reusable command checks.
+"""Command checks for the Discord surface.
 
-Provides the premium/tier guard used by cogs plus the shared tier cache used by
-premium and workflow limit checks.
+All tier resolution goes through :class:`core.entitlements.EntitlementService`;
+no cog or utility keeps its own premium cache.
 """
+
+from __future__ import annotations
+
+import datetime
 
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Tier
+from core.entitlements import Tier
+from utils.config import UPGRADE_URL
 
 
 class PremiumCheck(commands.CheckFailure):
-    pass
-
-
-_tier_cache = {}
+    """Raised when a command requires a higher entitlement tier."""
 
 
 def premium(tier: Tier = Tier.BASIC):
-    """
-    Check if the guild has the required tier level.
-    tier: Minimum Tier required (default: BASIC - accepts BASIC or PRO)
-    """
-    required_tier = tier
+    """Require at least ``tier`` for the current guild."""
 
-    async def predicate(ctx: Context):
-        if not ctx.guild:
+    required = tier
+
+    async def predicate(ctx: Context) -> bool:
+        if ctx.guild is None:
             raise commands.CheckFailure(
                 f"{ctx.bot.no} This command can only be used in a server."
             )
 
-        if ctx.bot.db is None:
-            raise PremiumCheck(
-                f"{ctx.bot.no} This is a premium feature, you need {required_tier.name} to use this.\n[Click here to upgrade](https://pizzahat.vercel.app/premium)"
-            )
+        service = getattr(ctx.bot, "entitlements", None)
+        if service is None:
+            granted = Tier.FREE
+        else:
+            granted = await service.tier_for(ctx.guild.id)
 
-        guild_id = ctx.guild.id
-
-        cached_tier = _tier_cache.get(guild_id)
-        if cached_tier is None:
-            row = await ctx.bot.db.fetchrow(
-                "SELECT tier FROM premium WHERE guild_id=$1", guild_id
-            )
-            if row:
-                cached_tier = Tier(row["tier"])
-                _tier_cache[guild_id] = cached_tier
-            else:
-                cached_tier = Tier.FREE
-                _tier_cache[guild_id] = Tier.FREE
-
-        if cached_tier >= required_tier:
+        if granted >= required:
             return True
 
-        tier_names = {
-            Tier.BASIC: "Basic",
-            Tier.PRO: "Pro",
-        }
-        tier_name = tier_names.get(required_tier, required_tier.name)
         raise PremiumCheck(
-            f"{ctx.bot.no} This is a premium feature, you need **{tier_name}** to use this.\n[Click here to upgrade](https://pizzahat.vercel.app/premium)"
+            f"{ctx.bot.no} This is a **{required.name.title()}** feature. "
+            f"[Learn more]({UPGRADE_URL})."
         )
 
     return commands.check(predicate)
 
 
 async def is_premium_guild(pool, guild_id: int) -> bool:
-    """Check if a guild has premium access."""
-    if pool is None:
+    """Return whether a guild has any paid entitlement.
+
+    Prefer the bot's entitlement service when available; this helper exists for
+    non-application code paths that only hold a database pool.
+    """
+
+    row = await pool.fetchrow(
+        "SELECT tier, status, current_period_end FROM premium WHERE guild_id=$1",
+        guild_id,
+    )
+    if row is None or row["status"] != "active":
+        return False
+    period_end = row["current_period_end"]
+    if period_end is not None and period_end <= datetime.datetime.now(
+        datetime.timezone.utc
+    ):
+        return False
+    try:
+        return Tier(int(row["tier"])) >= Tier.BASIC
+    except ValueError:
         return False
 
-    cached_tier = _tier_cache.get(guild_id)
-    if cached_tier is None:
-        row = await pool.fetchrow(
-            "SELECT tier FROM premium WHERE guild_id=$1", guild_id
-        )
-        if row:
-            cached_tier = Tier(row["tier"])
-            _tier_cache[guild_id] = cached_tier
-        else:
-            cached_tier = Tier.FREE
-            _tier_cache[guild_id] = Tier.FREE
 
-    return cached_tier >= Tier.BASIC
-
-
-def clear_tier_cache(guild_id: int | None = None):
-    """Clear the premium tier cache."""
-    if guild_id:
-        _tier_cache.pop(guild_id, None)
-    else:
-        _tier_cache.clear()
+def clear_tier_cache(guild_id: int | None = None) -> None:
+    """Compatibility no-op; cache invalidation is owned by the service."""

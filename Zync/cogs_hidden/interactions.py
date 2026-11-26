@@ -64,12 +64,12 @@ class TicketInteractions(Cog):
                 view = TicketView(
                     self.bot,
                     panel["button_label"] or "Open Ticket",
-                    panel["button_emoji"] or "<:ticketbadge:1268879389324611595>",
+                    panel["button_emoji"] or "\N{ADMISSION TICKETS}",
                 )
                 self.bot.add_view(view, message_id=panel["message_id"])
 
             open_threads = await self.bot.db.fetch(
-                "SELECT thread_id FROM ticket_logs WHERE closed_at IS NULL"
+                "SELECT thread_id FROM tickets WHERE status='open' AND closed_at IS NULL"
             )
             for row in open_threads:
                 self.bot.add_view(TicketSettings(row["thread_id"], self.bot))

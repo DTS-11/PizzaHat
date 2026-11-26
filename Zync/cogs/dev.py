@@ -1,17 +1,21 @@
 """Owner-only development commands.
 
-This module provides hidden commands for evaluating Python, querying PostgreSQL,
-reloading extensions, viewing bot logs, and updating the local banned-word list.
+These are *prefix-only* commands and are never registered in the application
+command tree. They provide read-only SQL inspection, a restricted evaluator,
+extension reloading and bot log access for the bot owner.
 """
 
-import inspect
+from __future__ import annotations
+
+import builtins
 import io
-import os
+import re
 import textwrap
 import time
 import traceback
 from contextlib import redirect_stdout
-from typing import TYPE_CHECKING, Awaitable, Callable, Optional, Union
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import discord
 from discord.ext import commands
@@ -26,190 +30,193 @@ if TYPE_CHECKING:
     from asyncpg import Record
 
 
+# No imports, file access, eval/exec/compile, or dunder traversal in the
+# evaluator. The whole command remains owner-only regardless.
+_EVAL_BUILTINS: dict[str, Any] = {
+    name: getattr(builtins, name)
+    for name in (
+        "abs", "all", "any", "bin", "bool", "bytes", "chr", "dict", "dir",
+        "enumerate", "filter", "float", "format", "frozenset", "getattr",
+        "hasattr", "hex", "int", "isinstance", "issubclass", "iter", "len",
+        "list", "map", "max", "min", "next", "object", "oct", "ord", "pow",
+        "print", "range", "repr", "reversed", "round", "set", "slice",
+        "sorted", "str", "sum", "tuple", "type", "zip",
+    )
+}
+_EVAL_FORBIDDEN = re.compile(
+    r"\b(?:import|__import__|open|eval|exec|compile|input|breakpoint)\b|__"
+)
+
+_READONLY_SQL_START = re.compile(r"\A(?:\s|--[^\n]*(?:\n|$))*([A-Za-z]+)")
+_MUTATING_SQL = re.compile(
+    r"\b(?:INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|GRANT|REVOKE|"
+    r"COPY|CALL|DO|VACUUM|REINDEX|SET|RESET|COMMENT|LOCK|REFRESH)\b",
+    re.IGNORECASE,
+)
+
+
+def _cleanup_code(content: str) -> str:
+    """Remove surrounding Markdown code fences."""
+    content = content.strip()
+    if content.startswith("```") and content.endswith("```"):
+        lines = content.splitlines()
+        return "\n".join(lines[1:-1])
+    return content
+
+
+def _paginate(text: str, size: int = 1900) -> list[str]:
+    """Split text into Discord-safe chunks."""
+    return [text[i : i + size] for i in range(0, len(text), size)] or [""]
+
+
+def _code_block(text: str, language: str = "py") -> str:
+    """Render text as a code block, neutralising embedded fences."""
+    safe = text.replace("```", "\u200b``")
+    return f"```{language}\n{safe}\n```"
+
+
 class Dev(Cog, emoji=1268856867585658981):
-    """Developer commands."""
+    """Developer commands (owner only, prefix only)."""
 
     def __init__(self, bot: Zync):
         self.bot: Zync = bot
 
-    def cleanup_code(self, content: str) -> str:
-        """Automatically removes code blocks from the code."""
-        # remove ```py\n```
-        if content.startswith("```") and content.endswith("```"):
-            return "\n".join(content.split("\n")[1:-1])
-
-        else:
-            return content
-
-    @commands.hybrid_command(name="eval", hidden=True, with_app_command=False)
+    @commands.command(name="eval", hidden=True)
     @commands.is_owner()
     async def _eval(self, ctx: Context, *, body: str):
-        """Eval command."""
+        """Evaluate a small expression with restricted builtins."""
+        body = _cleanup_code(body)
+        if _EVAL_FORBIDDEN.search(body):
+            return await ctx.send(
+                embed=await ctx_embed(
+                    ctx,
+                    title="Eval rejected",
+                    description=(
+                        "Imports, file access, nested evaluation and dunder access "
+                        "are disabled in the evaluator."
+                    ),
+                )
+            )
 
-        env = {
+        env: dict[str, Any] = {
+            "__builtins__": _EVAL_BUILTINS,
             "ctx": ctx,
             "bot": self.bot,
             "client": self.bot,
-            "db": self.bot.db,  # type: ignore
             "channel": ctx.channel,
             "author": ctx.author,
             "guild": ctx.guild,
             "message": ctx.message,
-            "source": inspect.getsource,
         }
 
-        env.update(globals())
-
-        body = self.cleanup_code(body)
-        stdout = io.StringIO()
-
-        to_compile = f"async def func():\n{textwrap.indent(body, '    ')}"
-
-        def paginate(text: str) -> list[str]:
-            """Simple generator that paginates text."""
-            last = 0
-            pages = []
-            for curr in range(0, len(text)):
-                if curr % 1980 == 0:
-                    pages.append(text[last:curr])
-                    last = curr
-                    appd_index = curr
-            if appd_index != len(text) - 1:  # type: ignore
-                pages.append(text[last:curr])  # type: ignore
-            return list(filter(lambda a: a != "", pages))
-
         try:
-            exec(to_compile, env)
-
-        except Exception as e:
-            embed = await ctx_embed(
-                ctx,
-                title="Error",
-                description=f"```py\n{e.__class__.__name__}: {e}\n```",
+            exec(
+                compile(
+                    f"async def _dev_eval():\n{textwrap.indent(body, '    ')}",
+                    "<owner-eval>",
+                    "exec",
+                ),
+                env,
             )
-            await ctx.send(embed=embed)
+        except Exception as exc:
+            return await ctx.send(
+                embed=await ctx_embed(
+                    ctx,
+                    title="Error",
+                    description=_code_block(f"{type(exc).__name__}: {exc}"),
+                )
+            )
 
-        func = env["func"]
-
+        stdout = io.StringIO()
         try:
             with redirect_stdout(stdout):
-                ret = await func()
-
+                result = await env["_dev_eval"]()
         except Exception:
-            value = stdout.getvalue()
-            embed = await ctx_embed(
-                ctx,
-                title="Error",
-                description=f"```py\n{value}{traceback.format_exc()}\n```",
+            return await ctx.send(
+                embed=await ctx_embed(
+                    ctx,
+                    title="Error",
+                    description=_code_block(stdout.getvalue() + traceback.format_exc()),
+                )
             )
-            await ctx.send(embed=embed)
 
-        else:
-            value = stdout.getvalue()
-            if ret is None:
-                if value:
-                    try:
-                        embed = await ctx_embed(ctx, description=f"```py\n{value}\n```")
+        output = stdout.getvalue()
+        if result is not None:
+            output = f"{output}{result!r}"
+        if not output:
+            return await ctx.send("Evaluated successfully (no output).")
 
-                        await ctx.send(embed=embed)
+        for page in _paginate(output):
+            await ctx.send(
+                embed=await ctx_embed(ctx, description=_code_block(page))
+            )
 
-                    except:
-                        paginated_text = paginate(value)
-
-                        for page in paginated_text:
-                            if page == paginated_text[-1]:
-                                embed = await ctx_embed(
-                                    ctx, description=f"```py\n{page}\n```"
-                                )
-                                await ctx.send(embed=embed)
-                                break
-
-                            embed = await ctx_embed(
-                                ctx, description=f"```py\n{page}\n```"
-                            )
-
-                            await ctx.send(embed=embed)
-            else:
-                try:
-                    embed = await ctx_embed(
-                        ctx, description=f"```py\n{value}{ret}\n```"
-                    )
-                    await ctx.send(embed=embed)
-
-                except:
-                    paginated_text = paginate(f"{value}{ret}")
-
-                    for page in paginated_text:
-                        if page == paginated_text[-1]:
-                            embed = await ctx_embed(
-                                ctx, description=f"```py\n{page}\n```"
-                            )
-                            await ctx.send(embed=embed)
-                            break
-
-                        embed = await ctx_embed(ctx, description=f"```py\n{page}\n```")
-
-                        await ctx.send(embed=embed)
-
-    @commands.hybrid_command(hidden=True, with_app_command=False)
+    @commands.command(name="sql", hidden=True)
     @commands.is_owner()
     async def sql(self, ctx: Context, *, query: str):
-        """Run some SQL."""
+        """Run a single read-only SQL query (SELECT/WITH/EXPLAIN)."""
+        query = _cleanup_code(query).rstrip().rstrip(";")
+        match = _READONLY_SQL_START.match(query)
+        if match is None or match.group(1).upper() not in {"SELECT", "WITH", "EXPLAIN"}:
+            return await ctx.send(
+                "Only single SELECT, WITH, or EXPLAIN queries are allowed."
+            )
+        if ";" in query or _MUTATING_SQL.search(query):
+            return await ctx.send("Write statements and multiple statements are blocked.")
 
-        query = self.cleanup_code(query)
-
-        is_multistatement = query.count(";") > 1
-        strategy: Callable[[str], Union[Awaitable[list[Record]], Awaitable[str]]]
-
-        if is_multistatement:
-            # fetch does not support multiple statements
-            strategy = self.bot.db.execute  # type: ignore
-
-        else:
-            strategy = self.bot.db.fetch  # type: ignore
+        if not self.bot.db:
+            return await ctx.send("Database unavailable.")
 
         try:
             start = time.perf_counter()
-            results = await strategy(query)
-            dt = (time.perf_counter() - start) * 1000.0
-
+            results: list[Record] = await self.bot.db.fetch(query)
+            elapsed = (time.perf_counter() - start) * 1000.0
         except Exception:
-            return await ctx.send(f"```py\n{traceback.format_exc()}\n```")
+            return await ctx.send(_code_block(traceback.format_exc()))
 
-        rows = len(results)
+        if not results:
+            return await ctx.send(f"`{elapsed:.2f}ms: no rows returned`")
 
-        if isinstance(results, str) or rows == 0:
-            return await ctx.send(f"`{dt:.2f}ms: {results}`")
-
-        headers = list(results[0].keys())
         table = TabularData()
-        table.set_columns(headers)
-        table.add_rows(list(r.values()) for r in results)
-        render = table.render()
-
-        fmt = f"```\n{render}\n```\n*Returned {plural(rows):row} in {dt:.2f}ms*"
-        if len(fmt) > 2000:
-            fp = io.BytesIO(fmt.encode("utf-8"))
-            await ctx.send("Too many results...", file=discord.File(fp, "results.txt"))
-
+        table.set_columns(list(results[0].keys()))
+        table.add_rows(list(record.values()) for record in results)
+        rendered = (
+            f"```\n{table.render()}\n```\n"
+            f"*Returned {plural(len(results)):row} in {elapsed:.2f}ms*"
+        )
+        if len(rendered) > 2000:
+            await ctx.send(
+                "Too many results...",
+                file=discord.File(
+                    io.BytesIO(rendered.encode("utf-8")), filename="results.txt"
+                ),
+            )
         else:
-            await ctx.send(fmt)
+            await ctx.send(rendered)
 
-    @commands.hybrid_command(hidden=True, with_app_command=False)
+    @commands.command(name="botlogs", hidden=True)
     @commands.is_owner()
     async def botlogs(self, ctx: Context):
-        """Send bot.log file."""
+        """Send the tail of bot.log."""
+        try:
+            contents = Path("bot.log").read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:
+            return await ctx.send(f"Could not read bot.log: {exc}")
 
-        f = open("bot.log", "r")
-        await ctx.send(f"```ruby\n{f.read()}\n```")
+        tail = contents[-3500:]
+        for page in _paginate(tail, 1900):
+            await ctx.send(_code_block(page, language="text"))
 
-    @commands.hybrid_command(hidden=True, with_app_command=False)
+    @commands.command(name="reloadall", hidden=True)
     @commands.is_owner()
     async def reloadall(self, ctx: Context):
-        """Reloads all cogs."""
-
+        """Reload all cogs (owner only)."""
         failed: list[str] = []
-        for extension in (*INITIAL_EXTENSIONS, *SUB_EXTENSIONS, "jishaku"):
+        extensions = (*INITIAL_EXTENSIONS, *SUB_EXTENSIONS)
+        if "jishaku" in self.bot.extensions:
+            extensions += ("jishaku",)
+
+        for extension in extensions:
             try:
                 await self.bot.reload_extension(extension)
             except commands.ExtensionError as exc:
@@ -219,30 +226,8 @@ class Dev(Cog, emoji=1268856867585658981):
         synced = await self.bot.sync_commands()
         if failed or not synced:
             details = "\n".join(failed) if failed else "Command sync failed."
-            await ctx.send(f"Reload finished with issues:\n```\n{details[:1500]}\n```")
-            return
+            return await ctx.send(f"Reload finished with issues:\n```\n{details[:1500]}\n```")
         await ctx.send("Reloaded all cogs!")
-
-    @commands.hybrid_command(hidden=True, with_app_command=False)
-    @commands.is_owner()
-    async def update_badwords(
-        self, ctx: Context, attachment: Optional[discord.Attachment] = None
-    ):
-        """Update the bad words file."""
-
-        source = attachment
-        if source is None and ctx.interaction is None:
-            source = ctx.message.attachments[0] if ctx.message.attachments else None
-        if source is None:
-            return await ctx.send(f"{self.bot.no} No file attached.")
-
-        file_path = os.path.join(os.getcwd(), "utils/bad_words.py")
-
-        if not source.filename.endswith(".py"):
-            return await ctx.send(f"{self.bot.no} Not a Python file.")
-
-        await source.save(file_path)  # type: ignore
-        await ctx.send(f"{self.bot.yes} Bad words file updated successfully!")
 
 
 async def setup(bot: Zync) -> None:

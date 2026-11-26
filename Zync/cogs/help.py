@@ -3,7 +3,7 @@
 ``/help`` builds its menu from the live application command tree, so every path
 shown to users matches what Discord actually registers. The rest of the cog
 keeps the standalone information surfaces together: ``/status``, ``/timezone``,
-``/premium``, and the project link commands.
+``/premium``, and the onboarding/invite panel.
 """
 
 from __future__ import annotations
@@ -19,17 +19,16 @@ from discord import ButtonStyle, Interaction, SelectOption, app_commands, ui
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Tier, Zync
+from core.bot import Zync
+from core.entitlements import Tier
 from core.cog import Cog
 from utils.config import (
     ADMIN_INVITE,
-    DLISTGG_VOTE,
     REG_INVITE,
     REPO_LINK,
     SUPPORT_SERVER,
-    TOPGG_VOTE,
+    UPGRADE_URL,
 )
-from utils.custom_checks import _tier_cache
 from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
 
 _TZ_NAMES: list[str] | None = None
@@ -42,7 +41,6 @@ _CATEGORY_DESCRIPTIONS: dict[str, str] = {
     "Information": "Help, status, premium and general bot utilities",
     "Automation": "Workflows, automod and anti-alt configuration",
     "Community": "Tags, templates, tickets and role menus",
-    "Emoji & Fun": "Emoji management and image helpers",
     "Quick Actions": "Right-click moderation shortcuts",
     "Other": "Additional commands",
 }
@@ -95,9 +93,7 @@ _TOP_LEVEL_CATEGORIES: dict[str, str] = {
     "template": "Community",
     "tickets": "Community",
     "rolemenu": "Community",
-    "emoji": "Emoji & Fun",
-    "emojify": "Emoji & Fun",
-    "emojifyav": "Emoji & Fun",
+    "emoji": "Community",
 }
 
 
@@ -293,7 +289,7 @@ async def _home_help_embed(
     emojis = emojis or _category_emojis(categories)
     embed = await ctx_embed(ctx, title="Zync \u2014 Command Help", timestamp=True)
     embed.description = (
-        "Your Ultimate Discord Companion\n\n"
+        "Zync is a deterministic Discord operations engine.\n\n"
         "Pick a category from the menu below, then select a command for usage "
         "and an example. Use `/help <command>` to jump straight to details.\n"
         "`<>` required  •  `[]` optional\n\n"
@@ -635,18 +631,10 @@ class Help(Cog, emoji="\N{GEAR}"):
         return f"{hours}h {minutes}m {seconds}s"
 
     async def _tier(self, guild_id: int) -> Tier:
-        cached = _tier_cache.get(guild_id)
-        if cached is not None:
-            return cached
-        tier = Tier.FREE
-        if self.bot.db is not None:
-            row = await self.bot.db.fetchrow(
-                "SELECT tier FROM premium WHERE guild_id=$1", guild_id
-            )
-            if row:
-                tier = Tier(row["tier"])
-        _tier_cache[guild_id] = tier
-        return tier
+        service = getattr(self.bot, "entitlements", None)
+        if service is not None:
+            return await service.tier_for(guild_id)
+        return Tier.FREE
 
     async def _respond(self, ctx: Context, embed: discord.Embed) -> None:
         """Send slash help privately; prefix invocations stay public."""
@@ -814,8 +802,8 @@ class Help(Cog, emoji="\N{GEAR}"):
                 return
             if self.bot.db is not None:
                 await self.bot.db.execute(
-                    "INSERT INTO user_timezone (user_id, timezone) VALUES ($1, $2) "
-                    "ON CONFLICT (user_id) DO UPDATE SET timezone=$2",
+                    "INSERT INTO user_preferences (user_id, timezone) VALUES ($1, $2) "
+                    "ON CONFLICT (user_id) DO UPDATE SET timezone=$2, updated_at=NOW()",
                     ctx.author.id,
                     timezone,
                 )
@@ -830,13 +818,13 @@ class Help(Cog, emoji="\N{GEAR}"):
         tz_name = None
         if self.bot.db is not None:
             tz_name = await self.bot.db.fetchval(
-                "SELECT timezone FROM user_timezone WHERE user_id=$1", member.id
+                "SELECT timezone FROM user_preferences WHERE user_id=$1", member.id
             )
         if not tz_name:
             await ctx.send(
                 embed=red_embed(
                     description=f"{self.bot.no} No timezone set for {member.mention}. "
-                    "Use `/info timezone timezone:Europe/London`."
+                    "Use `/timezone timezone:Europe/London`."
                 )
             )
             return
@@ -875,7 +863,7 @@ class Help(Cog, emoji="\N{GEAR}"):
         help="Show this server's tier, billing status and workflow limits.",
     )
     async def premium(self, ctx: Context) -> None:
-        """Show the server's Polar/premium billing status."""
+        """Show the server's current entitlement tier and billing status."""
         if ctx.guild is None:
             await ctx.send(
                 embed=orange_embed(description="Premium status is server-only.")
@@ -909,85 +897,47 @@ class Help(Cog, emoji="\N{GEAR}"):
         if not active:
             em.description += (
                 "\n\nFree tier: 5 active workflows, 2 actions per workflow. "
-                "[Upgrade](https://pizzahat.vercel.app/premium)"
+                f"[Upgrade]({UPGRADE_URL})"
             )
         em.set_thumbnail(url="https://cdn3.emoji.gg/emojis/321814-cool-diamond.png")
         await ctx.send(embed=em)
 
-    # ── project links ─────────────────────────────────────────────────────────
+    # ── onboarding ────────────────────────────────────────────────────────────
 
-    @commands.hybrid_command(name="credits", help="Show the people behind Zync.")
-    async def credits(self, ctx: Context) -> None:
-        """Show project credits."""
-        em = green_embed(
-            title="Credits",
-            description=(
-                "**Contributors**\n"
-                "[View all contributors on GitHub]"
-                "(https://github.com/DTS-11/Zync/graphs/contributors)\n\n"
-                "**Bot Avatar**\nDesigned by <@619936982486876227>"
-            ),
-            timestamp=True,
-        )
-        if self.bot.user and self.bot.user.avatar:
-            em.set_thumbnail(url=self.bot.user.avatar.url)
-        em.set_footer(text="Thank you to everyone who has contributed!")
-        await ctx.send(embed=em)
-
-    @commands.hybrid_command(name="invite", help="Get invite links for Zync.")
+    @commands.hybrid_command(name="invite", help="Add Zync to a server.")
     async def invite(self, ctx: Context) -> None:
-        """Get invite links for the bot."""
-        view = ui.View()
-        view.add_item(
-            ui.Button(label="Invite", emoji="\N{LINK SYMBOL}", url=REG_INVITE)
-        )
-        view.add_item(
-            ui.Button(label="Invite (Admin)", emoji="\N{GEAR}", url=ADMIN_INVITE)
-        )
-        view.add_item(
-            ui.Button(
-                label="Support Server", emoji="\N{SPEECH BALLOON}", url=SUPPORT_SERVER
+        """Single onboarding panel for invites, support and source."""
+        view = ui.View(timeout=None)
+        if REG_INVITE:
+            view.add_item(
+                ui.Button(label="Invite", emoji="\N{LINK SYMBOL}", url=REG_INVITE)
             )
-        )
+        if ADMIN_INVITE:
+            view.add_item(
+                ui.Button(label="Invite (Admin)", emoji="\N{GEAR}", url=ADMIN_INVITE)
+            )
+        if SUPPORT_SERVER:
+            view.add_item(
+                ui.Button(
+                    label="Support Server",
+                    emoji="\N{SPEECH BALLOON}",
+                    url=SUPPORT_SERVER,
+                )
+            )
+
+        description = "Add Zync to your server and automate your moderation workflows."
+        if REG_INVITE:
+            description += f"\n\n**[Invite]({REG_INVITE})**"
+        if ADMIN_INVITE:
+            description += f"\n**[Invite with admin permissions]({ADMIN_INVITE})**"
+        if SUPPORT_SERVER:
+            description += f"\n**[Support Server]({SUPPORT_SERVER})**"
+        description += f"\n**[Source]({REPO_LINK})**"
+
         em = await ctx_embed(
             ctx,
-            title="Invite Zync",
-            description=(
-                "Add Zync to your server using the buttons below.\n\n"
-                f"**[Invite (Recommended)]({REG_INVITE})**\n"
-                f"**[Invite (Admin)]({ADMIN_INVITE})**\n"
-                f"**[Support Server]({SUPPORT_SERVER})**"
-            ),
-        )
-        await ctx.send(embed=em, view=view)
-
-    @commands.hybrid_command(name="support", help="Join the support server.")
-    async def support(self, ctx: Context) -> None:
-        """Join the support server."""
-        await ctx.send(
-            f"Do you want help? Join the support server now!\n{SUPPORT_SERVER}"
-        )
-
-    @commands.hybrid_command(name="vote", help="Vote for Zync on bot lists.")
-    async def vote(self, ctx: Context) -> None:
-        """Vote for the bot on bot lists."""
-        view = ui.View()
-        view.add_item(
-            ui.Button(label="Top.gg", emoji="\N{UPWARDS BLACK ARROW}", url=TOPGG_VOTE)
-        )
-        view.add_item(
-            ui.Button(
-                label="DList.gg", emoji="\N{UPWARDS BLACK ARROW}", url=DLISTGG_VOTE
-            )
-        )
-        em = await ctx_embed(
-            ctx,
-            title="Vote for Zync",
-            description=(
-                "Your vote helps Zync reach more servers!\n\n"
-                f"**[Top.gg]({TOPGG_VOTE})**\n"
-                f"**[DList.gg]({DLISTGG_VOTE})**"
-            ),
+            title="About Zync",
+            description=description,
         )
         await ctx.send(embed=em, view=view)
 

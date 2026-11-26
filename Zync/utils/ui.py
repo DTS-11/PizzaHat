@@ -12,8 +12,17 @@ from discord import ButtonStyle, Interaction, SelectOption, ui
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Tier, Zync
-from utils.custom_checks import _tier_cache
+from core.bot import Zync
+from core.entitlements import Tier
+from utils.config import UPGRADE_URL
+
+
+def _rowcount(status: str) -> int:
+    """Return the affected-row count from an asyncpg command tag."""
+    try:
+        return int(status.rsplit(" ", 1)[-1])
+    except (AttributeError, ValueError):
+        return 0
 
 
 # credits to Nirlep's EpicBot paginator system!
@@ -134,7 +143,7 @@ class TicketView(ui.View):
         self,
         bot: Zync,
         button_label: str = "Open Ticket",
-        button_emoji: str = "<:ticketbadge:1268879389324611595>",
+        button_emoji: str = "\N{ADMISSION TICKETS}",
     ):
         self.bot = bot
         self.thread_id = None
@@ -144,7 +153,7 @@ class TicketView(ui.View):
 
     @ui.button(
         label="Open Ticket",
-        emoji="<:ticketbadge:1268879389324611595>",
+        emoji="\N{ADMISSION TICKETS}",
         style=ButtonStyle.blurple,
         custom_id="create_ticket_btn",
     )
@@ -165,12 +174,22 @@ class TicketView(ui.View):
                     "This ticket panel is currently disabled.", ephemeral=True
                 )
 
-        for thread in interaction.guild.threads:
-            if thread.name == f"ticket-{interaction.user}" and not thread.archived:
-                return await interaction.response.send_message(
-                    f"You already have an open ticket: {thread.mention}",
-                    ephemeral=True,
-                )
+        # The partial unique index on tickets guarantees one open ticket per
+        # creator, so check the durable record before creating a thread.
+        existing = None
+        if self.bot.db:
+            existing = await self.bot.db.fetchrow(
+                "SELECT thread_id FROM tickets "
+                "WHERE guild_id=$1 AND creator_id=$2 AND status='open'",
+                interaction.guild.id,
+                interaction.user.id,
+            )
+        if existing is not None:
+            existing_thread = interaction.guild.get_thread(existing["thread_id"])
+            mention = existing_thread.mention if existing_thread else "an existing thread"
+            return await interaction.response.send_message(
+                f"You already have an open ticket: {mention}", ephemeral=True
+            )
 
         if isinstance(interaction.channel, discord.TextChannel):
             thread = await interaction.channel.create_thread(
@@ -181,12 +200,25 @@ class TicketView(ui.View):
             await thread.add_user(interaction.user)
 
             if self.bot.db:
-                await self.bot.db.execute(
-                    "INSERT INTO ticket_logs (guild_id, thread_id, creator_id) VALUES ($1, $2, $3)",
+                inserted = await self.bot.db.execute(
+                    "INSERT INTO tickets (guild_id, thread_id, panel_id, creator_id) "
+                    "VALUES ($1, $2, $3, $4) "
+                    "ON CONFLICT (guild_id, creator_id) WHERE status='open' DO NOTHING",
                     interaction.guild.id,
                     thread.id,
+                    panel["id"] if panel else None,
                     interaction.user.id,
                 )
+                if _rowcount(inserted) == 0:
+                    # Another path (e.g. TicketService) won the race. Keep the
+                    # durable ticket authoritative and discard our new thread.
+                    try:
+                        await thread.delete()
+                    except discord.HTTPException:
+                        pass
+                    return await interaction.response.send_message(
+                        "You already have an open ticket.", ephemeral=True
+                    )
 
             support_role = None
             if panel and panel["support_role_id"]:
@@ -248,19 +280,10 @@ class TicketSettings(ui.View):
         super().__init__(timeout=None)
 
     async def check_premium(self, guild_id: int) -> bool:
-        cached_tier = _tier_cache.get(guild_id)
-        if cached_tier is None and self.bot.db is not None:
-            row = await self.bot.db.fetchrow(
-                "SELECT tier FROM premium WHERE guild_id=$1", guild_id
-            )
-            if row:
-                cached_tier = Tier(row["tier"])
-                _tier_cache[guild_id] = cached_tier
-            else:
-                cached_tier = Tier.FREE
-                _tier_cache[guild_id] = Tier.FREE
-
-        return cached_tier is not None and cached_tier >= Tier.BASIC
+        service = getattr(self.bot, "entitlements", None)
+        if service is not None:
+            return await service.has(guild_id, Tier.BASIC)
+        return False
 
     @ui.button(
         label="Close Ticket",
@@ -285,19 +308,27 @@ class TicketSettings(ui.View):
         thread = interaction.guild.get_thread(self.thread_id)
 
         if thread:
+            closed_rows = 0
+            if self.bot.db:
+                status = await self.bot.db.execute(
+                    "UPDATE tickets SET closed_at=NOW(), closed_by=$1, status='closed' "
+                    "WHERE thread_id=$2 AND guild_id=$3 AND status='open'",
+                    interaction.user.id,
+                    self.thread_id,
+                    interaction.guild.id,
+                )
+                closed_rows = _rowcount(status)
+
             close_em = discord.Embed(
                 description="🔒 This ticket has been closed and archived.",
                 color=0xED4245,
             )
             await interaction.response.send_message(embed=close_em)
             await thread.edit(archived=True, locked=True)
-
-            if self.bot.db:
-                await self.bot.db.execute(
-                    "UPDATE ticket_logs SET closed_at=NOW(), closed_by=$1 WHERE thread_id=$2 AND guild_id=$3",
-                    interaction.user.id,
-                    self.thread_id,
-                    interaction.guild.id,
+            if self.bot.db and closed_rows == 0:
+                await interaction.followup.send(
+                    "Ticket record was already closed or missing; the thread is archived.",
+                    ephemeral=True,
                 )
         else:
             await interaction.response.send_message(
@@ -318,7 +349,7 @@ class TicketSettings(ui.View):
         if not is_premium:
             return await interaction.response.send_message(
                 "Transcripts are available on **Basic** and **Pro** tiers.\n"
-                "[Upgrade now](https://pizzahat.vercel.app/premium).",
+                f"[Upgrade now]({UPGRADE_URL}).",
                 ephemeral=True,
             )
 
@@ -428,27 +459,46 @@ class RoleMenuView(discord.ui.View):
         menu_id = menu["id"]
         items = items[:DISCORD_MAX_ITEMS]
 
-        if menu.get("type") == "dropdown":
+        if menu.get("type") == "select":
             self.add_item(RoleMenuSelect(menu_id, menu, items, guild))
         else:
             for item in items:
                 self.add_item(RoleMenuButton(menu_id, item, guild))
 
 
-async def _fetch_menu(bot: Zync, menu_id: int) -> Optional[dict]:
+async def _fetch_menu(
+    bot: Zync, menu_id: int, guild_id: Optional[int] = None
+) -> Optional[dict]:
     if not bot.db:
         return None
-    row = await bot.db.fetchrow("SELECT * FROM role_menus WHERE id=$1", menu_id)
+    if guild_id is None:
+        row = await bot.db.fetchrow("SELECT * FROM role_menus WHERE id=$1", menu_id)
+    else:
+        row = await bot.db.fetchrow(
+            "SELECT * FROM role_menus WHERE id=$1 AND guild_id=$2", menu_id, guild_id
+        )
     return dict(row) if row else None
 
 
-async def _fetch_items(bot: Zync, menu_id: int) -> list[dict]:
+async def _fetch_items(
+    bot: Zync, menu_id: int, guild_id: Optional[int] = None
+) -> list[dict]:
     if not bot.db:
         return []
-    rows = await bot.db.fetch(
-        "SELECT * FROM role_menu_items WHERE menu_id=$1 ORDER BY position, role_id",
-        menu_id,
-    )
+    if guild_id is None:
+        rows = await bot.db.fetch(
+            "SELECT * FROM role_menu_items WHERE menu_id=$1 ORDER BY position, role_id",
+            menu_id,
+        )
+    else:
+        rows = await bot.db.fetch(
+            "SELECT item.* FROM role_menu_items AS item "
+            "JOIN role_menus AS menu ON menu.id=item.menu_id "
+            "WHERE item.menu_id=$1 AND menu.guild_id=$2 "
+            "ORDER BY item.position, item.role_id",
+            menu_id,
+            guild_id,
+        )
     return [dict(r) for r in rows]
 
 
@@ -495,19 +545,23 @@ async def publish_menu(
     message = await channel.send(embed=embed, view=view)
     if bot.db:
         await bot.db.execute(
-            "UPDATE role_menus SET channel_id=$1, message_id=$2 WHERE id=$3",
+            "UPDATE role_menus SET channel_id=$1, message_id=$2, updated_at=NOW() "
+            "WHERE id=$3 AND guild_id=$4",
             message.channel.id,
             message.id,
             menu["id"],
+            menu["guild_id"],
         )
     bot.add_view(view, message_id=message.id)
     return message
 
 
-async def refresh_menu(bot: Zync, menu_id: int) -> bool:
+async def refresh_menu(
+    bot: Zync, menu_id: int, guild_id: Optional[int] = None
+) -> bool:
     """Rebuild the embed + view for an existing posted menu. No-op if not posted."""
 
-    menu = await _fetch_menu(bot, menu_id)
+    menu = await _fetch_menu(bot, menu_id, guild_id)
     if not menu or not menu.get("message_id") or not menu.get("channel_id"):
         return False
 
@@ -516,7 +570,7 @@ async def refresh_menu(bot: Zync, menu_id: int) -> bool:
     if not isinstance(channel, (discord.TextChannel, discord.Thread)):
         return False
 
-    items = await _fetch_items(bot, menu_id)
+    items = await _fetch_items(bot, menu_id, menu["guild_id"])
     view = RoleMenuView(menu, items, guild)
     embed = await _build_embed_with_template(bot, menu, items, guild)
     try:
@@ -557,7 +611,9 @@ async def _ensure_can_use(
 
 async def _handle_button(interaction: Interaction, menu_id: int, role_id: int) -> None:
     bot: Zync = interaction.client  # type: ignore[assignment]
-    menu = await _fetch_menu(bot, menu_id)
+    menu = await _fetch_menu(
+        bot, menu_id, interaction.guild.id if interaction.guild else None
+    )
     if not menu:
         await interaction.response.send_message(
             "This menu no longer exists.", ephemeral=True
@@ -585,7 +641,7 @@ async def _handle_button(interaction: Interaction, menu_id: int, role_id: int) -
         )
         return
 
-    items = await _fetch_items(bot, menu_id)
+    items = await _fetch_items(bot, menu_id, interaction.guild.id)
     menu_role_ids = {it["role_id"] for it in items}
     user_role_ids = {r.id for r in member.roles}
     has_role = role.id in user_role_ids
@@ -637,7 +693,9 @@ async def _handle_select(
     interaction: Interaction, menu_id: int, values: list[str]
 ) -> None:
     bot: Zync = interaction.client  # type: ignore[assignment]
-    menu = await _fetch_menu(bot, menu_id)
+    menu = await _fetch_menu(
+        bot, menu_id, interaction.guild.id if interaction.guild else None
+    )
     if not menu:
         await interaction.response.send_message(
             "This menu no longer exists.", ephemeral=True
@@ -654,7 +712,7 @@ async def _handle_select(
         )
         return
 
-    items = await _fetch_items(bot, menu_id)
+    items = await _fetch_items(bot, menu_id, interaction.guild.id)
     menu_role_ids = {it["role_id"] for it in items}
 
     selected_ids: set[int] = set()

@@ -1,22 +1,19 @@
-"""Emoji management and image-to-emoji commands.
+"""Guild emoji management commands.
 
-Contains the public ``/emoji`` group for creating, deleting, inspecting, and
-listing guild emojis, plus the ``/emojify`` and ``/emojifyav`` helpers that turn
-an image into a grid of color-matched square emojis.
+Contains the public ``/emoji`` group for creating, deleting, inspecting and
+listing guild emojis. Emoji creation only accepts Discord emoji references
+(custom emoji markup, an emoji ID, or an emoji name in this guild); arbitrary
+image URLs and local image processing are deliberately not supported.
 """
 
 from __future__ import annotations
 
 import asyncio
 import re
-from io import BytesIO
 
 import discord
-import requests
-import yarl
 from discord.ext import commands
 from discord.ext.commands import Context
-from PIL import Image, UnidentifiedImageError
 
 from core.bot import Zync
 from core.cog import Cog
@@ -25,79 +22,11 @@ from utils.formats import format_date
 from utils.ui import Paginator
 
 _CUSTOM_EMOJI_RE = re.compile(r"<(a?):([A-Za-z0-9_]{2,32}):(\d+)>")
-_MEMBER_MENTION_RE = re.compile(r"<@!?(\d+)>")
-_IMAGE_EXTENSIONS = (".png", ".jpeg", ".jpg", ".gif")
 _MAX_EMOJI_BYTES = 256 * 1024
-_MAX_EMOJIFY_SIZE = 24
-
-_COLORS = {
-    (0, 0, 0): "⬛",
-    (0, 0, 255): "🟦",
-    (255, 0, 0): "🟥",
-    (255, 255, 0): "🟨",
-    (255, 165, 0): "🟧",
-    (255, 255, 255): "⬜",
-    (0, 255, 0): "🟩",
-}
-
-
-def _euclidean_distance(first: tuple[int, ...], second: tuple[int, ...]) -> float:
-    """Return the RGB distance between two colors."""
-    r1, g1, b1 = first
-    r2, g2, b2 = second
-    return ((r2 - r1) ** 2 + (g2 - g1) ** 2 + (b2 - b1) ** 2) ** 0.5
-
-
-def _closest_emoji(color: tuple[int, ...]) -> str:
-    """Return the square emoji closest to an RGB color."""
-    return _COLORS[min(_COLORS, key=lambda key: _euclidean_distance(color, key))]
-
-
-def _emojify_image(image: Image.Image, size: int = 14) -> str:
-    """Render an image as a grid of color-matched square emojis."""
-    small = image.resize((size, size), Image.Resampling.NEAREST).convert("RGB")
-    pixels = small.load()
-    assert pixels is not None
-
-    rows = []
-    for y in range(size):
-        cells = []
-        for x in range(size):
-            pixel = pixels[x, y]
-            rgb = pixel if isinstance(pixel, tuple) else (0, 0, 0)
-            cells.append(_closest_emoji(tuple(int(channel) for channel in rgb)))
-        rows.append("".join(cells))
-    return "\n".join(rows)
-
-
-def _parse_emoji_ref(value: str) -> tuple[str, bool] | None:
-    """Resolve a custom emoji string or image URL into ``(url, animated)``."""
-    raw = value.strip()
-
-    match = _CUSTOM_EMOJI_RE.fullmatch(raw)
-    if match:
-        animated = bool(match.group(1))
-        extension = "gif" if animated else "png"
-        return (
-            f"https://cdn.discordapp.com/emojis/{match.group(3)}.{extension}",
-            animated,
-        )
-
-    try:
-        url = yarl.URL(raw)
-    except ValueError:
-        return None
-
-    if url.scheme not in ("http", "https"):
-        return None
-    path = url.path.lower()
-    if not path.endswith(_IMAGE_EXTENSIONS):
-        return None
-    return raw, path.endswith(".gif")
 
 
 async def _resolve_guild_emoji(ctx: Context, value: str) -> discord.Emoji | None:
-    """Resolve a name, ID, or custom emoji string to a guild emoji."""
+    """Resolve a name, ID, or custom emoji string to an emoji in this guild."""
     if not ctx.guild:
         return None
 
@@ -121,6 +50,27 @@ async def _resolve_guild_emoji(ctx: Context, value: str) -> discord.Emoji | None
         return await ctx.guild.fetch_emoji(emoji_id)
     except (discord.NotFound, discord.HTTPException):
         return None
+
+
+def _emoji_source(value: str, ctx: Context) -> discord.Emoji | discord.PartialEmoji | None:
+    """Build a Discord-backed emoji source; never accepts arbitrary URLs.
+
+    Custom emoji markup and bare IDs are resolved through Discord's own asset
+    API via ``PartialEmoji.read()``. Plain names resolve against this guild.
+    """
+    raw = value.strip()
+
+    match = _CUSTOM_EMOJI_RE.fullmatch(raw)
+    if match:
+        return discord.PartialEmoji(
+            name=match.group(2), id=int(match.group(3)), animated=bool(match.group(1))
+        )
+    if raw.isdigit():
+        return discord.PartialEmoji(name="emoji", id=int(raw))
+
+    if ctx.guild:
+        return discord.utils.get(ctx.guild.emojis, name=raw.lstrip(":").rstrip(":"))
+    return None
 
 
 class Emojis(Cog, emoji=1268867324195246133):
@@ -176,10 +126,8 @@ class Emojis(Cog, emoji=1268867324195246133):
 
     @commands.hybrid_group(name="emoji", fallback="all")
     @commands.guild_only()
-    @commands.has_permissions(manage_emojis=True)
-    @commands.bot_has_permissions(manage_emojis=True)
     async def _emoji(self, ctx: Context):
-        """List this server's emojis."""
+        """List this server's emojis (the fallback action)."""
         await self._send_emoji_list(ctx)
 
     @_emoji.command(name="create")
@@ -188,11 +136,11 @@ class Emojis(Cog, emoji=1268867324195246133):
     @commands.has_permissions(manage_emojis=True)
     @commands.bot_has_permissions(manage_emojis=True)
     @discord.app_commands.describe(
-        source="A custom emoji or a direct PNG/JPEG/GIF image URL",
+        source="A custom emoji, emoji ID, or the name of an emoji in this server",
         name="New emoji name (2-32 letters, numbers, or underscores)",
     )
     async def emoji_create(self, ctx: Context, source: str, name: str):
-        """Create a guild emoji from a custom emoji or image URL."""
+        """Create a guild emoji by copying another Discord emoji."""
         if not ctx.guild:
             return
 
@@ -203,15 +151,16 @@ class Emojis(Cog, emoji=1268867324195246133):
                 )
             )
 
-        parsed = _parse_emoji_ref(source)
-        if parsed is None:
+        emoji = _emoji_source(source, ctx)
+        if emoji is None or getattr(emoji, "id", None) is None:
             return await ctx.send(
                 embed=red_embed(
-                    f"{self.bot.no} Provide a custom emoji or a PNG/JPEG/GIF URL."
+                    f"{self.bot.no} Provide a custom emoji, an emoji ID, or an emoji "
+                    "from this server. Image URLs are not supported."
                 )
             )
-        url, animated = parsed
 
+        animated = bool(getattr(emoji, "animated", False))
         used = sum(item.animated == animated for item in ctx.guild.emojis)
         if used >= ctx.guild.emoji_limit:
             return await ctx.send(
@@ -222,26 +171,18 @@ class Emojis(Cog, emoji=1268867324195246133):
             )
 
         try:
-            async with self.bot.session.get(url) as response:
-                if response.status >= 400:
-                    return await ctx.send(
-                        embed=red_embed(f"{self.bot.no} Could not fetch the image.")
-                    )
-
-                content_length = int(response.headers.get("Content-Length") or 0)
-                if content_length >= _MAX_EMOJI_BYTES:
-                    return await ctx.send(
-                        embed=red_embed(f"{self.bot.no} Image is too big.")
-                    )
-
-                data = await response.read()
-        except (ValueError, discord.HTTPException, OSError):
+            data = await asyncio.wait_for(emoji.read(), timeout=10.0)
+        except (discord.HTTPException, OSError, ValueError):
             return await ctx.send(
-                embed=red_embed(f"{self.bot.no} Could not fetch the image.")
+                embed=red_embed(f"{self.bot.no} Could not fetch that emoji from Discord.")
+            )
+        except asyncio.TimeoutError:
+            return await ctx.send(
+                embed=red_embed(f"{self.bot.no} Discord took too long to fetch that emoji.")
             )
 
         if len(data) >= _MAX_EMOJI_BYTES:
-            return await ctx.send(embed=red_embed(f"{self.bot.no} Image is too big."))
+            return await ctx.send(embed=red_embed(f"{self.bot.no} Emoji is too big."))
 
         try:
             created = await asyncio.wait_for(
@@ -291,6 +232,7 @@ class Emojis(Cog, emoji=1268867324195246133):
         )
 
     @_emoji.command(name="info")
+    @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.user)
     @discord.app_commands.describe(emoji="Emoji name, ID, or custom emoji string")
     async def emoji_info(self, ctx: Context, emoji: str):
@@ -352,90 +294,6 @@ class Emojis(Cog, emoji=1268867324195246133):
     async def emoji_list(self, ctx: Context):
         """Show a paginated list of guild emojis."""
         await self._send_emoji_list(ctx)
-
-    @commands.hybrid_command(
-        name="emojify", help="Return the image URL for a custom emoji."
-    )
-    @commands.cooldown(1, 3, commands.BucketType.user)
-    @discord.app_commands.describe(emoji="Custom emoji or emoji ID to resolve")
-    async def emojify(self, ctx: Context, emoji: str):
-        """Return the image URL for a custom emoji."""
-        target = await _resolve_guild_emoji(ctx, emoji)
-        if target is not None:
-            return await ctx.send(str(target.url))
-
-        parsed = _parse_emoji_ref(emoji)
-        if parsed is None:
-            return await ctx.send(
-                embed=red_embed(f"{self.bot.no} I could not resolve that emoji.")
-            )
-        return await ctx.send(parsed[0])
-
-    @commands.hybrid_command(
-        name="emojifyav", help="Emojify a member avatar or image URL."
-    )
-    @commands.cooldown(1, 3, commands.BucketType.user)
-    @discord.app_commands.describe(
-        target="Member, mention, member ID, or HTTP(S) image URL",
-        size=f"Grid size from 1 to {_MAX_EMOJIFY_SIZE} (default 14)",
-    )
-    async def emojifyav(self, ctx: Context, target: str, size: int = 14):
-        """Emojify a member avatar or image URL. Works best on simple images."""
-        if not 1 <= size <= _MAX_EMOJIFY_SIZE:
-            return await ctx.send(
-                embed=red_embed(
-                    f"{self.bot.no} Size must be between 1 and {_MAX_EMOJIFY_SIZE}."
-                )
-            )
-
-        raw = target.strip()
-        member = None
-        mention = _MEMBER_MENTION_RE.fullmatch(raw)
-        if ctx.guild:
-            if raw.isdigit():
-                member = ctx.guild.get_member(int(raw))
-            elif mention:
-                member = ctx.guild.get_member(int(mention.group(1)))
-
-        if member:
-            url = member.display_avatar.url
-        else:
-            try:
-                parsed_url = yarl.URL(raw)
-            except ValueError:
-                return await ctx.send(
-                    embed=red_embed(
-                        f"{self.bot.no} Provide a member, mention, or image URL."
-                    )
-                )
-            if parsed_url.scheme not in ("http", "https"):
-                return await ctx.send(
-                    embed=red_embed(
-                        f"{self.bot.no} Provide an HTTP or HTTPS image URL."
-                    )
-                )
-            url = raw
-
-        def build() -> str:
-            with requests.get(url, stream=True, timeout=10) as response:
-                response.raise_for_status()
-                image = Image.open(BytesIO(response.content)).convert("RGB")
-
-            result = _emojify_image(image, size)
-            if size > 14:
-                result = f"```{result}```"
-            if len(result) > 1900:
-                raise ValueError("Emojified image is too large for a Discord message.")
-            return result
-
-        try:
-            result = await asyncio.to_thread(build)
-        except (requests.RequestException, OSError, ValueError, UnidentifiedImageError):
-            return await ctx.send(
-                embed=red_embed(f"{self.bot.no} Could not emojify that image.")
-            )
-
-        return await ctx.send(result)
 
 
 async def setup(bot: Zync) -> None:

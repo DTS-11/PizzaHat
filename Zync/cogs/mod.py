@@ -9,24 +9,23 @@ from __future__ import annotations
 import datetime
 import re
 import uuid
-from typing import Any, List, Literal, Optional, cast
+from typing import Any, Literal, Optional, cast
 
 import discord
 import humanfriendly
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Tier, Zync
+from core.bot import Zync
+from core.entitlements import Tier
 from core.cog import Cog
+from services import get_logs, get_moderation, get_protection, get_tickets
+from services.logs import LOG_MODULES as _LOG_MODULES
+from services.moderation import WARN_ACTIONS, short_case_id
 from utils.config import ANTIHOIST_CHARS
 from utils.custom_checks import premium
 from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
 from utils.ui import ConfirmationView, Paginator
-
-_LOG_MODULES = (
-    "all", "automod", "guild", "integrations", "invites", "joins", "member",
-    "messages", "mod", "roles", "voice",
-)
 
 
 class _InteractionContext:
@@ -142,18 +141,25 @@ class Mod(Cog, emoji=1268851270136107048):
 
     def __init__(self, bot: Zync):
         self.bot: Zync = bot
+        self.moderation = get_moderation(bot)
+        self.logs = get_logs(bot)
+        self.protection = get_protection(bot)
+        self.tickets = get_tickets(bot)
 
     def clear_log_config_cache(self, guild_id: int | None = None) -> None:
-        guild_logs_cog = self.bot.get_cog("GuildLogs")
-        clear_cache = getattr(guild_logs_cog, "clear_config_cache", None)
-        if callable(clear_cache):
-            clear_cache(guild_id)
+        """Invalidate the shared service caches that own this configuration."""
 
-        for cog_name in ("AutoModConfig", "AntiAltsConfig"):
+        self.logs.invalidate(guild_id)
+        self.protection.invalidate(guild_id)
+
+        for cog_name in ("GuildLogs", "AutoModConfig", "AntiAltsConfig"):
             cog = self.bot.get_cog(cog_name)
             clear_cache = getattr(cog, "clear_config_cache", None)
             if callable(clear_cache):
-                clear_cache(guild_id)
+                try:
+                    clear_cache(guild_id)
+                except TypeError:
+                    clear_cache()
 
     @staticmethod
     def _hierarchy_error(ctx: Context, member: discord.Member) -> str | None:
@@ -249,16 +255,7 @@ class Mod(Cog, emoji=1268851270136107048):
         if not ctx.guild or self.bot.db is None:
             return
 
-        await self.bot.db.execute(
-            "INSERT INTO guild_logs (guild_id, channel_id) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET channel_id=$2",
-            ctx.guild.id,
-            channel.id,
-        )
-        await self.bot.db.execute(
-            "INSERT INTO logs_config (guild_id, module) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET module=$2",
-            ctx.guild.id,
-            ["all"],
-        )
+        await self.logs.set_channel(ctx.guild.id, channel.id, modules=["all"])
         self.clear_log_config_cache(ctx.guild.id)
 
         await ctx.send(
@@ -292,65 +289,28 @@ class Mod(Cog, emoji=1268851270136107048):
         if not ctx.guild or self.bot.db is None:
             return
 
-        log_modules = modules.replace(",", " ").split()
-
-        available_modules = list(_LOG_MODULES)
-
-        for module in log_modules:
-            if module.lower() not in available_modules:
-                return await ctx.send(
-                    embed=red_embed(
-                        title=f"{self.bot.no} Invalid Module",
-                        description=f"{module} is not an available module.\n\nAvailable modules: {', '.join(available_modules)}",
-                    )
+        try:
+            enabled, removed = await self.logs.set_modules(ctx.guild.id, modules)
+        except ValueError as exc:
+            return await ctx.send(
+                embed=red_embed(
+                    title=f"{self.bot.no} Invalid Module",
+                    description=f"{exc}\n\nAvailable modules: {', '.join(_LOG_MODULES)}",
                 )
-
-        # Remove duplicates and convert all modules to lowercase
-        lowercase_modules: List[str] = list(
-            set(module.lower() for module in log_modules)
-        )
-
-        # If "all" is chosen, remove other modules
-        if "all" in lowercase_modules:
-            lowercase_modules = ["all"]
-            removed_modules = available_modules[:-1]  # Exclude "all"
-        else:
-            # Determine removed modules
-            existing_modules = await self.bot.db.fetchval(
-                "SELECT module FROM logs_config WHERE guild_id = $1", ctx.guild.id
             )
-            if existing_modules:
-                existing_modules = set(existing_modules)
-                removed_modules = [
-                    module
-                    for module in existing_modules
-                    if module not in lowercase_modules
-                ]
-            else:
-                removed_modules = []
-
-        # Update log configurations
-        await self.bot.db.execute(
-            "INSERT INTO logs_config (guild_id, module) VALUES ($1, $2) ON CONFLICT (guild_id) DO UPDATE SET module=$2",
-            ctx.guild.id,
-            lowercase_modules,
-        )
         self.clear_log_config_cache(ctx.guild.id)
 
-        # Send confirmation message
-        enabled_modules = ", ".join(lowercase_modules)
         confirmation_em = green_embed(
-            description=f"{self.bot.yes} Logging enabled for: {enabled_modules}."
+            description=f"{self.bot.yes} Logging enabled for: {', '.join(enabled)}."
         )
         await ctx.send(embed=confirmation_em)
 
-        # Send confirmation message for disabled modules
-        if removed_modules:
-            disabled_modules = ", ".join(removed_modules)
-            disabled_confirmation_em = green_embed(
-                description=f"{self.bot.yes} Logging disabled for: {disabled_modules}."
+        if removed:
+            await ctx.send(
+                embed=green_embed(
+                    description=f"{self.bot.yes} Logging disabled for: {', '.join(removed)}."
+                )
             )
-            await ctx.send(embed=disabled_confirmation_em)
 
     async def _insights(self, ctx: Context):
         """Get detailed server insights."""
@@ -383,12 +343,8 @@ class Mod(Cog, emoji=1268851270136107048):
             except (discord.HTTPException, AttributeError):
                 pass
 
-            warning_count = (
-                await db.fetchval(
-                    "SELECT COUNT(*) FROM warnlogs WHERE guild_id=$1", guild.id
-                )
-                or 0
-            )
+            mod_stats = await self.moderation.insights(guild.id)
+            warning_count = mod_stats["warning_count"]
 
             starboard_count = (
                 await db.fetchval(
@@ -397,73 +353,35 @@ class Mod(Cog, emoji=1268851270136107048):
                 or 0
             )
 
-            ticket_stats = await db.fetchrow(
-                "SELECT COUNT(*) as total, COUNT(closed_at) as closed "
-                "FROM ticket_logs WHERE guild_id=$1",
-                guild.id,
-            )
-            active_tickets = (ticket_stats["total"] or 0) - (
-                ticket_stats["closed"] or 0
-            )
-
-            top_warned = await db.fetch(
-                "SELECT user_id, COUNT(*) as count FROM warnlogs "
-                "WHERE guild_id=$1 GROUP BY user_id ORDER BY count DESC LIMIT 5",
-                guild.id,
-            )
-
-            top_mods = await db.fetch(
-                "SELECT mod_id, COUNT(*) as count FROM warnlogs "
-                "WHERE guild_id=$1 GROUP BY mod_id ORDER BY count DESC LIMIT 5",
-                guild.id,
-            )
+            ticket_stats = await self.tickets.insights(guild.id)
+            active_tickets = ticket_stats["open"]
 
             warned_lines = []
-            for w in top_warned:
+            for w in mod_stats["top_warned"]:
                 user = guild.get_member(w["user_id"])
                 name = user.name if user else f"<@{w['user_id']}>"
                 warned_lines.append(f"`{w['count']}` • {name}")
 
             mods_lines = []
-            for m in top_mods:
+            for m in mod_stats["top_moderators"]:
                 user = guild.get_member(m["mod_id"])
                 name = user.name if user else f"<@{m['mod_id']}>"
                 mods_lines.append(f"`{m['count']}` • {name}")
 
-            total_tickets = ticket_stats["total"] or 0
-            closed_tickets = ticket_stats["closed"] or 0
-            open_tickets = total_tickets - closed_tickets
-
-            closed_stats = await db.fetchrow(
-                "SELECT COUNT(*) as closed, "
-                "COALESCE(AVG(EXTRACT(EPOCH FROM (closed_at - opened_at))/60), 0) as avg_resolution "
-                "FROM ticket_logs WHERE guild_id=$1 AND closed_at IS NOT NULL",
-                guild.id,
-            )
-            avg_res = closed_stats["avg_resolution"] or 0
-
-            top_staff = await db.fetch(
-                "SELECT closed_by, COUNT(*) as count FROM ticket_logs "
-                "WHERE guild_id=$1 AND closed_by IS NOT NULL "
-                "GROUP BY closed_by ORDER BY count DESC LIMIT 5",
-                guild.id,
-            )
+            total_tickets = ticket_stats["total"]
+            closed_tickets = ticket_stats["closed"]
+            open_tickets = ticket_stats["open"]
+            avg_res = ticket_stats["avg_resolution"]
 
             staff_lines = []
-            for s in top_staff:
-                user = guild.get_member(s["closed_by"])
-                name = user.name if user else f"<@{s['closed_by']}>"
+            for s in ticket_stats["top_staff"]:
+                user = guild.get_member(s["user_id"])
+                name = user.name if user else f"<@{s['user_id']}>"
                 staff_lines.append(f"`{s['count']}` • {name}")
 
-            automod_config = await db.fetchval(
-                "SELECT enabled FROM automod WHERE guild_id=$1", guild.id
-            )
-            antialt_config = await db.fetchval(
-                "SELECT enabled FROM antialt WHERE guild_id=$1", guild.id
-            )
-            logs_config = await db.fetchval(
-                "SELECT channel_id FROM guild_logs WHERE guild_id=$1", guild.id
-            )
+            automod_config = await self.protection.automod_enabled(guild.id)
+            antialt_config = await self.protection.antialt_enabled(guild.id)
+            logs_channel_set = await self.logs.get_channel_id(guild.id)
 
             def check_enabled(val):
                 return f"{self.bot.yes} Enabled" if val else f"{self.bot.no} Disabled"
@@ -520,7 +438,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 description=(
                     f"<:wrench:1268855253768339476> **AutoMod:** {check_enabled(automod_config)}\n"
                     f"<:raidreport:1268857575919714376> **Anti-Alt:** {check_enabled(antialt_config)}\n"
-                    f"<:logs:1497265635183431770> **Logs:** {check_enabled(logs_config)}\n"
+                    f"<:logs:1497265635183431770> **Logs:** {check_enabled(logs_channel_set)}\n"
                     f"<:ticketbadge:1268879389324611595> **Tickets:** {self.bot.yes} Enabled"
                 ),
                 timestamp=True,
@@ -1114,6 +1032,10 @@ class Mod(Cog, emoji=1268851270136107048):
 
         reason = reason or f"Kicked by {ctx.author} (ID: {ctx.author.id})"
         await member.kick(reason=reason)
+        if ctx.guild:
+            await self.moderation.record_manual(
+                ctx.guild.id, member.id, ctx.author.id, "kick", reason=reason
+            )
         await ctx.send(
             embed=green_embed(description=f"{self.bot.yes} Kicked {member.mention}")
         )
@@ -1142,6 +1064,10 @@ class Mod(Cog, emoji=1268851270136107048):
         for member in targets:
             reason = reason or f"Kicked by {ctx.author} (ID: {ctx.author.id})"
             await member.kick(reason=reason)
+            if ctx.guild:
+                await self.moderation.record_manual(
+                    ctx.guild.id, member.id, ctx.author.id, "kick", reason=reason
+                )
         await ctx.send(
             embed=green_embed(
                 description=f"{self.bot.yes} Kicked {len(targets)} members"
@@ -1169,6 +1095,9 @@ class Mod(Cog, emoji=1268851270136107048):
 
         user_id = ids[0]
         target = ctx.guild.get_member(user_id)
+        await self.moderation.record_manual(
+            ctx.guild.id, user_id, ctx.author.id, "ban", reason=reason
+        )
         if target is not None:
             await target.ban(reason=f"{reason}")
             await ctx.send(
@@ -1256,6 +1185,10 @@ class Mod(Cog, emoji=1268851270136107048):
         audit = reason or f"Banned by {ctx.author} (ID: {ctx.author.id})"
         for target in targets:
             await target.ban(reason=audit)
+            if ctx.guild:
+                await self.moderation.record_manual(
+                    ctx.guild.id, target.id, ctx.author.id, "ban", reason=audit
+                )
             await ctx.send(
                 embed=green_embed(description=f"{self.bot.yes} Banned {target}")
             )
@@ -1276,6 +1209,10 @@ class Mod(Cog, emoji=1268851270136107048):
         reason = reason or f"Banned by {ctx.author} (ID: {ctx.author.id})"
         await ctx.guild.ban(member, reason=reason)
         await ctx.guild.unban(member, reason=reason)
+        await self.moderation.record_manual(
+            ctx.guild.id, member.id, ctx.author.id, "kick", reason=reason,
+            metadata={"softban": True},
+        )
         await ctx.send(
             embed=green_embed(
                 description=f"{self.bot.yes} Sucessfully soft-banned {member.mention}."
@@ -1288,9 +1225,10 @@ class Mod(Cog, emoji=1268851270136107048):
         try:
             if ctx.guild is not None:
                 user = self.bot.get_user(id)
-                await ctx.guild.unban(
-                    discord.Object(id=id),
-                    reason=f"Unbanned by {ctx.author} (ID: {ctx.author.id})",
+                reason = f"Unbanned by {ctx.author} (ID: {ctx.author.id})"
+                await ctx.guild.unban(discord.Object(id=id), reason=reason)
+                await self.moderation.record_manual(
+                    ctx.guild.id, id, ctx.author.id, "unban", reason=reason
                 )
                 await ctx.send(
                     embed=green_embed(description=f"{self.bot.yes} Unbanned {user}")
@@ -1329,6 +1267,15 @@ class Mod(Cog, emoji=1268851270136107048):
             discord.utils.utcnow() + datetime.timedelta(seconds=humanly_duration),
             reason=reason,
         )
+        if ctx.guild:
+            await self.moderation.record_manual(
+                ctx.guild.id,
+                member.id,
+                ctx.author.id,
+                "timeout",
+                reason=reason,
+                duration_seconds=int(humanly_duration),
+            )
         await ctx.send(
             embed=green_embed(
                 description=f"{self.bot.yes} {member.mention} has been timed out for {duration}."
@@ -1340,6 +1287,13 @@ class Mod(Cog, emoji=1268851270136107048):
 
         reason = reason or f"Action done by {ctx.author}"
         await member.timeout(None, reason=reason)
+        if ctx.guild:
+            await self.moderation.resolve_active(
+                ctx.guild.id,
+                member.id,
+                resolved_by=ctx.author.id,
+                action_types=("timeout",),
+            )
         await ctx.send(
             embed=green_embed(
                 description=f"{self.bot.yes} {member.mention} has been removed from timeout!"
@@ -1685,29 +1639,22 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-        full_reason = f"{reason}  [by {ctx.author} ({ctx.author.id})]"
-        await self.bot.db.execute(
-            "INSERT INTO warnlogs (guild_id, user_id, mod_id, reason) VALUES ($1,$2,$3,$4)",
+        await self.moderation.record_manual(
             ctx.guild.id,
             member.id,
             ctx.author.id,
-            full_reason,
+            "warn",
+            reason=reason,
         )
 
-        warn_count: int = (
-            await self.bot.db.fetchval(
-                "SELECT COUNT(*) FROM warnlogs WHERE user_id=$1 AND guild_id=$2",
-                member.id,
-                ctx.guild.id,
-            )
-            or 0
+        warn_count = await self.moderation.warn_count(
+            ctx.guild.id,
+            member.id,
+            decay_days=await self.protection.warn_decay_days(ctx.guild.id),
         )
 
         automod_cog = self.bot.get_cog("AutoModConfig")
-        thresholds: list[dict] = []
-
-        if automod_cog and hasattr(automod_cog, "_get_thresholds"):
-            thresholds = await automod_cog._get_thresholds(ctx.guild.id)  # type: ignore[union-attr]
+        thresholds = await self.protection.thresholds(ctx.guild.id)
 
         next_action_str = ""
         for t in sorted(thresholds, key=lambda x: x["warns"]):
@@ -1748,7 +1695,9 @@ class Mod(Cog, emoji=1268851270136107048):
             pass
 
         if automod_cog and hasattr(automod_cog, "check_warn_threshold"):
-            await automod_cog.check_warn_threshold(member.id, ctx.guild.id)  # type: ignore[union-attr]
+            await automod_cog.check_warn_threshold(  # type: ignore[union-attr]
+                member.id, ctx.guild.id, warn_count=warn_count
+            )
 
     async def _warnings(
         self,
@@ -1761,11 +1710,11 @@ class Mod(Cog, emoji=1268851270136107048):
         if not ctx.guild or not self.bot.db:
             return
 
-        records = await self.bot.db.fetch(
-            "SELECT id, reason, mod_id, created_at FROM warnlogs "
-            "WHERE user_id=$1 AND guild_id=$2 ORDER BY id DESC",
-            member.id,
+        records = await self.moderation.list_cases(
             ctx.guild.id,
+            subject_user_id=member.id,
+            action_types=WARN_ACTIONS,
+            limit=500,
         )
 
         if not records:
@@ -1777,18 +1726,15 @@ class Mod(Cog, emoji=1268851270136107048):
             em.set_thumbnail(url=member.display_avatar.url)
             return await ctx.send(embed=em)
 
-        automod_cog = self.bot.get_cog("AutoModConfig")
-        thresholds: list[dict] = []
-        if automod_cog and hasattr(automod_cog, "_get_thresholds"):
-            thresholds = await automod_cog._get_thresholds(ctx.guild.id)  # type: ignore[union-attr]
+        thresholds = await self.protection.thresholds(ctx.guild.id)
 
         total = len(records)
         threshold_note = ""
-        for t in sorted(thresholds, key=lambda x: x["warns"]):
-            if total >= t["warns"]:
+        for t in thresholds:
+            if total >= int(t["warns"]):
                 threshold_note = (
                     f"\n⚠️ **{t['warns']}-warn threshold** reached → "
-                    f"**{t['action'].replace('_', ' ').title()}**"
+                    f"**{str(t['action']).replace('_', ' ').title()}**"
                 )
 
         chunks = [records[i : i + 5] for i in range(0, total, 5)]
@@ -1797,17 +1743,17 @@ class Mod(Cog, emoji=1268851270136107048):
         for i, chunk in enumerate(chunks, 1):
             lines = []
             for r in chunk:
-                mod = ctx.guild.get_member(r["mod_id"])
-                mod_str = mod.mention if mod else f"`{r['mod_id']}`"
-                reason_display = r["reason"].split("  [by ")[0]
+                mod = ctx.guild.get_member(r["moderator_user_id"])
+                mod_str = mod.mention if mod else f"`{r['moderator_user_id']}`"
+                reason_display = r["reason"] or "No reason provided."
                 ts = (
                     f"<t:{int(r['created_at'].timestamp())}:R>"
                     if r["created_at"]
                     else ""
                 )
                 lines.append(
-                    f"**ID `{r['id']}`** {ts}\n"
-                    f"Reason: {reason_display}\n"
+                    f"**ID `{short_case_id(r['case_id'])}`** {ts}\n"
+                    f"Reason: {discord.utils.escape_markdown(reason_display)}\n"
                     f"Moderator: {mod_str}\n"
                 )
 
@@ -1827,23 +1773,33 @@ class Mod(Cog, emoji=1268851270136107048):
         view = Paginator(ctx, embeds)
         await ctx.send(embed=embeds[0], view=view)
 
-    async def _deletewarn(self, ctx: Context, member: discord.Member, warn_id: int):
-        """Delete a specific warning by its ID."""
+    async def _deletewarn(self, ctx: Context, member: discord.Member, warn_id: str):
+        """Soft-resolve a specific warning by its case ID (full or short)."""
 
         if not ctx.guild or not self.bot.db:
             return
 
-        result = await self.bot.db.execute(
-            "DELETE FROM warnlogs WHERE id=$1 AND user_id=$2 AND guild_id=$3",
-            warn_id,
-            member.id,
+        case = await self.moderation.resolve_identifier(
             ctx.guild.id,
+            warn_id,
+            subject_user_id=member.id,
         )
-
-        if result == "DELETE 0":
+        if case is None or case.get("status") != "active":
             return await ctx.send(
                 embed=red_embed(
                     description=f"{self.bot.no} Warn ID `{warn_id}` not found for {member.mention}."
+                )
+            )
+
+        resolved = await self.moderation.resolve_case(
+            ctx.guild.id,
+            case["case_id"],
+            resolved_by=ctx.author.id,
+        )
+        if not resolved:
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} Warn ID `{warn_id}` could not be removed."
                 )
             )
         await ctx.send(
@@ -1858,14 +1814,7 @@ class Mod(Cog, emoji=1268851270136107048):
         if not ctx.guild or not self.bot.db:
             return
 
-        count: int = (
-            await self.bot.db.fetchval(
-                "SELECT COUNT(*) FROM warnlogs WHERE user_id=$1 AND guild_id=$2",
-                member.id,
-                ctx.guild.id,
-            )
-            or 0
-        )
+        count = await self.moderation.warn_count(ctx.guild.id, member.id)
 
         if count == 0:
             return await ctx.send(
@@ -1880,7 +1829,7 @@ class Mod(Cog, emoji=1268851270136107048):
         msg = await ctx.send(
             embed=orange_embed(
                 description=(
-                    f"<:warning:1268855244033363968> This will permanently delete "
+                    f"<:warning:1268855244033363968> This will clear "
                     f"**{count}** warning(s) for {member.mention}. Are you sure?"
                 )
             ),
@@ -1894,14 +1843,12 @@ class Mod(Cog, emoji=1268851270136107048):
                 view=None,
             )
 
-        await self.bot.db.execute(
-            "DELETE FROM warnlogs WHERE user_id=$1 AND guild_id=$2",
-            member.id,
-            ctx.guild.id,
+        resolved = await self.moderation.resolve_warnings(
+            ctx.guild.id, member.id, resolved_by=ctx.author.id
         )
         await msg.edit(
             embed=green_embed(
-                description=f"{self.bot.yes} Cleared **{count}** warning(s) for {member.mention}."
+                description=f"{self.bot.yes} Cleared **{resolved}** warning(s) for {member.mention}."
             ),
             view=None,
         )
@@ -2092,7 +2039,7 @@ class Mod(Cog, emoji=1268851270136107048):
         self,
         ctx: Context,
         member: discord.Member | None = None,
-        warn_id: int | None = None,
+        warn_id: str | None = None,
         clear: bool = False,
     ) -> Any:
         """List warnings; supply warn_id to delete one or clear:true for all."""

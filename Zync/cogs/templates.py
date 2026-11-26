@@ -85,7 +85,7 @@ class Templates(Cog, emoji=1497265635183431770):
         )
         await ctx.send(embed=em)
 
-    @template.command(name="create", aliases=["new", "add"])
+    @template.command(name="create")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def template_create(self, ctx: Context, name: str, *, json_data: str):
@@ -136,7 +136,7 @@ class Templates(Cog, emoji=1497265635183431770):
             )
         )
 
-    @template.command(name="edit", aliases=["update"])
+    @template.command(name="edit")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def template_edit(self, ctx: Context, template_id: int, *, json_data: str):
@@ -184,7 +184,7 @@ class Templates(Cog, emoji=1497265635183431770):
             )
         )
 
-    @template.command(name="delete", aliases=["del", "remove"])
+    @template.command(name="delete")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def template_delete(self, ctx: Context, template_id: int):
@@ -212,7 +212,7 @@ class Templates(Cog, emoji=1497265635183431770):
             )
         )
 
-    @template.command(name="preview", aliases=["show"])
+    @template.command(name="preview")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def template_preview(self, ctx: Context, template_id: int):
@@ -258,7 +258,7 @@ class Templates(Cog, emoji=1497265635183431770):
 
     # ── Link subgroup ─────────────────────────────────────────────────────────
 
-    @template.group(name="link", aliases=["set"], fallback="list")
+    @template.group(name="link", fallback="list")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def template_link(self, ctx: Context):
@@ -291,7 +291,7 @@ class Templates(Cog, emoji=1497265635183431770):
             )
         return bool(exists)
 
-    @template_link.command(name="rolemenu", aliases=["rm"])
+    @template_link.command(name="rolemenu")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def link_rolemenu(
@@ -317,7 +317,7 @@ class Templates(Cog, emoji=1497265635183431770):
             )
         from utils.ui import refresh_menu
 
-        await refresh_menu(self.bot, menu_id)
+        await refresh_menu(self.bot, menu_id, ctx.guild.id)
         verb = (
             f"linked template `#{template_id}`" if template_id else "unlinked template"
         )

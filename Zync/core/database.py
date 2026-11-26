@@ -1,100 +1,97 @@
-"""PostgreSQL connection and schema bootstrap.
+"""PostgreSQL connection management and ordered schema migrations.
 
-Creates the asyncpg pool from ``PG_URL`` and ensures all active application
-tables and indexes exist at startup. This is the only schema definition; there
-are no separate migration files.
+Schema changes live in ``Zync/migrations/*.sql``. Each migration is applied once,
+inside a transaction, and recorded in ``schema_migrations``. Startup does not
+silently create or alter tables outside that ledger.
 """
 
+from __future__ import annotations
+
+import re
 import ssl
-from typing import Union
+from pathlib import Path
+from typing import Any
 
 import asyncpg
 
 from utils.config import PG_URL
 
-
-async def create_db_pool() -> Union[asyncpg.pool.Pool, None]:
-    ssl_object = ssl.create_default_context()
-    ssl_object.check_hostname = False
-    ssl_object.verify_mode = ssl.CERT_NONE
-
-    return await asyncpg.create_pool(PG_URL, ssl=ssl_object)
+_MIGRATION_FILE = re.compile(r"^(\d{4})_([a-z0-9_]+)\.sql$")
+_MIGRATIONS_DIR = Path(__file__).resolve().parent.parent / "migrations"
 
 
-async def bootstrap_database(pool: Union[asyncpg.pool.Pool, None]) -> None:
-    if pool is None:
-        return
+async def create_db_pool() -> asyncpg.Pool:
+    """Create the application connection pool with TLS verification enabled."""
 
-    statements = [
-        # EMBED_TEMPLATES
-        """CREATE TABLE IF NOT EXISTS embed_templates
-        (id SERIAL PRIMARY KEY, guild_id BIGINT, name TEXT, data JSONB, created_by BIGINT, created_at TIMESTAMP DEFAULT NOW())""",
-        # PREMIUM
-        """CREATE TABLE IF NOT EXISTS premium
-        (guild_id BIGINT PRIMARY KEY, user_id BIGINT NOT NULL, polar_subscription_id TEXT NOT NULL UNIQUE, polar_customer_id TEXT NOT NULL, tier INT DEFAULT 1, status TEXT DEFAULT 'active', current_period_start TIMESTAMP, current_period_end TIMESTAMP, cancel_at_period_end BOOL DEFAULT FALSE, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW())""",
-        # WARNLOGS
-        """CREATE TABLE IF NOT EXISTS warnlogs
-        (id SERIAL PRIMARY KEY, guild_id BIGINT, user_id BIGINT, mod_id BIGINT, reason TEXT, created_at TIMESTAMP DEFAULT NOW())""",
-        # LOGS_CONFIG
-        """CREATE TABLE IF NOT EXISTS logs_config
-        (guild_id BIGINT PRIMARY KEY, module TEXT[] DEFAULT ARRAY['all'])""",
-        # GUILD_LOGS
-        """CREATE TABLE IF NOT EXISTS guild_logs
-        (guild_id BIGINT PRIMARY KEY, channel_id BIGINT)""",
-        # AUTOMOD
-        """CREATE TABLE IF NOT EXISTS automod
-        (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT false, modules TEXT[] DEFAULT ARRAY['banned_words', 'all_caps', 'message_spam', 'invites', 'mass_mentions', 'emoji_spam', 'zalgo_text'], warn_action TEXT DEFAULT 'none', warn_threshold INT DEFAULT 0, config JSONB DEFAULT '{}')""",
-        # ANTIALT
-        """CREATE TABLE IF NOT EXISTS antialt
-        (guild_id BIGINT PRIMARY KEY, enabled BOOL DEFAULT false, min_age INT, restricted_role BIGINT, level INT)""",
-        # TAGS
-        """CREATE TABLE IF NOT EXISTS tags
-        (guild_id BIGINT, tag_name TEXT, content TEXT, creator BIGINT, uses INT DEFAULT 0, PRIMARY KEY (guild_id, tag_name))""",
-        # STAR_INFO
-        """CREATE TABLE IF NOT EXISTS star_info
-        (guild_id BIGINT, user_msg_id BIGINT PRIMARY KEY, bot_msg_id BIGINT)""",
-        # USER_TIMEZONE
-        """CREATE TABLE IF NOT EXISTS user_timezone
-        (user_id BIGINT PRIMARY KEY, timezone TEXT)""",
-        # TICKET_PANEL
-        """CREATE TABLE IF NOT EXISTS ticket_panels
-        (id SERIAL PRIMARY KEY, guild_id BIGINT, channel_id BIGINT, message_id BIGINT, name TEXT, template_id INT REFERENCES embed_templates(id) ON DELETE SET NULL, button_label TEXT DEFAULT 'Create Ticket', button_emoji TEXT, support_role_id BIGINT, enabled BOOL DEFAULT TRUE)""",
-        # TICKET_LOGS
-        """CREATE TABLE IF NOT EXISTS ticket_logs
-        (guild_id BIGINT, thread_id BIGINT PRIMARY KEY, creator_id BIGINT, opened_at TIMESTAMP DEFAULT NOW(), closed_at TIMESTAMP, closed_by BIGINT)""",
-        # ROLE_MENUS
-        """CREATE TABLE IF NOT EXISTS role_menus
-        (id SERIAL PRIMARY KEY, guild_id BIGINT NOT NULL, channel_id BIGINT, message_id BIGINT, name TEXT NOT NULL, title TEXT, description TEXT, template_id INT REFERENCES embed_templates(id) ON DELETE SET NULL, type TEXT NOT NULL DEFAULT 'button', mode TEXT NOT NULL DEFAULT 'multi', max_selections INT, required_role_id BIGINT, enabled BOOL DEFAULT TRUE, created_at TIMESTAMP DEFAULT NOW(), created_by BIGINT)""",
-        # ROLE_MENU_ITEMS
-        """CREATE TABLE IF NOT EXISTS role_menu_items
-        (menu_id INT NOT NULL REFERENCES role_menus(id) ON DELETE CASCADE, role_id BIGINT NOT NULL, label TEXT, emoji TEXT, description TEXT, position INT DEFAULT 0, PRIMARY KEY (menu_id, role_id))""",
-        # WORKFLOWS (unified Trigger -> Condition -> Action engine)
-        """CREATE TABLE IF NOT EXISTS workflows
-        (id SERIAL PRIMARY KEY,
-         guild_id BIGINT NOT NULL,
-         name TEXT NOT NULL,
-         enabled BOOLEAN DEFAULT TRUE,
-         trigger_type TEXT NOT NULL,
-         trigger_config JSONB NOT NULL DEFAULT '{}'::jsonb,
-         conditions JSONB NOT NULL DEFAULT '[]'::jsonb,
-         actions JSONB NOT NULL DEFAULT '[]'::jsonb,
-         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())""",
-    ]
+    return await asyncpg.create_pool(
+        PG_URL,
+        ssl=ssl.create_default_context(),
+        min_size=1,
+        max_size=10,
+        command_timeout=30,
+        server_settings={"application_name": "zync"},
+    )
 
-    for statement in statements:
-        await pool.execute(statement)
 
-    indexes = [
-        "CREATE INDEX IF NOT EXISTS warnlogs_guild_user_idx ON warnlogs (guild_id, user_id)",
-        "CREATE INDEX IF NOT EXISTS warnlogs_created_at_idx ON warnlogs (guild_id, user_id, created_at DESC)",
-        "CREATE INDEX IF NOT EXISTS star_info_guild_id_idx ON star_info (guild_id)",
-        "CREATE INDEX IF NOT EXISTS star_info_bot_msg_id_idx ON star_info (bot_msg_id)",
-        "CREATE INDEX IF NOT EXISTS role_menus_guild_id_idx ON role_menus (guild_id)",
-        "CREATE INDEX IF NOT EXISTS workflows_guild_id_idx ON workflows (guild_id)",
-        "CREATE INDEX IF NOT EXISTS workflows_guild_enabled_idx ON workflows (guild_id, enabled) WHERE enabled = TRUE",
-        "CREATE INDEX IF NOT EXISTS workflows_guild_trigger_idx ON workflows (guild_id, trigger_type)",
-    ]
+def _migration_files() -> list[tuple[int, str, Path]]:
+    if not _MIGRATIONS_DIR.is_dir():
+        return []
 
-    for index in indexes:
-        await pool.execute(index)
+    migrations: list[tuple[int, str, Path]] = []
+    for path in sorted(_MIGRATIONS_DIR.glob("*.sql")):
+        match = _MIGRATION_FILE.match(path.name)
+        if match is None:
+            raise RuntimeError(f"Invalid migration filename: {path.name}")
+        migrations.append((int(match.group(1)), match.group(2), path))
+
+    versions = [version for version, _, _ in migrations]
+    if len(versions) != len(set(versions)):
+        raise RuntimeError("Duplicate migration versions found")
+    return migrations
+
+
+async def applied_versions(pool: Any) -> set[int]:
+    """Return the set of migration versions already applied."""
+
+    rows = await pool.fetch("SELECT version FROM schema_migrations")
+    return {int(row["version"]) for row in rows}
+
+
+async def run_migrations(pool: Any) -> list[int]:
+    """Apply pending migrations in order and return the versions applied."""
+
+    # The ledger may not exist on a fresh database. Creating it outside a
+    # migration is safe and idempotent.
+    await pool.execute(
+        """CREATE TABLE IF NOT EXISTS schema_migrations (
+            version INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )"""
+    )
+
+    applied = await applied_versions(pool)
+    newly_applied: list[int] = []
+
+    for version, name, path in _migration_files():
+        if version in applied:
+            continue
+
+        sql = path.read_text(encoding="utf-8")
+        async with pool.acquire() as connection:
+            async with connection.transaction():
+                await connection.execute(sql)
+                await connection.execute(
+                    "INSERT INTO schema_migrations (version, name) VALUES ($1, $2) "
+                    "ON CONFLICT (version) DO NOTHING",
+                    version,
+                    name,
+                )
+        newly_applied.append(version)
+
+    return newly_applied
+
+
+# Backwards-compatible import used by existing tooling and tests.
+async def bootstrap_database(pool: Any) -> None:
+    await run_migrations(pool)
