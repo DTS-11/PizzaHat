@@ -3,130 +3,86 @@
   Zync
 </h1>
 
-<h4 align="center">Your Ultimate Discord Companion</h4>
+<h4 align="center">Deterministic Discord operations and workflow automation</h4>
 
 <p align="center">
   <img src="https://img.shields.io/badge/discord.py-2.7.1-blue?style=flat" alt="discord.py 2.7.1">
   <img src="https://img.shields.io/badge/Python-3.10%2B-green?style=flat&logo=python" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/uv-managed-purple?style=flat" alt="uv managed">
-  <img src="https://github.com/DTS-11/PizzaHat/actions/workflows/codeql-analysis.yml/badge.svg" alt="CodeQL">
+  <img src="https://github.com/DTS-11/Zync/actions/workflows/ci.yml/badge.svg" alt="CI">
 </p>
 
 ## Info
 
-[Zync](https://pizzahat.vercel.app) is a slash-first Discord bot built around a deterministic
-**Trigger → Condition → Action** workflow engine, with moderation, safety, tickets, tags, role menus,
-embed templates, logging, and staff utilities in one place.
+Zync is a slash-first Discord operations engine built around a deterministic
+**Trigger → Condition → Action** workflow system. It keeps moderation, protection,
+tickets, events, and staff utilities in one Discord-only service.
 
-The public command surface is slash commands. The bot mention (`@Zync`) remains as a text-command
-fallback where Discord delivers message content; there is no custom prefix.
-
-The project is open source for educational and development purposes. This README is for contributors;
-start with [Development setup](#development-setup) and see [CONTRIBUTING.md](./CONTRIBUTING.md)
-before opening a pull request.
+There is no dashboard, visual editor, SaaS API, checkout, remote publishing, AI, or
+analytics product in this repository. Owner-only developer commands stay prefix-only
+through the bot mention and never enter the public slash menu.
 
 ## Features
 
 ### Workflow engine
 
-- Create, list, toggle, and delete workflows with `/workflow`
-- Five starter templates:
-  - new-account raid shield
-  - auto-responder
-  - welcome and onboarding
-  - starboard / highlight reel
-  - timezone-aware scheduled reminder
-- Triggers:
-  - `member_join`
-  - `message_create`
-  - `reaction_add`
-  - `role_update`
-  - `schedule`
-  - `safety_alert`
-- Conditions:
-  - `account_age_lt`
-  - `contains_link`
-  - `contains_text`
-  - `has_role`
-  - `channel_in`
-  - `cooldown_sec`
-  - `is_bot`
-  - `emoji_is`
-  - `reaction_count_gte`
-  - `not_self_react`
-- Actions:
-  - `add_role`
-  - `remove_role`
-  - `send_embed`
-  - `send_message`
-  - `send_dm`
-  - `timeout_member`
-  - `open_ticket`
-  - `log_channel`
-- Strict schema validation in `utils/workflow_schema.py`
-- Cached evaluation in `cogs_hidden/workflow_runner.py`
+- Versioned, portable Trigger → Condition → Action definitions
+- Triggers: `member_join`, `member_leave`, `message_create`, `message_delete`,
+  `reaction_add`, `role_update`, `schedule`, `safety_alert`, `moderation_event`,
+  `ticket_created`
+- Deterministic condition evaluation with no arbitrary code execution
+- Service-backed actions with permission and hierarchy checks
+- Persisted execution history, cancellation, cooldown state, and loop protection
+- Rate-limit-safe sequential execution with bounded 429 backoff
+- `/workflow list`, `view`, `create`, `import`, `export`, `toggle`, `delete`, `templates`
+- Strict validation through `workflows/schema.py` (re-exported by `utils/workflow_schema.py`)
 - Tier limits:
   - Free: 5 active workflows, 2 actions per workflow
   - Basic: 25 active workflows, 5 actions per workflow
   - Pro: unlimited
 
-### Moderation and staff tools
+### Moderation and protection
 
-- Moderation: bans, kicks, mutes, timeouts, warnings, prune, nick management, slowmode, lock/unlock,
-  hide/expose, role and channel management
-- Server insights with workflow analytics
-- Configurable guild logging in `cogs_hidden/guild_logs.py`
-- Anti-alt and automod command surfaces merged into `/antialt` and `/automod`
-- Persistent safety listeners in `cogs_hidden/safety_hooks.py`, including `safety_alert` workflow triggers
+- Unified `/mod` group for ban, unban, kick, timeout, warn, clear, prune, slowmode,
+  nick, lock, role, channel, logs, and insights
+- Right-click Ban/Kick/Warn/Timeout menus reuse the same service layer
+- Unique moderation casefiles for warnings and automated actions
+- `/antialt` and `/automod` configuration surfaces backed by one automation config store
+- Safety detections dispatch `safety_alert` workflows; punishments create casefiles
+- Durable scheduled tasks for temporary bans and raid lockdown restoration
 
-### Community tools
+### Server operations
 
-- Ticket panels, persistent ticket buttons, and thread logs
-- Button/dropdown role menus with persistent view registration
-- Tags with create, edit, delete, list, info, and lookup
-- Embed templates with preview and template linking for role menus and ticket panels
-- Emoji management with `/emoji create`, `delete`, `info`, and `list`
-- Image-to-emoji helpers with `/emojify` and `/emojifyav`
-
-### System commands
-
-The system cog exposes only:
-
-- `/help` with a cog/category selector and button navigation
-- `/status`
-- `/timezone`
-- `/premium`
-- `/credits`
-- `/invite`
-- `/support`
-- `/vote`
-
-All other user-facing commands are hybrid commands, registered as slash commands.
+- Ticket panels, persistent buttons, thread management, and transcripts
+- Button/select role menus with persistent view registration
+- Tags and embed templates as staff utilities
+- Configurable guild logging with webhook delivery
+- Persistent Discord views restored at startup
 
 ## Project layout
 
 ```txt
 Zync/                     uv project root
   cogs/                   public command surfaces
-  cogs_hidden/            listeners, runners, and persistent view registration
-  core/                   bot bootstrap, database bootstrap, shared cog base
-  utils/                  reusable UI components, embeds, validation, config, checks
-  migrations/             manual PostgreSQL migrations
+  cogs_hidden/            listeners and persistent view registration
+  core/                   bot lifecycle, database migrations, entitlements, logging
+  services/               moderation, ticket, protection, logging, scheduler services
+  workflows/              schema, registries, evaluator, engine, repository, runner
+  migrations/             ordered SQL schema migrations
+  utils/                  shared UI, embeds, formatting, config, checks
+  tests/                  unit tests
   pyproject.toml          uv project metadata and dependency groups
   uv.lock                 locked dependency set
-  .env.example            local environment template
-README.md                 project overview and contributor guide
 ```
 
-Reusable UI components live in `utils/ui.py`; `cogs_hidden/interactions.py` only registers persistent
-views. There is no custom prefix system, and the bot does not request the Message Content privileged
-intent. Slash commands work normally; message-content-based automod checks need that intent enabled
-separately to be effective in guilds.
+All schema changes live in ordered SQL files under `Zync/migrations/`. The runner
+records applied versions in `schema_migrations` and applies each pending migration
+inside a transaction at startup.
 
 ## Development setup
 
-This section is for contributors. Use it to set up a local development environment; it is not a
-deployment or self-hosting guide.
+This section is for contributors. Use it to set up a local development environment;
+it is not a hosted deployment guide.
 
 ### Prerequisites
 
@@ -140,55 +96,63 @@ deployment or self-hosting guide.
 From the repository root:
 
 ```bash
-git clone https://github.com/DTS-11/PizzaHat.git
+git clone https://github.com/DTS-11/Zync.git
 cd Zync/Zync
-uv sync
+uv sync --group dev
 ```
 
 `uv sync` reads `Zync/pyproject.toml` and `Zync/uv.lock`, creates `Zync/.venv`, and
-installs runtime and dev dependencies. Add packages later from `Zync/` with:
-
-```bash
-uv add <package>
-```
+installs runtime and dev dependencies.
 
 ### Local environment
 
-From `Zync/`, copy the environment template and fill in the values you need:
+Configuration is read from environment variables. `python-dotenv` loads a local
+`.env` from the current working directory when present.
 
-```bash
-cp .env.example .env
+Common values:
+
+```txt
+TOKEN=...
+TEST_BOT=...
+PG_URL=postgresql://...
+DEV_GUILD_ID=...
+SYNC_COMMANDS=0
+LOG_LEVEL=INFO
+LOG_FILE=bot.log
+ENABLE_JISHAKU=0
+UPGRADE_URL=...
+SUPPORT_SERVER=...
+REG_INVITE=...
+ADMIN_INVITE=...
+LOG_CHANNEL_ID=...
 ```
 
-`.env` is gitignored. `load_dotenv()` reads from the current working directory, so keep `.env` in
-`Zync/` when using the project commands.
-
-For automod work, create the gitignored `Zync/utils/bad_words.py` with a local list:
-
-```python
-BANNED_WORDS = [
-    "example",
-    "words",
-    "to block",
-]
-```
+Do not commit `.env`. The migration runner will create the schema on startup; there
+are no legacy imports.
 
 ### Checks
 
 Run these from `Zync/` before opening a pull request:
 
 ```bash
-uv run ruff check --select I .
-uv run ruff format --check .
-uv run python -m compileall cogs cogs_hidden core utils __main__.py
+uv run ruff check .
+uv run python -m compileall -q cogs cogs_hidden core services utils workflows __main__.py
+uv run pytest -q
 ```
 
-To apply import sorting and formatting first:
+## Single-instance operation
+
+The Discord engine is designed for one process on a small VM or Raspberry Pi.
+PostgreSQL is the only external service. Configure `PG_URL`, set intents in the
+Discord developer portal, then start the process from the `Zync/` source root:
 
 ```bash
-uv run ruff check --select I --fix .
-uv run ruff format .
+cd Zync
+uv run python __main__.py
 ```
+
+Graceful shutdown closes the aiohttp session and the asyncpg connection pool. Logs
+append to a rotating file instead of truncating on each restart.
 
 ## Contributing
 
@@ -196,21 +160,19 @@ uv run ruff format .
 2. Fork the repository and create a focused branch.
 3. Keep changes scoped:
    - public commands belong in `cogs/`
-   - listeners/runners belong in `cogs_hidden/`
-   - reusable components belong in `utils/`
+   - listeners belong in `cogs_hidden/`
+   - business rules belong in `services/`
+   - workflow primitives belong in `workflows/`
+   - reusable presentation helpers belong in `utils/`
 4. New commands must be slash-accessible. Do not reintroduce a custom prefix.
-5. Workflow changes must go through `utils/workflow_schema.py`; do not bypass validation.
-6. Database changes must be additive by default. Update both `core/database.py` bootstrap SQL and a
-   numbered migration under `migrations/`.
-7. Do not drop tables in bootstrap. Destructive changes require an explicit migration and review.
+5. Workflow changes must go through `workflows/schema.py`; do not bypass validation.
+6. Database schema changes belong in ordered SQL files under `Zync/migrations/`.
+7. Apply migrations with the migration runner at startup; do not mutate schema ad hoc in cogs.
 8. Run the checks above before opening a pull request.
-9. Commit, push, and open a PR describing the behavior changed and any manual migration required.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the short checklist.
 
 ## Links
 
-- [Website](https://pizzahat.vercel.app)
-- [Invite bot](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot)
+- [Source](https://github.com/DTS-11/Zync)
 - [Support server](https://discord.gg/WhNVDTF)
-- [Source](https://github.com/DTS-11/PizzaHat)

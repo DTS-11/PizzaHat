@@ -1,7 +1,7 @@
 """Role menu commands.
 
 Provides slash/hybrid commands for creating, configuring, publishing, and
-refreshing button/dropdown role menus with tier limits.
+refreshing button/select role menus with tier limits.
 """
 
 from __future__ import annotations
@@ -12,9 +12,11 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Tier, Zync
+from core.bot import Zync
+from core.entitlements import Tier
 from core.cog import Cog
-from utils.custom_checks import _tier_cache, premium
+from utils.config import UPGRADE_URL
+from utils.custom_checks import premium
 from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
 from utils.ui import (
     DISCORD_MAX_ITEMS,
@@ -30,27 +32,68 @@ TIER_LIMITS: dict[Tier, int] = {
     Tier.PRO: 100,
 }
 
-VALID_TYPES = {"button", "dropdown"}
+VALID_TYPES = {"button", "select"}
+_TYPE_ALIASES = {"dropdown": "select"}
 VALID_MODES = {"single", "multi"}
 
 
+def _rowcount(status: str) -> int:
+    """Return the affected-row count from an asyncpg command tag."""
+    try:
+        return int(status.rsplit(" ", 1)[-1])
+    except (AttributeError, ValueError):
+        return 0
+
+
 async def _guild_tier(bot: Zync, guild_id: int) -> Tier:
-    cached = _tier_cache.get(guild_id)
-    if cached is not None:
-        return cached
-    if bot.db is None:
-        return Tier.FREE
-    row = await bot.db.fetchrow("SELECT tier FROM premium WHERE guild_id=$1", guild_id)
-    tier = Tier(row["tier"]) if row else Tier.FREE
-    _tier_cache[guild_id] = tier
-    return tier
+    service = getattr(bot, "entitlements", None)
+    if service is not None:
+        return await service.tier_for(guild_id)
+    return Tier.FREE
+
+
+_UPDATE_ITEM_FIELDS = frozenset({"emoji", "label", "description"})
+_UPDATE_MENU_FIELDS = frozenset({"mode", "title", "description", "max_selections", "required_role_id"})
+
+
+async def _update_item(
+    bot: Zync, guild_id: int, menu_id: int, role_id: int, field: str, value: object
+) -> bool:
+    """Update one role-menu item, scoped to the caller's guild."""
+    if field not in _UPDATE_ITEM_FIELDS or not bot.db:
+        return False
+    status = await bot.db.execute(
+        f"UPDATE role_menu_items SET {field}=$1 WHERE menu_id=$2 AND role_id=$3 "
+        "AND EXISTS (SELECT 1 FROM role_menus WHERE id=$2 AND guild_id=$4)",
+        value,
+        menu_id,
+        role_id,
+        guild_id,
+    )
+    return _rowcount(status) > 0
+
+
+async def _update_menu(
+    bot: Zync, guild_id: int, menu_id: int, field: str, value: object
+) -> bool:
+    """Update one role-menu setting, scoped to the caller's guild."""
+    if field not in _UPDATE_MENU_FIELDS or not bot.db:
+        return False
+    status = await bot.db.execute(
+        f"UPDATE role_menus SET {field}=$1, updated_at=NOW() "
+        "WHERE id=$2 AND guild_id=$3",
+        value,
+        menu_id,
+        guild_id,
+    )
+    return _rowcount(status) > 0
 
 
 async def _resolve_menu(ctx: Context, menu_id: int) -> Optional[dict]:
     if not ctx.guild or not ctx.bot.db:
         return None
-    menu = await _fetch_menu(ctx.bot, menu_id)
-    if not menu or menu["guild_id"] != ctx.guild.id:
+    menu = await _fetch_menu(ctx.bot, menu_id, ctx.guild.id)
+    if not menu:
         await ctx.send(
             embed=red_embed(
                 description=f"{ctx.bot.no} Role menu `#{menu_id}` not found."
@@ -61,7 +104,7 @@ async def _resolve_menu(ctx: Context, menu_id: int) -> Optional[dict]:
 
 
 class RoleMenus(Cog, emoji=1268853457855709255):
-    """Self-assignable role menus — buttons and dropdowns."""
+    """Self-assignable role menus — buttons and selects."""
 
     def __init__(self, bot: Zync):
         self.bot = bot
@@ -70,7 +113,7 @@ class RoleMenus(Cog, emoji=1268853457855709255):
     # HUB / LIST
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    @commands.hybrid_group(name="rolemenu", aliases=["rm"], fallback="list")
+    @commands.hybrid_group(name="rolemenu", fallback="list")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     async def rolemenu(self, ctx: Context):
@@ -93,7 +136,7 @@ class RoleMenus(Cog, emoji=1268853457855709255):
                 embed=orange_embed(
                     description=(
                         f"No role menus yet.\n\n"
-                        f"**Create one:** `/rolemenu create <name> [button|dropdown]`\n"
+                        f"**Create one:** `/rolemenu create <name> [button|select]`\n"
                         f'Example: `/rolemenu create "Game Roles" button`'
                     )
                 )
@@ -122,23 +165,24 @@ class RoleMenus(Cog, emoji=1268853457855709255):
     # CREATE / DELETE / TOGGLE
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    @rolemenu.command(name="create", aliases=["new"])
+    @rolemenu.command(name="create")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     async def rm_create(
         self, ctx: Context, name: str, type_: str = "button", mode: str = "multi"
     ):
-        """Create a new role menu. Type: `button` or `dropdown`. Mode: `single` or `multi`."""
+        """Create a new role menu. Type: `button` or `select`. Mode: `single` or `multi`."""
 
         if not ctx.guild or not self.bot.db:
             return
 
         type_ = type_.lower()
+        type_ = _TYPE_ALIASES.get(type_, type_)
         mode = mode.lower()
         if type_ not in VALID_TYPES:
             return await ctx.send(
                 embed=red_embed(
-                    description=f"{self.bot.no} Type must be `button` or `dropdown`."
+                    description=f"{self.bot.no} Type must be `button` or `select`."
                 )
             )
         if mode not in VALID_MODES:
@@ -162,7 +206,7 @@ class RoleMenus(Cog, emoji=1268853457855709255):
                     description=(
                         f"{self.bot.no} **{tier.name}** tier limit reached "
                         f"(**{limit}** menus).\n"
-                        f"[Upgrade to unlock more](https://pizzahat.vercel.app/premium)"
+                        f"[Upgrade to unlock more]({UPGRADE_URL})"
                     )
                 )
             )
@@ -188,7 +232,7 @@ class RoleMenus(Cog, emoji=1268853457855709255):
             )
         )
 
-    @rolemenu.command(name="delete", aliases=["remove", "del"])
+    @rolemenu.command(name="delete")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     async def rm_delete(self, ctx: Context, menu_id: int):
@@ -210,14 +254,24 @@ class RoleMenus(Cog, emoji=1268853457855709255):
                 except (discord.NotFound, discord.Forbidden, discord.HTTPException):
                     pass
 
-        await self.bot.db.execute("DELETE FROM role_menus WHERE id=$1", menu_id)
+        deleted = await self.bot.db.fetchrow(
+            "DELETE FROM role_menus WHERE id=$1 AND guild_id=$2 RETURNING id",
+            menu_id,
+            ctx.guild.id,
+        )
+        if deleted is None:
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} Role menu `#{menu_id}` not found."
+                )
+            )
         await ctx.send(
             embed=green_embed(
                 description=f"{self.bot.yes} Role menu `#{menu_id}` (`{menu['name']}`) deleted."
             )
         )
 
-    @rolemenu.command(name="toggle", aliases=["enable", "disable"])
+    @rolemenu.command(name="toggle")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     async def rm_toggle(self, ctx: Context, menu_id: int):
@@ -231,10 +285,18 @@ class RoleMenus(Cog, emoji=1268853457855709255):
             return
 
         row = await self.bot.db.fetchrow(
-            "UPDATE role_menus SET enabled = NOT enabled WHERE id=$1 RETURNING enabled",
+            "UPDATE role_menus SET enabled=NOT enabled, updated_at=NOW() "
+            "WHERE id=$1 AND guild_id=$2 RETURNING enabled",
             menu_id,
+            ctx.guild.id,
         )
-        await refresh_menu(self.bot, menu_id)
+        if row is None:
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} Role menu `#{menu_id}` not found."
+                )
+            )
+        await refresh_menu(self.bot, menu_id, ctx.guild.id)
         status = "✅ enabled" if row["enabled"] else "❌ disabled"
         await ctx.send(
             embed=green_embed(
@@ -242,7 +304,7 @@ class RoleMenus(Cog, emoji=1268853457855709255):
             )
         )
 
-    @rolemenu.command(name="show", aliases=["info"])
+    @rolemenu.command(name="show")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     async def rm_show(self, ctx: Context, menu_id: int):
@@ -255,7 +317,7 @@ class RoleMenus(Cog, emoji=1268853457855709255):
         if not menu:
             return
 
-        items = await _fetch_items(self.bot, menu_id)
+        items = await _fetch_items(self.bot, menu_id, ctx.guild.id)
 
         em = await ctx_embed(ctx, title=f"🎭  Role Menu: {menu['name']}")
         em.add_field(
@@ -343,7 +405,10 @@ class RoleMenus(Cog, emoji=1268853457855709255):
 
         count = (
             await self.bot.db.fetchval(
-                "SELECT COUNT(*) FROM role_menu_items WHERE menu_id=$1", menu_id
+                "SELECT COUNT(*) FROM role_menu_items WHERE menu_id=$1 "
+                "AND EXISTS (SELECT 1 FROM role_menus WHERE id=$1 AND guild_id=$2)",
+                menu_id,
+                ctx.guild.id,
             )
             or 0
         )
@@ -364,21 +429,21 @@ class RoleMenus(Cog, emoji=1268853457855709255):
             (label.strip() or None),
             count,
         )
-        if result == "INSERT 0 0":
+        if _rowcount(result) == 0:
             return await ctx.send(
                 embed=orange_embed(
                     description=f"{role.mention} is already in menu `#{menu_id}`."
                 )
             )
 
-        await refresh_menu(self.bot, menu_id)
+        await refresh_menu(self.bot, menu_id, ctx.guild.id)
         await ctx.send(
             embed=green_embed(
                 description=f"{self.bot.yes} Added {role.mention} to `#{menu_id}`."
             )
         )
 
-    @rolemenu.command(name="rmrole", aliases=["delrole"])
+    @rolemenu.command(name="rmrole")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     async def rm_rmrole(self, ctx: Context, menu_id: int, role: discord.Role):
@@ -392,18 +457,20 @@ class RoleMenus(Cog, emoji=1268853457855709255):
             return
 
         result = await self.bot.db.execute(
-            "DELETE FROM role_menu_items WHERE menu_id=$1 AND role_id=$2",
+            "DELETE FROM role_menu_items WHERE menu_id=$1 AND role_id=$2 "
+            "AND EXISTS (SELECT 1 FROM role_menus WHERE id=$1 AND guild_id=$3)",
             menu_id,
             role.id,
+            ctx.guild.id,
         )
-        if result == "DELETE 0":
+        if _rowcount(result) == 0:
             return await ctx.send(
                 embed=red_embed(
                     description=f"{self.bot.no} {role.mention} isn't in `#{menu_id}`."
                 )
             )
 
-        await refresh_menu(self.bot, menu_id)
+        await refresh_menu(self.bot, menu_id, ctx.guild.id)
         await ctx.send(
             embed=green_embed(
                 description=f"{self.bot.yes} Removed {role.mention} from `#{menu_id}`."
@@ -426,20 +493,16 @@ class RoleMenus(Cog, emoji=1268853457855709255):
         if not menu:
             return
 
-        result = await self.bot.db.execute(
-            "UPDATE role_menu_items SET emoji=$1 WHERE menu_id=$2 AND role_id=$3",
-            emoji,
-            menu_id,
-            role.id,
-        )
-        if result == "UPDATE 0":
+        if not await _update_item(
+            self.bot, ctx.guild.id, menu_id, role.id, "emoji", emoji
+        ):
             return await ctx.send(
                 embed=red_embed(
                     description=f"{self.bot.no} {role.mention} isn't in `#{menu_id}`."
                 )
             )
 
-        await refresh_menu(self.bot, menu_id)
+        await refresh_menu(self.bot, menu_id, ctx.guild.id)
         await ctx.send(
             embed=green_embed(
                 description=f"{self.bot.yes} Emoji for {role.mention} set to {emoji}."
@@ -462,20 +525,16 @@ class RoleMenus(Cog, emoji=1268853457855709255):
         if not menu:
             return
 
-        result = await self.bot.db.execute(
-            "UPDATE role_menu_items SET label=$1 WHERE menu_id=$2 AND role_id=$3",
-            label[:80],
-            menu_id,
-            role.id,
-        )
-        if result == "UPDATE 0":
+        if not await _update_item(
+            self.bot, ctx.guild.id, menu_id, role.id, "label", label[:80]
+        ):
             return await ctx.send(
                 embed=red_embed(
                     description=f"{self.bot.no} {role.mention} isn't in `#{menu_id}`."
                 )
             )
 
-        await refresh_menu(self.bot, menu_id)
+        await refresh_menu(self.bot, menu_id, ctx.guild.id)
         await ctx.send(
             embed=green_embed(
                 description=f"{self.bot.yes} Label for {role.mention} set to `{label[:80]}`."
@@ -498,20 +557,16 @@ class RoleMenus(Cog, emoji=1268853457855709255):
         if not menu:
             return
 
-        result = await self.bot.db.execute(
-            "UPDATE role_menu_items SET description=$1 WHERE menu_id=$2 AND role_id=$3",
-            description[:100],
-            menu_id,
-            role.id,
-        )
-        if result == "UPDATE 0":
+        if not await _update_item(
+            self.bot, ctx.guild.id, menu_id, role.id, "description", description[:100]
+        ):
             return await ctx.send(
                 embed=red_embed(
                     description=f"{self.bot.no} {role.mention} isn't in `#{menu_id}`."
                 )
             )
 
-        await refresh_menu(self.bot, menu_id)
+        await refresh_menu(self.bot, menu_id, ctx.guild.id)
         await ctx.send(
             embed=green_embed(
                 description=f"{self.bot.yes} Description set for {role.mention}."
@@ -543,10 +598,13 @@ class RoleMenus(Cog, emoji=1268853457855709255):
         if not menu:
             return
 
-        await self.bot.db.execute(
-            "UPDATE role_menus SET mode=$1 WHERE id=$2", mode, menu_id
-        )
-        await refresh_menu(self.bot, menu_id)
+        if not await _update_menu(self.bot, ctx.guild.id, menu_id, "mode", mode):
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} Role menu `#{menu_id}` not found."
+                )
+            )
+        await refresh_menu(self.bot, menu_id, ctx.guild.id)
         await ctx.send(
             embed=green_embed(
                 description=f"{self.bot.yes} Menu `#{menu_id}` mode set to `{mode}`."
@@ -567,17 +625,22 @@ class RoleMenus(Cog, emoji=1268853457855709255):
         if not menu:
             return
 
-        await self.bot.db.execute(
-            "UPDATE role_menus SET title=$1 WHERE id=$2", title[:256], menu_id
-        )
-        await refresh_menu(self.bot, menu_id)
+        if not await _update_menu(
+            self.bot, ctx.guild.id, menu_id, "title", title[:256]
+        ):
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} Role menu `#{menu_id}` not found."
+                )
+            )
+        await refresh_menu(self.bot, menu_id, ctx.guild.id)
         await ctx.send(
             embed=green_embed(
                 description=f"{self.bot.yes} Title updated for `#{menu_id}`."
             )
         )
 
-    @rolemenu.command(name="description", aliases=["text"])
+    @rolemenu.command(name="description")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @premium(tier=Tier.BASIC)
@@ -591,12 +654,15 @@ class RoleMenus(Cog, emoji=1268853457855709255):
         if not menu:
             return
 
-        await self.bot.db.execute(
-            "UPDATE role_menus SET description=$1 WHERE id=$2",
-            description[:4000],
-            menu_id,
-        )
-        await refresh_menu(self.bot, menu_id)
+        if not await _update_menu(
+            self.bot, ctx.guild.id, menu_id, "description", description[:4000]
+        ):
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} Role menu `#{menu_id}` not found."
+                )
+            )
+        await refresh_menu(self.bot, menu_id, ctx.guild.id)
         await ctx.send(
             embed=green_embed(
                 description=f"{self.bot.yes} Description updated for `#{menu_id}`."
@@ -626,12 +692,15 @@ class RoleMenus(Cog, emoji=1268853457855709255):
         if not menu:
             return
 
-        await self.bot.db.execute(
-            "UPDATE role_menus SET max_selections=$1 WHERE id=$2",
-            (limit or None),
-            menu_id,
-        )
-        await refresh_menu(self.bot, menu_id)
+        if not await _update_menu(
+            self.bot, ctx.guild.id, menu_id, "max_selections", (limit or None)
+        ):
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} Role menu `#{menu_id}` not found."
+                )
+            )
+        await refresh_menu(self.bot, menu_id, ctx.guild.id)
         msg = (
             f"Max selections for `#{menu_id}` set to `{limit}`."
             if limit
@@ -655,11 +724,15 @@ class RoleMenus(Cog, emoji=1268853457855709255):
         if not menu:
             return
 
-        await self.bot.db.execute(
-            "UPDATE role_menus SET required_role_id=$1 WHERE id=$2",
-            role.id if role else None,
-            menu_id,
-        )
+        if not await _update_menu(
+            self.bot, ctx.guild.id, menu_id, "required_role_id", role.id if role else None
+        ):
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} Role menu `#{menu_id}` not found."
+                )
+            )
+        await refresh_menu(self.bot, menu_id, ctx.guild.id)
         if role:
             msg = f"Members now need {role.mention} to use `#{menu_id}`."
         else:
@@ -670,7 +743,7 @@ class RoleMenus(Cog, emoji=1268853457855709255):
     # POST / REFRESH
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    @rolemenu.command(name="post", aliases=["publish"])
+    @rolemenu.command(name="post")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(
@@ -686,7 +759,7 @@ class RoleMenus(Cog, emoji=1268853457855709255):
         if not menu:
             return
 
-        items = await _fetch_items(self.bot, menu_id)
+        items = await _fetch_items(self.bot, menu_id, ctx.guild.id)
         if not items:
             return await ctx.send(
                 embed=red_embed(
@@ -725,7 +798,7 @@ class RoleMenus(Cog, emoji=1268853457855709255):
             )
         )
 
-    @rolemenu.command(name="refresh", aliases=["sync"])
+    @rolemenu.command(name="refresh")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     async def rm_refresh(self, ctx: Context, menu_id: int):
@@ -738,7 +811,7 @@ class RoleMenus(Cog, emoji=1268853457855709255):
         if not menu:
             return
 
-        ok = await refresh_menu(self.bot, menu_id)
+        ok = await refresh_menu(self.bot, menu_id, ctx.guild.id)
         if not ok:
             return await ctx.send(
                 embed=orange_embed(

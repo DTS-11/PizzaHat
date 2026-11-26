@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main, refactor/*]
+  pull_request:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Zync
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          working-directory: Zync
+      - name: Install dependencies
+        run: uv sync --frozen --group dev
+      - name: Compile sources
+        run: uv run python -m compileall -q cogs cogs_hidden core services utils workflows __main__.py
+      - name: Lint
+        run: uv run ruff check .
+      - name: Tests
+        run: uv run pytest -q

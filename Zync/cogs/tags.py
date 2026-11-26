@@ -4,16 +4,19 @@ Provides creation, lookup, editing, deletion, and listing of reusable guild tags
 with per-tier tag limits.
 """
 
+from __future__ import annotations
+
 from typing import Optional
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Tier, Zync
+from core.bot import Zync
+from core.entitlements import Tier
 from core.cog import Cog
-from utils.custom_checks import _tier_cache
-from utils.embed import ctx_embed, green_embed, red_embed
+from utils.config import UPGRADE_URL
+from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
 from utils.ui import Paginator
 
 TAG_LIMITS = {
@@ -21,6 +24,14 @@ TAG_LIMITS = {
     Tier.BASIC: 50,
     Tier.PRO: 250,
 }
+
+
+def _rowcount(status: str) -> int:
+    """Return the affected-row count from an asyncpg command tag."""
+    try:
+        return int(status.rsplit(" ", 1)[-1])
+    except (AttributeError, ValueError):
+        return 0
 
 
 class Tags(Cog, emoji=1268850578415681546):
@@ -136,7 +147,11 @@ class Tags(Cog, emoji=1268850578415681546):
         if ctx.invoked_subcommand is not None:
             return
         if tag_name is None:
-            await ctx.send_help(ctx.command)
+            await ctx.send(
+                embed=orange_embed(
+                    description="Provide a tag name, or use `/help tag` to see all tag commands."
+                )
+            )
         else:
             await self._fetch_tag_content(ctx, tag_name)
 
@@ -158,25 +173,27 @@ class Tags(Cog, emoji=1268850578415681546):
                     )
                 )
 
-            cached_tier = _tier_cache.get(ctx.guild.id)
-            if cached_tier is None:
-                tier_row = await self.bot.db.fetchrow(
-                    "SELECT tier FROM premium WHERE guild_id=$1", ctx.guild.id
-                )
-                cached_tier = Tier(tier_row["tier"]) if tier_row else Tier.FREE
-                _tier_cache[ctx.guild.id] = cached_tier
+            service = getattr(self.bot, "entitlements", None)
+            tier = (
+                await service.tier_for(ctx.guild.id)
+                if service is not None
+                else Tier.FREE
+            )
 
-            limit = TAG_LIMITS[cached_tier]
+            limit = TAG_LIMITS[tier]
             current_tags = await self.bot.db.fetchval(
                 "SELECT COUNT(*) FROM tags WHERE guild_id=$1", ctx.guild.id
             )
 
             if current_tags >= limit:
-                tier_name = cached_tier.name.title()
+                tier_name = tier.name.title()
                 return await ctx.send(
                     embed=red_embed(
-                        f"{self.bot.no} Tag limit reached! ({limit} tags).",
-                        f"Your current tier is **{tier_name}**. Upgrade to unlock more tags.",
+                        description=(
+                            f"{self.bot.no} Tag limit reached! ({limit} tags).\n"
+                            f"Your current tier is **{tier_name}**. "
+                            f"[Upgrade]({UPGRADE_URL}) to unlock more tags."
+                        )
                     )
                 )
 
@@ -205,7 +222,7 @@ class Tags(Cog, emoji=1268850578415681546):
                     embed=red_embed(f"{self.bot.no} Tag with this name already exists!")
                 )
 
-    @tag.command(name="delete", aliases=["remove", "del"])
+    @tag.command(name="delete")
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
@@ -219,7 +236,7 @@ class Tags(Cog, emoji=1268850578415681546):
                 tag,
             )
 
-            if deleted.endswith("0"):
+            if _rowcount(deleted) == 0:
                 await ctx.send(
                     embed=red_embed(
                         f"{self.bot.no} Tag with name `{tag}` does not exist."
@@ -228,7 +245,7 @@ class Tags(Cog, emoji=1268850578415681546):
             else:
                 await ctx.send(embed=green_embed(f"{self.bot.yes} Tag deleted!"))
 
-    @tag.command(name="list", aliases=["all"])
+    @tag.command(name="list")
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def tag_list(self, ctx: Context):
@@ -250,7 +267,7 @@ class Tags(Cog, emoji=1268850578415681546):
                             description="",
                         )
                         for i in chunk:
-                            em.description += f"<:arrow:1267380018116563016> {i[0]}\n"  # type: ignore
+                            em.description += f"➤ {i[0]}\n"  # type: ignore
                         embeds.append(em)
 
                     paginator = Paginator(ctx, embeds)
@@ -262,11 +279,13 @@ class Tags(Cog, emoji=1268850578415681546):
                         description="",
                     )
                     for i in data:
-                        em.description += f"<:arrow:1267380018116563016> {i[0]}\n"  # type: ignore
+                        em.description += f"➤ {i[0]}\n"  # type: ignore
                     await ctx.send(embed=em)
 
             else:
-                await ctx.send("No tags found.")
+                await ctx.send(
+                    embed=orange_embed(description="No tags found for this server.")
+                )
 
     @tag.command(name="info")
     @commands.guild_only()
@@ -275,7 +294,11 @@ class Tags(Cog, emoji=1268850578415681546):
         """Get info on a particular tag."""
 
         if tag is None:
-            await ctx.send_help(ctx.command)
+            await ctx.send(
+                embed=orange_embed(
+                    description="Provide a tag name, or use `/help tag info` for details."
+                )
+            )
             return
 
         await self._fetch_tag_content(ctx, tag, full_info=True)
@@ -295,7 +318,7 @@ class Tags(Cog, emoji=1268850578415681546):
                 tag,
             )
 
-            if updated.endswith("0"):
+            if _rowcount(updated) == 0:
                 await ctx.send(
                     embed=red_embed(
                         f"{self.bot.no} Tag with name `{tag}` does not exist."

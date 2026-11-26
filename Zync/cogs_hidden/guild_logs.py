@@ -7,10 +7,9 @@ member changes to configured log channels.
 import asyncio
 import datetime
 from collections import defaultdict
-from typing import List, Union
+from typing import List, Sequence, Union
 
 import discord
-from async_lru import alru_cache
 from discord.utils import escape_markdown
 from humanfriendly import format_timespan
 
@@ -27,43 +26,60 @@ class GuildLogs(Cog):
         self.bot: Zync = bot
         self.recent_kicks = defaultdict(set)
         self.lock = asyncio.Lock()
+        self._config_cache: dict[int, tuple[discord.TextChannel | None, frozenset[str]]] = {}
 
     def clear_config_cache(self, guild_id: int | None = None) -> None:
-        self.get_logs_channel.cache_clear()
-        self.check_log_enabled.cache_clear()
+        """Invalidate the cached guild log configuration.
 
-    @alru_cache()
-    async def get_logs_channel(self, guild_id: int) -> Union[discord.TextChannel, None]:
-        if self.bot.db is not None:
-            data = await self.bot.db.fetchval(
-                "SELECT channel_id FROM guild_logs WHERE guild_id=$1", guild_id
-            )
-            guild = self.bot.get_guild(guild_id)
-
-            if not guild or not data:
-                return
-
-            channel = guild.get_channel(data) or await guild.fetch_channel(data)
-            assert isinstance(channel, discord.TextChannel), (
-                "channel will always be a textchannel"
-            )
-            return channel
-
-    @alru_cache()
-    async def check_log_enabled(self, guild_id: int, module_type: str) -> bool:
-        if self.bot.db is not None:
-            modules = await self.bot.db.fetchval(
-                "SELECT module FROM logs_config WHERE guild_id=$1", guild_id
-            )
-
-            if modules:
-                if "all" in modules:
-                    return True
-                elif module_type.lower() in modules:
-                    return True
-            return False
+        Other cogs call this after changing logging settings and on guild
+        removal, so this is the single cache invalidation entrypoint.
+        """
+        if guild_id is None:
+            self._config_cache.clear()
         else:
-            return False
+            self._config_cache.pop(guild_id, None)
+
+    async def _guild_log_config(
+        self, guild_id: int
+    ) -> tuple[discord.TextChannel | None, frozenset[str]]:
+        """Return the configured log channel and enabled module names."""
+        cached = self._config_cache.get(guild_id)
+        if cached is not None:
+            return cached
+
+        result: tuple[discord.TextChannel | None, frozenset[str]] = (None, frozenset())
+        if self.bot.db is not None:
+            row = await self.bot.db.fetchrow(
+                "SELECT log_channel_id, log_modules FROM guild_config WHERE guild_id=$1",
+                guild_id,
+            )
+            if row and row["log_channel_id"] is not None:
+                guild = self.bot.get_guild(guild_id)
+                channel = guild.get_channel(row["log_channel_id"]) if guild else None
+                if channel is None and guild is not None:
+                    try:
+                        channel = await guild.fetch_channel(row["log_channel_id"])
+                    except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                        channel = None
+                if not isinstance(channel, discord.TextChannel):
+                    channel = None
+                modules = frozenset(
+                    str(name).lower() for name in (row["log_modules"] or ())
+                )
+                result = (channel, modules)
+
+        self._config_cache[guild_id] = result
+        return result
+
+    async def get_logs_channel(self, guild_id: int) -> Union[discord.TextChannel, None]:
+        """Return the configured log channel, if it is still reachable."""
+        channel, _ = await self._guild_log_config(guild_id)
+        return channel
+
+    async def check_log_enabled(self, guild_id: int, module_type: str) -> bool:
+        """Return whether ``module_type`` or ``all`` logging is enabled."""
+        _, modules = await self._guild_log_config(guild_id)
+        return "all" in modules or module_type.lower() in modules
 
     # ====== MESSAGE LOGS ======
 
@@ -728,124 +744,118 @@ class GuildLogs(Cog):
 
     @Cog.listener()
     async def on_guild_emojis_update(
-        self, guild: discord.Guild, before: discord.Emoji, after: discord.Emoji
+        self,
+        guild: discord.Guild,
+        before: Sequence[discord.Emoji],
+        after: Sequence[discord.Emoji],
     ):
         channel = await self.get_logs_channel(guild.id)
-        should_log_all = await self.check_log_enabled(guild.id, "all")
-        should_log_guild = await self.check_log_enabled(guild.id, "guild")
-
-        if not channel:
+        if not channel or not (
+            await self.check_log_enabled(guild.id, "all")
+            or await self.check_log_enabled(guild.id, "guild")
+        ):
             return
 
-        if should_log_all or should_log_guild:
-            em = orange_embed(
-                title="Emoji Updated",
-                timestamp=True,
+        before_by_id = {emoji.id: emoji for emoji in before}
+        after_by_id = {emoji.id: emoji for emoji in after}
+        for emoji_id in sorted(set(before_by_id) | set(after_by_id)):
+            old = before_by_id.get(emoji_id)
+            new = after_by_id.get(emoji_id)
+            emoji = new or old
+            if emoji is None:
+                continue
+
+            if old is None:
+                title = "Emoji Created"
+            elif new is None:
+                title = "Emoji Deleted"
+            else:
+                title = "Emoji Updated"
+
+            em = orange_embed(title=title, timestamp=True)
+            em.description = (
+                f"> **Emoji:** {emoji}\n"
+                f"> **Emoji ID:** {emoji.id}\n"
+                f"> **Guild ID:** {guild.id}\n"
+                f"> **Created by:** {emoji.user or 'Unknown'}\n"
+                f"> **Created at:** {format_date(emoji.created_at)}\n"
+                f"> **URL:** [Click here]({emoji.url})"
             )
-            em.description = f"""
-        > **Emoji ID:** {before.id}
-        > **Guild ID:** {guild.id}
-        > **Created by:** {before.user}
-        > **Created at:** {format_date(before.created_at)}
-        > **URL:** [Click here]({before.url})
-            """
-
-            if before.name != after.name:
-                em.add_field(
-                    name="Name", value=f"{before.name} ➜ {after.name}", inline=False
+            if old is not None and new is not None:
+                changes = (
+                    ("Name", "name"),
+                    ("Animated", "animated"),
+                    ("Available", "available"),
+                    ("Managed", "managed"),
+                    ("Colons Required", "require_colons"),
                 )
-
-            if before.animated != after.animated:
-                em.add_field(
-                    name="Animated",
-                    value=f"{before.animated} ➜ {after.animated}",
-                    inline=False,
-                )
-
-            if before.available != after.available:
-                em.add_field(
-                    name="Available",
-                    value=f"{before.available} ➜ {after.available}",
-                    inline=False,
-                )
-
-            if before.is_usable() != after.is_usable():
-                em.add_field(
-                    name="Usable",
-                    value=f"{before.is_usable()} ➜ {after.is_usable()}",
-                    inline=False,
-                )
-
-            if before.managed != after.managed:
-                em.add_field(
-                    name="Managed",
-                    value=f"{before.managed} ➜ {after.managed}",
-                    inline=False,
-                )
-
-            if before.require_colons != after.require_colons:
-                em.add_field(
-                    name="Colons Required",
-                    value=f"{before.require_colons} ➜ {after.require_colons}",
-                    inline=False,
-                )
-
+                for label, attribute in changes:
+                    old_value = getattr(old, attribute, None)
+                    new_value = getattr(new, attribute, None)
+                    if old_value != new_value:
+                        em.add_field(
+                            name=label,
+                            value=f"{old_value} ➜ {new_value}",
+                            inline=False,
+                        )
             await self.bot.send_log(channel, embed=em)
 
     @Cog.listener()
     async def on_guild_stickers_update(
         self,
         guild: discord.Guild,
-        before: discord.GuildSticker,
-        after: discord.GuildSticker,
+        before: Sequence[discord.GuildSticker],
+        after: Sequence[discord.GuildSticker],
     ):
         channel = await self.get_logs_channel(guild.id)
-        should_log_all = await self.check_log_enabled(guild.id, "all")
-        should_log_guild = await self.check_log_enabled(guild.id, "guild")
-
-        if not channel:
+        if not channel or not (
+            await self.check_log_enabled(guild.id, "all")
+            or await self.check_log_enabled(guild.id, "guild")
+        ):
             return
 
-        if should_log_all or should_log_guild:
-            em = orange_embed(
-                title="Sticker Updated",
-                timestamp=True,
+        before_by_id = {sticker.id: sticker for sticker in before}
+        after_by_id = {sticker.id: sticker for sticker in after}
+        for sticker_id in sorted(set(before_by_id) | set(after_by_id)):
+            old = before_by_id.get(sticker_id)
+            new = after_by_id.get(sticker_id)
+            sticker = new or old
+            if sticker is None:
+                continue
+
+            if old is None:
+                title = "Sticker Created"
+            elif new is None:
+                title = "Sticker Deleted"
+            else:
+                title = "Sticker Updated"
+
+            em = orange_embed(title=title, timestamp=True)
+            em.description = (
+                f"> **Sticker:** {sticker.name}\n"
+                f"> **Sticker ID:** {sticker.id}\n"
+                f"> **Guild ID:** {guild.id}\n"
+                f"> **Format:** {sticker.format}\n"
+                f"> **Created by:** {sticker.user or 'Unknown'}\n"
+                f"> **Created at:** {format_date(sticker.created_at)}\n"
+                f"> **URL:** [Click here]({sticker.url})"
             )
-            em.description = f"""
-        > **Sticker ID:** {before.id}
-        > **Guild ID:** {guild.id}
-        > **Format:** {after.format}
-        > **Created by:** {before.user}
-        > **Created at:** {format_date(before.created_at)}
-        > **URL:** [Click here]({before.url})
-            """
-
-            if before.name != after.name:
-                em.add_field(
-                    name="Name", value=f"{before.name} ➜ {after.name}", inline=False
+            if old is not None and new is not None:
+                changes = (
+                    ("Name", "name"),
+                    ("Description", "description"),
+                    ("Available", "available"),
+                    ("Emoji", "emoji"),
                 )
-
-            if before.description != after.description:
-                em.add_field(
-                    name="Description",
-                    value=f"{before.description} ➜ {after.description}",
-                    inline=False,
-                )
-
-            if before.available != after.available:
-                em.add_field(
-                    name="Available",
-                    value=f"{before.available} ➜ {after.available}",
-                    inline=False,
-                )
-
-            if before.emoji != after.emoji:
-                em.add_field(
-                    name="Emoji",
-                    value=f"{before.emoji} ➜ {after.emoji}",
-                    inline=False,
-                )
-
+                for label, attribute in changes:
+                    old_value = getattr(old, attribute, None)
+                    new_value = getattr(new, attribute, None)
+                    if old_value != new_value:
+                        em.add_field(
+                            name=label,
+                            value=f"{old_value} ➜ {new_value}",
+                            inline=False,
+                        )
             await self.bot.send_log(channel, embed=em)
 
     # ====== GUILD CHANNEL UPDATES  ======

@@ -45,11 +45,11 @@ opening a pull request.
   raw guild message content unless the change explicitly addresses that limitation.
 - Workflow payloads must pass through `utils/workflow_schema.py`. Do not bypass validation or tier
   limits in the runner or command layer.
-- Database changes are additive by default:
-  - update bootstrap SQL in `core/database.py`
-  - add a numbered file under `migrations/`
+- Database schema is defined only in `core/database.py`:
+  - keep bootstrap SQL additive and idempotent
+  - do not add numbered migration files
   - never drop tables in bootstrap
-  - destructive migrations require explicit review and a backup warning
+  - rebuild stale local databases manually if needed
 
 ## Checks
 

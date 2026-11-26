@@ -1,16 +1,13 @@
 """Bot process entry point.
 
-Creates :class:`core.bot.Zync` and runs it with the test token from
-``utils.config``.
+Creates :class:`core.bot.Zync`, configures logging, and runs the bot with the
+configured Discord token.
 """
 
-import logging
-
 from core.bot import Zync
+from core.logging import configure_logging
 from utils.config import TOKEN
 
-logger = logging.getLogger("bot")
-
 if __name__ == "__main__":
-    bot = Zync()
-    bot.run(TOKEN, root_logger=True)  # type: ignore
+    configure_logging()
+    Zync().run(TOKEN)  # type: ignore[call-arg]

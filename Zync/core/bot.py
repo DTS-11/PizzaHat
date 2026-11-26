@@ -1,24 +1,29 @@
 """Bot bootstrap and shared application state.
 
 Defines :class:`Zync`, its intents/session setup, extension lists, database
-lifecycle, command error handling, and the ``Tier`` enum used by premium checks.
+lifecycle, and command error handling. Structural concerns such as logging and
+entitlements live in dedicated modules.
 """
 
+from __future__ import annotations
+
 import datetime
-import sys
-import traceback
-from enum import IntEnum
-from logging.config import dictConfig
+import os
 
 import aiohttp
 import discord
 from discord.ext import commands
 from discord.ext.commands import CommandError, Context
-from discord.ext.commands.errors import ExtensionAlreadyLoaded
 
-from core.database import bootstrap_database, create_db_pool
+from core.database import create_db_pool, run_migrations
+from core.entitlements import EntitlementService, Tier
+from core.logging import get_logger
 from utils.config import REPO_LINK
-from utils.embed import golden_embed
+from utils.embed import golden_embed, orange_embed
+
+logger = get_logger("bot")
+
+__all__ = ["Zync", "Tier", "INITIAL_EXTENSIONS", "SUB_EXTENSIONS"]
 
 INITIAL_EXTENSIONS = [
     "cogs.dev",
@@ -26,12 +31,32 @@ INITIAL_EXTENSIONS = [
     "cogs.mod",
     "cogs.role_menus",
     "cogs.safety",
-    "cogs.system",
+    "cogs.help",
     "cogs.tags",
     "cogs.templates",
     "cogs.tickets",
     "cogs.workflows",
 ]
+
+# Discord's slash menu gets unwieldy with one entry per command, so flat
+# commands are nested under a handful of topical groups at startup.
+_SLASH_GROUPS: dict[str, str] = {
+    "info": "General bot information and utilities",
+    "tickets": "Ticket management",
+}
+_COG_GROUPS: dict[str, str] = {
+    "help": "info",
+    "tickets": "tickets",
+}
+# Moderation is a real ``/mod`` hybrid group in cogs/mod.py; only flat commands
+# from other cogs need to be gathered here. Existing groups stay top-level.
+_KEEP_TOP_LEVEL = frozenset({"help", "status", "premium"})
+
+# Owner-only dev commands must never be registered as application commands.
+# They are invoked with the mention prefix only (e.g. ``@Zync eval ...``).
+_DEV_COMMAND_NAMES = frozenset(
+    {"eval", "sql", "botlogs", "reloadall", "update_badwords"}
+)
 
 SUB_EXTENSIONS = [
     "cogs_hidden.events",
@@ -41,69 +66,21 @@ SUB_EXTENSIONS = [
     "cogs_hidden.workflow_runner",
 ]
 
-LOGGING_CONFIG = {
-    "version": 1,
-    "disabled_existing_loggers": False,
-    "formatters": {
-        "verbose": {
-            "format": "%(levelname)-10s - %(asctime)s - %(module)-15s : %(message)s",
-        },
-        "standard": {
-            "format": "%(levelname)-10s - %(name)-15s : %(message)s",
-        },
-    },
-    "handlers": {
-        "console": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
-            "formatter": "standard",
-        },
-        "console2": {
-            "level": "WARNING",
-            "class": "logging.StreamHandler",
-            "formatter": "standard",
-        },
-        "file": {
-            "level": "INFO",
-            "class": "logging.FileHandler",
-            "formatter": "verbose",
-            "filename": "bot.log",
-            "mode": "w",
-        },
-    },
-    "loggers": {
-        "bot": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "discord": {
-            "handlers": ["console2", "file"],
-            "level": "INFO",
-            "propagate": False,
-        },
-    },
-}
-
-dictConfig(LOGGING_CONFIG)
-
-
-class Tier(IntEnum):
-    FREE = 0
-    BASIC = 1
-    PRO = 2
-
-
 description = f"""
-I'm Zync —— Your Ultimate Discord Companion, made by <@710247495334232164>.
-Build deterministic Trigger → Condition → Action workflows, automate moderation and onboarding, and manage your staff tools from one place.
+Zync is a deterministic Discord operations engine: Trigger → Condition → Action.
+Automate staff operations, moderation, protection and server events from one place.
 
-I'm also open source. You can see my code on [GitHub]({REPO_LINK})
+Source: [GitHub]({REPO_LINK})
 """
 
 
 class Zync(commands.Bot):
     def __init__(self):
+        # Voice connections/playback are unused; only voice-state events are read
+        # for logging, which needs neither PyNaCl nor davey.
+        discord.VoiceClient.warn_nacl = False
+        discord.VoiceClient.warn_dave = False
+
         allowed_mentions = discord.AllowedMentions(
             roles=False, everyone=False, users=True, replied_user=True
         )
@@ -127,7 +104,7 @@ class Zync(commands.Bot):
             allowed_mentions=allowed_mentions,
             case_insensitive=True,
             status=discord.Status.online,
-            activity=discord.CustomActivity(name="🔗 pizzahat.vercel.app"),
+            activity=discord.CustomActivity(name="Zync • deterministic operations"),
         )
 
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
@@ -136,60 +113,156 @@ class Zync(commands.Bot):
         self.color = 0x456DD4
         self.logging_webhooks: dict[int, discord.Webhook] = {}
 
+    def compact_slash_commands(self) -> None:
+        """Nest flat slash commands under groups to keep Discord's picker usable."""
+
+        for name in _DEV_COMMAND_NAMES:
+            if self.tree.get_command(name) is not None:
+                self.tree.remove_command(name)
+
+        def group_named(
+            name: str,
+            description: str,
+            parent: discord.app_commands.Group | None = None,
+        ) -> discord.app_commands.Group:
+            existing = (
+                parent.get_command(name)
+                if parent is not None
+                else self.tree.get_command(name)
+            )
+            if isinstance(existing, discord.app_commands.Group):
+                return existing
+            group = discord.app_commands.Group(name=name, description=description)
+            if parent is None:
+                self.tree.add_command(group)
+            else:
+                parent.add_command(group)
+            return group
+
+        groups = {
+            name: group_named(name, description)
+            for name, description in _SLASH_GROUPS.items()
+        }
+
+        for command in list(
+            self.tree.get_commands(type=discord.AppCommandType.chat_input)
+        ):
+            if command.name in _KEEP_TOP_LEVEL or isinstance(
+                command, discord.app_commands.Group
+            ):
+                continue
+            owner = getattr(command, "binding", None) or getattr(command, "cog", None)
+            cog_name = getattr(owner, "qualified_name", "").casefold()
+            destination = groups.get(_COG_GROUPS.get(cog_name, ""))
+            if destination is None:
+                continue
+            self.tree.remove_command(command.name)
+            existing = destination.get_command(command.name)
+            if existing is not None:
+                destination.remove_command(command.name)
+            destination.add_command(command)
+
+    async def sync_commands(self) -> bool:
+        """Sync the tree, scoped to DEV_GUILD_ID when set to avoid dev global syncs."""
+        if os.getenv("SYNC_COMMANDS", "1") == "0":
+            logger.info("Command sync skipped (SYNC_COMMANDS=0).")
+            return True
+
+        raw_guild_id = os.getenv("DEV_GUILD_ID")
+        guild = (
+            discord.Object(id=int(raw_guild_id))
+            if raw_guild_id and raw_guild_id.isdigit()
+            else None
+        )
+        try:
+            if guild is None:
+                await self.tree.sync()
+            else:
+                await self.tree.sync(guild=guild)
+        except discord.DiscordException as exc:
+            logger.warning("Slash command sync failed: %s", exc)
+            return False
+        return True
+
+    async def on_tree_error(
+        self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError
+    ) -> None:
+        """Give clear, ephemeral feedback for failed application commands."""
+        if isinstance(error, discord.app_commands.NoPrivateMessage):
+            message = "This command can only be used in a server."
+        elif isinstance(error, discord.app_commands.MissingPermissions):
+            missing = ", ".join(p.replace("_", " ") for p in error.missing_permissions)
+            message = f"You need **{missing}** permission to use this command."
+        elif isinstance(error, discord.app_commands.BotMissingPermissions):
+            missing = ", ".join(p.replace("_", " ") for p in error.missing_permissions)
+            message = f"I'm missing the **{missing}** permission to do that."
+        elif isinstance(error, discord.app_commands.CommandOnCooldown):
+            message = f"That command is on cooldown. Try again in `{error.retry_after:.0f}s`."
+        elif isinstance(error, discord.app_commands.CommandInvokeError):
+            logger.error(
+                "Application command /%s failed",
+                interaction.command.name if interaction.command else "unknown",
+                exc_info=(
+                    type(error.original),
+                    error.original,
+                    error.original.__traceback__,
+                ),
+            )
+            message = "Something went wrong while running that command."
+        elif isinstance(error, commands.CheckFailure):
+            message = str(error) or "You cannot use this command here."
+        else:
+            message = str(error) or "That command could not be completed."
+
+        embed = orange_embed(description=message)
+        try:
+            if interaction.response.is_done():
+                await interaction.followup.send(embed=embed, ephemeral=True)
+            else:
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+        except discord.HTTPException:
+            pass
+
     async def setup_hook(self) -> None:
         if not hasattr(self, "uptime"):
             self.uptime = datetime.datetime.now(datetime.timezone.utc)
 
-        # Create DB connection
         self.db = await create_db_pool()
-        await bootstrap_database(self.db)
+        await run_migrations(self.db)
+        self.entitlements = EntitlementService(self.db)
 
-        # Create aiohttp session
         self.session = aiohttp.ClientSession()
 
-        # Persistent ticket/role-menu views are registered by cogs_hidden.interactions.
+        extensions = list(INITIAL_EXTENSIONS) + list(SUB_EXTENSIONS)
+        if os.getenv("ENABLE_JISHAKU", "0") == "1":
+            extensions.append("jishaku")
 
-        # Loading cogs...
         success = fail = 0
-        total = len(INITIAL_EXTENSIONS + SUB_EXTENSIONS)
-
-        for ext in INITIAL_EXTENSIONS:
+        for ext in extensions:
             try:
                 await self.load_extension(ext)
                 success += 1
-
-            except Exception as e:
-                print(f"Failed to load extension {ext}")
-                print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
+            except Exception as exc:
+                logger.exception("Failed to load extension %s: %s", ext, exc)
                 fail += 1
 
-        for sub_ext in SUB_EXTENSIONS:
-            try:
-                await self.load_extension(sub_ext)
-                success += 1
+        self.compact_slash_commands()
+        await self.sync_commands()
 
-            except Exception as e:
-                print(f"Failed to load extension: {sub_ext}")
-                print("".join(traceback.format_exception(e, e, e.__traceback__)))  # type: ignore
-                fail += 1
-
-        try:
-            await self.load_extension("jishaku")
-            print("Jishaku has been loaded.")
-
-        except ExtensionAlreadyLoaded:
-            pass
-
-        print(
-            f"Loaded all cogs.\nSuccess: {success}, Fail: {fail}\nDone! ({success + fail}/{total})"
+        logger.info(
+            "Extensions loaded: %s/%s (failed: %s)", success, len(extensions), fail
         )
-        print()
-        print(f"Logged in as {self.user}")
-        print("=========================")
+        if fail:
+            logger.warning("Startup completed with %s failed extension(s)", fail)
 
     async def close(self) -> None:
-        if hasattr(self, "session") and not self.session.closed:
+        """Close all owned resources in reverse creation order."""
+
+        self.logging_webhooks.clear()
+        if getattr(self, "session", None) is not None and not self.session.closed:
             await self.session.close()
+        if getattr(self, "db", None) is not None:
+            await self.db.close()
         await super().close()
 
     async def get_logging_webhook(
@@ -319,12 +392,15 @@ class Zync(commands.Bot):
         elif isinstance(error, commands.CommandInvokeError):
             original = error.original
             if not isinstance(original, discord.HTTPException):
-                if ctx.command is not None:
-                    print(f"In {ctx.command.qualified_name}:", file=sys.stderr)
-                    traceback.print_tb(original.__traceback__)
-                    print(f"{original.__class__.__name__}: {original}", file=sys.stderr)
-                    print()
-                    print()
+                logger.error(
+                    "Prefix command %s failed",
+                    ctx.command.qualified_name if ctx.command else "unknown",
+                    exc_info=(
+                        type(original),
+                        original,
+                        original.__traceback__,
+                    ),
+                )
 
         elif isinstance(error, commands.MissingRequiredArgument):
             if ctx.command is not None:
