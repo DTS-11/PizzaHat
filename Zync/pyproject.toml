@@ -1,0 +1,35 @@
+[project]
+name = "zync"
+version = "0.1.0"
+description = "Your Ultimate Discord Companion"
+readme = "../README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "aiohttp",
+    "async-lru",
+    "asyncpg",
+    "chat-exporter",
+    "colorthief",
+    "discord-py",
+    "emoji",
+    "emojis",
+    "humanfriendly",
+    "jishaku",
+    "pillow",
+    "python-dotenv",
+    "requests",
+]
+
+[dependency-groups]
+dev = ["ruff>=0.14"]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+typeCheckingMode = "standard"
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py310"

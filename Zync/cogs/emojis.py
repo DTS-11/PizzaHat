@@ -187,6 +187,10 @@ class Emojis(Cog, emoji=1268867324195246133):
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_emojis=True)
     @commands.bot_has_permissions(manage_emojis=True)
+    @discord.app_commands.describe(
+        source="A custom emoji or a direct PNG/JPEG/GIF image URL",
+        name="New emoji name (2-32 letters, numbers, or underscores)",
+    )
     async def emoji_create(self, ctx: Context, source: str, name: str):
         """Create a guild emoji from a custom emoji or image URL."""
         if not ctx.guild:
@@ -266,6 +270,7 @@ class Emojis(Cog, emoji=1268867324195246133):
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_emojis=True)
     @commands.bot_has_permissions(manage_emojis=True)
+    @discord.app_commands.describe(emoji="Emoji name, ID, or custom emoji string")
     async def emoji_delete(self, ctx: Context, emoji: str):
         """Delete a guild emoji by name, ID, or custom emoji string."""
         target = await _resolve_guild_emoji(ctx, emoji)
@@ -287,6 +292,7 @@ class Emojis(Cog, emoji=1268867324195246133):
 
     @_emoji.command(name="info")
     @commands.cooldown(1, 3, commands.BucketType.user)
+    @discord.app_commands.describe(emoji="Emoji name, ID, or custom emoji string")
     async def emoji_info(self, ctx: Context, emoji: str):
         """Show details about a guild emoji."""
         target = await _resolve_guild_emoji(ctx, emoji)
@@ -347,8 +353,11 @@ class Emojis(Cog, emoji=1268867324195246133):
         """Show a paginated list of guild emojis."""
         await self._send_emoji_list(ctx)
 
-    @commands.hybrid_command(name="emojify")
+    @commands.hybrid_command(
+        name="emojify", help="Return the image URL for a custom emoji."
+    )
     @commands.cooldown(1, 3, commands.BucketType.user)
+    @discord.app_commands.describe(emoji="Custom emoji or emoji ID to resolve")
     async def emojify(self, ctx: Context, emoji: str):
         """Return the image URL for a custom emoji."""
         target = await _resolve_guild_emoji(ctx, emoji)
@@ -362,8 +371,14 @@ class Emojis(Cog, emoji=1268867324195246133):
             )
         return await ctx.send(parsed[0])
 
-    @commands.hybrid_command(name="emojifyav")
+    @commands.hybrid_command(
+        name="emojifyav", help="Emojify a member avatar or image URL."
+    )
     @commands.cooldown(1, 3, commands.BucketType.user)
+    @discord.app_commands.describe(
+        target="Member, mention, member ID, or HTTP(S) image URL",
+        size=f"Grid size from 1 to {_MAX_EMOJIFY_SIZE} (default 14)",
+    )
     async def emojifyav(self, ctx: Context, target: str, size: int = 14):
         """Emojify a member avatar or image URL. Works best on simple images."""
         if not 1 <= size <= _MAX_EMOJIFY_SIZE:

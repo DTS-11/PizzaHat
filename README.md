@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/discord.py-2.7.1-blue?style=flat" alt="discord.py 2.7.1">
   <img src="https://img.shields.io/badge/Python-3.10%2B-green?style=flat&logo=python" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/uv-managed-purple?style=flat" alt="uv managed">
-  <img src="https://github.com/DTS-11/PizzaHat/actions/workflows/codeql-analysis.yml/badge.svg" alt="CodeQL">
+  <img src="https://github.com/DTS-11/Zync/actions/workflows/codeql-analysis.yml/badge.svg" alt="CodeQL">
 </p>
 
 ## Info
@@ -72,8 +72,9 @@ before opening a pull request.
 
 ### Moderation and staff tools
 
-- Moderation: bans, kicks, mutes, timeouts, warnings, prune, nick management, slowmode, lock/unlock,
-  hide/expose, role and channel management
+- All staff tools live under one `/mod` group — `/mod ban`, `/mod kick`, `/mod timeout`, `/mod warn`, `/mod clear`, `/mod role`, `/mod channel`, `/mod logs`, and more
+- Variants are parameters, not duplicate commands: `/mod ban targets:@a @b soft:true`, `/mod kick targets:...`, `/mod timeout duration:1h` (omit `duration` to remove), `/mod clear bot_only:true`
+- Right-click Ban/Kick/Warn/Timeout user menus ask for a reason (and a validated duration for Timeout), then reuse the same command bodies as their slash equivalents
 - Server insights with workflow analytics
 - Configurable guild logging in `cogs_hidden/guild_logs.py`
 - Anti-alt and automod command surfaces merged into `/antialt` and `/automod`
@@ -86,22 +87,20 @@ before opening a pull request.
 - Tags with create, edit, delete, list, info, and lookup
 - Embed templates with preview and template linking for role menus and ticket panels
 - Emoji management with `/emoji create`, `delete`, `info`, and `list`
-- Image-to-emoji helpers with `/emojify` and `/emojifyav`
+- Image helpers are standalone `/emojify` and `/emojifyav`
 
-### System commands
+### Information and command discovery
 
-The system cog exposes only:
+Top-level commands are kept deliberately short:
 
-- `/help` with a cog/category selector and button navigation
-- `/status`
-- `/timezone`
-- `/premium`
-- `/credits`
-- `/invite`
-- `/support`
-- `/vote`
+- `/help` — categorized, paginated browser with command selects, usage examples, and Back/Home buttons
+- `/status`, `/premium`
+- `/mod`, `/antialt`, `/automod`, `/emoji`, `/rolemenu`, `/tag`, `/template`, `/tickets`, `/workflow`
+- `/emojify`, `/emojifyav`
 
-All other user-facing commands are hybrid commands, registered as slash commands.
+General bot utilities (timezone, credits, invite, support, vote) live together under `/info`. `/help` builds its categories from the live command tree, so it never shows stale paths. Owner-only developer commands stay prefix-only via mention (`@Zync eval`, `@Zync reloadall`) and never enter the public slash menu.
+
+During development, set `DEV_GUILD_ID` in `.env` to scope command syncs to one test server, or `SYNC_COMMANDS=0` to skip syncing entirely. See `Zync/.env.example`.
 
 ## Project layout
 
@@ -111,7 +110,6 @@ Zync/                     uv project root
   cogs_hidden/            listeners, runners, and persistent view registration
   core/                   bot bootstrap, database bootstrap, shared cog base
   utils/                  reusable UI components, embeds, validation, config, checks
-  migrations/             manual PostgreSQL migrations
   pyproject.toml          uv project metadata and dependency groups
   uv.lock                 locked dependency set
   .env.example            local environment template
@@ -140,7 +138,7 @@ deployment or self-hosting guide.
 From the repository root:
 
 ```bash
-git clone https://github.com/DTS-11/PizzaHat.git
+git clone https://github.com/DTS-11/Zync.git
 cd Zync/Zync
 uv sync
 ```
@@ -200,11 +198,11 @@ uv run ruff format .
    - reusable components belong in `utils/`
 4. New commands must be slash-accessible. Do not reintroduce a custom prefix.
 5. Workflow changes must go through `utils/workflow_schema.py`; do not bypass validation.
-6. Database changes must be additive by default. Update both `core/database.py` bootstrap SQL and a
-   numbered migration under `migrations/`.
-7. Do not drop tables in bootstrap. Destructive changes require an explicit migration and review.
+6. The database schema lives only in `core/database.py`. Keep the bootstrap SQL additive and
+   idempotent; do not add migration files.
+7. Do not drop tables in bootstrap. Rebuild stale local databases manually if needed.
 8. Run the checks above before opening a pull request.
-9. Commit, push, and open a PR describing the behavior changed and any manual migration required.
+9. Commit, push, and open a PR describing the behavior changed.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the short checklist.
 
@@ -213,4 +211,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the short checklist.
 - [Website](https://pizzahat.vercel.app)
 - [Invite bot](https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot)
 - [Support server](https://discord.gg/WhNVDTF)
-- [Source](https://github.com/DTS-11/PizzaHat)
+- [Source](https://github.com/DTS-11/Zync)

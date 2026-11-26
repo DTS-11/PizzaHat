@@ -41,7 +41,7 @@ class Dev(Cog, emoji=1268856867585658981):
         else:
             return content
 
-    @commands.hybrid_command(name="eval", hidden=True)
+    @commands.hybrid_command(name="eval", hidden=True, with_app_command=False)
     @commands.is_owner()
     async def _eval(self, ctx: Context, *, body: str):
         """Eval command."""
@@ -151,7 +151,7 @@ class Dev(Cog, emoji=1268856867585658981):
 
                         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(hidden=True)
+    @commands.hybrid_command(hidden=True, with_app_command=False)
     @commands.is_owner()
     async def sql(self, ctx: Context, *, query: str):
         """Run some SQL."""
@@ -195,7 +195,7 @@ class Dev(Cog, emoji=1268856867585658981):
         else:
             await ctx.send(fmt)
 
-    @commands.hybrid_command(hidden=True)
+    @commands.hybrid_command(hidden=True, with_app_command=False)
     @commands.is_owner()
     async def botlogs(self, ctx: Context):
         """Send bot.log file."""
@@ -203,21 +203,27 @@ class Dev(Cog, emoji=1268856867585658981):
         f = open("bot.log", "r")
         await ctx.send(f"```ruby\n{f.read()}\n```")
 
-    @commands.hybrid_command(hidden=True)
+    @commands.hybrid_command(hidden=True, with_app_command=False)
     @commands.is_owner()
     async def reloadall(self, ctx: Context):
         """Reloads all cogs."""
 
-        for cog in INITIAL_EXTENSIONS:
-            await self.bot.reload_extension(cog)
+        failed: list[str] = []
+        for extension in (*INITIAL_EXTENSIONS, *SUB_EXTENSIONS, "jishaku"):
+            try:
+                await self.bot.reload_extension(extension)
+            except commands.ExtensionError as exc:
+                failed.append(f"{extension}: {exc}")
 
-        for subcog in SUB_EXTENSIONS:
-            await self.bot.reload_extension(subcog)
-
-        await self.bot.reload_extension("jishaku")
+        self.bot.compact_slash_commands()
+        synced = await self.bot.sync_commands()
+        if failed or not synced:
+            details = "\n".join(failed) if failed else "Command sync failed."
+            await ctx.send(f"Reload finished with issues:\n```\n{details[:1500]}\n```")
+            return
         await ctx.send("Reloaded all cogs!")
 
-    @commands.hybrid_command(hidden=True)
+    @commands.hybrid_command(hidden=True, with_app_command=False)
     @commands.is_owner()
     async def update_badwords(
         self, ctx: Context, attachment: Optional[discord.Attachment] = None

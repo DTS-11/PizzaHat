@@ -5,6 +5,7 @@ lifecycle, command error handling, and the ``Tier`` enum used by premium checks.
 """
 
 import datetime
+import os
 import sys
 import traceback
 from enum import IntEnum
@@ -18,7 +19,7 @@ from discord.ext.commands.errors import ExtensionAlreadyLoaded
 
 from core.database import bootstrap_database, create_db_pool
 from utils.config import REPO_LINK
-from utils.embed import golden_embed
+from utils.embed import golden_embed, orange_embed
 
 INITIAL_EXTENSIONS = [
     "cogs.dev",
@@ -26,12 +27,32 @@ INITIAL_EXTENSIONS = [
     "cogs.mod",
     "cogs.role_menus",
     "cogs.safety",
-    "cogs.system",
+    "cogs.help",
     "cogs.tags",
     "cogs.templates",
     "cogs.tickets",
     "cogs.workflows",
 ]
+
+# Discord's slash menu gets unwieldy with one entry per command, so flat
+# commands are nested under a handful of topical groups at startup.
+_SLASH_GROUPS: dict[str, str] = {
+    "info": "General bot information and utilities",
+    "tickets": "Ticket management",
+}
+_COG_GROUPS: dict[str, str] = {
+    "help": "info",
+    "tickets": "tickets",
+}
+# Moderation is a real ``/mod`` hybrid group in cogs/mod.py; only flat commands
+# from other cogs need to be gathered here. Existing groups stay top-level.
+_KEEP_TOP_LEVEL = frozenset({"help", "status", "premium"})
+
+# Owner-only dev commands must never be registered as application commands.
+# They are invoked with the mention prefix only (e.g. ``@Zync eval ...``).
+_DEV_COMMAND_NAMES = frozenset(
+    {"eval", "sql", "botlogs", "reloadall", "update_badwords"}
+)
 
 SUB_EXTENSIONS = [
     "cogs_hidden.events",
@@ -104,6 +125,11 @@ I'm also open source. You can see my code on [GitHub]({REPO_LINK})
 
 class Zync(commands.Bot):
     def __init__(self):
+        # Voice connections/playback are unused; only voice-state events are read
+        # for logging, which needs neither PyNaCl nor davey.
+        discord.VoiceClient.warn_nacl = False
+        discord.VoiceClient.warn_dave = False
+
         allowed_mentions = discord.AllowedMentions(
             roles=False, everyone=False, users=True, replied_user=True
         )
@@ -135,6 +161,117 @@ class Zync(commands.Bot):
         self.no = "<:no:1268859614129295514>"
         self.color = 0x456DD4
         self.logging_webhooks: dict[int, discord.Webhook] = {}
+
+    def compact_slash_commands(self) -> None:
+        """Nest flat slash commands under groups to keep Discord's picker usable."""
+
+        for name in _DEV_COMMAND_NAMES:
+            if self.tree.get_command(name) is not None:
+                self.tree.remove_command(name)
+
+        def group_named(
+            name: str,
+            description: str,
+            parent: discord.app_commands.Group | None = None,
+        ) -> discord.app_commands.Group:
+            existing = (
+                parent.get_command(name)
+                if parent is not None
+                else self.tree.get_command(name)
+            )
+            if isinstance(existing, discord.app_commands.Group):
+                return existing
+            group = discord.app_commands.Group(name=name, description=description)
+            if parent is None:
+                self.tree.add_command(group)
+            else:
+                parent.add_command(group)
+            return group
+
+        groups = {
+            name: group_named(name, description)
+            for name, description in _SLASH_GROUPS.items()
+        }
+
+        for command in list(
+            self.tree.get_commands(type=discord.AppCommandType.chat_input)
+        ):
+            if command.name in _KEEP_TOP_LEVEL or isinstance(
+                command, discord.app_commands.Group
+            ):
+                continue
+            owner = getattr(command, "binding", None) or getattr(command, "cog", None)
+            cog_name = getattr(owner, "qualified_name", "").casefold()
+            destination = groups.get(_COG_GROUPS.get(cog_name, ""))
+            if destination is None:
+                continue
+            self.tree.remove_command(command.name)
+            existing = destination.get_command(command.name)
+            if existing is not None:
+                destination.remove_command(command.name)
+            destination.add_command(command)
+
+    async def sync_commands(self) -> bool:
+        """Sync the tree, scoped to DEV_GUILD_ID when set to avoid dev global syncs."""
+        if os.getenv("SYNC_COMMANDS", "1") == "0":
+            print("Command sync skipped (SYNC_COMMANDS=0).")
+            return True
+
+        raw_guild_id = os.getenv("DEV_GUILD_ID")
+        guild = (
+            discord.Object(id=int(raw_guild_id))
+            if raw_guild_id and raw_guild_id.isdigit()
+            else None
+        )
+        try:
+            if guild is None:
+                await self.tree.sync()
+            else:
+                await self.tree.sync(guild=guild)
+        except discord.DiscordException as exc:
+            print(f"Slash command sync failed: {exc}")
+            return False
+        return True
+
+    async def on_tree_error(
+        self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError
+    ) -> None:
+        """Give clear, ephemeral feedback for failed application commands."""
+        if isinstance(error, discord.app_commands.NoPrivateMessage):
+            message = "This command can only be used in a server."
+        elif isinstance(error, discord.app_commands.MissingPermissions):
+            missing = ", ".join(p.replace("_", " ") for p in error.missing_permissions)
+            message = f"You need **{missing}** permission to use this command."
+        elif isinstance(error, discord.app_commands.BotMissingPermissions):
+            missing = ", ".join(p.replace("_", " ") for p in error.missing_permissions)
+            message = f"I'm missing the **{missing}** permission to do that."
+        elif isinstance(error, discord.app_commands.CommandOnCooldown):
+            message = f"That command is on cooldown. Try again in `{error.retry_after:.0f}s`."
+        elif isinstance(error, discord.app_commands.CommandInvokeError):
+            print(
+                f"In /{interaction.command.name if interaction.command else 'unknown'}:",
+                file=sys.stderr,
+            )
+            traceback.print_exception(
+                type(error.original),
+                error.original,
+                error.original.__traceback__,
+                file=sys.stderr,
+            )
+            message = "Something went wrong while running that command."
+        elif isinstance(error, commands.CheckFailure):
+            message = str(error) or "You cannot use this command here."
+        else:
+            message = str(error) or "That command could not be completed."
+
+        embed = orange_embed(description=message)
+        try:
+            if interaction.response.is_done():
+                await interaction.followup.send(embed=embed, ephemeral=True)
+            else:
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+        except discord.HTTPException:
+            pass
 
     async def setup_hook(self) -> None:
         if not hasattr(self, "uptime"):
@@ -179,6 +316,9 @@ class Zync(commands.Bot):
 
         except ExtensionAlreadyLoaded:
             pass
+
+        self.compact_slash_commands()
+        await self.sync_commands()
 
         print(
             f"Loaded all cogs.\nSuccess: {success}, Fail: {fail}\nDone! ({success + fail}/{total})"

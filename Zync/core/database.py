@@ -1,7 +1,8 @@
 """PostgreSQL connection and schema bootstrap.
 
 Creates the asyncpg pool from ``PG_URL`` and ensures all active application
-tables and indexes exist at startup.
+tables and indexes exist at startup. This is the only schema definition; there
+are no separate migration files.
 """
 
 import ssl

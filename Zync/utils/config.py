@@ -36,7 +36,7 @@ CONTRIBUTOR_ROLE = 950785470286163988
 SUPPORT_SERVER = "https://discord.gg/WhNVDTF"
 ADMIN_INVITE = "https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=8&scope=bot"
 REG_INVITE = "https://discord.com/oauth2/authorize?client_id=860889936914677770&permissions=10432416312438&scope=bot"
-REPO_LINK = "https://github.com/DTS-11/PizzaHat"
+REPO_LINK = "https://github.com/DTS-11/Zync"
 TOPGG_VOTE = "https://top.gg/bot/860889936914677770/vote"
 DLISTGG_VOTE = "https://discordlist.gg/bot/860889936914677770/vote"
 WUMPUS_VOTE = "https://wumpus.store/bot/860889936914677770/vote"

@@ -9,7 +9,7 @@ from __future__ import annotations
 import datetime
 import re
 import uuid
-from typing import List, Optional, cast
+from typing import Any, List, Literal, Optional, cast
 
 import discord
 import humanfriendly
@@ -22,6 +22,119 @@ from utils.config import ANTIHOIST_CHARS
 from utils.custom_checks import premium
 from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
 from utils.ui import ConfirmationView, Paginator
+
+_LOG_MODULES = (
+    "all", "automod", "guild", "integrations", "invites", "joins", "member",
+    "messages", "mod", "roles", "voice",
+)
+
+
+class _InteractionContext:
+    """Minimal ``Context`` shim so context menus reuse the slash command bodies."""
+
+    def __init__(self, interaction: discord.Interaction) -> None:
+        self.interaction = interaction
+        self.author = interaction.user
+        self.guild = interaction.guild
+        self.bot = interaction.client
+
+    async def send(self, *args: Any, **kwargs: Any) -> Any:
+        """Send moderation feedback privately for context-menu invocations."""
+        kwargs.setdefault("ephemeral", True)
+        if self.interaction.response.is_done():
+            return await self.interaction.followup.send(*args, **kwargs)
+        return await self.interaction.response.send_message(*args, **kwargs)
+
+
+async def _invoke(
+    command: Any, cog: Mod, ctx: Context, *args: Any, **kwargs: Any
+) -> None:
+    """Call a cog command body with an explicit cog instance."""
+    await command.callback(cog, ctx, *args, **kwargs)
+
+
+def _validate_duration(value: str) -> tuple[float | None, str | None]:
+    """Parse a human-friendly duration, returning seconds or an error message."""
+    try:
+        seconds = humanfriendly.parse_timespan(value.strip())
+    except (humanfriendly.InvalidTimespan, ValueError, TypeError):
+        return None, "Use a duration like `30m`, `1h`, or `7d`."
+    if seconds <= 0:
+        return None, "Duration must be greater than zero."
+    if seconds > 28 * 24 * 60 * 60:
+        return None, "Discord limits timeouts to 28 days."
+    return seconds, None
+
+
+class _ReasonModal(discord.ui.Modal):
+    """Reason prompt shared by the Ban, Kick, and Warn context menus."""
+
+    reason = discord.ui.TextInput(
+        label="Reason",
+        placeholder="No reason provided.",
+        required=False,
+        max_length=200,
+    )
+
+    def __init__(self, cog: Mod, member: discord.Member, action: str) -> None:
+        super().__init__(title=f"{action.title()} {member.display_name}"[:45])
+        self.cog = cog
+        self.member = member
+        self.action = action
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        ctx = cast(Context, _InteractionContext(interaction))
+        reason = self.reason.value or None
+        if self.action == "ban":
+            await _invoke(
+                self.cog.ban, self.cog, ctx, str(self.member.id), reason=reason
+            )
+        elif self.action == "kick":
+            await _invoke(
+                self.cog.kick, self.cog, ctx, str(self.member.id), reason=reason
+            )
+        else:
+            await _invoke(
+                self.cog.warn,
+                self.cog,
+                ctx,
+                self.member,
+                reason=reason or "No reason provided.",
+            )
+
+
+class _TimeoutModal(discord.ui.Modal, title="Timeout member"):
+    duration = discord.ui.TextInput(
+        label="Duration", placeholder="1h", default="1h", max_length=20
+    )
+    reason = discord.ui.TextInput(
+        label="Reason", placeholder="No reason provided.", required=False, max_length=200
+    )
+
+    def __init__(self, cog: Mod, member: discord.Member) -> None:
+        super().__init__()
+        self.cog = cog
+        self.member = member
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        _, error = _validate_duration(self.duration.value)
+        if error is not None:
+            bot = cast(Zync, interaction.client)
+            await interaction.response.send_message(
+                embed=red_embed(description=f"{bot.no} {error}"), ephemeral=True
+            )
+            return
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        ctx = cast(Context, _InteractionContext(interaction))
+        await _invoke(
+            self.cog.timeout,
+            self.cog,
+            ctx,
+            self.member,
+            self.duration.value,
+            reason=self.reason.value or None,
+        )
 
 
 class Mod(Cog, emoji=1268851270136107048):
@@ -43,9 +156,50 @@ class Mod(Cog, emoji=1268851270136107048):
                 clear_cache(guild_id)
 
     @staticmethod
+    def _hierarchy_error(ctx: Context, member: discord.Member) -> str | None:
+        """Return a clear reason why a member cannot be moderated, if any."""
+        if not ctx.guild:
+            return "This action can only be used in a server."
+        if member.id == ctx.author.id:
+            return "You can't target yourself."
+        if ctx.bot.user is not None and member.id == ctx.bot.user.id:
+            return "You can't target me."
+        author = ctx.author if isinstance(ctx.author, discord.Member) else None
+        if (
+            author is not None
+            and author.top_role <= member.top_role
+            and ctx.guild.owner_id != author.id
+        ):
+            return "You can't target someone with an equal or higher role."
+        me = ctx.guild.me
+        if me is not None and me.top_role <= member.top_role:
+            return "I can't target someone with an equal or higher role."
+        return None
+
+    @staticmethod
     def _extract_ids(value: str) -> list[int]:
         """Extract Discord snowflakes from mentions, raw IDs, or a mixed string."""
         return [int(match) for match in re.findall(r"\d{17,20}", value)]
+
+    @staticmethod
+    def _member_choices(
+        guild: discord.Guild | None, current: str
+    ) -> list[discord.app_commands.Choice[str]]:
+        """Suggest guild members by name or ID for target options."""
+        if guild is None:
+            return []
+        query = current.casefold()
+        matches = [
+            member
+            for member in guild.members
+            if not query or query in f"{member.display_name} {member.id}".casefold()
+        ]
+        return [
+            discord.app_commands.Choice(
+                name=f"{member.display_name} ({member.id})", value=str(member.id)
+            )
+            for member in matches[:25]
+        ]
 
     @classmethod
     def _parse_members(cls, ctx: Context, value: str) -> list[discord.Member]:
@@ -86,11 +240,7 @@ class Mod(Cog, emoji=1268851270136107048):
             return None
         return ctx.guild.get_channel_or_thread(ids[0])
 
-    @commands.hybrid_command()
-    @commands.guild_only()
-    @commands.cooldown(2, 60, commands.BucketType.user)
-    @commands.has_permissions(manage_guild=True)
-    async def logs(self, ctx: Context, channel: discord.TextChannel):
+    async def _set_logs(self, ctx: Context, channel: discord.TextChannel):
         """
         Set a guild logs channel.
         To replace the log channel, simply run this command again.
@@ -113,15 +263,11 @@ class Mod(Cog, emoji=1268851270136107048):
 
         await ctx.send(
             embed=green_embed(
-                description=f"{self.bot.yes} Guild logs channel set to {channel.mention}\nDefault logging config set to `all`. Please use the `logconfig` command to change the logging configs."
+                description=f"{self.bot.yes} Guild logs channel set to {channel.mention}\nDefault logging config set to `all`. Use `/mod logs modules:...` to change it."
             )
         )
 
-    @commands.hybrid_command()
-    @commands.guild_only()
-    @commands.cooldown(1, 30, commands.BucketType.user)
-    @commands.has_permissions(manage_guild=True)
-    async def logconfig(self, ctx: Context, modules: str = ""):
+    async def _set_logconfig(self, ctx: Context, modules: str = ""):
         """
         Choose what events the bot needs to log.
 
@@ -148,19 +294,7 @@ class Mod(Cog, emoji=1268851270136107048):
 
         log_modules = modules.replace(",", " ").split()
 
-        available_modules = [
-            "all",
-            "automod",
-            "guild",
-            "integrations",
-            "invites",
-            "joins",
-            "member",
-            "messages",
-            "mod",
-            "roles",
-            "voice",
-        ]
+        available_modules = list(_LOG_MODULES)
 
         for module in log_modules:
             if module.lower() not in available_modules:
@@ -218,11 +352,7 @@ class Mod(Cog, emoji=1268851270136107048):
             )
             await ctx.send(embed=disabled_confirmation_em)
 
-    @commands.hybrid_command()
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild=True)
-    @premium(Tier.PRO)
-    async def insights(self, ctx: Context):
+    async def _insights(self, ctx: Context):
         """Get detailed server insights."""
 
         if not ctx.guild or not self.bot.db:
@@ -444,12 +574,7 @@ class Mod(Cog, emoji=1268851270136107048):
             paginator = Paginator(ctx, embeds)
             await ctx.send(embed=stats_em, view=paginator)
 
-    @commands.hybrid_command()
-    @commands.guild_only()
-    @commands.has_permissions(kick_members=True, manage_guild=True)
-    @commands.bot_has_permissions(kick_members=True, manage_guild=True)
-    @commands.cooldown(1, 10, commands.BucketType.guild)
-    async def prune(self, ctx: Context, days: int, roles: str = ""):
+    async def _prune(self, ctx: Context, days: int, roles: str = ""):
         """Kicks inactive members. Roles are space/comma separated mentions or IDs."""
 
         if not ctx.guild:
@@ -501,12 +626,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.hybrid_command(aliases=["mn"])
-    @commands.guild_only()
-    @commands.has_permissions(manage_nicknames=True)
-    @commands.bot_has_permissions(manage_nicknames=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def modnick(self, ctx: Context, member: discord.Member):
+    async def _modnick(self, ctx: Context, member: discord.Member):
         """Sets a random moderated nickname."""
 
         try:
@@ -523,12 +643,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 embed=red_embed(description=f"{self.bot.no} Something went wrong.")
             )
 
-    @commands.hybrid_command(aliases=["sn"])
-    @commands.guild_only()
-    @commands.has_permissions(manage_nicknames=True)
-    @commands.bot_has_permissions(manage_nicknames=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def setnick(self, ctx: Context, member: discord.Member, *, nick: str):
+    async def _setnick(self, ctx: Context, member: discord.Member, *, nick: str):
         """Sets a custom nickname."""
 
         try:
@@ -544,12 +659,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 embed=red_embed(description=f"{self.bot.no} Something went wrong.")
             )
 
-    @commands.hybrid_command()
-    @commands.guild_only()
-    @commands.has_permissions(manage_nicknames=True)
-    @commands.bot_has_permissions(manage_nicknames=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def decancer(self, ctx: Context, member: discord.Member):
+    async def _decancer(self, ctx: Context, member: discord.Member):
         """
         Removes special characters from the user's name
         and renames them as "Moderated Nickname"
@@ -581,12 +691,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 embed=red_embed(description=f"{self.bot.no} Something went wrong.")
             )
 
-    @commands.hybrid_command(aliases=["sm"])
-    @commands.guild_only()
-    @commands.has_permissions(manage_messages=True)
-    @commands.bot_has_permissions(manage_messages=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def slowmode(self, ctx: Context, seconds: Optional[int] = None):
+    async def _slowmode(self, ctx: Context, seconds: Optional[int] = None):
         """
         Change the slowmode.
         If no values are given, the bot returns slowmode of the current channel.
@@ -629,22 +734,13 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.hybrid_group(aliases=["lockdown"])
-    @commands.guild_only()
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
-    async def lock(self, ctx: Context):
+    async def _lock_group(self, ctx: Context):
         """Lock management commands."""
 
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
-    @lock.command(name="channel")
-    @commands.guild_only()
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def lock_channel(
+    async def _lock_channel(
         self,
         ctx: Context,
         role: discord.Role | None = None,
@@ -683,12 +779,7 @@ class Mod(Cog, emoji=1268851270136107048):
                     )
                 )
 
-    @lock.command(name="server")
-    @commands.guild_only()
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def lock_server(self, ctx: Context, role: discord.Role | None):
+    async def _lock_server(self, ctx: Context, role: discord.Role | None):
         """
         Locks the whole server with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
@@ -731,7 +822,7 @@ class Mod(Cog, emoji=1268851270136107048):
 
             em = green_embed(
                 title="🔒 Server Locked",
-                description="The server has been locked by a staff member. You are **not muted**.",
+                description="The server has been locked by a staff member. You are **not timed out**.",
                 timestamp=True,
             )
             em.set_author(
@@ -745,22 +836,13 @@ class Mod(Cog, emoji=1268851270136107048):
 
             await m.edit(embed=em)
 
-    @commands.hybrid_group()
-    @commands.guild_only()
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
-    async def unlock(self, ctx: Context):
+    async def _unlock_group(self, ctx: Context):
         """Unlock management commands."""
 
         if ctx.subcommand_passed is None:
             await ctx.send_help(ctx.command)
 
-    @unlock.command(name="channel")
-    @commands.guild_only()
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def unlock_channel(
+    async def _unlock_channel(
         self,
         ctx: Context,
         role: discord.Role | None = None,
@@ -799,12 +881,7 @@ class Mod(Cog, emoji=1268851270136107048):
                     )
                 )
 
-    @unlock.command(name="server")
-    @commands.guild_only()
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def unlock_server(self, ctx: Context, role: discord.Role | None):
+    async def _unlock_server(self, ctx: Context, role: discord.Role | None):
         """
         Unlocks the whole server with role requirement.
         If role is not given, the bot takes the default role of the guild which is @everyone.
@@ -863,12 +940,7 @@ class Mod(Cog, emoji=1268851270136107048):
 
             await m.edit(embed=em)
 
-    @commands.hybrid_command()
-    @commands.guild_only()
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def hide(
+    async def _hide(
         self,
         ctx: Context,
         role: discord.Role | None = None,
@@ -904,12 +976,7 @@ class Mod(Cog, emoji=1268851270136107048):
                     )
                 )
 
-    @commands.hybrid_command()
-    @commands.guild_only()
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def expose(
+    async def _expose(
         self,
         ctx: Context,
         role: discord.Role | None = None,
@@ -944,12 +1011,7 @@ class Mod(Cog, emoji=1268851270136107048):
                     )
                 )
 
-    @commands.hybrid_command(aliases=["purge"])
-    @commands.guild_only()
-    @commands.has_permissions(manage_messages=True)
-    @commands.bot_has_permissions(manage_messages=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def clear(self, ctx: Context, amount: int = 100):
+    async def _purge_messages(self, ctx: Context, amount: int = 100):
         """
         Deletes certain amount of messages.
         If no amount is given, it deletes upto 100 messages.
@@ -1002,12 +1064,7 @@ class Mod(Cog, emoji=1268851270136107048):
                     )
                 )
 
-    @commands.hybrid_command()
-    @commands.guild_only()
-    @commands.has_permissions(manage_messages=True)
-    @commands.bot_has_permissions(manage_messages=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def cleanup(self, ctx: Context, amount: int = 100):
+    async def _cleanup_bots(self, ctx: Context, amount: int = 100):
         """
         Cleans up bot's messages in the current channel.
         If no amount is given, it deletes upto 100 messages.
@@ -1052,26 +1109,16 @@ class Mod(Cog, emoji=1268851270136107048):
                     )
                 )
 
-    @commands.hybrid_command()
-    @commands.guild_only()
-    @commands.has_permissions(kick_members=True)
-    @commands.bot_has_permissions(kick_members=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def kick(self, ctx: Context, member: discord.Member, *, reason: str | None):
+    async def _kick(self, ctx: Context, member: discord.Member, *, reason: str | None):
         """Kicks a member."""
 
-        reason = f"Kicked by {ctx.author} (ID: {ctx.author.id})"
+        reason = reason or f"Kicked by {ctx.author} (ID: {ctx.author.id})"
         await member.kick(reason=reason)
         await ctx.send(
             embed=green_embed(description=f"{self.bot.yes} Kicked {member.mention}")
         )
 
-    @commands.hybrid_command(aliases=["mk"])
-    @commands.guild_only()
-    @commands.has_permissions(kick_members=True)
-    @commands.bot_has_permissions(kick_members=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def masskick(
+    async def _masskick(
         self,
         ctx: Context,
         members: str,
@@ -1101,12 +1148,7 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         )
 
-    @commands.hybrid_command(aliases=["b"])
-    @commands.guild_only()
-    @commands.has_permissions(ban_members=True)
-    @commands.bot_has_permissions(ban_members=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def ban(self, ctx: Context, member: str, *, reason: str | None):
+    async def _ban(self, ctx: Context, member: str, *, reason: str | None):
         """
         Bans a member whether or not they're in the server.
         Supply a member mention or a user ID.
@@ -1143,11 +1185,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 embed=green_embed(description=f"{self.bot.yes} Banned {display}")
             )
 
-    @commands.hybrid_command()
-    @commands.guild_only()
-    @commands.has_permissions(ban_members=True)
-    @commands.cooldown(1, 10, commands.BucketType.guild)
-    async def banlist(self, ctx: Context):
+    async def _banlist(self, ctx: Context):
         """Get a list of all the banned members."""
 
         if not ctx.guild:
@@ -1194,12 +1232,7 @@ class Mod(Cog, emoji=1268851270136107048):
         except Exception as e:
             await ctx.send(f"An unexpected error occurred: {str(e)}")
 
-    @commands.hybrid_command(aliases=["mb"])
-    @commands.guild_only()
-    @commands.has_permissions(ban_members=True)
-    @commands.bot_has_permissions(ban_members=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def massban(
+    async def _massban(
         self,
         ctx: Context,
         members: str,
@@ -1220,20 +1253,14 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-        else:
-            for target in targets:
-                reason = f"Banned by {ctx.author} (ID: {ctx.author.id})"
-                await target.ban(reason=reason)
-                await ctx.send(
-                    embed=green_embed(description=f"{self.bot.yes} Banned {target}")
-                )
+        audit = reason or f"Banned by {ctx.author} (ID: {ctx.author.id})"
+        for target in targets:
+            await target.ban(reason=audit)
+            await ctx.send(
+                embed=green_embed(description=f"{self.bot.yes} Banned {target}")
+            )
 
-    @commands.hybrid_command(aliases=["sb"])
-    @commands.guild_only()
-    @commands.has_permissions(ban_members=True)
-    @commands.bot_has_permissions(ban_members=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def softban(
+    async def _softban(
         self, ctx: Context, member: discord.Member, *, reason: str | None
     ):
         """Soft bans a member.
@@ -1246,7 +1273,7 @@ class Mod(Cog, emoji=1268851270136107048):
         if not ctx.guild:
             return
 
-        reason = f"Banned by {ctx.author} (ID: {ctx.author.id})"
+        reason = reason or f"Banned by {ctx.author} (ID: {ctx.author.id})"
         await ctx.guild.ban(member, reason=reason)
         await ctx.guild.unban(member, reason=reason)
         await ctx.send(
@@ -1255,12 +1282,7 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         )
 
-    @commands.hybrid_command(aliases=["ub"])
-    @commands.guild_only()
-    @commands.has_permissions(ban_members=True)
-    @commands.bot_has_permissions(ban_members=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def unban(self, ctx: Context, id: int):
+    async def _unban(self, ctx: Context, id: int):
         """Unbans a member."""
 
         try:
@@ -1281,12 +1303,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.hybrid_command(aliases=["timeout"])
-    @commands.guild_only()
-    @commands.has_permissions(moderate_members=True)
-    @commands.bot_has_permissions(moderate_members=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def mute(
+    async def _timeout(
         self,
         ctx: Context,
         member: discord.Member,
@@ -1295,12 +1312,17 @@ class Mod(Cog, emoji=1268851270136107048):
         reason: str | None,
     ):
         """
-        Mutes or timeouts a member for specific time.
+        Timeouts a member for a specific duration.
         Maximum duration of timeout: 28 days (API limitation)
         Use 5m for 5 mins, 1h for 1 hour etc...
         """
 
         reason = reason or f"Action done by {ctx.author}"
+        _, error = _validate_duration(duration)
+        if error is not None:
+            return await ctx.send(
+                embed=red_embed(description=f"{self.bot.no} {error}")
+            )
         humanly_duration = humanfriendly.parse_timespan(duration)
 
         await member.timeout(
@@ -1313,28 +1335,18 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         )
 
-    @commands.hybrid_command(aliases=["untimeout"])
-    @commands.guild_only()
-    @commands.has_permissions(moderate_members=True)
-    @commands.bot_has_permissions(moderate_members=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def unmute(self, ctx: Context, member: discord.Member, *, reason: str | None):
-        """Unmutes or removes a member from timeout."""
+    async def _remove_timeout(self, ctx: Context, member: discord.Member, *, reason: str | None):
+        """Removes a member from timeout."""
 
         reason = reason or f"Action done by {ctx.author}"
         await member.timeout(None, reason=reason)
         await ctx.send(
             embed=green_embed(
-                description=f"{self.bot.yes} {member.mention} has been unmuted!"
+                description=f"{self.bot.yes} {member.mention} has been removed from timeout!"
             )
         )
 
-    @commands.hybrid_command()
-    @commands.guild_only()
-    @commands.has_permissions(manage_roles=True)
-    @commands.bot_has_permissions(manage_roles=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def addrole(self, ctx: Context, user: discord.Member, *, role: discord.Role):
+    async def _addrole(self, ctx: Context, user: discord.Member, *, role: discord.Role):
         """Assign role to a user."""
 
         if role not in user.roles:
@@ -1352,12 +1364,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.hybrid_command()
-    @commands.guild_only()
-    @commands.has_permissions(manage_roles=True)
-    @commands.bot_has_permissions(manage_roles=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def removerole(
+    async def _removerole(
         self, ctx: Context, user: discord.Member, *, role: discord.Role
     ):
         """Remove role from a user."""
@@ -1377,12 +1384,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.hybrid_command(name="clonerole")
-    @commands.guild_only()
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.has_permissions(manage_roles=True)
-    @commands.bot_has_permissions(manage_roles=True)
-    async def clone_role(self, ctx: Context, role: discord.Role):
+    async def _clone_role(self, ctx: Context, role: discord.Role):
         """Clone a role."""
         if not ctx.guild:
             return
@@ -1409,16 +1411,10 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         )
 
-    @commands.hybrid_command(name="createrole")
-    @commands.guild_only()
-    @commands.has_permissions(manage_roles=True)
-    @commands.bot_has_permissions(manage_roles=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def create_role(
+    async def _create_role(
         self,
         ctx: Context,
-        *,
-        role: discord.Role,
+        name: str,
         color: str | None = None,
         hoist: bool = False,
     ):
@@ -1443,7 +1439,7 @@ class Mod(Cog, emoji=1268851270136107048):
         if ctx.guild is not None:
             await ctx.guild.create_role(
                 reason=f"Role created by {ctx.author}",
-                name=role.name,
+                name=name,
                 color=parsed_color,
                 hoist=hoist,
             )
@@ -1453,12 +1449,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.hybrid_command(name="deleterole")
-    @commands.guild_only()
-    @commands.has_permissions(manage_roles=True)
-    @commands.bot_has_permissions(manage_roles=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def delete_role(self, ctx: Context, *, role: discord.Role):
+    async def _delete_role(self, ctx: Context, *, role: discord.Role):
         """Delete a role."""
 
         if ctx.guild is not None:
@@ -1470,10 +1461,7 @@ class Mod(Cog, emoji=1268851270136107048):
                     )
                 )
 
-    @commands.hybrid_command(name="rolelist")
-    @commands.guild_only()
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def role_list(self, ctx: Context):
+    async def _role_list(self, ctx: Context):
         """List all the server roles."""
 
         if ctx.guild is not None:
@@ -1511,12 +1499,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 view = Paginator(ctx, embeds)
                 return await ctx.send(embed=embeds[0], view=view)
 
-    @commands.hybrid_command(name="createchannel")
-    @commands.guild_only()
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def create_channel(self, ctx: Context, name: str):
+    async def _create_channel(self, ctx: Context, name: str):
         """Creates a new channel."""
 
         if ctx.guild is not None:
@@ -1527,12 +1510,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.hybrid_command(name="deletechannel")
-    @commands.guild_only()
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def delete_channel(self, ctx: Context, channel: discord.TextChannel):
+    async def _delete_channel(self, ctx: Context, channel: discord.TextChannel):
         """Delete a channel."""
 
         await channel.delete()
@@ -1542,10 +1520,7 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         )
 
-    @commands.hybrid_command(name="channellist")
-    @commands.guild_only()
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def channel_list(self, ctx: Context):
+    async def _channel_list(self, ctx: Context):
         """List all the server channels."""
 
         if ctx.guild is not None:
@@ -1634,12 +1609,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 view = Paginator(ctx, embeds)
                 return await ctx.send(embed=embeds[0], view=view)
 
-    @commands.hybrid_command(name="channeltopic")
-    @commands.guild_only()
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def channel_topic(
+    async def _channel_topic(
         self,
         ctx: Context,
         channel: str | None = None,
@@ -1679,11 +1649,7 @@ class Mod(Cog, emoji=1268851270136107048):
                 )
             )
 
-    @commands.hybrid_command()
-    @commands.guild_only()
-    @commands.has_permissions(manage_messages=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def warn(
+    async def _warn(
         self,
         ctx: Context,
         member: discord.Member,
@@ -1784,10 +1750,7 @@ class Mod(Cog, emoji=1268851270136107048):
         if automod_cog and hasattr(automod_cog, "check_warn_threshold"):
             await automod_cog.check_warn_threshold(member.id, ctx.guild.id)  # type: ignore[union-attr]
 
-    @commands.hybrid_command(aliases=["warns"])
-    @commands.guild_only()
-    @commands.cooldown(1, 3, commands.BucketType.user)
-    async def warnings(
+    async def _warnings(
         self,
         ctx: Context,
         member: discord.User | discord.Member | None = None,
@@ -1864,11 +1827,7 @@ class Mod(Cog, emoji=1268851270136107048):
         view = Paginator(ctx, embeds)
         await ctx.send(embed=embeds[0], view=view)
 
-    @commands.hybrid_command(aliases=["delwarn"])
-    @commands.guild_only()
-    @commands.has_permissions(manage_messages=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def deletewarn(self, ctx: Context, member: discord.Member, warn_id: int):
+    async def _deletewarn(self, ctx: Context, member: discord.Member, warn_id: int):
         """Delete a specific warning by its ID."""
 
         if not ctx.guild or not self.bot.db:
@@ -1893,12 +1852,7 @@ class Mod(Cog, emoji=1268851270136107048):
             )
         )
 
-    @commands.hybrid_command(aliases=["clearwarn", "warnreset"])
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    @premium(Tier.BASIC)
-    async def clearwarns(self, ctx: Context, member: discord.Member):
+    async def _clearwarns(self, ctx: Context, member: discord.Member):
         """Clear ALL warnings for a member.  [Basic]"""
 
         if not ctx.guild or not self.bot.db:
@@ -1953,5 +1907,566 @@ class Mod(Cog, emoji=1268851270136107048):
         )
 
 
+    # ── grouped moderation surface ────────────────────────────────────────────
+
+    @commands.hybrid_group(name="mod", help="Moderation and server management.")
+    @commands.guild_only()
+    async def mod(self, ctx: Context) -> Any:
+        """Moderation and server management commands."""
+        if ctx.invoked_subcommand is None:
+            await ctx.send(
+                embed=green_embed(
+                    description=(
+                        "Use `/mod <command>`. Popular options: `/mod ban`, "
+                        "`/mod kick`, `/mod warn`, `/mod clear`, `/mod role`, "
+                        "`/mod channel`."
+                    )
+                )
+            )
+
+    @mod.command(name="ban")
+    @commands.guild_only()
+    @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @discord.app_commands.describe(
+        targets="One or more member mentions or user IDs",
+        soft="Ban and immediately unban to purge recent messages",
+        reason="Reason shown in the audit log",
+    )
+    async def ban(
+        self,
+        ctx: Context,
+        targets: str,
+        soft: bool = False,
+        *,
+        reason: str | None = None,
+    ) -> Any:
+        """Ban one or more members; soft:true bans then unbans them."""
+        ids = self._extract_ids(targets)
+        if not ids or ctx.guild is None:
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} Provide at least one member mention or user ID."
+                )
+            )
+
+        audit = reason or f"Banned by {ctx.author} (ID: {ctx.author.id})"
+        if soft:
+            banned: list[str] = []
+            for user_id in ids:
+                member = ctx.guild.get_member(user_id)
+                try:
+                    await ctx.guild.ban(member or discord.Object(id=user_id), reason=audit)
+                    await ctx.guild.unban(discord.Object(id=user_id), reason=audit)
+                    banned.append(f"<@{user_id}>")
+                except discord.HTTPException:
+                    continue
+            if not banned:
+                return await ctx.send(
+                    embed=red_embed(
+                        description=f"{self.bot.no} Could not soft-ban those users."
+                    )
+                )
+            return await ctx.send(
+                embed=green_embed(
+                    description=f"{self.bot.yes} Soft-banned {', '.join(banned)}."
+                )
+            )
+
+        if len(ids) == 1:
+            await self._ban(ctx, targets, reason=reason)
+        else:
+            await self._massban(ctx, targets, reason=reason)
+
+    @ban.autocomplete("targets")
+    async def ban_target_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[discord.app_commands.Choice[str]]:
+        """Suggest members for /mod ban."""
+        return self._member_choices(interaction.guild, current)
+
+    @mod.command(name="unban")
+    @commands.guild_only()
+    @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @discord.app_commands.describe(user_id="Discord user ID to unban")
+    async def unban(self, ctx: Context, user_id: int) -> Any:
+        """Unban a user by ID."""
+        await self._unban(ctx, user_id)
+
+    @mod.command(name="banlist")
+    @commands.guild_only()
+    @commands.has_permissions(ban_members=True)
+    @commands.cooldown(1, 10, commands.BucketType.guild)
+    async def banlist(self, ctx: Context) -> Any:
+        """List banned users in this server."""
+        await self._banlist(ctx)
+
+    @mod.command(name="kick")
+    @commands.guild_only()
+    @commands.has_permissions(kick_members=True)
+    @commands.bot_has_permissions(kick_members=True)
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @discord.app_commands.describe(
+        targets="One or more member mentions or IDs (members must be in the server)",
+        reason="Reason shown in the audit log",
+    )
+    async def kick(
+        self, ctx: Context, targets: str, *, reason: str | None = None
+    ) -> Any:
+        """Kick one or more members currently in the server."""
+        ids = self._extract_ids(targets)
+        if not ids or ctx.guild is None:
+            return await ctx.send(
+                embed=red_embed(
+                    description=f"{self.bot.no} Provide at least one member mention or ID."
+                )
+            )
+        if len(ids) == 1:
+            member = ctx.guild.get_member(ids[0])
+            if member is None:
+                return await ctx.send(
+                    embed=red_embed(
+                        description=f"{self.bot.no} That member is not in this server."
+                    )
+                )
+            await self._kick(ctx, member, reason=reason)
+        else:
+            await self._masskick(ctx, targets, reason=reason)
+
+    @kick.autocomplete("targets")
+    async def kick_target_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[discord.app_commands.Choice[str]]:
+        """Suggest members for /mod kick."""
+        return self._member_choices(interaction.guild, current)
+
+    @mod.command(name="timeout")
+    @commands.guild_only()
+    @commands.has_permissions(moderate_members=True)
+    @commands.bot_has_permissions(moderate_members=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @discord.app_commands.describe(
+        member="Member to time out",
+        duration="e.g. 10m or 1h; omit to remove an existing timeout",
+        reason="Reason shown in the audit log",
+    )
+    async def timeout(
+        self,
+        ctx: Context,
+        member: discord.Member,
+        duration: str | None = None,
+        *,
+        reason: str | None = None,
+    ) -> Any:
+        """Timeout a member; omit the duration to remove their timeout."""
+        if duration is None:
+            await self._remove_timeout(ctx, member, reason=reason)
+        else:
+            await self._timeout(ctx, member, duration, reason=reason)
+
+    @mod.command(name="warn")
+    @commands.guild_only()
+    @commands.has_permissions(manage_messages=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @discord.app_commands.describe(
+        member="Member to warn", reason="Why they are being warned"
+    )
+    async def warn(
+        self, ctx: Context, member: discord.Member, *, reason: str = "No reason provided."
+    ) -> Any:
+        """Warn a member. Automod thresholds fire when configured."""
+        await self._warn(ctx, member, reason=reason)
+
+    @mod.command(name="warnings")
+    @commands.guild_only()
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    @discord.app_commands.describe(
+        member="Member whose warnings to inspect (defaults to you)",
+        warn_id="Delete this warning ID instead of listing",
+        clear="Clear all warnings for the member (Basic tier)",
+    )
+    async def warnings(
+        self,
+        ctx: Context,
+        member: discord.Member | None = None,
+        warn_id: int | None = None,
+        clear: bool = False,
+    ) -> Any:
+        """List warnings; supply warn_id to delete one or clear:true for all."""
+        if clear:
+            if member is None:
+                return await ctx.send(
+                    embed=red_embed(
+                        description=f"{self.bot.no} Specify a member to clear warnings for."
+                    )
+                )
+            try:
+                await premium(Tier.BASIC).predicate(ctx)
+            except commands.CheckFailure as exc:
+                return await ctx.send(str(exc))
+            await self._clearwarns(ctx, member)
+        elif warn_id is not None:
+            if member is None:
+                return await ctx.send(
+                    embed=red_embed(
+                        description=f"{self.bot.no} Specify a member and warn ID."
+                    )
+                )
+            await self._deletewarn(ctx, member, warn_id)
+        else:
+            await self._warnings(ctx, member)
+
+    @mod.command(name="clear")
+    @commands.guild_only()
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @discord.app_commands.describe(
+        amount="How many messages to remove (max 100)",
+        bot_only="Only remove messages sent by this bot",
+    )
+    async def clear(
+        self, ctx: Context, amount: int = 100, bot_only: bool = False
+    ) -> Any:
+        """Clear messages; bot_only:true removes only this bot's messages."""
+        if bot_only:
+            await self._cleanup_bots(ctx, amount)
+        else:
+            await self._purge_messages(ctx, amount)
+
+    @mod.command(name="slowmode")
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @discord.app_commands.describe(
+        seconds="Slowmode delay in seconds (0-21600); omit to view the current delay"
+    )
+    async def slowmode(self, ctx: Context, seconds: int | None = None) -> Any:
+        """Show or set this channel's slowmode delay in seconds."""
+        await self._slowmode(ctx, seconds)
+
+    @mod.command(name="prune")
+    @commands.guild_only()
+    @commands.has_permissions(kick_members=True, manage_guild=True)
+    @commands.bot_has_permissions(kick_members=True, manage_guild=True)
+    @commands.cooldown(1, 10, commands.BucketType.guild)
+    @discord.app_commands.describe(
+        days="Inactivity window in days (1-30)",
+        roles="Optional space/comma separated role mentions or IDs to include",
+    )
+    async def prune(self, ctx: Context, days: int, roles: str = "") -> Any:
+        """Kick inactive members; roles are space/comma separated mentions or IDs."""
+        await self._prune(ctx, days, roles)
+
+    @mod.command(name="nick")
+    @commands.guild_only()
+    @commands.has_permissions(manage_nicknames=True)
+    @commands.bot_has_permissions(manage_nicknames=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @discord.app_commands.describe(
+        member="Member to rename", nickname="New nickname; omit for a moderated one"
+    )
+    async def nick(
+        self, ctx: Context, member: discord.Member, nickname: str | None = None
+    ) -> Any:
+        """Set a nickname; omit it to apply a moderated placeholder."""
+        if nickname:
+            await self._setnick(ctx, member, nick=nickname)
+        else:
+            await self._modnick(ctx, member)
+
+    @mod.command(name="decancer")
+    @commands.guild_only()
+    @commands.has_permissions(manage_nicknames=True)
+    @commands.bot_has_permissions(manage_nicknames=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @discord.app_commands.describe(member="Member to rename")
+    async def decancer(self, ctx: Context, member: discord.Member) -> Any:
+        """Rename a member whose name starts with hoisting characters."""
+        await self._decancer(ctx, member)
+
+    @mod.command(name="visibility")
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @discord.app_commands.describe(
+        hide="True hides the channel, false exposes it",
+        role="Role to apply this to (defaults to @everyone)",
+        channel="Channel to change (defaults to the current one)",
+    )
+    async def visibility(
+        self,
+        ctx: Context,
+        hide: bool = True,
+        role: discord.Role | None = None,
+        channel: discord.TextChannel | None = None,
+    ) -> Any:
+        """Hide or expose a channel for a role."""
+        if hide:
+            await self._hide(ctx, role, channel)
+        else:
+            await self._expose(ctx, role, channel)
+
+    @mod.command(name="lock")
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @discord.app_commands.describe(
+        target="Lock just this channel or the whole server",
+        locked="True locks, false unlocks",
+        role="Role to restrict (defaults to @everyone)",
+        channel="Channel to change (defaults to the current one)",
+    )
+    async def lock(
+        self,
+        ctx: Context,
+        target: Literal["channel", "server"] = "channel",
+        locked: bool = True,
+        role: discord.Role | None = None,
+        channel: discord.TextChannel | None = None,
+    ) -> Any:
+        """Lock or unlock a channel or the whole server."""
+        if target == "channel":
+            if locked:
+                await self._lock_channel(ctx, role, channel)
+            else:
+                await self._unlock_channel(ctx, role, channel)
+        elif locked:
+            await self._lock_server(ctx, role)
+        else:
+            await self._unlock_server(ctx, role)
+
+    @mod.command(name="role")
+    @commands.guild_only()
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @discord.app_commands.describe(
+        action="What to do with roles",
+        member="Member for add/remove",
+        role="Role for add/remove/delete/clone",
+        name="Role name for create",
+        color="Role color for create (hex or name)",
+        hoist="Whether the created role is displayed separately",
+    )
+    async def role(
+        self,
+        ctx: Context,
+        action: Literal["add", "remove", "create", "delete", "clone", "list"],
+        member: discord.Member | None = None,
+        role: discord.Role | None = None,
+        name: str | None = None,
+        color: str | None = None,
+        hoist: bool = False,
+    ) -> Any:
+        """Manage roles with a single command."""
+        missing = f"{self.bot.no} Provide the arguments needed for `{action}`."
+        if action in ("add", "remove"):
+            if member is None or role is None:
+                return await ctx.send(embed=red_embed(description=missing))
+            if action == "add":
+                await self._addrole(ctx, member, role=role)
+            else:
+                await self._removerole(ctx, member, role=role)
+        elif action == "create":
+            if not name:
+                return await ctx.send(embed=red_embed(description=missing))
+            await self._create_role(ctx, name, color=color, hoist=hoist)
+        elif action in ("delete", "clone"):
+            if role is None:
+                return await ctx.send(embed=red_embed(description=missing))
+            if action == "delete":
+                await self._delete_role(ctx, role=role)
+            else:
+                await self._clone_role(ctx, role)
+        else:
+            await self._role_list(ctx)
+
+    @mod.command(name="channel")
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @discord.app_commands.describe(
+        action="What to do with channels",
+        name="Name for create",
+        channel="Channel for delete/topic (defaults to current for topic)",
+        text="New topic for topic",
+    )
+    async def channel(
+        self,
+        ctx: Context,
+        action: Literal["create", "delete", "list", "topic"],
+        name: str | None = None,
+        channel: discord.TextChannel | None = None,
+        text: str | None = None,
+    ) -> Any:
+        """Manage channels with a single command."""
+        missing = f"{self.bot.no} Provide the arguments needed for `{action}`."
+        if action == "create":
+            if not name:
+                return await ctx.send(embed=red_embed(description=missing))
+            await self._create_channel(ctx, name)
+        elif action == "delete":
+            if channel is None:
+                return await ctx.send(embed=red_embed(description=missing))
+            await self._delete_channel(ctx, channel)
+        elif action == "topic":
+            if text is None:
+                return await ctx.send(embed=red_embed(description=missing))
+            await self._channel_topic(ctx, str(channel.id) if channel else None, text=text)
+        else:
+            await self._channel_list(ctx)
+
+    @mod.command(name="logs")
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    @commands.cooldown(2, 60, commands.BucketType.user)
+    @discord.app_commands.describe(
+        channel="Log channel to use",
+        modules="Space-separated modules to enable (all, mod, messages,...)",
+    )
+    async def logs(
+        self,
+        ctx: Context,
+        channel: discord.TextChannel | None = None,
+        modules: str = "",
+    ) -> Any:
+        """Set the log channel and/or the events that are logged."""
+        if channel is None and not modules:
+            return await ctx.send(
+                embed=green_embed(
+                    description="Use `channel:` to set the log channel and/or `modules:` to configure logging."
+                )
+            )
+        if channel is not None:
+            await self._set_logs(ctx, channel)
+        if modules:
+            await self._set_logconfig(ctx, modules)
+
+    @logs.autocomplete("modules")
+    async def logs_module_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[discord.app_commands.Choice[str]]:
+        """Suggest valid logging modules."""
+        query = current.casefold()
+        return [
+            discord.app_commands.Choice(name=module, value=module)
+            for module in _LOG_MODULES
+            if not query or query in module
+        ]
+
+    @mod.command(name="insights")
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    @commands.cooldown(1, 30, commands.BucketType.user)
+    async def insights(self, ctx: Context) -> Any:
+        """Detailed server insights (Pro)."""
+        try:
+            await premium(Tier.PRO).predicate(ctx)
+        except commands.CheckFailure as exc:
+            return await ctx.send(str(exc))
+        await self._insights(ctx)
+
+
+# ── right-click quick actions ──────────────────────────────────────────────────
+
+
+def _mod_cog(interaction: discord.Interaction) -> Mod:
+    cog = cast(Zync, interaction.client).get_cog("Mod")
+    if cog is None:
+        raise discord.app_commands.CheckFailure("The moderation cog is not loaded.")
+    return cast(Mod, cog)
+
+
+def _context_cooldown_key(interaction: discord.Interaction) -> tuple[int | None, int]:
+    """Mirror the slash commands' per-user cooldown bucket."""
+    return interaction.guild_id, interaction.user.id
+
+
+async def _reject_target(
+    interaction: discord.Interaction, cog: Mod, member: discord.Member
+) -> bool:
+    """Reject hierarchy-invalid targets with a private, actionable message."""
+    ctx = cast(Context, _InteractionContext(interaction))
+    error = cog._hierarchy_error(ctx, member)
+    if error is None:
+        return False
+    bot = cast(Zync, interaction.client)
+    await interaction.response.send_message(
+        embed=red_embed(description=f"{bot.no} {error}"), ephemeral=True
+    )
+    return True
+
+
+@discord.app_commands.context_menu(name="Ban")
+@discord.app_commands.guild_only()
+@discord.app_commands.checks.has_permissions(ban_members=True)
+@discord.app_commands.checks.bot_has_permissions(ban_members=True)
+@discord.app_commands.checks.cooldown(1, 10, key=_context_cooldown_key)
+async def ban_context(interaction: discord.Interaction, member: discord.Member) -> None:
+    """Ban a member from the right-click menu (asks for a reason)."""
+    cog = _mod_cog(interaction)
+    if await _reject_target(interaction, cog, member):
+        return
+    await interaction.response.send_modal(_ReasonModal(cog, member, "ban"))
+
+
+@discord.app_commands.context_menu(name="Kick")
+@discord.app_commands.guild_only()
+@discord.app_commands.checks.has_permissions(kick_members=True)
+@discord.app_commands.checks.bot_has_permissions(kick_members=True)
+@discord.app_commands.checks.cooldown(1, 10, key=_context_cooldown_key)
+async def kick_context(interaction: discord.Interaction, member: discord.Member) -> None:
+    """Kick a member from the right-click menu (asks for a reason)."""
+    cog = _mod_cog(interaction)
+    if await _reject_target(interaction, cog, member):
+        return
+    await interaction.response.send_modal(_ReasonModal(cog, member, "kick"))
+
+
+@discord.app_commands.context_menu(name="Warn")
+@discord.app_commands.guild_only()
+@discord.app_commands.checks.has_permissions(manage_messages=True)
+@discord.app_commands.checks.cooldown(1, 5, key=_context_cooldown_key)
+async def warn_context(interaction: discord.Interaction, member: discord.Member) -> None:
+    """Warn a member from the right-click menu (asks for a reason)."""
+    cog = _mod_cog(interaction)
+    if await _reject_target(interaction, cog, member):
+        return
+    await interaction.response.send_modal(_ReasonModal(cog, member, "warn"))
+
+
+@discord.app_commands.context_menu(name="Timeout")
+@discord.app_commands.guild_only()
+@discord.app_commands.checks.has_permissions(moderate_members=True)
+@discord.app_commands.checks.bot_has_permissions(moderate_members=True)
+@discord.app_commands.checks.cooldown(1, 5, key=_context_cooldown_key)
+async def timeout_context(interaction: discord.Interaction, member: discord.Member) -> None:
+    """Timeout a member from the right-click menu (asks for duration and reason)."""
+    cog = _mod_cog(interaction)
+    if await _reject_target(interaction, cog, member):
+        return
+    await interaction.response.send_modal(_TimeoutModal(cog, member))
+
+
+_CONTEXT_MENUS = (ban_context, kick_context, warn_context, timeout_context)
+
+
 async def setup(bot: Zync) -> None:
     await bot.add_cog(Mod(bot))
+    for command in _CONTEXT_MENUS:
+        existing = bot.tree.get_command(
+            command.name, type=discord.AppCommandType.user
+        )
+        if existing is not None:
+            bot.tree.remove_command(
+                command.name, type=discord.AppCommandType.user
+            )
+        bot.tree.add_command(command)
