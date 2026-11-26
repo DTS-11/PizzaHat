@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import datetime
 import math
+import time
 from dataclasses import dataclass
 from typing import Any, cast
 from zoneinfo import ZoneInfo, available_timezones
@@ -20,8 +21,8 @@ from discord.ext import commands
 from discord.ext.commands import Context
 
 from core.bot import Zync
-from core.entitlements import Tier
 from core.cog import Cog
+from core.entitlements import Tier
 from utils.config import (
     ADMIN_INVITE,
     REG_INVITE,
@@ -44,6 +45,8 @@ _CATEGORY_DESCRIPTIONS: dict[str, str] = {
     "Quick Actions": "Right-click moderation shortcuts",
     "Other": "Additional commands",
 }
+
+
 def _emoji_text(value: Any) -> str:
     """Render an emoji for embed titles, field names, and select options."""
     return str(value) if value is not None else ""
@@ -75,10 +78,20 @@ def _category_emojis(categories: dict[str, list[HelpEntry]]) -> dict[str, Any]:
                 result[category] = entry.emoji
                 break
     return result
+
+
 _MOD_ACTIONS = frozenset(
     {
-        "ban", "unban", "banlist", "kick", "timeout", "warn", "warnings",
-        "clear", "slowmode", "prune",
+        "ban",
+        "unban",
+        "banlist",
+        "kick",
+        "timeout",
+        "warn",
+        "warnings",
+        "clear",
+        "slowmode",
+        "prune",
     }
 )
 _TOP_LEVEL_CATEGORIES: dict[str, str] = {
@@ -170,9 +183,7 @@ def _param_example(param: Any) -> str:
     return "value"
 
 
-def _make_entry(
-    command: HelpCommand, path: str, category: str, bot: Zync
-) -> HelpEntry:
+def _make_entry(command: HelpCommand, path: str, category: str, bot: Zync) -> HelpEntry:
     """Derive usage and an example from a registered command's parameters."""
     params = getattr(command, "_params", None)
     if params:
@@ -347,7 +358,9 @@ async def _entry_help_embed(
     cooldown = getattr(getattr(entry.command, "_buckets", None), "_cooldown", None)
     if cooldown is not None:
         embed.add_field(
-            name="Cooldown", value=f"{cooldown.rate}x per {cooldown.per:.0f}s", inline=True
+            name="Cooldown",
+            value=f"{cooldown.rate}x per {cooldown.per:.0f}s",
+            inline=True,
         )
     embed.set_footer(
         text="Use Back to return to the category list.",
@@ -481,7 +494,9 @@ class HelpView(ui.View):
                     self.ctx, category, entry, self.category_emojis
                 )
         if self.category is None:
-            return await _home_help_embed(self.ctx, self.categories, self.category_emojis)
+            return await _home_help_embed(
+                self.ctx, self.categories, self.category_emojis
+            )
         return await _category_help_embed(
             self.ctx,
             self.category,
@@ -515,7 +530,12 @@ class HelpView(ui.View):
         self.selected = path
         await self._render(interaction)
 
-    @ui.button(label="Home", emoji="\N{HOUSE BUILDING}", style=ButtonStyle.blurple, custom_id="help_home")
+    @ui.button(
+        label="Home",
+        emoji="\N{HOUSE BUILDING}",
+        style=ButtonStyle.blurple,
+        custom_id="help_home",
+    )
     async def _home_button(self, interaction: Interaction, button: ui.Button) -> None:
         """Button wrapper around :meth:`go_home`."""
         await self.go_home(interaction)
@@ -528,7 +548,12 @@ class HelpView(ui.View):
         self.selected = None
         await self._render(interaction)
 
-    @ui.button(label="Back", emoji="\N{LEFTWARDS ARROW WITH HOOK}", style=ButtonStyle.gray, custom_id="help_back")
+    @ui.button(
+        label="Back",
+        emoji="\N{LEFTWARDS ARROW WITH HOOK}",
+        style=ButtonStyle.gray,
+        custom_id="help_back",
+    )
     async def go_back(self, interaction: Interaction, button: ui.Button) -> None:
         """Step back through previous categories and command details."""
         if not self.history:
@@ -539,7 +564,11 @@ class HelpView(ui.View):
         self.category, self.page, self.selected = self.history.pop()
         await self._render(interaction)
 
-    @ui.button(emoji="\N{BLACK LEFT-POINTING TRIANGLE}", style=ButtonStyle.gray, custom_id="help_prev")
+    @ui.button(
+        emoji="\N{BLACK LEFT-POINTING TRIANGLE}",
+        style=ButtonStyle.gray,
+        custom_id="help_prev",
+    )
     async def previous_page(self, interaction: Interaction, button: ui.Button) -> None:
         """Show the previous page of the current category."""
         if self.category is None or self.page <= 0:
@@ -551,7 +580,11 @@ class HelpView(ui.View):
         self.selected = None
         await self._render(interaction)
 
-    @ui.button(emoji="\N{BLACK RIGHT-POINTING TRIANGLE}", style=ButtonStyle.gray, custom_id="help_next")
+    @ui.button(
+        emoji="\N{BLACK RIGHT-POINTING TRIANGLE}",
+        style=ButtonStyle.gray,
+        custom_id="help_next",
+    )
     async def next_page(self, interaction: Interaction, button: ui.Button) -> None:
         """Show the next page of the current category."""
         if self.category is None or self.page >= self._page_count() - 1:
@@ -752,12 +785,18 @@ class Help(Cog, emoji="\N{GEAR}"):
     )
     async def status(self, ctx: Context) -> None:
         """Show bot health, uptime and server counts."""
+        start = time.perf_counter()
+        message = await ctx.send("Gathering status...")
+        bot_ping = (time.perf_counter() - start) * 1000.0
+
         guilds = len(self.bot.guilds)
         members = sum(g.member_count or 0 for g in self.bot.guilds)
         em = await ctx_embed(ctx, title="Bot Status", timestamp=True)
         em.add_field(name="Uptime", value=f"`{self._uptime()}`", inline=True)
         em.add_field(
-            name="Latency", value=f"`{round(self.bot.latency * 1000)} ms`", inline=True
+            name="Latency",
+            value=f"API: `{round(self.bot.latency * 1000)} ms`\nBot: `{bot_ping:.0f} ms`",
+            inline=True,
         )
         em.add_field(name="Guilds", value=f"`{guilds}`", inline=True)
         em.add_field(name="Members", value=f"`{members:,}`", inline=True)
@@ -767,7 +806,7 @@ class Help(Cog, emoji="\N{GEAR}"):
             inline=True,
         )
         em.add_field(name="Workflows", value="`/workflow list`", inline=True)
-        await ctx.send(embed=em)
+        await message.edit(content=None, embed=em)
 
     # ── timezone ──────────────────────────────────────────────────────────────
 
