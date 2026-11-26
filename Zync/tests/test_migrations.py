@@ -32,16 +32,21 @@ def test_initial_migration_defines_core_tables() -> None:
     assert "CREATE TABLE IF NOT EXISTS schema_migrations" in sql
 
 
-def test_initial_migration_removes_legacy_tables() -> None:
+def test_initial_migration_drops_legacy_objects_by_actual_type() -> None:
     sql = (MIGRATIONS_DIR / "0001_initial_schema.sql").read_text(encoding="utf-8")
-    for table in ("warnlogs", "ticket_logs", "guild_logs", "logs_config", "automod", "antialt"):
-        assert f"DROP TABLE IF EXISTS {table} CASCADE" in sql
+    assert "SELECT c.relkind INTO object_kind" in sql
+    assert "DROP VIEW IF EXISTS %I CASCADE" in sql
+    assert "DROP TABLE IF EXISTS %I CASCADE" in sql
+    # Names that are tables in the legacy schema and views in the new one must
+    # all be handled by the type-aware block.
+    for name in (
+        "warnlogs", "ticket_logs", "guild_logs", "logs_config",
+        "automod", "antialt", "premium", "workflows",
+        "star_info", "user_timezone",
+    ):
+        assert f"'{name}'" in sql
 
 
-def test_views_are_dropped_before_tables() -> None:
+def test_drop_block_runs_before_any_create() -> None:
     sql = (MIGRATIONS_DIR / "0001_initial_schema.sql").read_text(encoding="utf-8")
-    first_table_drop = sql.index("\nDROP TABLE IF EXISTS")
-    for view in ("premium", "workflows", "star_info", "user_timezone"):
-        statement = f"DROP VIEW IF EXISTS {view} CASCADE"
-        assert statement in sql
-        assert sql.index(statement) < first_table_drop
+    assert sql.index("DO $zync_drop$") < sql.index("CREATE TABLE guild_config")

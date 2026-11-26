@@ -11,44 +11,37 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 );
 
 -- Start from a clean schema. No production data is preserved by design.
--- Drop views first: DROP TABLE IF EXISTS on an existing view can raise a
--- wrong-object-type error in PostgreSQL.
-DROP VIEW IF EXISTS guild_logs CASCADE;
-DROP VIEW IF EXISTS logs_config CASCADE;
-DROP VIEW IF EXISTS automod CASCADE;
-DROP VIEW IF EXISTS antialt CASCADE;
-DROP VIEW IF EXISTS premium CASCADE;
-DROP VIEW IF EXISTS workflows CASCADE;
-DROP VIEW IF EXISTS star_info CASCADE;
-DROP VIEW IF EXISTS user_timezone CASCADE;
+-- Object names overlap between the legacy tables and the new views, and
+-- PostgreSQL raises WrongObjectTypeError when DROP TABLE targets a view (or
+-- vice versa). Inspect pg_class and drop whatever type is actually present.
+DO $zync_drop$
+DECLARE
+    object_name TEXT;
+    object_kind "char";
+BEGIN
+    FOREACH object_name IN ARRAY ARRAY[
+        'role_menu_items', 'role_menus', 'ticket_panels', 'tickets',
+        'ticket_logs', 'workflow_runs', 'workflow_run_state', 'workflows',
+        'workflow_definitions', 'moderation_case_edits', 'moderation_cases',
+        'warnlogs', 'automation_config', 'automod', 'antialt', 'guild_config',
+        'guild_logs', 'logs_config', 'star_info', 'tags', 'embed_templates',
+        'user_preferences', 'user_timezone', 'scheduled_tasks', 'wordlists',
+        'subscriptions', 'premium'
+    ]
+    LOOP
+        SELECT c.relkind INTO object_kind
+        FROM pg_class AS c
+        WHERE c.relname = object_name
+          AND c.relnamespace = 'public'::regnamespace;
 
-DROP TABLE IF EXISTS role_menu_items CASCADE;
-DROP TABLE IF EXISTS role_menus CASCADE;
-DROP TABLE IF EXISTS ticket_panels CASCADE;
-DROP TABLE IF EXISTS tickets CASCADE;
-DROP TABLE IF EXISTS ticket_logs CASCADE;
-DROP TABLE IF EXISTS workflow_runs CASCADE;
-DROP TABLE IF EXISTS workflow_run_state CASCADE;
-DROP TABLE IF EXISTS workflows CASCADE;
-DROP TABLE IF EXISTS workflow_definitions CASCADE;
-DROP TABLE IF EXISTS moderation_case_edits CASCADE;
-DROP TABLE IF EXISTS moderation_cases CASCADE;
-DROP TABLE IF EXISTS warnlogs CASCADE;
-DROP TABLE IF EXISTS automation_config CASCADE;
-DROP TABLE IF EXISTS automod CASCADE;
-DROP TABLE IF EXISTS antialt CASCADE;
-DROP TABLE IF EXISTS guild_config CASCADE;
-DROP TABLE IF EXISTS guild_logs CASCADE;
-DROP TABLE IF EXISTS logs_config CASCADE;
-DROP TABLE IF EXISTS star_info CASCADE;
-DROP TABLE IF EXISTS tags CASCADE;
-DROP TABLE IF EXISTS embed_templates CASCADE;
-DROP TABLE IF EXISTS user_preferences CASCADE;
-DROP TABLE IF EXISTS user_timezone CASCADE;
-DROP TABLE IF EXISTS scheduled_tasks CASCADE;
-DROP TABLE IF EXISTS wordlists CASCADE;
-DROP TABLE IF EXISTS subscriptions CASCADE;
-DROP TABLE IF EXISTS premium CASCADE;
+        IF object_kind = 'v' THEN
+            EXECUTE format('DROP VIEW IF EXISTS %I CASCADE', object_name);
+        ELSIF object_kind IN ('r', 'p', 'f') THEN
+            EXECUTE format('DROP TABLE IF EXISTS %I CASCADE', object_name);
+        END IF;
+    END LOOP;
+END
+$zync_drop$;
 
 -- Server configuration -------------------------------------------------------
 
