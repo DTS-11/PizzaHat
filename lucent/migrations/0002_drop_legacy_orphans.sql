@@ -2,7 +2,7 @@
 -- shares their name. None are referenced by the Discord engine; their data is
 -- not migrated by design.
 
-DO $zync_drop_orphans$
+DO $lucent_drop_orphans$
 DECLARE
     object_name TEXT;
     object_kind "char";
@@ -24,4 +24,4 @@ BEGIN
         END IF;
     END LOOP;
 END
-$zync_drop_orphans$;
+$lucent_drop_orphans$;
