@@ -18,11 +18,12 @@ from urllib import parse
 import discord
 import emojis
 
-from core.bot import Zync
+from core.bot import Lucent
 from core.cog import Cog
 from services import get_logs, get_moderation, get_protection, get_scheduler
 from services.protection import (
     ALL_MODULES,
+    CONTENT_MODULES,
     DEFAULT_ANTIALT,
     DEFAULT_THRESHOLD_SETTINGS,
     ProtectionService,
@@ -81,7 +82,7 @@ def _setting(module: str, settings: dict[str, Any], key: str) -> Any:
 class AntiAltsConfig(Cog):
     """Anti-Alt enforcement listener."""
 
-    def __init__(self, bot: Zync):
+    def __init__(self, bot: Lucent):
         self.bot = bot
         self.protection: ProtectionService = get_protection(bot)
         self.logs = get_logs(bot)
@@ -161,7 +162,7 @@ class AntiAltsConfig(Cog):
             if level == 1:
                 if restricted_role:
                     await member.add_roles(
-                        restricted_role, reason="Zync Anti-Alt: Account too new"
+                        restricted_role, reason="Lucent Anti-Alt: Account too new"
                     )
                     action_label = f"RESTRICTED (role: {restricted_role.name})"
                     outcome = "restrict"
@@ -169,19 +170,19 @@ class AntiAltsConfig(Cog):
                     until = discord.utils.utcnow() + datetime.timedelta(hours=24)
                     await member.timeout(
                         until,
-                        reason="Zync Anti-Alt: Account too new — no restricted role set",
+                        reason="Lucent Anti-Alt: Account too new — no restricted role set",
                     )
                     action_label = "TIMED OUT 24h (no restricted role configured)"
                     outcome = "timeout"
             elif level == 2:
                 if member.guild.me.guild_permissions.kick_members:
-                    await member.kick(reason="Zync Anti-Alt: Account too new")
+                    await member.kick(reason="Lucent Anti-Alt: Account too new")
                     action_label = "KICKED"
                     outcome = "kick"
             elif level >= 3:
                 if member.guild.me.guild_permissions.ban_members:
                     await member.ban(
-                        reason="Zync Anti-Alt: Account too new", delete_message_days=0
+                        reason="Lucent Anti-Alt: Account too new", delete_message_days=0
                     )
                     action_label = "BANNED"
                     outcome = "ban"
@@ -234,7 +235,7 @@ class AntiAltsConfig(Cog):
 
         try:
             await member.ban(
-                reason="Zync Anti-Alt: Rejoined after Level 2 kick",
+                reason="Lucent Anti-Alt: Rejoined after Level 2 kick",
                 delete_message_days=0,
             )
         except discord.HTTPException:
@@ -287,7 +288,7 @@ class AutoModConfig(Cog):
     _join_buckets: dict[int, list[float]] = defaultdict(list)
     _raid_locked: dict[int, bool] = {}
 
-    def __init__(self, bot: Zync):
+    def __init__(self, bot: Lucent):
         self.bot = bot
         self.protection: ProtectionService = get_protection(bot)
         self.logs = get_logs(bot)
@@ -396,7 +397,9 @@ class AutoModConfig(Cog):
             return
         if warn_count is None:
             warn_count = await self.moderation.warn_count(
-                guild_id, user_id, decay_days=await self.protection.warn_decay_days(guild_id)
+                guild_id,
+                user_id,
+                decay_days=await self.protection.warn_decay_days(guild_id),
             )
 
         action_cfg: dict[str, Any] | None = None
@@ -430,7 +433,9 @@ class AutoModConfig(Cog):
 
         try:
             if action == "timeout":
-                until = discord.utils.utcnow() + datetime.timedelta(seconds=duration_secs)
+                until = discord.utils.utcnow() + datetime.timedelta(
+                    seconds=duration_secs
+                )
                 await member.timeout(until, reason=reason)
                 action_type, duration, executed = "timeout", duration_secs, True
             elif action == "kick":
@@ -531,17 +536,12 @@ class AutoModConfig(Cog):
 
     @Cog.listener()
     async def on_message(self, msg: discord.Message) -> None:
-        if (
-            msg.author.bot
-            or not msg.guild
-            or not msg.content
-            or _has_mod_perms(msg)
-        ):
+        if msg.author.bot or not msg.guild or _has_mod_perms(msg):
             return
         if not await self._is_enabled(msg.guild.id):
             return
 
-        handlers = {
+        handlers: dict[str, Any] = {
             "banned_words": self._banned_words,
             "scam_links": self._scam_links,
             "all_caps": self._all_caps,
@@ -553,11 +553,18 @@ class AutoModConfig(Cog):
             "newline_spam": self._newline_spam,
             "repeated_chars": self._repeated_chars,
         }
+        content_enabled = bool(getattr(self.bot, "can_read_message_content", False))
         for module, settings in await self.protection.detect_rules(
             msg.guild.id, msg.channel.id
         ):
+            if module in CONTENT_MODULES and not content_enabled:
+                continue
             handler = handlers.get(module)
-            if handler is not None and await handler(msg, settings):
+            if handler is None:
+                continue
+            if module in CONTENT_MODULES and not getattr(msg, "content", ""):
+                continue
+            if await handler(msg, settings):
                 await self._issue_automod_warn(msg, module)
                 return
 
@@ -604,7 +611,9 @@ class AutoModConfig(Cog):
                 "message": msg.content,
             },
         )
-        await self.check_warn_threshold(msg.author.id, msg.guild.id, warn_count=warn_count)
+        await self.check_warn_threshold(
+            msg.author.id, msg.guild.id, warn_count=warn_count
+        )
 
     async def _send(self, ch: Any, text: str) -> None:
         try:
@@ -623,7 +632,9 @@ class AutoModConfig(Cog):
         for word in BANNED_WORDS:
             if word in content:
                 await self._delete(msg)
-                await self._send(msg.channel, f"{msg.author.mention} Watch your language.")
+                await self._send(
+                    msg.channel, f"{msg.author.mention} Watch your language."
+                )
                 return True
         return False
 
@@ -631,7 +642,8 @@ class AutoModConfig(Cog):
         if SCAM_PATTERNS.search(msg.content):
             await self._delete(msg)
             await self._send(
-                msg.channel, f"{msg.author.mention} Scam/phishing links are not allowed."
+                msg.channel,
+                f"{msg.author.mention} Scam/phishing links are not allowed.",
             )
             return True
         return False
@@ -647,7 +659,9 @@ class AutoModConfig(Cog):
             return False
         if (sum(1 for c in content if c.isupper()) / alpha) * 100 >= threshold:
             await self._delete(msg)
-            await self._send(msg.channel, f"{msg.author.mention} Please don't use excessive caps.")
+            await self._send(
+                msg.channel, f"{msg.author.mention} Please don't use excessive caps."
+            )
             return True
         return False
 
@@ -675,7 +689,9 @@ class AutoModConfig(Cog):
                     ),
                 ):
                     await msg.channel.purge(limit=threshold + 2, check=_check)
-                    await self._send(msg.channel, f"{msg.author.mention} Stop spamming.")
+                    await self._send(
+                        msg.channel, f"{msg.author.mention} Stop spamming."
+                    )
             except discord.HTTPException:
                 pass
             return True
@@ -726,7 +742,8 @@ class AutoModConfig(Cog):
         if ZALGO_REGEX.search(parse.quote(msg.content.encode("utf-8"))):
             await self._delete(msg)
             await self._send(
-                msg.channel, f"{msg.author.mention} Zalgo/corrupted text is not allowed."
+                msg.channel,
+                f"{msg.author.mention} Zalgo/corrupted text is not allowed.",
             )
             return True
         return False
@@ -736,7 +753,8 @@ class AutoModConfig(Cog):
         if msg.content.count("\n") >= threshold:
             await self._delete(msg)
             await self._send(
-                msg.channel, f"{msg.author.mention} Excessive line breaks are not allowed."
+                msg.channel,
+                f"{msg.author.mention} Excessive line breaks are not allowed.",
             )
             return True
         return False
@@ -787,7 +805,9 @@ class AutoModConfig(Cog):
                     description=f"{member.mention} was kicked for having a banned word in their username.",
                     member=member,
                     color=0xED4245,
-                    fields=[("Username", discord.utils.escape_markdown(str(member)), False)],
+                    fields=[
+                        ("Username", discord.utils.escape_markdown(str(member)), False)
+                    ],
                 )
                 return
 
@@ -900,7 +920,9 @@ class AutoModConfig(Cog):
             },
         )
 
-    async def _track_join_rate(self, member: discord.Member, cfg: dict[str, Any]) -> None:
+    async def _track_join_rate(
+        self, member: discord.Member, cfg: dict[str, Any]
+    ) -> None:
         if not self._mod_enabled(cfg, "join_rate"):
             return
         guild_id = member.guild.id
@@ -933,7 +955,9 @@ class AutoModConfig(Cog):
             self._raid_locked[guild_id] = False
             return
 
-        restore_at = discord.utils.utcnow() + datetime.timedelta(minutes=lockdown_minutes)
+        restore_at = discord.utils.utcnow() + datetime.timedelta(
+            minutes=lockdown_minutes
+        )
         await self.scheduler.schedule_verification_restore(
             guild_id,
             original_level,
@@ -969,6 +993,6 @@ class AutoModConfig(Cog):
         )
 
 
-async def setup(bot: Zync) -> None:
+async def setup(bot: Lucent) -> None:
     await bot.add_cog(AntiAltsConfig(bot))
     await bot.add_cog(AutoModConfig(bot))
