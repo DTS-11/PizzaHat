@@ -1,6 +1,6 @@
 """Bot bootstrap and shared application state.
 
-Defines :class:`Zync`, its intents/session setup, extension lists, database
+Defines :class:`Lucent`, its intents/session setup, extension lists, database
 lifecycle, and command error handling. Structural concerns such as logging and
 entitlements live in dedicated modules.
 """
@@ -19,11 +19,11 @@ from core.database import create_db_pool, run_migrations
 from core.entitlements import EntitlementService, Tier
 from core.logging import get_logger
 from utils.config import REPO_LINK
-from utils.embed import golden_embed, orange_embed
+from utils.embed import golden_embed, orange_embed, red_embed
 
 logger = get_logger("bot")
 
-__all__ = ["Zync", "Tier", "INITIAL_EXTENSIONS", "SUB_EXTENSIONS"]
+__all__ = ["Lucent", "Tier", "INITIAL_EXTENSIONS", "SUB_EXTENSIONS"]
 
 INITIAL_EXTENSIONS = [
     "cogs.dev",
@@ -32,31 +32,13 @@ INITIAL_EXTENSIONS = [
     "cogs.role_menus",
     "cogs.safety",
     "cogs.help",
+    "cogs.setup",
     "cogs.tags",
     "cogs.templates",
     "cogs.tickets",
     "cogs.workflows",
 ]
 
-# Discord's slash menu gets unwieldy with one entry per command, so flat
-# commands are nested under a handful of topical groups at startup.
-_SLASH_GROUPS: dict[str, str] = {
-    "info": "General bot information and utilities",
-    "tickets": "Ticket management",
-}
-_COG_GROUPS: dict[str, str] = {
-    "help": "info",
-    "tickets": "tickets",
-}
-# Moderation is a real ``/mod`` hybrid group in cogs/mod.py; only flat commands
-# from other cogs need to be gathered here. Existing groups stay top-level.
-_KEEP_TOP_LEVEL = frozenset({"help", "status", "premium"})
-
-# Owner-only dev commands must never be registered as application commands.
-# They are invoked with the mention prefix only (e.g. ``@Zync eval ...``).
-_DEV_COMMAND_NAMES = frozenset(
-    {"eval", "sql", "botlogs", "reloadall", "update_badwords"}
-)
 
 SUB_EXTENSIONS = [
     "cogs_hidden.events",
@@ -67,17 +49,16 @@ SUB_EXTENSIONS = [
 ]
 
 description = f"""
-Zync is a deterministic Discord operations engine: Trigger → Condition → Action.
+Lucent is a deterministic Discord operations engine: Trigger → Condition → Action.
 Automate staff operations, moderation, protection and server events from one place.
 
 Source: [GitHub]({REPO_LINK})
 """
 
 
-class Zync(commands.Bot):
+class Lucent(commands.Bot):
     def __init__(self):
-        # Voice connections/playback are unused; only voice-state events are read
-        # for logging, which needs neither PyNaCl nor davey.
+        # Voice-state logging does not need PyNaCl or davey.
         discord.VoiceClient.warn_nacl = False
         discord.VoiceClient.warn_dave = False
 
@@ -104,7 +85,7 @@ class Zync(commands.Bot):
             allowed_mentions=allowed_mentions,
             case_insensitive=True,
             status=discord.Status.online,
-            activity=discord.CustomActivity(name="Zync • deterministic operations"),
+            activity=discord.CustomActivity(name="🔗 lucentbot.app"),
         )
 
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
@@ -113,54 +94,7 @@ class Zync(commands.Bot):
         self.color = 0x456DD4
         self.logging_webhooks: dict[int, discord.Webhook] = {}
 
-    def compact_slash_commands(self) -> None:
-        """Nest flat slash commands under groups to keep Discord's picker usable."""
-
-        for name in _DEV_COMMAND_NAMES:
-            if self.tree.get_command(name) is not None:
-                self.tree.remove_command(name)
-
-        def group_named(
-            name: str,
-            description: str,
-            parent: discord.app_commands.Group | None = None,
-        ) -> discord.app_commands.Group:
-            existing = (
-                parent.get_command(name)
-                if parent is not None
-                else self.tree.get_command(name)
-            )
-            if isinstance(existing, discord.app_commands.Group):
-                return existing
-            group = discord.app_commands.Group(name=name, description=description)
-            if parent is None:
-                self.tree.add_command(group)
-            else:
-                parent.add_command(group)
-            return group
-
-        groups = {
-            name: group_named(name, description)
-            for name, description in _SLASH_GROUPS.items()
-        }
-
-        for command in list(
-            self.tree.get_commands(type=discord.AppCommandType.chat_input)
-        ):
-            if command.name in _KEEP_TOP_LEVEL or isinstance(
-                command, discord.app_commands.Group
-            ):
-                continue
-            owner = getattr(command, "binding", None) or getattr(command, "cog", None)
-            cog_name = getattr(owner, "qualified_name", "").casefold()
-            destination = groups.get(_COG_GROUPS.get(cog_name, ""))
-            if destination is None:
-                continue
-            self.tree.remove_command(command.name)
-            existing = destination.get_command(command.name)
-            if existing is not None:
-                destination.remove_command(command.name)
-            destination.add_command(command)
+        self.can_read_message_content = intents.message_content
 
     async def sync_commands(self) -> bool:
         """Sync the tree, scoped to DEV_GUILD_ID when set to avoid dev global syncs."""
@@ -185,7 +119,9 @@ class Zync(commands.Bot):
         return True
 
     async def on_tree_error(
-        self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError
+        self,
+        interaction: discord.Interaction,
+        error: discord.app_commands.AppCommandError,
     ) -> None:
         """Give clear, ephemeral feedback for failed application commands."""
         if isinstance(error, discord.app_commands.NoPrivateMessage):
@@ -197,7 +133,9 @@ class Zync(commands.Bot):
             missing = ", ".join(p.replace("_", " ") for p in error.missing_permissions)
             message = f"I'm missing the **{missing}** permission to do that."
         elif isinstance(error, discord.app_commands.CommandOnCooldown):
-            message = f"That command is on cooldown. Try again in `{error.retry_after:.0f}s`."
+            message = (
+                f"That command is on cooldown. Try again in `{error.retry_after:.0f}s`."
+            )
         elif isinstance(error, discord.app_commands.CommandInvokeError):
             logger.error(
                 "Application command /%s failed",
@@ -246,7 +184,6 @@ class Zync(commands.Bot):
                 logger.exception("Failed to load extension %s: %s", ext, exc)
                 fail += 1
 
-        self.compact_slash_commands()
         await self.sync_commands()
 
         logger.info(
@@ -333,7 +270,16 @@ class Zync(commands.Bot):
 
     async def on_command_error(self, ctx: Context, error: CommandError) -> None:
         if isinstance(error, commands.CommandNotFound):
-            pass
+            invoked = getattr(ctx, "invoked_with", "") or "command"
+            await ctx.send(
+                embed=red_embed(
+                    description=(
+                        f"{self.no} Unknown command `{invoked}`. "
+                        "Use `@Lucent help` to see what I can do."
+                    )
+                ),
+                delete_after=10,
+            )
 
         elif isinstance(error, commands.NotOwner):
             pass
