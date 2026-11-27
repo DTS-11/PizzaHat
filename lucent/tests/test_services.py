@@ -56,9 +56,7 @@ def test_duplicate_case_returns_existing_row() -> None:
     service = ModerationService(pool)  # type: ignore[arg-type]
 
     case = asyncio.run(
-        service.create_case(
-            10, 20, 30, "warn", idempotency_key="duplicate-key"
-        )
+        service.create_case(10, 20, 30, "warn", idempotency_key="duplicate-key")
     )
     assert case is not None
     assert case["case_id"] == original["case_id"]
