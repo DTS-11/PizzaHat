@@ -11,13 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: Zync
+        working-directory: lucent
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          working-directory: Zync
+          working-directory: lucent
       - name: Install dependencies
         run: uv sync --frozen --group dev
       - name: Compile sources
