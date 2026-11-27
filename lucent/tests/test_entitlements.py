@@ -38,7 +38,9 @@ def test_active_subscription_is_cached() -> None:
 
 
 def test_unknown_tier_is_safe() -> None:
-    service = EntitlementService(FakePool({"tier": 99, "status": "active", "current_period_end": FUTURE}))
+    service = EntitlementService(
+        FakePool({"tier": 99, "status": "active", "current_period_end": FUTURE})
+    )
     assert asyncio.run(service.tier_for(3)) is Tier.FREE
 
 
