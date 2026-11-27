@@ -1,5 +1,5 @@
 [project]
-name = "zync"
+name = "lucent"
 version = "0.1.0"
 description = "Deterministic Discord operations and workflow automation"
 readme = "../README.md"
