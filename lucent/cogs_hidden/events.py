@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import discord
 
-from core.bot import Zync
+from core.bot import Lucent
 from core.cog import Cog
 from services import get_logs, get_protection
 from utils.config import LOG_CHANNEL_ID
@@ -18,8 +18,8 @@ from utils.embed import green_embed, guild_embed, red_embed
 class Events(Cog):
     """Events cog"""
 
-    def __init__(self, bot: Zync):
-        self.bot: Zync = bot
+    def __init__(self, bot: Lucent):
+        self.bot: Lucent = bot
 
     async def _get_bot_logs_channel(self) -> discord.TextChannel | None:
         """Resolve the optional deployment-wide log channel, if configured."""
@@ -38,8 +38,6 @@ class Events(Cog):
         channel = await self._get_bot_logs_channel()
         if channel is not None:
             await self.bot.send_log(channel, embed=embed)
-
-    # ====== BOT PING MSG ======
 
     @Cog.listener()
     async def on_message(self, msg: discord.Message) -> None:
@@ -61,14 +59,14 @@ class Events(Cog):
         )
         await msg.channel.send(embed=em)
 
-    # ====== BOT GUILD JOIN/LEAVE ======
-
     @Cog.listener()
     async def on_guild_join(self, guild: discord.Guild) -> None:
         em = green_embed(title="Guild Joined", timestamp=True)
         em.set_author(name=guild.name, icon_url=guild.icon.url if guild.icon else None)
         em.add_field(name="Guild Name", value=guild.name, inline=False)
-        em.add_field(name="Members", value=guild.member_count or len(guild.members), inline=False)
+        em.add_field(
+            name="Members", value=guild.member_count or len(guild.members), inline=False
+        )
         if guild.owner:
             em.add_field(
                 name="Owner", value=f"{guild.owner} ({guild.owner.id})", inline=False
@@ -96,7 +94,12 @@ class Events(Cog):
             cog = self.bot.get_cog(cog_name)
             if cog is None:
                 continue
-            for attr in ("clear_config_cache", "clear_cache", "clear_log_config_cache", "invalidate"):
+            for attr in (
+                "clear_config_cache",
+                "clear_cache",
+                "clear_log_config_cache",
+                "invalidate",
+            ):
                 clear_cache = getattr(cog, attr, None)
                 if callable(clear_cache):
                     try:
@@ -120,5 +123,5 @@ class Events(Cog):
         await self._send_bot_logs_embed(em)
 
 
-async def setup(bot: Zync) -> None:
+async def setup(bot: Lucent) -> None:
     await bot.add_cog(Events(bot))
