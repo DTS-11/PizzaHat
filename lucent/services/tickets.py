@@ -27,8 +27,6 @@ class TicketService:
     def __init__(self, pool: Any | None) -> None:
         self.db = pool
 
-    # ── panels ──────────────────────────────────────────────────────────────
-
     async def create_panel(
         self,
         guild_id: int,
@@ -111,8 +109,6 @@ class TicketService:
         )
         return dict(row) if row else None
 
-    # ── tickets ─────────────────────────────────────────────────────────────
-
     async def open_ticket(
         self,
         guild_id: int,
@@ -168,9 +164,7 @@ class TicketService:
             return found
         raise TicketNotFound("That ticket could not be registered.")
 
-    async def get_ticket(
-        self, guild_id: int, thread_id: int
-    ) -> dict[str, Any] | None:
+    async def get_ticket(self, guild_id: int, thread_id: int) -> dict[str, Any] | None:
         if self.db is None:
             return None
         row = await self.db.fetchrow(
@@ -244,7 +238,7 @@ class TicketService:
         return [dict(row) for row in rows]
 
     async def insights(self, guild_id: int) -> dict[str, Any]:
-        """Aggregates used by ``/mod insights`` from the ticket tables."""
+        """Aggregates used by ``@Lucent insights`` from the ticket tables."""
 
         if self.db is None:
             return {
