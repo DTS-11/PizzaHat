@@ -1,7 +1,7 @@
 {
-  "venvPath": "Zync",
+  "venvPath": "lucent",
   "venv": ".venv",
-  "extraPaths": ["Zync"],
+  "extraPaths": ["lucent"],
   "reportMissingTypeStubs": false,
   "reportFunctionMemberAccess": "none"
 }
