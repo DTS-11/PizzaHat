@@ -22,7 +22,7 @@ def green_embed(
         title=title,
         description=description,
         color=0x57F287,
-        timestamp=datetime.datetime.now() if timestamp else None,
+        timestamp=datetime.datetime.now(datetime.timezone.utc) if timestamp else None,
     )
 
 
@@ -38,7 +38,7 @@ def red_embed(
         title=title,
         description=description,
         color=0xED4245,
-        timestamp=datetime.datetime.now() if timestamp else None,
+        timestamp=datetime.datetime.now(datetime.timezone.utc) if timestamp else None,
     )
 
 
@@ -54,7 +54,7 @@ def orange_embed(
         title=title,
         description=description,
         color=0xFAA61A,
-        timestamp=datetime.datetime.now() if timestamp else None,
+        timestamp=datetime.datetime.now(datetime.timezone.utc) if timestamp else None,
     )
 
 
@@ -70,7 +70,7 @@ def golden_embed(
         title=title,
         description=description,
         color=0xFFD700,
-        timestamp=datetime.datetime.now() if timestamp else None,
+        timestamp=datetime.datetime.now(datetime.timezone.utc) if timestamp else None,
     )
 
 
@@ -86,8 +86,8 @@ def normal_embed(
     return Embed(
         title=title,
         description=description,
-        color=color or 0x456DD4,
-        timestamp=datetime.datetime.now() if timestamp else None,
+        color=0x456DD4 if color is None else color,
+        timestamp=datetime.datetime.now(datetime.timezone.utc) if timestamp else None,
     )
 
 
@@ -97,10 +97,11 @@ async def get_themed_embed(
     title: Optional[str] = None,
     description: Optional[str] = None,
     *,
+    color: Optional[int] = None,
     timestamp: Optional[bool] = None,
 ) -> Embed:
     """Build a normal embed. Kept for call-site compatibility."""
-    return normal_embed(title, description, timestamp=timestamp)
+    return normal_embed(title, description, color=color, timestamp=timestamp)
 
 
 async def ctx_embed(
@@ -115,9 +116,14 @@ async def ctx_embed(
 
     if ctx.guild and ctx.bot.db:
         return await get_themed_embed(
-            ctx.bot.db, ctx.guild.id, title, description, timestamp=timestamp
+            ctx.bot.db,
+            ctx.guild.id,
+            title,
+            description,
+            color=color,
+            timestamp=timestamp,
         )
-    return normal_embed(title, description, timestamp=timestamp)
+    return normal_embed(title, description, color=color, timestamp=timestamp)
 
 
 async def guild_embed(
@@ -126,12 +132,13 @@ async def guild_embed(
     title: Optional[str] = None,
     description: Optional[str] = None,
     *,
+    color: Optional[int] = None,
     timestamp: Optional[bool] = None,
 ) -> Embed:
     """Get a themed embed using pool and guild_id (for use in events/listeners)."""
 
     return await get_themed_embed(
-        pool, guild_id, title, description, timestamp=timestamp
+        pool, guild_id, title, description, color=color, timestamp=timestamp
     )
 
 
