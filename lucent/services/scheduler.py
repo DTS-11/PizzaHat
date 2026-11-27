@@ -34,8 +34,6 @@ class SchedulerService:
         self.moderation = ModerationService(self.db)
         self._running = False
 
-    # ── lifecycle ───────────────────────────────────────────────────────────
-
     def start(self) -> None:
         """Start the reconciling loop; safe to call more than once."""
 
@@ -62,8 +60,6 @@ class SchedulerService:
     @_due_loop.before_loop
     async def _before_due_loop(self) -> None:
         await self.bot.wait_until_ready()
-
-    # ── scheduling ──────────────────────────────────────────────────────────
 
     async def schedule_unban(
         self,
@@ -158,8 +154,6 @@ class SchedulerService:
         )
         return int(result.rsplit(" ", 1)[-1] or 0)
 
-    # ── reconciliation ──────────────────────────────────────────────────────
-
     async def process_due(self) -> int:
         """Claim due jobs with ``FOR UPDATE SKIP LOCKED`` and execute them."""
 
@@ -243,9 +237,13 @@ class SchedulerService:
             await self.moderation.create_case(
                 guild_id,
                 user_id,
-                int(payload.get("moderator_user_id") or getattr(self.bot.user, "id", 0)),
+                int(
+                    payload.get("moderator_user_id") or getattr(self.bot.user, "id", 0)
+                ),
                 "unban",
-                source=payload.get("source") if payload.get("source") in SOURCES else "automod",
+                source=payload.get("source")
+                if payload.get("source") in SOURCES
+                else "automod",
                 reason=reason,
                 metadata={"scheduled": True},
                 idempotency_key=f"scheduled:unban:{payload.get('task_id')}",
