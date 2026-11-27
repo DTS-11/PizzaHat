@@ -12,9 +12,7 @@ import json
 from copy import deepcopy
 from typing import Any, Callable
 
-from core.entitlements import Tier, EntitlementService
-
-# ── canonical defaults -------------------------------------------------------
+from core.entitlements import EntitlementService, Tier
 
 FREE_MODULES = (
     "banned_words",
@@ -34,6 +32,19 @@ BASIC_MODULES = (
     "join_rate",
 )
 ALL_MODULES = FREE_MODULES + BASIC_MODULES
+
+CONTENT_MODULES = frozenset(
+    {
+        "banned_words",
+        "scam_links",
+        "all_caps",
+        "invites",
+        "emoji_spam",
+        "zalgo_text",
+        "newline_spam",
+        "repeated_chars",
+    }
+)
 
 PRO_ACTIONS = frozenset({"tempban", "role_add", "role_remove"})
 PRO_SETTINGS = frozenset({"lockdown_minutes"})
@@ -58,8 +69,6 @@ MODULE_DESCRIPTIONS = {
     "join_rate": "Detect mass joins and trigger auto-lockdown  [Basic]",
 }
 
-# Every detector reads its thresholds through ``ProtectionService``. Missing
-# values fall back to the entries below instead of literals in listeners.
 DEFAULT_MODULE_SETTINGS: dict[str, dict[str, Any]] = {
     "banned_words": {},
     "all_caps": {"threshold": 70, "min_length": 8},
@@ -90,7 +99,6 @@ DEFAULT_ANTIALT: dict[str, Any] = {
 }
 DEFAULT_SAFETY: dict[str, Any] = {}
 
-# Defaults applied to warn-threshold actions when an admin omits a value.
 DEFAULT_THRESHOLD_SETTINGS: dict[str, Any] = {
     "duration": 3600,
     "unban_days": 1,
@@ -137,10 +145,14 @@ def is_module_enabled(
 
     if channel_id is not None:
         overrides = config.get("overrides") or {}
-        override = overrides.get(str(channel_id)) if isinstance(overrides, dict) else None
+        override = (
+            overrides.get(str(channel_id)) if isinstance(overrides, dict) else None
+        )
         if isinstance(override, dict) and module in override:
             value = override[module]
-            return bool(value) if isinstance(value, bool) else bool(value.get("enabled"))
+            return (
+                bool(value) if isinstance(value, bool) else bool(value.get("enabled"))
+            )
 
     value = config.get(module, {})
     if isinstance(value, bool):
@@ -179,9 +191,11 @@ def _normalize(section: str, config: dict[str, Any]) -> dict[str, Any]:
                 value = {"enabled": bool(value)}
             result[module] = {**module_defaults(module), **value}
         thresholds = result.get("thresholds")
-        result["thresholds"] = [
-            dict(entry) for entry in thresholds if isinstance(entry, dict)
-        ] if isinstance(thresholds, list) else []
+        result["thresholds"] = (
+            [dict(entry) for entry in thresholds if isinstance(entry, dict)]
+            if isinstance(thresholds, list)
+            else []
+        )
         overrides = result.get("overrides")
         result["overrides"] = (
             {str(k): v for k, v in overrides.items()}
@@ -255,8 +269,6 @@ class ProtectionService:
             return Tier.PRO
         return MODULE_TIERS.get(module, Tier.BASIC)
 
-    # ── config access ───────────────────────────────────────────────────────
-
     async def get(self, guild_id: int, section: str = "automod") -> dict[str, Any]:
         if section not in _SECTION_COLUMNS:
             raise ValueError(f"Unknown protection section: {section}")
@@ -316,7 +328,6 @@ class ProtectionService:
             config = result
         return await self.set(guild_id, section, config)
 
-    # Named aliases keep command and listener call sites readable.
     async def automod(self, guild_id: int) -> dict[str, Any]:
         return await self.get(guild_id, "automod")
 
@@ -334,8 +345,6 @@ class ProtectionService:
 
     async def set_safety(self, guild_id: int, config: dict[str, Any]) -> None:
         await self.set(guild_id, "safety", config)
-
-    # ── derived values ──────────────────────────────────────────────────────
 
     async def automod_enabled(self, guild_id: int) -> bool:
         return bool((await self.automod(guild_id)).get("enabled"))
