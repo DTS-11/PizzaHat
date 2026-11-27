@@ -22,7 +22,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import INITIAL_EXTENSIONS, SUB_EXTENSIONS, Lucent
+from core.bot import Lucent
 from core.cog import Cog
 from utils.embed import ctx_embed
 from utils.formats import TabularData, plural
@@ -127,13 +127,23 @@ class Dev(Cog, emoji=1268856867585658981):
         process = await asyncio.create_subprocess_exec(
             "git",
             "pull",
+            "--ff-only",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await process.communicate()
         output = ((stdout or b"") + (stderr or b"")).decode(errors="replace").strip()
 
-        await ctx.send(f"```bash\n{output[:1900]}\n```\nRestarting...")
+        if process.returncode != 0:
+            details = output or "git pull exited without reporting an error."
+            return await ctx.send(
+                f"Update failed (exit {process.returncode}):\n"
+                f"```bash\n{details[:1850]}\n```\n"
+                "The bot is still running."
+            )
+
+        details = output or "Update complete."
+        await ctx.send(f"```bash\n{details[:1830]}\n```\nRestarting the bot…")
         await self.bot.close()
 
     @commands.command(name="eval", hidden=True)
@@ -267,9 +277,12 @@ class Dev(Cog, emoji=1268856867585658981):
     async def reloadall(self, ctx: Context):
         """Reload all cogs (owner only)."""
         failed: list[str] = []
-        extensions = (*INITIAL_EXTENSIONS, *SUB_EXTENSIONS)
-        if "jishaku" in self.bot.extensions:
-            extensions += ("jishaku",)
+        # Use the live registry instead of the startup constants. This also
+        # includes optional or manually loaded extensions and avoids keeping a
+        # stale copy of the extension list in this cog.
+        extensions = tuple(self.bot.extensions)
+        if not extensions:
+            return await ctx.send("No extensions are currently loaded.")
 
         for extension in extensions:
             try:
@@ -281,9 +294,10 @@ class Dev(Cog, emoji=1268856867585658981):
         if failed or not synced:
             details = "\n".join(failed) if failed else "Command sync failed."
             return await ctx.send(
-                f"Reload finished with issues:\n```\n{details[:1500]}\n```"
+                f"Reloaded {len(extensions) - len(failed)}/{len(extensions)} extensions, "
+                f"with issues:\n```\n{details[:1500]}\n```"
             )
-        await ctx.send("Reloaded all cogs!")
+        await ctx.send(f"Reloaded {len(extensions)} extensions.")
 
 
 async def setup(bot: Lucent) -> None:
