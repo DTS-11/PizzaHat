@@ -19,8 +19,7 @@ ACTION_TYPES = frozenset(
 SOURCES = frozenset({"manual", "automod", "antialt", "workflow", "migration"})
 STATUSES = frozenset({"active", "resolved", "expired"})
 
-# Actions that count toward warn thresholds. Historically automod warnings and
-# anti-alt kicks were written to the same warn log as manual warnings.
+# Automod warnings and anti-alt kicks historically shared the warn log.
 WARN_ACTIONS = ("warn", "automod", "antialt")
 
 _SHORT_ID = re.compile(r"^[0-9a-fA-F]{4,8}$")
@@ -41,8 +40,6 @@ class ModerationService:
 
     def __init__(self, pool: Any | None) -> None:
         self.db = pool
-
-    # ── creation ────────────────────────────────────────────────────────────
 
     async def create_case(
         self,
@@ -161,11 +158,7 @@ class ModerationService:
             **kwargs,
         )
 
-    # ── reads ───────────────────────────────────────────────────────────────
-
-    async def get_case(
-        self, guild_id: int, case_id: Any
-    ) -> dict[str, Any] | None:
+    async def get_case(self, guild_id: int, case_id: Any) -> dict[str, Any] | None:
         if self.db is None:
             return None
         return _row(
@@ -306,7 +299,7 @@ class ModerationService:
         return [dict(row) for row in rows]
 
     async def insights(self, guild_id: int) -> dict[str, Any]:
-        """Aggregates used by ``/mod insights`` from the casefile tables."""
+        """Aggregates used by ``@Lucent insights`` from the casefile tables."""
 
         if self.db is None:
             return {
@@ -365,8 +358,6 @@ class ModerationService:
             )
             or 0
         )
-
-    # ── resolution ──────────────────────────────────────────────────────────
 
     async def resolve_case(
         self,
