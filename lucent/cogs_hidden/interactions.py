@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 
-from core.bot import Zync
+from core.bot import Lucent
 from core.cog import Cog
 from utils.ui import (
     RoleMenuView,
@@ -23,7 +23,7 @@ logger = logging.getLogger("bot")
 class RoleMenuEvents(Cog):
     """Persistent view registration for role menus."""
 
-    def __init__(self, bot: Zync):
+    def __init__(self, bot: Lucent):
         self.bot = bot
 
     async def cog_load(self) -> None:
@@ -46,11 +46,10 @@ class RoleMenuEvents(Cog):
 class TicketInteractions(Cog):
     """Reattach persistent ticket button views after a restart."""
 
-    def __init__(self, bot: Zync):
+    def __init__(self, bot: Lucent):
         self.bot = bot
 
     async def cog_load(self) -> None:
-        # Fallback registration keyed by the stable custom_id.
         self.bot.add_view(TicketView(self.bot))
         if not self.bot.db:
             return
@@ -77,6 +76,6 @@ class TicketInteractions(Cog):
             logger.warning("Failed to restore ticket views: %s", exc)
 
 
-async def setup(bot: Zync) -> None:
+async def setup(bot: Lucent) -> None:
     await bot.add_cog(RoleMenuEvents(bot))
     await bot.add_cog(TicketInteractions(bot))
