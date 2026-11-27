@@ -12,7 +12,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Zync
+from core.bot import Lucent
 from core.cog import Cog
 from services import get_tickets
 from services.tickets import TicketError
@@ -23,8 +23,8 @@ from utils.ui import TicketView
 class Tickets(Cog, emoji=1268867314292625469):
     """Button ticket system for support and help!"""
 
-    def __init__(self, bot: Zync):
-        self.bot: Zync = bot
+    def __init__(self, bot: Lucent):
+        self.bot: Lucent = bot
         self.tickets = get_tickets(bot)
 
     async def _fail(self, ctx: Context, message: str) -> None:
@@ -43,7 +43,7 @@ class Tickets(Cog, emoji=1268867314292625469):
             return None
         return ctx.channel
 
-    @commands.hybrid_command()
+    @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_threads=True)
     @commands.bot_has_permissions(manage_threads=True)
@@ -98,7 +98,7 @@ class Tickets(Cog, emoji=1268867314292625469):
                 )
             )
 
-    @commands.hybrid_command()
+    @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_threads=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -137,7 +137,7 @@ class Tickets(Cog, emoji=1268867314292625469):
 
         await ctx.send(embed=em)
 
-    @commands.hybrid_command()
+    @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_threads=True)
     @commands.bot_has_permissions(manage_messages=True)
@@ -165,7 +165,7 @@ class Tickets(Cog, emoji=1268867314292625469):
             embed=green_embed(f"{self.bot.yes} Deleted panel **{panel['name']}**.")
         )
 
-    @commands.hybrid_command()
+    @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_threads=True)
     @commands.bot_has_permissions(manage_threads=True)
@@ -181,7 +181,7 @@ class Tickets(Cog, emoji=1268867314292625469):
             embed=green_embed(f"{self.bot.yes} Added {user.mention} to the ticket.")
         )
 
-    @commands.hybrid_command()
+    @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_threads=True)
     @commands.bot_has_permissions(manage_threads=True)
@@ -197,7 +197,7 @@ class Tickets(Cog, emoji=1268867314292625469):
             embed=green_embed(f"{self.bot.yes} Removed {user.mention} from the ticket.")
         )
 
-    @commands.hybrid_command()
+    @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_threads=True)
     @commands.bot_has_permissions(manage_threads=True)
@@ -212,7 +212,7 @@ class Tickets(Cog, emoji=1268867314292625469):
         await self.tickets.close_ticket(ctx.guild.id, thread.id, ctx.author.id)
         await ctx.send(embed=green_embed(f"{self.bot.yes} Closed the ticket."))
 
-    @commands.hybrid_command()
+    @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_threads=True)
     @commands.bot_has_permissions(manage_threads=True)
@@ -230,5 +230,5 @@ class Tickets(Cog, emoji=1268867314292625469):
         )
 
 
-async def setup(bot: Zync) -> None:
+async def setup(bot: Lucent) -> None:
     await bot.add_cog(Tickets(bot))
