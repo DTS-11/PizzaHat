@@ -23,6 +23,7 @@ import discord
 from workflows.actions import ActionRegistry, ActionResult, build_variables
 from workflows.conditions import ConditionEvaluator
 from workflows.repository import WorkflowRepository
+from workflows.schema import WorkflowValidationError, validate_supported_workflow
 from workflows.triggers import TRIGGERS, TriggerRegistry, WorkflowContext
 
 logger = logging.getLogger("bot")
@@ -34,7 +35,7 @@ _MAX_RETRY_DELAY = 5.0
 _SCHEDULE_NAMESPACE = uuid.UUID("19f6d3ba-5a3f-4b51-a3bc-2e4b98ad0a11")
 
 _ACTIVE_CONTEXT: ContextVar[WorkflowContext | None] = ContextVar(
-    "zync_workflow_context", default=None
+    "lucent_workflow_context", default=None
 )
 
 
@@ -79,12 +80,13 @@ class WorkflowEngine:
         self.triggers = triggers or TRIGGERS
         self.conditions = conditions or ConditionEvaluator()
         self.actions = actions or ActionRegistry(bot, self.repo)
+        self.can_read_message_content = bool(
+            getattr(bot, "can_read_message_content", False)
+        )
         self._cache: dict[int, list[dict[str, Any]]] = {}
         self._locks: dict[int, asyncio.Lock] = {}
         self._seen_events: dict[str, float] = {}
         self._active_runs: dict[str, tuple[asyncio.Task[Any], str | None]] = {}
-
-    # ── cache and lifecycle ──────────────────────────────────────────────────
 
     def clear_cache(self, guild_id: int | None = None) -> None:
         """Invalidate in-memory definitions after a management write."""
@@ -138,8 +140,6 @@ class WorkflowEngine:
             self.cancel_run(key)
         return len(keys)
 
-    # ── dispatch ─────────────────────────────────────────────────────────────
-
     async def dispatch(
         self,
         ctx: WorkflowContext,
@@ -171,6 +171,13 @@ class WorkflowEngine:
                 workflow_id = int(workflow["id"])
                 if workflow_id in ctx.seen_workflows:
                     continue
+                if not self.can_read_message_content:
+                    try:
+                        validate_supported_workflow(
+                            workflow, can_read_message_content=False
+                        )
+                    except WorkflowValidationError:
+                        continue
                 if not self.triggers.matches(workflow, ctx):
                     continue
                 run_key = f"{ctx.guild.id}:{workflow_id}:{event_key}"
@@ -187,7 +194,10 @@ class WorkflowEngine:
                     if not evaluation.passed:
                         continue
                     now = time.monotonic()
-                    if run_key in self._seen_events and now - self._seen_events[run_key] < _DEDUPE_WINDOW:
+                    if (
+                        run_key in self._seen_events
+                        and now - self._seen_events[run_key] < _DEDUPE_WINDOW
+                    ):
                         continue
 
                     run_id: str | None = None
@@ -199,7 +209,7 @@ class WorkflowEngine:
                             run_key,
                             evaluation.as_dicts(),
                         )
-                        if run_id is None:  # persisted idempotency
+                        if run_id is None:
                             continue
                     self._seen_events[run_key] = now
                     ctx.seen_workflows.add(workflow_id)
@@ -220,17 +230,11 @@ class WorkflowEngine:
                     except Exception as exc:
                         status = "failed"
                         error = f"{type(exc).__name__}: {exc}"[:2000]
-                        logger.warning(
-                            "Workflow %s failed: %s", workflow_id, error
-                        )
-                        await self.repo.finish_run(
-                            run_id or "", "failed", [], error
-                        )
+                        logger.warning("Workflow %s failed: %s", workflow_id, error)
+                        await self.repo.finish_run(run_id or "", "failed", [], error)
                         results = []
                     else:
-                        await self.repo.finish_run(
-                            run_id or "", status, results, error
-                        )
+                        await self.repo.finish_run(run_id or "", status, results, error)
                     finally:
                         self._active_runs.pop(run_key, None)
 
@@ -285,12 +289,12 @@ class WorkflowEngine:
     ) -> list[WorkflowRunOutcome]:
         """Adapter for safely registered custom events."""
 
-        ctx = await self.triggers.build_custom_context(name, guild, payload, bot=self.bot)
+        ctx = await self.triggers.build_custom_context(
+            name, guild, payload, bot=self.bot
+        )
         if ctx is None:
             return []
         return await self.dispatch(ctx)
-
-    # ── schedules ────────────────────────────────────────────────────────────
 
     @staticmethod
     def next_schedule(
@@ -408,7 +412,10 @@ class WorkflowEngine:
                 )
             except asyncio.CancelledError:
                 await self.repo.set_state(
-                    workflow_id, guild_id, "schedule", next_run,
+                    workflow_id,
+                    guild_id,
+                    "schedule",
+                    next_run,
                     {"kind": "schedule", "slot": next_slot},
                 )
                 await self.repo.finish_task(task_id, "pending", next_run)
