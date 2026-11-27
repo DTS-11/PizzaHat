@@ -1,4 +1,4 @@
-"""Zync's workflow foundation: schema, triggers, conditions, actions and engine."""
+"""Lucent's workflow foundation: schema, triggers, conditions, actions and engine."""
 
 from __future__ import annotations
 
@@ -31,9 +31,15 @@ from workflows.schema import (
     register_custom_trigger,
     resolve_tier,
     unregister_custom_trigger,
+    validate_supported_workflow,
     validate_workflow,
 )
-from workflows.triggers import TRIGGERS, TriggerDefinition, TriggerRegistry, WorkflowContext
+from workflows.triggers import (
+    TRIGGERS,
+    TriggerDefinition,
+    TriggerRegistry,
+    WorkflowContext,
+)
 
 __all__ = [
     "ACTION_TYPES",
@@ -70,5 +76,6 @@ __all__ = [
     "register_custom_trigger",
     "resolve_tier",
     "unregister_custom_trigger",
+    "validate_supported_workflow",
     "validate_workflow",
 ]
