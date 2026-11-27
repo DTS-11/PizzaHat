@@ -1423,7 +1423,7 @@ wheels = [
 ]
 
 [[package]]
-name = "zync"
+name = "lucent"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
