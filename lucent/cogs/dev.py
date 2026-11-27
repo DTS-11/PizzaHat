@@ -22,7 +22,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import INITIAL_EXTENSIONS, SUB_EXTENSIONS, Zync
+from core.bot import INITIAL_EXTENSIONS, SUB_EXTENSIONS, Lucent
 from core.cog import Cog
 from utils.embed import ctx_embed
 from utils.formats import TabularData, plural
@@ -117,8 +117,8 @@ def _code_block(text: str, language: str = "py") -> str:
 class Dev(Cog, emoji=1268856867585658981):
     """Developer commands (owner only, prefix only)."""
 
-    def __init__(self, bot: Zync):
-        self.bot: Zync = bot
+    def __init__(self, bot: Lucent):
+        self.bot: Lucent = bot
 
     @commands.command(name="updatecodebase", hidden=True)
     @commands.is_owner()
@@ -277,7 +277,6 @@ class Dev(Cog, emoji=1268856867585658981):
             except commands.ExtensionError as exc:
                 failed.append(f"{extension}: {exc}")
 
-        self.bot.compact_slash_commands()
         synced = await self.bot.sync_commands()
         if failed or not synced:
             details = "\n".join(failed) if failed else "Command sync failed."
@@ -287,5 +286,5 @@ class Dev(Cog, emoji=1268856867585658981):
         await ctx.send("Reloaded all cogs!")
 
 
-async def setup(bot: Zync) -> None:
+async def setup(bot: Lucent) -> None:
     await bot.add_cog(Dev(bot))
