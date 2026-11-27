@@ -72,6 +72,10 @@ ACTION_TYPES = (
     "set_scheduled_task",
 )
 
+MESSAGE_CONTENT_TRIGGERS = frozenset({"message_create"})
+MESSAGE_CONTENT_TRIGGER_KEYS = frozenset({"contains_text", "match", "regex"})
+MESSAGE_CONTENT_CONDITIONS = frozenset({"contains_link", "contains_text"})
+
 MATCH_MODES = ("contains", "exact", "starts_with", "regex")
 SCHEDULE_FREQUENCIES = ("interval", "daily")
 SAFETY_SOURCES = ("antialt", "automod", "any")
@@ -113,8 +117,6 @@ class WorkflowValidationError(ValueError):
         super().__init__(message)
 
 
-# Custom triggers are registered in memory by ``workflows.triggers``; validation
-# stays here so the schema remains a single source of truth.
 _CUSTOM_TRIGGERS: dict[str, Callable[[Any, str], dict[str, Any]]] = {}
 
 
@@ -157,9 +159,6 @@ def parse_jsonb(value: Any) -> Any:
                 "Stored workflow JSON is malformed.", field="jsonb"
             ) from exc
     return value
-
-
-# ── primitive checks ──────────────────────────────────────────────────────────
 
 
 def _object(value: Any, field: str) -> dict[str, Any]:
@@ -307,14 +306,17 @@ def _uuid(value: Any, field: str) -> str:
     try:
         return str(uuid.UUID(text))
     except ValueError:
-        raise WorkflowValidationError(f"`{field}` must be a UUID.", field=field) from None
+        raise WorkflowValidationError(
+            f"`{field}` must be a UUID.", field=field
+        ) from None
 
 
 def _payload(value: Any, field: str) -> dict[str, Any]:
     data = _object(value, field)
     if len(data) > _MAX_PAYLOAD_ENTRIES:
         raise WorkflowValidationError(
-            f"`{field}` may contain at most {_MAX_PAYLOAD_ENTRIES} entries.", field=field
+            f"`{field}` may contain at most {_MAX_PAYLOAD_ENTRIES} entries.",
+            field=field,
         )
     out: dict[str, Any] = {}
     for key, item in data.items():
@@ -335,9 +337,6 @@ def _payload(value: Any, field: str) -> dict[str, Any]:
                 field=key_field,
             )
     return out
-
-
-# ── trigger validation ───────────────────────────────────────────────────────
 
 
 def _validate_empty(config: dict[str, Any]) -> dict[str, Any]:
@@ -483,18 +482,30 @@ def _validate_moderation_event(config: dict[str, Any]) -> dict[str, Any]:
         required=set(),
         field="trigger_config",
     )
-    actions = [
-        _choice(item, "trigger_config.actions[i]", MODERATION_ACTIONS)
-        for item in config.get("actions", [])
-    ] if isinstance(config.get("actions", []), list) else None
+    actions = (
+        [
+            _choice(item, "trigger_config.actions[i]", MODERATION_ACTIONS)
+            for item in config.get("actions", [])
+        ]
+        if isinstance(config.get("actions", []), list)
+        else None
+    )
     if actions is None:
         raise WorkflowValidationError(
             "`trigger_config.actions` must be an array.", field="trigger_config.actions"
         )
-    sources = [
-        _choice(item, "trigger_config.sources[i]", ("manual", "workflow", "automod", "antialt"))
-        for item in config.get("sources", [])
-    ] if isinstance(config.get("sources", []), list) else None
+    sources = (
+        [
+            _choice(
+                item,
+                "trigger_config.sources[i]",
+                ("manual", "workflow", "automod", "antialt"),
+            )
+            for item in config.get("sources", [])
+        ]
+        if isinstance(config.get("sources", []), list)
+        else None
+    )
     if sources is None:
         raise WorkflowValidationError(
             "`trigger_config.sources` must be an array.", field="trigger_config.sources"
@@ -528,12 +539,10 @@ def validate_custom_config(name: str, config: Any) -> dict[str, Any]:
 
     if not is_custom_trigger_name(name) or name not in _CUSTOM_TRIGGERS:
         raise WorkflowValidationError(
-            f"`trigger_type` `{name}` is not a registered trigger.", field="trigger_type"
+            f"`trigger_type` `{name}` is not a registered trigger.",
+            field="trigger_type",
         )
     return _CUSTOM_TRIGGERS[name](_object(config, "trigger_config"), name)
-
-
-# ── condition validation ─────────────────────────────────────────────────────
 
 
 def _validate_condition(raw: Any, index: int) -> dict[str, Any]:
@@ -646,9 +655,6 @@ def validate_conditions(conditions: Any) -> list[dict[str, Any]]:
     return [_validate_condition(raw, index) for index, raw in enumerate(conditions)]
 
 
-# ── action validation ────────────────────────────────────────────────────────
-
-
 def _validate_action(raw: Any, index: int) -> dict[str, Any]:
     field = f"actions[{index}]"
     action = _object(raw, field)
@@ -660,7 +666,15 @@ def _validate_action(raw: Any, index: int) -> dict[str, Any]:
         "add_role": ({"role_id"}, {"role_id"}),
         "remove_role": ({"role_id"}, {"role_id"}),
         "send_embed": (
-            {"channel_id", "title", "description", "color", "content", "from_message", "dedupe"},
+            {
+                "channel_id",
+                "title",
+                "description",
+                "color",
+                "content",
+                "from_message",
+                "dedupe",
+            },
             set(),
         ),
         "send_message": ({"channel_id", "message"}, {"message"}),
@@ -737,7 +751,9 @@ def _validate_action(raw: Any, index: int) -> dict[str, Any]:
             action["action_type"], f"{field}.action_type", MODERATION_ACTIONS
         )
         out["reason"] = _string(
-            action.get("reason", "Workflow action"), f"{field}.reason", maximum=_MAX_TEXT
+            action.get("reason", "Workflow action"),
+            f"{field}.reason",
+            maximum=_MAX_TEXT,
         )
         if "duration_seconds" in action:
             out["duration_seconds"] = _integer(
@@ -759,7 +775,10 @@ def _validate_action(raw: Any, index: int) -> dict[str, Any]:
             )
         if "delay_seconds" in action:
             out["delay_seconds"] = _integer(
-                action["delay_seconds"], f"{field}.delay_seconds", minimum=1, maximum=604800
+                action["delay_seconds"],
+                f"{field}.delay_seconds",
+                minimum=1,
+                maximum=604800,
             )
         else:
             out["run_at"] = _timestamp(action["run_at"], f"{field}.run_at")
@@ -781,8 +800,6 @@ def validate_actions(actions: Any) -> list[dict[str, Any]]:
         )
     return [_validate_action(raw, index) for index, raw in enumerate(actions)]
 
-
-# ── full workflow validation ─────────────────────────────────────────────────
 
 _TOP_LEVEL_FIELDS = {
     "name",
@@ -841,7 +858,10 @@ def validate_workflow(
     out: dict[str, Any] = {
         "name": _string(data["name"], "name", maximum=_MAX_SHORT),
         "description": _string(
-            data.get("description", ""), "description", minimum=0, maximum=_MAX_DESCRIPTION
+            data.get("description", ""),
+            "description",
+            minimum=0,
+            maximum=_MAX_DESCRIPTION,
         ),
         "enabled": _boolean(data.get("enabled", True), "enabled"),
         "trigger_type": trigger_type,
@@ -866,7 +886,11 @@ def validate_workflow(
         else None,
     }
     if allow_row_fields:
-        out["id"] = _integer(data["id"], "id", minimum=1) if data.get("id") is not None else None
+        out["id"] = (
+            _integer(data["id"], "id", minimum=1)
+            if data.get("id") is not None
+            else None
+        )
         out["definition_id"] = (
             _uuid(data["definition_id"], "definition_id")
             if data.get("definition_id") is not None
@@ -878,6 +902,65 @@ def validate_workflow(
             else None
         )
     return out
+
+
+def _uses_content_placeholder(value: Any) -> bool:
+    if isinstance(value, str):
+        return "{content}" in value
+    if isinstance(value, dict):
+        return any(_uses_content_placeholder(item) for item in value.values())
+    if isinstance(value, (list, tuple)):
+        return any(_uses_content_placeholder(item) for item in value)
+    return False
+
+
+def validate_supported_workflow(
+    definition: dict[str, Any], *, can_read_message_content: bool
+) -> None:
+    """Reject workflows that depend on the Message Content privileged intent.
+
+    This is enforced in code so an operator cannot configure a silently dead
+    keyword/regex automation. Metadata-only triggers and conditions remain
+    available when the intent is disabled.
+    """
+
+    if can_read_message_content:
+        return
+    trigger_type = definition.get("trigger_type")
+    trigger_config = definition.get("trigger_config") or {}
+    if trigger_type in MESSAGE_CONTENT_TRIGGERS and any(
+        key in trigger_config for key in MESSAGE_CONTENT_TRIGGER_KEYS
+    ):
+        raise WorkflowValidationError(
+            "Text-based message triggers require the Message Content intent, "
+            "which is not enabled.",
+            field="trigger_config",
+        )
+    for index, condition in enumerate(definition.get("conditions") or []):
+        if (
+            isinstance(condition, dict)
+            and condition.get("type") in MESSAGE_CONTENT_CONDITIONS
+        ):
+            raise WorkflowValidationError(
+                f"`conditions[{index}]` requires the Message Content intent, "
+                "which is not enabled.",
+                field=f"conditions[{index}]",
+            )
+    for index, action in enumerate(definition.get("actions") or []):
+        if not isinstance(action, dict):
+            continue
+        if action.get("from_message"):
+            raise WorkflowValidationError(
+                f"`actions[{index}].from_message` requires the Message Content intent, "
+                "which is not enabled.",
+                field=f"actions[{index}]",
+            )
+        if _uses_content_placeholder(action):
+            raise WorkflowValidationError(
+                f"`actions[{index}]` uses `{{content}}`, which requires the Message "
+                "Content intent and is not enabled.",
+                field=f"actions[{index}]",
+            )
 
 
 @dataclass(frozen=True)
@@ -902,9 +985,13 @@ class WorkflowDefinition:
     created_by: int | None = None
 
     @classmethod
-    def from_mapping(cls, payload: Any, *, allow_row_fields: bool = False) -> WorkflowDefinition:
+    def from_mapping(
+        cls, payload: Any, *, allow_row_fields: bool = False
+    ) -> WorkflowDefinition:
         data = validate_workflow(payload, allow_row_fields=allow_row_fields)
-        fields = {key: value for key, value in data.items() if key in cls.__dataclass_fields__}
+        fields = {
+            key: value for key, value in data.items() if key in cls.__dataclass_fields__
+        }
         return cls(**fields)
 
     def to_mapping(self, *, portable: bool = False) -> dict[str, Any]:
@@ -937,18 +1024,15 @@ class WorkflowDefinition:
 def export_workflow(payload: Any) -> dict[str, Any]:
     """Return a portable, guild-independent JSON document."""
 
-    return WorkflowDefinition.from_mapping(
-        payload, allow_row_fields=True
-    ).to_mapping(portable=True)
+    return WorkflowDefinition.from_mapping(payload, allow_row_fields=True).to_mapping(
+        portable=True
+    )
 
 
 def import_workflow(payload: Any) -> dict[str, Any]:
     """Validate an imported document and drop database-specific identifiers."""
 
     return export_workflow(payload)
-
-
-# ── tier limits (Polar/premium integration) ──────────────────────────────────
 
 
 @dataclass(frozen=True)
@@ -987,7 +1071,9 @@ async def resolve_tier(
     service: EntitlementService | None = None
     if isinstance(source, EntitlementService):
         service = source
-    elif source is not None and isinstance(getattr(source, "entitlements", None), EntitlementService):
+    elif source is not None and isinstance(
+        getattr(source, "entitlements", None), EntitlementService
+    ):
         service = source.entitlements
     if service is not None:
         return await service.tier_for(guild_id)
@@ -999,9 +1085,7 @@ async def resolve_tier(
     fetchrow = getattr(source, "fetchrow", None)
     if fetchrow is None:
         return Tier.FREE
-    row = await fetchrow(
-        "SELECT tier, status FROM premium WHERE guild_id=$1", guild_id
-    )
+    row = await fetchrow("SELECT tier, status FROM premium WHERE guild_id=$1", guild_id)
     if row is None or row["status"] != "active":
         return Tier.FREE
     try:
@@ -1010,7 +1094,6 @@ async def resolve_tier(
         return Tier.FREE
 
 
-# Backwards-compatible name used by the previous command surface.
 async def get_guild_tier(source: Any, guild_id: int) -> Tier:
     """Resolve a guild's tier through the single entitlement resolver."""
 
@@ -1072,7 +1155,7 @@ async def enforce_tier_limits(
     if limits.max_actions is not None and len(actions) > limits.max_actions:
         raise WorkflowValidationError(
             f"The {resolved.name} tier allows at most {limits.max_actions} actions per "
-            f"workflow (got {len(actions)}). Upgrade with `/premium`.",
+            f"workflow (got {len(actions)}). Upgrade with `@Lucent premium`.",
             field="actions",
         )
 
@@ -1082,7 +1165,7 @@ async def enforce_tier_limits(
             raise WorkflowValidationError(
                 f"The {resolved.name} tier allows at most {limits.max_active} active "
                 f"workflows (already have {used}). Disable or delete one first, "
-                "or upgrade with `/premium`.",
+                "or upgrade with `@Lucent premium`.",
                 field="enabled",
             )
 
