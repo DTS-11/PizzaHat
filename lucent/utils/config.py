@@ -12,18 +12,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# TOKENS
 TOKEN = os.getenv("TOKEN")
 TEST_BOT = os.getenv("TEST_BOT")
 PG_URL = os.getenv("PG_URL")
 
-# Optional runtime configuration
 LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", "0")) or None
-UPGRADE_URL = os.getenv("UPGRADE_URL", "https://github.com/DTS-11/Zync")
+UPGRADE_URL = os.getenv("UPGRADE_URL", "https://github.com/DTS-11/Lucent")
 SUPPORT_SERVER = os.getenv("SUPPORT_SERVER", "https://discord.gg/WhNVDTF")
 ADMIN_INVITE = os.getenv("ADMIN_INVITE", "")
 REG_INVITE = os.getenv("REG_INVITE", "")
-REPO_LINK = "https://github.com/DTS-11/Zync"
+REPO_LINK = "https://github.com/DTS-11/Lucent"
 
 ANTIHOIST_CHARS = "!@#$%^&*()_+-=.,/?;:[]{}`~\"'\\|<>"
 
