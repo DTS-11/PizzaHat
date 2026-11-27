@@ -1,6 +1,6 @@
 <h1 align="center">
-  <img src="./Zync/assets/images/bot-logo.png" width="260" height="260" alt="Zync logo"><br>
-  Zync
+  <img src="./lucent/assets/images/bot-logo.png" width="260" height="260" alt="Lucent logo"><br>
+  Lucent
 </h1>
 
 <h4 align="center">Deterministic Discord operations and workflow automation</h4>
@@ -9,18 +9,29 @@
   <img src="https://img.shields.io/badge/discord.py-2.7.1-blue?style=flat" alt="discord.py 2.7.1">
   <img src="https://img.shields.io/badge/Python-3.10%2B-green?style=flat&logo=python" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/uv-managed-purple?style=flat" alt="uv managed">
-  <img src="https://github.com/DTS-11/Zync/actions/workflows/ci.yml/badge.svg" alt="CI">
+  <img src="https://github.com/DTS-11/Lucent/actions/workflows/ci.yml/badge.svg" alt="CI">
 </p>
 
 ## Info
 
-Zync is a slash-first Discord operations engine built around a deterministic
-**Trigger → Condition → Action** workflow system. It keeps moderation, protection,
-tickets, events, and staff utilities in one Discord-only service.
+Lucent is a mention-first Discord operations engine built around a deterministic
+**Trigger → Condition → Action** workflow system. Daily commands use
+`@Lucent <command> [arguments]`; the Discord picker is limited to `/help`, `/setup`,
+`/view_setup`, `/status`, and a small set of context menus. It keeps moderation,
+protection, tickets, events, and staff utilities in one Discord-only service.
 
 There is no dashboard, visual editor, SaaS API, checkout, remote publishing, AI, or
 analytics product in this repository. Owner-only developer commands stay prefix-only
 through the bot mention and never enter the public slash menu.
+
+### Message content capability
+
+The Message Content privileged intent is deliberately **not** enabled. Mention
+commands work because Discord delivers the content of messages that mention the bot.
+Text-based AutoMod detectors (bad words, scam links, caps, invites, emoji/newline/
+repeated-character spam), `contains_text`/`contains_link` workflow conditions,
+message-content templates, and `{content}`/`from_message` placeholders are rejected
+or skipped in code. Metadata-only modules and workflows remain available.
 
 ## Features
 
@@ -34,7 +45,8 @@ through the bot mention and never enter the public slash menu.
 - Service-backed actions with permission and hierarchy checks
 - Persisted execution history, cancellation, cooldown state, and loop protection
 - Rate-limit-safe sequential execution with bounded 429 backoff
-- `/workflow list`, `view`, `create`, `import`, `export`, `toggle`, `delete`, `templates`
+- `@Lucent workflow list`, `view`, `create`, `import`, `export`, `toggle`, `delete`, `templates`
+- Guided Trigger → Conditions → Actions builder in `/setup`
 - Strict validation through `workflows/schema.py` (re-exported by `utils/workflow_schema.py`)
 - Tier limits:
   - Free: 5 active workflows, 2 actions per workflow
@@ -43,11 +55,13 @@ through the bot mention and never enter the public slash menu.
 
 ### Moderation and protection
 
-- Unified `/mod` group for ban, unban, kick, timeout, warn, clear, prune, slowmode,
+- Mention commands for ban, unban, kick, timeout, warn, clear, prune, slowmode,
   nick, lock, role, channel, logs, and insights
-- Right-click Ban/Kick/Warn/Timeout menus reuse the same service layer
+- Right-click Ban/Kick/Warn/Timeout/View Cases and message Delete/Warn Author menus
+  reuse the same service layer
 - Unique moderation casefiles for warnings and automated actions
-- `/antialt` and `/automod` configuration surfaces backed by one automation config store
+- `@Lucent antialt` and `@Lucent automod` configuration surfaces plus `/setup` and
+  `/view_setup`, all backed by one automation config store
 - Safety detections dispatch `safety_alert` workflows; punishments create casefiles
 - Durable scheduled tasks for temporary bans and raid lockdown restoration
 
@@ -62,7 +76,7 @@ through the bot mention and never enter the public slash menu.
 ## Project layout
 
 ```txt
-Zync/                     uv project root
+lucent/                   uv project root
   cogs/                   public command surfaces
   cogs_hidden/            listeners and persistent view registration
   core/                   bot lifecycle, database migrations, entitlements, logging
@@ -75,7 +89,7 @@ Zync/                     uv project root
   uv.lock                 locked dependency set
 ```
 
-All schema changes live in ordered SQL files under `Zync/migrations/`. The runner
+All schema changes live in ordered SQL files under `lucent/migrations/`. The runner
 records applied versions in `schema_migrations` and applies each pending migration
 inside a transaction at startup.
 
@@ -96,12 +110,12 @@ it is not a hosted deployment guide.
 From the repository root:
 
 ```bash
-git clone https://github.com/DTS-11/Zync.git
-cd Zync/Zync
+git clone https://github.com/DTS-11/Lucent.git
+cd Lucent/lucent
 uv sync --group dev
 ```
 
-`uv sync` reads `Zync/pyproject.toml` and `Zync/uv.lock`, creates `Zync/.venv`, and
+`uv sync` reads `lucent/pyproject.toml` and `lucent/uv.lock`, creates `lucent/.venv`, and
 installs runtime and dev dependencies.
 
 ### Local environment
@@ -109,32 +123,26 @@ installs runtime and dev dependencies.
 Configuration is read from environment variables. `python-dotenv` loads a local
 `.env` from the current working directory when present.
 
-Common values:
+The template in `lucent/.env.example` lists the supported values:
 
 ```txt
-TOKEN=...
-TEST_BOT=...
-PG_URL=postgresql://...
-DEV_GUILD_ID=...
-SYNC_COMMANDS=0
-LOG_LEVEL=INFO
-LOG_FILE=bot.log
-ENABLE_JISHAKU=0
-UPGRADE_URL=...
-SUPPORT_SERVER=...
-REG_INVITE=...
-ADMIN_INVITE=...
-LOG_CHANNEL_ID=...
+TOKEN=
+CLIENT_SECRET=
+PG_URL=""
+DLIST_AUTH=
+DBL_TOKEN=
 ```
 
-Do not commit `.env`. The migration runner will create the schema on startup; there
-are no legacy imports.
+Optional runtime flags are read directly from the environment when set. Do not commit
+`.env`. The migration runner will create the schema on startup; there are no legacy imports.
 
 ### Checks
 
-Run these from `Zync/` before opening a pull request:
+Run these from `lucent/` before opening a pull request:
 
 ```bash
+uv run ruff check --select I --fix .
+uv run ruff format .
 uv run ruff check .
 uv run python -m compileall -q cogs cogs_hidden core services utils workflows __main__.py
 uv run pytest -q
@@ -144,10 +152,10 @@ uv run pytest -q
 
 The Discord engine is designed for one process on a small VM or Raspberry Pi.
 PostgreSQL is the only external service. Configure `PG_URL`, set intents in the
-Discord developer portal, then start the process from the `Zync/` source root:
+Discord developer portal, then start the process from the `lucent/` source root:
 
 ```bash
-cd Zync
+cd Lucent
 uv run python __main__.py
 ```
 
@@ -164,9 +172,9 @@ append to a rotating file instead of truncating on each restart.
    - business rules belong in `services/`
    - workflow primitives belong in `workflows/`
    - reusable presentation helpers belong in `utils/`
-4. New commands must be slash-accessible. Do not reintroduce a custom prefix.
+4. New daily commands belong in the mention command tree; keep the slash picker limited to discovery and setup entry points.
 5. Workflow changes must go through `workflows/schema.py`; do not bypass validation.
-6. Database schema changes belong in ordered SQL files under `Zync/migrations/`.
+6. Database schema changes belong in ordered SQL files under `lucent/migrations/`.
 7. Apply migrations with the migration runner at startup; do not mutate schema ad hoc in cogs.
 8. Run the checks above before opening a pull request.
 
@@ -174,5 +182,5 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the short checklist.
 
 ## Links
 
-- [Source](https://github.com/DTS-11/Zync)
+- [Source](https://github.com/DTS-11/Lucent)
 - [Support server](https://discord.gg/WhNVDTF)
