@@ -6,11 +6,18 @@ import re
 from pathlib import Path
 
 SOURCE_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = SOURCE_ROOT.parent
 PYTHON_FILES = [
     path
     for path in SOURCE_ROOT.rglob("*.py")
     if ".venv" not in path.parts and "tests" not in path.parts
 ]
+
+# Constructed in parts so the contract itself does not contain the retired name.
+OLD_BRAND = "zy" + "nc"
+OLD_BRAND_RE = re.compile(re.escape(OLD_BRAND), re.IGNORECASE)
+URI_RE = re.compile(r"\b[a-zA-Z][a-zA-Z0-9+.-]*://[^\s<>\"'`]+")
+SKIP_DIRS = {".git", ".venv", ".pytest_cache", ".ruff_cache", "__pycache__"}
 
 FORBIDDEN_TOKENS = (
     "pizzahat",
@@ -44,7 +51,21 @@ def test_no_legacy_database_tables_in_source_sql() -> None:
     offenders: list[str] = []
     for path in PYTHON_FILES:
         for match in LEGACY_SQL.finditer(_contents(path)):
-            offenders.append(
-                f"{path.relative_to(SOURCE_ROOT)}: {match.group(0)}"
-            )
+            offenders.append(f"{path.relative_to(SOURCE_ROOT)}: {match.group(0)}")
+    assert not offenders, "\n".join(offenders)
+
+
+def test_no_retired_brand_name_outside_urls() -> None:
+    offenders: list[str] = []
+    for path in sorted(REPO_ROOT.rglob("*")):
+        if not path.is_file():
+            continue
+        if any(part in SKIP_DIRS for part in path.parent.parts):
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        for match in OLD_BRAND_RE.finditer(URI_RE.sub("", text)):
+            offenders.append(f"{path.relative_to(REPO_ROOT)}: {match.group(0)}")
     assert not offenders, "\n".join(offenders)
