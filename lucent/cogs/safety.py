@@ -1,7 +1,7 @@
 """Anti-alt and automod command surfaces.
 
-Contains the merged ``/antialt`` and ``/automod`` hybrid command groups used to
-configure safety thresholds, actions, and allowed roles or channels.
+Contains the ``@Lucent antialt`` and ``@Lucent automod`` prefix command groups used
+to configure safety thresholds, actions, and allowed roles or channels.
 """
 
 from __future__ import annotations
@@ -10,14 +10,15 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Zync
-from core.entitlements import Tier
+from core.bot import Lucent
 from core.cog import Cog
+from core.entitlements import Tier
 from services import get_protection
 from services.protection import (
     ALL_MODULES,
     ANTIALT_LEVELS,
     BASIC_MODULES,
+    CONTENT_MODULES,
     DEFAULT_ANTIALT,
     FREE_MODULES,
     MODULE_DESCRIPTIONS,
@@ -214,7 +215,7 @@ def _build_antialt_status_embed(
     else:
         em.add_field(
             name="Not configured",
-            value="Run `/antialt enable` to set up.",
+            value="Run `@Lucent antialt enable` to set up.",
             inline=False,
         )
 
@@ -233,7 +234,7 @@ def _build_antialt_status_embed(
 class AntiAlts(Cog, emoji=1268851128548724756):
     """Configure the Anti-Alt / Anti-Raid system."""
 
-    def __init__(self, bot: Zync):
+    def __init__(self, bot: Lucent):
         self.bot = bot
         self.protection: ProtectionService = get_protection(bot)
 
@@ -250,7 +251,7 @@ class AntiAlts(Cog, emoji=1268851128548724756):
         self.protection.invalidate(guild_id)
         return await self._get_data(guild_id)
 
-    @commands.hybrid_group(fallback="overview")
+    @commands.hybrid_group(fallback="overview", with_app_command=False)
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
@@ -284,7 +285,7 @@ class AntiAlts(Cog, emoji=1268851128548724756):
         if enabled:
             return await ctx.send(
                 embed=orange_embed(
-                    description=f"{self.bot.no} Anti-Alt is already enabled. Use `/antialt disable` first."
+                    description=f"{self.bot.no} Anti-Alt is already enabled. Use `@Lucent antialt disable` first."
                 )
             )
 
@@ -342,9 +343,8 @@ class AntiAlts(Cog, emoji=1268851128548724756):
                 restricted_role = await ctx.guild.create_role(
                     name="Restricted",
                     color=discord.Color.from_str("#818386"),
-                    reason="Zync Anti-Alt setup",
+                    reason="Lucent Anti-Alt setup",
                 )
-                # Deny send/react/speak in every channel
                 for channel in ctx.guild.channels:
                     try:
                         await channel.set_permissions(
@@ -352,7 +352,7 @@ class AntiAlts(Cog, emoji=1268851128548724756):
                             send_messages=False,
                             add_reactions=False,
                             speak=False,
-                            reason="Zync Anti-Alt: Restricted role setup",
+                            reason="Lucent Anti-Alt: Restricted role setup",
                         )
                     except discord.HTTPException:
                         pass
@@ -523,11 +523,22 @@ class AntiAlts(Cog, emoji=1268851128548724756):
 
 
 class ModuleToggleSelect(discord.ui.Select):
-    def __init__(self, cfg: dict, mode: str, available: list[str]):
+    def __init__(
+        self,
+        cfg: dict,
+        mode: str,
+        available: list[str],
+        *,
+        can_read_message_content: bool = True,
+    ):
         options = [
             discord.SelectOption(
                 label=m.replace("_", " ").title(),
-                description=MODULE_DESCRIPTIONS.get(m, "")[:100],
+                description=(
+                    "[Unavailable] " + MODULE_DESCRIPTIONS.get(m, "")
+                    if m in CONTENT_MODULES and not can_read_message_content
+                    else MODULE_DESCRIPTIONS.get(m, "")
+                )[:100],
                 value=m,
                 default=_mod_active(cfg, m),
             )
@@ -553,6 +564,7 @@ class ModuleToggleView(discord.ui.View):
         mode: str,
         available: list[str],
         *,
+        can_read_message_content: bool = True,
         on_confirm,
     ):
         super().__init__(timeout=60)
@@ -564,7 +576,12 @@ class ModuleToggleView(discord.ui.View):
             module for module in available if _mod_active(cfg, module)
         ]
         self.cancelled = False
-        self.selector = ModuleToggleSelect(cfg, mode, available)
+        self.selector = ModuleToggleSelect(
+            cfg,
+            mode,
+            available,
+            can_read_message_content=can_read_message_content,
+        )
         self.add_item(self.selector)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
@@ -682,7 +699,6 @@ class ThresholdModal(discord.ui.Modal, title="Add Warn Threshold"):
             except ValueError:
                 pass
 
-        # Overwrite existing entry with same warn count
         self._view.thresholds = [
             t for t in self._view.thresholds if t["warns"] != warns
         ]
@@ -765,7 +781,7 @@ def _threshold_summary(thresholds: list[dict]) -> str:
     return "\n".join(lines)
 
 
-async def _guild_tier(bot: Zync, guild_id: int) -> Tier:
+async def _guild_tier(bot: Lucent, guild_id: int) -> Tier:
     """Tiers come from the bot's entitlement service, never a local cache."""
 
     service = getattr(bot, "entitlements", None)
@@ -782,6 +798,7 @@ def _build_automod_status_embed(
     tier: Tier,
     bot_yes: str,
     bot_no: str,
+    can_read_message_content: bool = True,
 ) -> discord.Embed:
     tier_label = {Tier.FREE: "Free", Tier.BASIC: "Basic ⭐", Tier.PRO: "Pro 💎"}.get(
         tier, "Free"
@@ -794,13 +811,21 @@ def _build_automod_status_embed(
         f"**Server:** {guild.name}"
     )
 
-    free_lines = [
-        f"{bot_yes if _mod_active(module_config, m) else bot_no} `{m.replace('_', ' ').title()}`"
-        for m in FREE_MODULES
-    ]
+    def module_line(module: str, locked: bool = False) -> str:
+        if module in CONTENT_MODULES and not can_read_message_content:
+            marker = "⚠️"
+        elif locked:
+            marker = "🔒"
+        else:
+            marker = bot_yes if _mod_active(module_config, module) else bot_no
+        label = module.replace("_", " ").title()
+        if module in CONTENT_MODULES and not can_read_message_content:
+            label += " (unavailable)"
+        return f"{marker} `{label}`"
+
+    free_lines = [module_line(module) for module in FREE_MODULES]
     basic_lines = [
-        f"{'🔒' if tier < Tier.BASIC else (bot_yes if _mod_active(module_config, m) else bot_no)} `{m.replace('_', ' ').title()}`"
-        for m in BASIC_MODULES
+        module_line(module, locked=tier < Tier.BASIC) for module in BASIC_MODULES
     ]
 
     em.add_field(name="Free Modules", value="\n".join(free_lines), inline=True)
@@ -850,7 +875,7 @@ def _build_automod_status_embed(
 class AutoModeration(Cog, emoji=1268880500248936491):
     """Configure the AutoMod system for your server."""
 
-    def __init__(self, bot: Zync):
+    def __init__(self, bot: Lucent):
         self.bot = bot
         self.protection: ProtectionService = get_protection(bot)
 
@@ -873,7 +898,7 @@ class AutoModeration(Cog, emoji=1268880500248936491):
         await self.protection.set_automod(guild_id, config)
         self._clear_cache(guild_id)
 
-    @commands.hybrid_group(fallback="overview")
+    @commands.hybrid_group(fallback="overview", with_app_command=False)
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def automod(self, ctx: Context):
@@ -889,20 +914,27 @@ class AutoModeration(Cog, emoji=1268880500248936491):
 
         em = await ctx_embed(ctx, timestamp=True)
         em = _build_automod_status_embed(
-            em, ctx.guild, enabled, module_config, tier, self.bot.yes, self.bot.no
+            em,
+            ctx.guild,
+            enabled,
+            module_config,
+            tier,
+            self.bot.yes,
+            self.bot.no,
+            can_read_message_content=self.bot.can_read_message_content,
         )
         em.add_field(
             name="Commands",
             value=(
-                f"`/automod overview` — full configuration summary\n"
-                f"`/automod enable` / `/automod disable` — toggle system\n"
-                f"`/automod enable <module>` — enable a module\n"
-                f"`/automod disable <module>` — disable a module\n"
-                f"`/automod modules` — bulk module manager  **[Basic]**\n"
-                f"`/automod thresholds` — warn thresholds  **[Basic: unlimited / Free: 1]**\n"
-                f"`/automod override #ch module on/off` — per-channel override  **[Basic]**\n"
-                f"`/automod settings module key value` — tweak settings  **[Basic]**\n"
-                f"`/automod decay <days>` — warn decay  **[Pro]**"
+                "`@Lucent automod` — full configuration summary\n"
+                "`@Lucent automod enable` / `disable` — toggle system\n"
+                "`@Lucent automod enable <module>` — enable a module\n"
+                "`@Lucent automod disable <module>` — disable a module\n"
+                "`@Lucent automod modules` — bulk module manager  **[Basic]**\n"
+                "`@Lucent automod thresholds` — warn thresholds  **[Basic: unlimited / Free: 1]**\n"
+                "`@Lucent automod override #ch module on/off` — per-channel override  **[Basic]**\n"
+                "`@Lucent automod settings module key value` — tweak settings  **[Basic]**\n"
+                "`@Lucent automod decay <days>` — warn decay  **[Pro]**"
             ),
             inline=False,
         )
@@ -921,7 +953,12 @@ class AutoModeration(Cog, emoji=1268880500248936491):
             row = await self._get_row(ctx.guild.id)
             config_data: dict = dict(row.get("config") or {})
 
-            for mod, default_entry in _default_module_config(FREE_MODULES).items():
+            configurable = tuple(
+                module
+                for module in FREE_MODULES
+                if self.bot.can_read_message_content or module not in CONTENT_MODULES
+            )
+            for mod, default_entry in _default_module_config(configurable).items():
                 entry = config_data.get(mod, {})
                 if isinstance(entry, dict):
                     config_data[mod] = {**default_entry, **entry}
@@ -941,6 +978,16 @@ class AutoModeration(Cog, emoji=1268880500248936491):
                         f"{self.bot.no} `{module}` is not a valid module.\n"
                         f"**Free:** {', '.join(f'`{m}`' for m in FREE_MODULES)}\n"
                         f"**Basic:** {', '.join(f'`{m}`' for m in BASIC_MODULES)}"
+                    )
+                )
+            )
+
+        if module in CONTENT_MODULES and not self.bot.can_read_message_content:
+            return await ctx.send(
+                embed=orange_embed(
+                    description=(
+                        f"⭐ `{module.replace('_', ' ').title()}` reads message content "
+                        "and is unavailable because the Message Content intent is off."
                     )
                 )
             )
@@ -1019,6 +1066,18 @@ class AutoModeration(Cog, emoji=1268880500248936491):
 
         tier = await _guild_tier(self.bot, ctx.guild.id)
         available = FREE_MODULES + (BASIC_MODULES if tier >= Tier.BASIC else [])
+        if mode == "enable":
+            available = tuple(
+                module
+                for module in available
+                if self.bot.can_read_message_content or module not in CONTENT_MODULES
+            )
+        if not available:
+            return await ctx.send(
+                embed=orange_embed(
+                    description="No configurable modules are available for this tier."
+                )
+            )
         row = await self._get_row(ctx.guild.id)
         cfg: dict = dict(row.get("config") or {})
 
@@ -1029,6 +1088,12 @@ class AutoModeration(Cog, emoji=1268880500248936491):
             current_mode: str,
         ) -> None:
             for mod in selected_modules:
+                if (
+                    current_mode == "enable"
+                    and mod in CONTENT_MODULES
+                    and not self.bot.can_read_message_content
+                ):
+                    continue
                 entry = current_cfg.get(mod, {})
                 current_cfg[mod] = {
                     **(entry if isinstance(entry, dict) else {}),
@@ -1046,7 +1111,14 @@ class AutoModeration(Cog, emoji=1268880500248936491):
                 view=None,
             )
 
-        view = ModuleToggleView(ctx, cfg, mode, available, on_confirm=_save_modules)
+        view = ModuleToggleView(
+            ctx,
+            cfg,
+            mode,
+            available,
+            can_read_message_content=self.bot.can_read_message_content,
+            on_confirm=_save_modules,
+        )
         await ctx.send(
             embed=await ctx_embed(
                 ctx,
@@ -1149,7 +1221,7 @@ class AutoModeration(Cog, emoji=1268880500248936491):
     ):
         """
         Override a module for one channel.  [Basic]
-        Example: `/automod override #resources invites off`
+        Example: `@Lucent automod override #resources message_spam off`
         """
 
         if not ctx.guild:
@@ -1172,6 +1244,19 @@ class AutoModeration(Cog, emoji=1268880500248936491):
             )
 
         enabled = state in ("on", "enable")
+        if (
+            enabled
+            and module in CONTENT_MODULES
+            and not self.bot.can_read_message_content
+        ):
+            return await ctx.send(
+                embed=orange_embed(
+                    description=(
+                        f"⭐ `{module.replace('_', ' ').title()}` reads message content "
+                        "and is unavailable because the Message Content intent is off."
+                    )
+                )
+            )
         row = await self._get_row(ctx.guild.id)
         cfg: dict = dict(row.get("config") or {})
         overrides = cfg.get("overrides", {})
@@ -1201,15 +1286,15 @@ class AutoModeration(Cog, emoji=1268880500248936491):
         Tweak a setting for a specific module.  [Basic]
 
         Examples:
-        `/automod settings all_caps threshold 80`
-        `/automod settings message_spam window_seconds 8`
-        `/automod settings mass_mentions threshold 5`
-        `/automod settings emoji_spam threshold 15`
-        `/automod settings invites whitelist discord.gg/yourcode`
-        `/automod settings join_rate threshold 8`
-        `/automod settings join_rate window_seconds 20`
-        `/automod settings join_rate lockdown_minutes 10`  [Pro]
-        `/automod settings default_avatar action kick`
+        `@Lucent automod settings message_spam window_seconds 8`
+        `@Lucent automod settings mass_mentions threshold 5`
+        `@Lucent automod settings join_rate threshold 8`
+        `@Lucent automod settings join_rate window_seconds 20`
+        `@Lucent automod settings join_rate lockdown_minutes 10`  [Pro]
+        `@Lucent automod settings default_avatar action kick`
+
+        Content-reading modules such as `all_caps`, `emoji_spam` and `invites`
+        are unavailable because Lucent does not enable the Message Content intent.
         """
 
         if not ctx.guild:
@@ -1220,6 +1305,15 @@ class AutoModeration(Cog, emoji=1268880500248936491):
             return await ctx.send(
                 embed=red_embed(
                     description=f"{self.bot.no} `{module}` is not a valid module."
+                )
+            )
+        if module in CONTENT_MODULES and not self.bot.can_read_message_content:
+            return await ctx.send(
+                embed=orange_embed(
+                    description=(
+                        f"⭐ `{module.replace('_', ' ').title()}` reads message content "
+                        "and is unavailable because the Message Content intent is off."
+                    )
                 )
             )
 
@@ -1311,11 +1405,18 @@ class AutoModeration(Cog, emoji=1268880500248936491):
         em = await ctx_embed(ctx, timestamp=True)
         await ctx.send(
             embed=_build_automod_status_embed(
-                em, ctx.guild, enabled, module_config, tier, self.bot.yes, self.bot.no
+                em,
+                ctx.guild,
+                enabled,
+                module_config,
+                tier,
+                self.bot.yes,
+                self.bot.no,
+                can_read_message_content=self.bot.can_read_message_content,
             )
         )
 
 
-async def setup(bot: Zync) -> None:
+async def setup(bot: Lucent) -> None:
     await bot.add_cog(AntiAlts(bot))
     await bot.add_cog(AutoModeration(bot))
