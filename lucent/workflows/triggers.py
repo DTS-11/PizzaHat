@@ -125,7 +125,11 @@ def _stable_digest(payload: Any) -> str:
 def _empty_custom_config(value: Any, _name: str) -> dict[str, Any]:
     """Safe default validator: custom events take no configuration."""
 
-    data = schema.parse_jsonb(value) if isinstance(value, (str, bytes, bytearray)) else value
+    data = (
+        schema.parse_jsonb(value)
+        if isinstance(value, (str, bytes, bytearray))
+        else value
+    )
     if not isinstance(data, dict) or data:
         raise schema.WorkflowValidationError(
             "This custom trigger accepts an empty trigger_config.",
@@ -204,7 +208,9 @@ class TriggerRegistry:
             if inspect.isawaitable(result):
                 result = await result
         except Exception as exc:  # custom adapters must not break event loops
-            logger.warning("Custom workflow trigger %s failed to build context: %s", name, exc)
+            logger.warning(
+                "Custom workflow trigger %s failed to build context: %s", name, exc
+            )
             return None
         if isinstance(result, WorkflowContext):
             result.trigger_type = name
@@ -213,14 +219,16 @@ class TriggerRegistry:
             return self.from_event(guild, name, result)
         return None
 
-    # ── context adapters ─────────────────────────────────────────────────────
-
     @staticmethod
-    def from_message(message: discord.Message, trigger: str = "message_create") -> WorkflowContext:
+    def from_message(
+        message: discord.Message, trigger: str = "message_create"
+    ) -> WorkflowContext:
         return WorkflowContext(
             guild=message.guild,  # type: ignore[arg-type]
             trigger_type=trigger,
-            member=message.author if isinstance(message.author, discord.Member) else message.author,
+            member=message.author
+            if isinstance(message.author, discord.Member)
+            else message.author,
             message=message,
             channel=message.channel,
             extra={"message_id": str(message.id)},
@@ -279,7 +287,9 @@ class TriggerRegistry:
         guild: discord.Guild, trigger: str, event: dict[str, Any]
     ) -> WorkflowContext:
         data = dict(event)
-        member_id = data.get("user_id") or data.get("subject_user_id") or data.get("creator_id")
+        member_id = (
+            data.get("user_id") or data.get("subject_user_id") or data.get("creator_id")
+        )
         member = guild.get_member(int(member_id)) if member_id else None
         channel = None
         channel_id = data.get("channel_id")
@@ -313,8 +323,6 @@ class TriggerRegistry:
             extra={"slot": slot},
         )
 
-    # ── filtering and event keys ─────────────────────────────────────────────
-
     def matches(self, workflow: dict[str, Any], ctx: WorkflowContext) -> bool:
         """Return whether a validated workflow should run for this context."""
 
@@ -324,7 +332,11 @@ class TriggerRegistry:
         trigger = ctx.trigger_type
 
         if trigger in ("message_create", "message_delete", "ticket_created"):
-            if config.get("ignore_bots", True) and ctx.user is not None and getattr(ctx.user, "bot", False):
+            if (
+                config.get("ignore_bots", True)
+                and ctx.user is not None
+                and getattr(ctx.user, "bot", False)
+            ):
                 return False
             channel_ids = config.get("channel_ids") or []
             channel_id = getattr(ctx.channel, "id", None)
@@ -352,7 +364,9 @@ class TriggerRegistry:
                 role_id = int(role_id) if role_id is not None else None
             except (TypeError, ValueError):
                 return False
-            return ctx.role_event == config.get("event") and role_id == config.get("role_id")
+            return ctx.role_event == config.get("event") and role_id == config.get(
+                "role_id"
+            )
 
         if trigger == "safety_alert":
             source = str((ctx.alert or ctx.event or {}).get("source", ""))
@@ -401,7 +415,12 @@ class TriggerRegistry:
             parts.extend(["member", str(ctx.user_id or 0)])
         elif trigger == "role_update":
             parts.extend(
-                ["role", str(ctx.user_id or 0), str(ctx.extra.get("role_id", "")), str(ctx.role_event)]
+                [
+                    "role",
+                    str(ctx.user_id or 0),
+                    str(ctx.extra.get("role_id", "")),
+                    str(ctx.role_event),
+                ]
             )
         elif trigger == "schedule":
             parts.extend(["slot", str(ctx.extra.get("slot", ""))])
@@ -415,7 +434,7 @@ class TriggerRegistry:
                 parts.append(_stable_digest(data))
         key = ":".join(parts)
         if len(key) > _MAX_KEY_LENGTH:
-            key = key[:_MAX_KEY_LENGTH - 24] + ":" + _stable_digest(key)
+            key = key[: _MAX_KEY_LENGTH - 24] + ":" + _stable_digest(key)
         return key
 
 
