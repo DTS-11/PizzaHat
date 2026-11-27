@@ -1,9 +1,9 @@
 """Interactive help and companion information commands.
 
-``/help`` builds its menu from the live application command tree, so every path
-shown to users matches what Discord actually registers. The rest of the cog
-keeps the standalone information surfaces together: ``/status``, ``/timezone``,
-``/premium``, and the onboarding/invite panel.
+``/help`` builds its menu from the live application and prefix command trees,
+so every path shown to users matches what Lucent actually registers. The rest of
+the cog keeps standalone information surfaces together: ``/status``,
+``@Lucent timezone``, ``@Lucent premium``, and the onboarding/invite panel.
 """
 
 from __future__ import annotations
@@ -20,9 +20,10 @@ from discord import ButtonStyle, Interaction, SelectOption, app_commands, ui
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Zync
+from core.bot import Lucent
 from core.cog import Cog
 from core.entitlements import Tier
+from services import get_moderation
 from utils.config import (
     ADMIN_INVITE,
     REG_INVITE,
@@ -52,7 +53,7 @@ def _emoji_text(value: Any) -> str:
     return str(value) if value is not None else ""
 
 
-def _command_emoji(command: HelpCommand, bot: Zync) -> Any | None:
+def _command_emoji(command: HelpCommand, bot: Lucent) -> Any | None:
     """Resolve the emoji declared on the cog that owns an app command.
 
     ``Cog.emoji`` uses ``bot.get_emoji()`` for numeric IDs, so guild emoji are
@@ -92,11 +93,31 @@ _MOD_ACTIONS = frozenset(
         "clear",
         "slowmode",
         "prune",
+        "nick",
+        "decancer",
+        "visibility",
+        "lock",
     }
 )
+_CATEGORY_BY_COG: dict[str, str] = {
+    "help": "Information",
+    "setup": "Information",
+    "mod": "Moderation Actions",
+    "safety": "Automation",
+    "workflows": "Automation",
+    "tickets": "Community",
+    "rolemenus": "Community",
+    "emojis": "Community",
+    "tags": "Community",
+    "templates": "Community",
+    "moderationactions": "Moderation Actions",
+    "servermanagement": "Server Management",
+}
 _TOP_LEVEL_CATEGORIES: dict[str, str] = {
     "help": "Information",
     "status": "Information",
+    "setup": "Information",
+    "view_setup": "Information",
     "premium": "Information",
     "info": "Information",
     "antialt": "Automation",
@@ -116,6 +137,7 @@ class HelpEntry:
 
     path: str
     category: str
+    label: str
     description: str
     usage: str
     example: str
@@ -183,70 +205,192 @@ def _param_example(param: Any) -> str:
     return "value"
 
 
-def _make_entry(command: HelpCommand, path: str, category: str, bot: Zync) -> HelpEntry:
-    """Derive usage and an example from a registered command's parameters."""
-    params = getattr(command, "_params", None)
-    if params:
+def _command_root(command: HelpCommand) -> HelpCommand:
+    current = command
+    while getattr(current, "parent", None) is not None:
+        current = current.parent
+    return current
+
+
+def _is_internal(command: HelpCommand) -> bool:
+    """Hide owner/developer commands and hidden helpers from user help."""
+    current: HelpCommand | None = command
+    while current is not None:
+        if getattr(current, "hidden", False) or getattr(current, "is_owner", False):
+            return True
+        checks = getattr(current, "checks", ()) or ()
+        if any(
+            getattr(check, "__qualname__", "").endswith("is_owner") for check in checks
+        ):
+            return True
+        current = getattr(current, "parent", None)
+    return False
+
+
+def _command_category(command: HelpCommand, fallback: str) -> str:
+    owner = getattr(command, "binding", None) or getattr(command, "cog", None)
+    cog_name = (getattr(owner, "qualified_name", "") or "").casefold()
+    if cog_name in _CATEGORY_BY_COG:
+        return _CATEGORY_BY_COG[cog_name]
+    module = getattr(command, "module", "") or ""
+    module_name = module.rsplit(".", 1)[-1].casefold()
+    if module_name in _CATEGORY_BY_COG:
+        return _CATEGORY_BY_COG[module_name]
+    return fallback
+
+
+def _make_entry(
+    command: HelpCommand,
+    path: str,
+    category: str,
+    bot: Lucent,
+    *,
+    app_command: HelpCommand | None = None,
+) -> HelpEntry:
+    """Derive usage and an example from a real command's parameters."""
+    app = app_command or command
+    command_type = getattr(app, "type", None)
+    is_app = isinstance(app, discord.app_commands.Command) or app_command is not None
+    is_context = command_type in (
+        discord.AppCommandType.user,
+        discord.AppCommandType.message,
+    )
+    params = getattr(app, "_params", None)
+    if is_context:
+        target = (
+            "a user" if command_type == discord.AppCommandType.user else "a message"
+        )
+        label = f"Right-click {target}: {path}"
+        usage = label
+        example = label
+    elif params:
         required: list[str] = []
         optional: list[str] = []
         for param in params.values():
-            label = str(getattr(param, "type", "value")).rsplit(".", 1)[-1]
-            snippet = f"{getattr(param, 'name', 'value')}:<{label}>"
+            kind = str(getattr(param, "type", "value")).rsplit(".", 1)[-1]
+            snippet = f"{getattr(param, 'name', 'value')}:<{kind}>"
             if getattr(param, "required", False):
                 required.append(snippet)
             else:
                 optional.append(f"[{snippet}]")
-        usage = f"/{path} " + " ".join(required + optional)
-        example = f"/{path} " + " ".join(
+        label = f"/{path}"
+        usage = f"{label} " + " ".join(required + optional)
+        example = f"{label} " + " ".join(
             f"{getattr(param, 'name', 'value')}:{_param_example(param)}"
             for param in params.values()
         )
     else:
         signature = getattr(command, "signature", "") or ""
-        usage = f"/{path} {signature}".strip()
+        if is_app:
+            label = f"/{path}"
+            usage = f"{label} {signature}".strip()
+        else:
+            label = f"@Lucent {path}"
+            usage = f"{label} {signature}".strip()
         example = usage
+    emoji = _command_emoji(app, bot)
     return HelpEntry(
         path=path,
         category=category,
+        label=label,
         description=_short_description(command),
-        usage=usage[:300],
-        example=example[:300],
+        usage=usage.strip()[:300],
+        example=example.strip()[:300],
         command=command,
-        emoji=_command_emoji(command, bot),
+        emoji=emoji,
     )
 
 
-def _build_entries(bot: Zync) -> dict[str, list[HelpEntry]]:
-    """Build categorized help entries from the live command tree."""
+def _build_entries(bot: Lucent) -> dict[str, list[HelpEntry]]:
+    """Build categorized help entries from live prefix and application commands."""
     categories: dict[str, list[HelpEntry]] = {
         name: [] for name in _CATEGORY_DESCRIPTIONS
     }
+    app_paths: dict[str, HelpCommand] = {}
 
-    def add(command: HelpCommand, path: str, category: str) -> None:
-        if getattr(command, "hidden", False):
+    def add(command: HelpCommand, path: str, category: str, **kwargs: Any) -> None:
+        if _is_internal(command):
             return
         categories.setdefault(category, []).append(
-            _make_entry(command, path, category, bot)
+            _make_entry(command, path, category, bot, **kwargs)
         )
 
+    def walk_app(command: HelpCommand, parent: str = "") -> None:
+        if _is_internal(command):
+            return
+        path = f"{parent} {command.name}".strip()
+        if isinstance(command, discord.app_commands.Group):
+            for child in command.commands:
+                walk_app(child, path)
+            return
+        app_paths[path.casefold()] = command
+        category = _TOP_LEVEL_CATEGORIES.get(
+            path.split(" ", 1)[0], _command_category(command, "Other")
+        )
+        add(command, path, category, app_command=command)
+
     for command in bot.tree.get_commands(type=discord.AppCommandType.chat_input):
-        if command.name == "mod":
-            for child in getattr(command, "commands", []):
-                category = (
-                    "Moderation Actions"
-                    if child.name in _MOD_ACTIONS
-                    else "Server Management"
-                )
-                add(child, f"mod {child.name}", category)
+        walk_app(command)
+
+    for menu_type in (discord.AppCommandType.user, discord.AppCommandType.message):
+        for menu in bot.tree.get_commands(type=menu_type):
+            add(menu, menu.name, "Quick Actions", app_command=menu)
+
+    seen: set[str] = set()
+    for command in bot.walk_commands():
+        if _is_internal(command) or isinstance(command, commands.Group):
             continue
+        root = _command_root(command)
+        if getattr(root, "name", "") in {"setup", "view_setup"}:
+            continue
+        path = command.qualified_name
+        if path.casefold() in app_paths:
+            seen.add(path.casefold())
+            continue
+        if path.casefold() in seen:
+            continue
+        seen.add(path.casefold())
+        first = path.split(" ", 1)[0]
+        if first in _MOD_ACTIONS:
+            category = "Moderation Actions"
+        elif first in {
+            "logs",
+            "insights",
+            "channel",
+            "role",
+            "slowmode",
+            "timezone",
+            "premium",
+            "invite",
+        }:
+            category = "Server Management"
+        elif first in {"antialt", "automod", "workflow"}:
+            category = "Automation"
+        elif first in {
+            "tag",
+            "template",
+            "tickets",
+            "tsetup",
+            "tpanels",
+            "tdelete",
+            "tadd",
+            "tremove",
+            "tclose",
+            "trename",
+            "rolemenu",
+            "emoji",
+        }:
+            category = "Community"
+        else:
+            category = "Other"
+        add(command, path, category)
 
-        category = _TOP_LEVEL_CATEGORIES.get(command.name, "Other")
-        add(command, command.name, category)
-        for child in getattr(command, "commands", []):
-            add(child, f"{command.name} {child.name}", category)
-
-    for menu in bot.tree.get_commands(type=discord.AppCommandType.user):
-        add(menu, menu.name, "Quick Actions")
+    for entry in categories.get("Information", []):
+        if (
+            entry.path in {"help", "status", "setup", "view_setup"}
+            and entry.path not in app_paths
+        ):
+            app_paths[entry.path] = entry.command
 
     for entries in categories.values():
         entries.sort(key=lambda entry: entry.path)
@@ -274,23 +418,6 @@ def _find_entry(
     return matches[0] if len(matches) == 1 else None
 
 
-def _find_app_command(bot: Zync, query: str) -> HelpCommand | None:
-    """Find an app command by its full path, falling back to a bare name."""
-    wanted = query.strip().lstrip("/").casefold()
-    commands = [
-        command
-        for command in bot.tree.walk_commands()
-        if not getattr(command, "hidden", False)
-    ]
-    for command in commands:
-        if _app_command_path(command).casefold() == wanted:
-            return command
-    for command in commands:
-        if _app_command_path(command).rsplit(" ", 1)[-1] == wanted:
-            return command
-    return None
-
-
 async def _home_help_embed(
     ctx: Context,
     categories: dict[str, list[HelpEntry]],
@@ -298,11 +425,15 @@ async def _home_help_embed(
 ) -> discord.Embed:
     """Build the compact landing embed; navigation lives in the view."""
     emojis = emojis or _category_emojis(categories)
-    embed = await ctx_embed(ctx, title="Zync \u2014 Command Help", timestamp=True)
+    embed = await ctx_embed(ctx, title="Lucent \u2014 Command Help", timestamp=True)
     embed.description = (
-        "Zync is a deterministic Discord operations engine.\n\n"
-        "Pick a category from the menu below, then select a command for usage "
-        "and an example. Use `/help <command>` to jump straight to details.\n"
+        "Lucent is a deterministic Discord operations engine.\n\n"
+        "**Quick guide:**\n"
+        "• Mention (`@Lucent ban @user spam`) for daily commands and arguments.\n"
+        "• Slash (`/help`, `/setup`, `/view_setup`, `/status`) for discovery and setup.\n"
+        "• Right-click a user or message for quick moderation actions.\n\n"
+        "Pick a category below, then select an entry for usage and an example. "
+        "Use `/help <name>` to jump straight to details. "
         "`<>` required  •  `[]` optional\n\n"
         f"[Invite]({REG_INVITE}) \u2022 [Support]({SUPPORT_SERVER}) \u2022 "
         f"[Source]({REPO_LINK})"
@@ -332,7 +463,7 @@ async def _category_help_embed(
     embed.description = _CATEGORY_DESCRIPTIONS.get(category, "")
     start = page * PAGE_SIZE
     for entry in entries[start : start + PAGE_SIZE]:
-        embed.add_field(name=f"/{entry.path}", value=entry.description, inline=False)
+        embed.add_field(name=entry.label, value=entry.description, inline=False)
     embed.set_footer(
         text=f"Page {page + 1}/{pages}  \u2022  Select a command for usage",
         icon_url=ctx.author.display_avatar.url,
@@ -349,7 +480,7 @@ async def _entry_help_embed(
     """Build the detail embed for a single command."""
     emoji = entry.emoji if entry.emoji is not None else (emojis or {}).get(category)
     prefix = _emoji_text(emoji)
-    title = f"{prefix} /{entry.path}".strip() if prefix else f"/{entry.path}"
+    title = f"{prefix} {entry.label}".strip() if prefix else entry.label
     embed = await ctx_embed(ctx, title=title, timestamp=True)
     embed.description = entry.description
     embed.add_field(name="Usage", value=f"```{entry.usage}```", inline=False)
@@ -421,7 +552,7 @@ class HelpView(ui.View):
     def __init__(
         self,
         ctx: Context,
-        bot: Zync,
+        bot: Lucent,
         categories: dict[str, list[HelpEntry]],
         *,
         category: str | None = None,
@@ -461,7 +592,7 @@ class HelpView(ui.View):
         if self.category is not None and self.selected is None:
             options = [
                 SelectOption(
-                    label=f"/{entry.path}"[:100],
+                    label=entry.label[:100],
                     description=entry.description[:100],
                     value=entry.path,
                     emoji=entry.emoji,
@@ -639,7 +770,7 @@ class HelpView(ui.View):
         if interaction.user == self.ctx.author:
             return True
         await interaction.response.send_message(
-            "This help menu isn't yours ._.", ephemeral=True
+            "This help menu belongs to the person who opened it.", ephemeral=True
         )
         return False
 
@@ -647,11 +778,9 @@ class HelpView(ui.View):
 class Help(Cog, emoji="\N{GEAR}"):
     """Help, status, timezone, billing and project links, kept together."""
 
-    def __init__(self, bot: Zync):
-        self.bot: Zync = bot
+    def __init__(self, bot: Lucent):
+        self.bot: Lucent = bot
         self.bot.help_command = None  # type: ignore[assignment]
-
-    # ── helpers ───────────────────────────────────────────────────────────────
 
     def _uptime(self) -> str:
         now = datetime.datetime.now(datetime.timezone.utc)
@@ -676,8 +805,6 @@ class Help(Cog, emoji="\N{GEAR}"):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
         await ctx.send(embed=embed)
-
-    # ── help ──────────────────────────────────────────────────────────────────
 
     async def _send_help(self, ctx: Context, query: str | None = None) -> None:
         categories = _build_entries(self.bot)
@@ -778,8 +905,6 @@ class Help(Cog, emoji="\N{GEAR}"):
             for name in sorted(names)[:25]
         ]
 
-    # ── status ────────────────────────────────────────────────────────────────
-
     @commands.hybrid_command(
         name="status", aliases=["stats"], help="Show bot health and uptime."
     )
@@ -805,19 +930,14 @@ class Help(Cog, emoji="\N{GEAR}"):
             value=f"`{len(list(self.bot.walk_commands()))}`",
             inline=True,
         )
-        em.add_field(name="Workflows", value="`/workflow list`", inline=True)
+        em.add_field(name="Workflows", value="`@Lucent workflow list`", inline=True)
         await message.edit(content=None, embed=em)
-
-    # ── timezone ──────────────────────────────────────────────────────────────
 
     @commands.hybrid_command(
         name="timezone",
         aliases=["tz", "time"],
         help="Show the current time in a timezone, or set your own IANA timezone.",
-    )
-    @app_commands.describe(
-        timezone="Optional IANA timezone to set for yourself, e.g. Europe/London",
-        member="Member whose timezone to look up (defaults to you)",
+        with_app_command=False,
     )
     async def timezone(
         self,
@@ -863,7 +983,7 @@ class Help(Cog, emoji="\N{GEAR}"):
             await ctx.send(
                 embed=red_embed(
                     description=f"{self.bot.no} No timezone set for {member.mention}. "
-                    "Use `/timezone timezone:Europe/London`."
+                    "Use `@Lucent timezone Europe/London`."
                 )
             )
             return
@@ -886,7 +1006,6 @@ class Help(Cog, emoji="\N{GEAR}"):
             )
         )
 
-    @timezone.autocomplete("timezone")
     async def timezone_autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> list[app_commands.Choice[str]]:
@@ -895,11 +1014,10 @@ class Help(Cog, emoji="\N{GEAR}"):
         matches = [n for n in names if current in n.casefold()][:25]
         return [app_commands.Choice(name=n, value=n) for n in matches]
 
-    # ── premium / billing ─────────────────────────────────────────────────────
-
     @commands.hybrid_command(
         name="premium",
         help="Show this server's tier, billing status and workflow limits.",
+        with_app_command=False,
     )
     async def premium(self, ctx: Context) -> None:
         """Show the server's current entitlement tier and billing status."""
@@ -929,7 +1047,10 @@ class Help(Cog, emoji="\N{GEAR}"):
             f"**Billing:** {row['status'] if row else 'none'}\n"
             f"**Renews:** <t:{int(row['current_period_end'].timestamp())}:R>"
             if row and row["current_period_end"]
-            else f"**Tier:** {tier.name}\n**Billing:** none"
+            else (
+                f"**Tier:** {tier.name}\n"
+                f"**Billing:** {row['status'] if row else 'none'}"
+            )
         )
         if row and row["cancel_at_period_end"]:
             em.description += "\n**Cancels:** at the end of the current period."
@@ -938,12 +1059,13 @@ class Help(Cog, emoji="\N{GEAR}"):
                 "\n\nFree tier: 5 active workflows, 2 actions per workflow. "
                 f"[Upgrade]({UPGRADE_URL})"
             )
-        em.set_thumbnail(url="https://cdn3.emoji.gg/emojis/321814-cool-diamond.png")
+        if self.bot.user:
+            em.set_thumbnail(url=self.bot.user.display_avatar.url)
         await ctx.send(embed=em)
 
-    # ── onboarding ────────────────────────────────────────────────────────────
-
-    @commands.hybrid_command(name="invite", help="Add Zync to a server.")
+    @commands.hybrid_command(
+        name="invite", help="Add Lucent to a server.", with_app_command=False
+    )
     async def invite(self, ctx: Context) -> None:
         """Single onboarding panel for invites, support and source."""
         view = ui.View(timeout=None)
@@ -964,7 +1086,9 @@ class Help(Cog, emoji="\N{GEAR}"):
                 )
             )
 
-        description = "Add Zync to your server and automate your moderation workflows."
+        description = (
+            "Add Lucent to your server and automate your moderation workflows."
+        )
         if REG_INVITE:
             description += f"\n\n**[Invite]({REG_INVITE})**"
         if ADMIN_INVITE:
@@ -975,11 +1099,11 @@ class Help(Cog, emoji="\N{GEAR}"):
 
         em = await ctx_embed(
             ctx,
-            title="About Zync",
+            title="About Lucent",
             description=description,
         )
         await ctx.send(embed=em, view=view)
 
 
-async def setup(bot: Zync) -> None:
+async def setup(bot: Lucent) -> None:
     await bot.add_cog(Help(bot))
