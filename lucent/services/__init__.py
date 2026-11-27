@@ -33,42 +33,42 @@ __all__ = [
 
 
 def get_moderation(bot: Any) -> ModerationService:
-    service = getattr(bot, "_zync_moderation", None)
+    service = getattr(bot, "_lucent_moderation", None)
     if service is None:
         service = ModerationService(getattr(bot, "db", None))
-        bot._zync_moderation = service
+        bot._lucent_moderation = service
     return service
 
 
 def get_logs(bot: Any) -> LogService:
-    service = getattr(bot, "_zync_logs", None)
+    service = getattr(bot, "_lucent_logs", None)
     if service is None:
         service = LogService(getattr(bot, "db", None))
-        bot._zync_logs = service
+        bot._lucent_logs = service
     return service
 
 
 def get_protection(bot: Any) -> ProtectionService:
-    service = getattr(bot, "_zync_protection", None)
+    service = getattr(bot, "_lucent_protection", None)
     if service is None:
         service = ProtectionService(
             getattr(bot, "db", None), getattr(bot, "entitlements", None)
         )
-        bot._zync_protection = service
+        bot._lucent_protection = service
     return service
 
 
 def get_tickets(bot: Any) -> TicketService:
-    service = getattr(bot, "_zync_tickets", None)
+    service = getattr(bot, "_lucent_tickets", None)
     if service is None:
         service = TicketService(getattr(bot, "db", None))
-        bot._zync_tickets = service
+        bot._lucent_tickets = service
     return service
 
 
 def get_scheduler(bot: Any) -> SchedulerService:
-    service = getattr(bot, "_zync_scheduler", None)
+    service = getattr(bot, "_lucent_scheduler", None)
     if service is None:
         service = SchedulerService(bot)
-        bot._zync_scheduler = service
+        bot._lucent_scheduler = service
     return service
