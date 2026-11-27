@@ -12,9 +12,9 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Zync
-from core.entitlements import Tier
+from core.bot import Lucent
 from core.cog import Cog
+from core.entitlements import Tier
 from utils.config import UPGRADE_URL
 from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
 from utils.ui import Paginator
@@ -37,8 +37,8 @@ def _rowcount(status: str) -> int:
 class Tags(Cog, emoji=1268850578415681546):
     """Organize and streamline your server's content."""
 
-    def __init__(self, bot: Zync):
-        self.bot: Zync = bot
+    def __init__(self, bot: Lucent):
+        self.bot: Lucent = bot
 
     @staticmethod
     def _chunk_text(content: str, limit: int) -> list[str]:
@@ -139,7 +139,7 @@ class Tags(Cog, emoji=1268850578415681546):
                 else:
                     await ctx.send(content)
 
-    @commands.hybrid_group(fallback="get")
+    @commands.hybrid_group(fallback="get", with_app_command=False)
     @commands.guild_only()
     async def tag(self, ctx: Context, *, tag_name: Optional[str] = None):
         """Tag commands. Pass a tag name to fetch its content."""
@@ -149,7 +149,7 @@ class Tags(Cog, emoji=1268850578415681546):
         if tag_name is None:
             await ctx.send(
                 embed=orange_embed(
-                    description="Provide a tag name, or use `/help tag` to see all tag commands."
+                    description="Provide a tag name, or use `@Lucent help tag` to see all tag commands."
                 )
             )
         else:
@@ -328,5 +328,5 @@ class Tags(Cog, emoji=1268850578415681546):
                 await ctx.send(embed=green_embed(f"{self.bot.yes} Tag updated!"))
 
 
-async def setup(bot: Zync) -> None:
+async def setup(bot: Lucent) -> None:
     await bot.add_cog(Tags(bot))
