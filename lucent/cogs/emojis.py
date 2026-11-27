@@ -1,7 +1,7 @@
 """Guild emoji management commands.
 
-Contains the public ``/emoji`` group for creating, deleting, inspecting and
-listing guild emojis. Emoji creation only accepts Discord emoji references
+Contains the public ``@Lucent emoji`` group for creating, deleting, inspecting
+and listing guild emojis. Emoji creation only accepts Discord emoji references
 (custom emoji markup, an emoji ID, or an emoji name in this guild); arbitrary
 image URLs and local image processing are deliberately not supported.
 """
@@ -15,7 +15,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Zync
+from core.bot import Lucent
 from core.cog import Cog
 from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
 from utils.formats import format_date
@@ -52,7 +52,9 @@ async def _resolve_guild_emoji(ctx: Context, value: str) -> discord.Emoji | None
         return None
 
 
-def _emoji_source(value: str, ctx: Context) -> discord.Emoji | discord.PartialEmoji | None:
+def _emoji_source(
+    value: str, ctx: Context
+) -> discord.Emoji | discord.PartialEmoji | None:
     """Build a Discord-backed emoji source; never accepts arbitrary URLs.
 
     Custom emoji markup and bare IDs are resolved through Discord's own asset
@@ -76,8 +78,8 @@ def _emoji_source(value: str, ctx: Context) -> discord.Emoji | discord.PartialEm
 class Emojis(Cog, emoji=1268867324195246133):
     """Emoji management commands."""
 
-    def __init__(self, bot: Zync):
-        self.bot: Zync = bot
+    def __init__(self, bot: Lucent):
+        self.bot: Lucent = bot
 
     async def _send_emoji_list(self, ctx: Context) -> None:
         """Send the paginated guild emoji list."""
@@ -124,7 +126,7 @@ class Emojis(Cog, emoji=1268867324195246133):
             return
         await ctx.send(embed=embeds[0], view=Paginator(ctx, embeds))
 
-    @commands.hybrid_group(name="emoji", fallback="all")
+    @commands.hybrid_group(name="emoji", fallback="all", with_app_command=False)
     @commands.guild_only()
     async def _emoji(self, ctx: Context):
         """List this server's emojis (the fallback action)."""
@@ -135,10 +137,6 @@ class Emojis(Cog, emoji=1268867324195246133):
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_emojis=True)
     @commands.bot_has_permissions(manage_emojis=True)
-    @discord.app_commands.describe(
-        source="A custom emoji, emoji ID, or the name of an emoji in this server",
-        name="New emoji name (2-32 letters, numbers, or underscores)",
-    )
     async def emoji_create(self, ctx: Context, source: str, name: str):
         """Create a guild emoji by copying another Discord emoji."""
         if not ctx.guild:
@@ -174,11 +172,15 @@ class Emojis(Cog, emoji=1268867324195246133):
             data = await asyncio.wait_for(emoji.read(), timeout=10.0)
         except (discord.HTTPException, OSError, ValueError):
             return await ctx.send(
-                embed=red_embed(f"{self.bot.no} Could not fetch that emoji from Discord.")
+                embed=red_embed(
+                    f"{self.bot.no} Could not fetch that emoji from Discord."
+                )
             )
         except asyncio.TimeoutError:
             return await ctx.send(
-                embed=red_embed(f"{self.bot.no} Discord took too long to fetch that emoji.")
+                embed=red_embed(
+                    f"{self.bot.no} Discord took too long to fetch that emoji."
+                )
             )
 
         if len(data) >= _MAX_EMOJI_BYTES:
@@ -211,7 +213,6 @@ class Emojis(Cog, emoji=1268867324195246133):
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.has_permissions(manage_emojis=True)
     @commands.bot_has_permissions(manage_emojis=True)
-    @discord.app_commands.describe(emoji="Emoji name, ID, or custom emoji string")
     async def emoji_delete(self, ctx: Context, emoji: str):
         """Delete a guild emoji by name, ID, or custom emoji string."""
         target = await _resolve_guild_emoji(ctx, emoji)
@@ -234,7 +235,6 @@ class Emojis(Cog, emoji=1268867324195246133):
     @_emoji.command(name="info")
     @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.user)
-    @discord.app_commands.describe(emoji="Emoji name, ID, or custom emoji string")
     async def emoji_info(self, ctx: Context, emoji: str):
         """Show details about a guild emoji."""
         target = await _resolve_guild_emoji(ctx, emoji)
@@ -296,6 +296,6 @@ class Emojis(Cog, emoji=1268867324195246133):
         await self._send_emoji_list(ctx)
 
 
-async def setup(bot: Zync) -> None:
+async def setup(bot: Lucent) -> None:
     """Register the emoji cog on startup."""
     await bot.add_cog(Emojis(bot))
