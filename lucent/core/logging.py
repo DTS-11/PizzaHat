@@ -1,4 +1,4 @@
-"""Structured logging configuration for the Zync runtime.
+"""Structured logging configuration for the Lucent runtime.
 
 Logging is configured explicitly from the entry point rather than at import
 time. The file handler appends and rotates so restarts do not destroy history.
@@ -54,7 +54,7 @@ def configure_logging() -> None:
                 },
             },
             "loggers": {
-                "zync": {
+                "lucent": {
                     "handlers": ["console", "file"],
                     "level": level,
                     "propagate": False,
@@ -78,4 +78,6 @@ def configure_logging() -> None:
 def get_logger(name: str) -> logging.Logger:
     """Return a logger under the application namespace."""
 
-    return logging.getLogger(f"zync.{name}" if not name.startswith("zync") else name)
+    return logging.getLogger(
+        f"lucent.{name}" if not name.startswith("lucent") else name
+    )
