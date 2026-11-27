@@ -44,8 +44,6 @@ class WorkflowRepository:
     def available(self) -> bool:
         return self.pool is not None
 
-    # ── definition conversion ────────────────────────────────────────────────
-
     @staticmethod
     def _definition(row: Any) -> dict[str, Any] | None:
         raw: dict[str, Any] = {
@@ -70,8 +68,6 @@ class WorkflowRepository:
         except schema.WorkflowValidationError as exc:
             logger.warning("Skipping invalid workflow %s: %s", row["id"], exc)
             return None
-
-    # ── definitions ──────────────────────────────────────────────────────────
 
     async def list_enabled(
         self, guild_id: int, *, trigger_type: str | None = None
@@ -225,8 +221,6 @@ class WorkflowRepository:
         )
         return str(result).endswith("1")
 
-    # ── run records ──────────────────────────────────────────────────────────
-
     async def record_run_start(
         self,
         guild_id: int,
@@ -273,8 +267,6 @@ class WorkflowRepository:
             _json(action_results or []),
             (str(error)[:2000] if error else None),
         )
-
-    # ── persisted run state / cooldowns ──────────────────────────────────────
 
     async def set_state(
         self,
@@ -378,9 +370,7 @@ class WorkflowRepository:
         )
         return value is not None
 
-    async def clear_state(
-        self, guild_id: int, workflow_id: int | None = None
-    ) -> None:
+    async def clear_state(self, guild_id: int, workflow_id: int | None = None) -> None:
         """Remove cooldown/schedule state (used when definitions are deleted)."""
 
         if self.pool is None:
@@ -402,8 +392,6 @@ class WorkflowRepository:
         """Drop persisted cache-like keys for changed definitions."""
 
         await self.clear_state(guild_id, workflow_id)
-
-    # ── durable scheduled tasks ──────────────────────────────────────────────
 
     async def create_task(
         self,
@@ -539,8 +527,6 @@ class WorkflowRepository:
             guild_id,
             workflow_id,
         )
-
-    # ── send_embed dedupe ────────────────────────────────────────────────────
 
     async def get_dedupe(self, guild_id: int, source_message_id: int) -> int | None:
         if self.pool is None:
