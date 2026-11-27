@@ -12,7 +12,7 @@ from discord import ButtonStyle, Interaction, SelectOption, ui
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Zync
+from core.bot import Lucent
 from core.entitlements import Tier
 from utils.config import UPGRADE_URL
 
@@ -141,7 +141,7 @@ class ConfirmationView(ui.View):
 class TicketView(ui.View):
     def __init__(
         self,
-        bot: Zync,
+        bot: Lucent,
         button_label: str = "Open Ticket",
         button_emoji: str = "\N{ADMISSION TICKETS}",
     ):
@@ -186,7 +186,9 @@ class TicketView(ui.View):
             )
         if existing is not None:
             existing_thread = interaction.guild.get_thread(existing["thread_id"])
-            mention = existing_thread.mention if existing_thread else "an existing thread"
+            mention = (
+                existing_thread.mention if existing_thread else "an existing thread"
+            )
             return await interaction.response.send_message(
                 f"You already have an open ticket: {mention}", ephemeral=True
             )
@@ -467,7 +469,7 @@ class RoleMenuView(discord.ui.View):
 
 
 async def _fetch_menu(
-    bot: Zync, menu_id: int, guild_id: Optional[int] = None
+    bot: Lucent, menu_id: int, guild_id: Optional[int] = None
 ) -> Optional[dict]:
     if not bot.db:
         return None
@@ -481,7 +483,7 @@ async def _fetch_menu(
 
 
 async def _fetch_items(
-    bot: Zync, menu_id: int, guild_id: Optional[int] = None
+    bot: Lucent, menu_id: int, guild_id: Optional[int] = None
 ) -> list[dict]:
     if not bot.db:
         return []
@@ -518,7 +520,7 @@ def build_embed(
 
 
 async def _build_embed_with_template(
-    bot: Zync,
+    bot: Lucent,
     menu: dict,
     items: list[dict],
     guild: Optional[discord.Guild],
@@ -532,7 +534,7 @@ async def _build_embed_with_template(
 
 
 async def publish_menu(
-    bot: Zync,
+    bot: Lucent,
     menu: dict,
     items: list[dict],
     channel: discord.abc.Messageable,
@@ -557,7 +559,7 @@ async def publish_menu(
 
 
 async def refresh_menu(
-    bot: Zync, menu_id: int, guild_id: Optional[int] = None
+    bot: Lucent, menu_id: int, guild_id: Optional[int] = None
 ) -> bool:
     """Rebuild the embed + view for an existing posted menu. No-op if not posted."""
 
@@ -610,7 +612,7 @@ async def _ensure_can_use(
 
 
 async def _handle_button(interaction: Interaction, menu_id: int, role_id: int) -> None:
-    bot: Zync = interaction.client  # type: ignore[assignment]
+    bot: Lucent = interaction.client  # type: ignore[assignment]
     menu = await _fetch_menu(
         bot, menu_id, interaction.guild.id if interaction.guild else None
     )
@@ -692,7 +694,7 @@ async def _handle_button(interaction: Interaction, menu_id: int, role_id: int) -
 async def _handle_select(
     interaction: Interaction, menu_id: int, values: list[str]
 ) -> None:
-    bot: Zync = interaction.client  # type: ignore[assignment]
+    bot: Lucent = interaction.client  # type: ignore[assignment]
     menu = await _fetch_menu(
         bot, menu_id, interaction.guild.id if interaction.guild else None
     )
