@@ -1,6 +1,6 @@
 """Role menu commands.
 
-Provides slash/hybrid commands for creating, configuring, publishing, and
+Provides mention-prefix commands for creating, configuring, publishing, and
 refreshing button/select role menus with tier limits.
 """
 
@@ -12,9 +12,9 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Zync
-from core.entitlements import Tier
+from core.bot import Lucent
 from core.cog import Cog
+from core.entitlements import Tier
 from utils.config import UPGRADE_URL
 from utils.custom_checks import premium
 from utils.embed import ctx_embed, green_embed, orange_embed, red_embed
@@ -45,7 +45,7 @@ def _rowcount(status: str) -> int:
         return 0
 
 
-async def _guild_tier(bot: Zync, guild_id: int) -> Tier:
+async def _guild_tier(bot: Lucent, guild_id: int) -> Tier:
     service = getattr(bot, "entitlements", None)
     if service is not None:
         return await service.tier_for(guild_id)
@@ -53,11 +53,13 @@ async def _guild_tier(bot: Zync, guild_id: int) -> Tier:
 
 
 _UPDATE_ITEM_FIELDS = frozenset({"emoji", "label", "description"})
-_UPDATE_MENU_FIELDS = frozenset({"mode", "title", "description", "max_selections", "required_role_id"})
+_UPDATE_MENU_FIELDS = frozenset(
+    {"mode", "title", "description", "max_selections", "required_role_id"}
+)
 
 
 async def _update_item(
-    bot: Zync, guild_id: int, menu_id: int, role_id: int, field: str, value: object
+    bot: Lucent, guild_id: int, menu_id: int, role_id: int, field: str, value: object
 ) -> bool:
     """Update one role-menu item, scoped to the caller's guild."""
     if field not in _UPDATE_ITEM_FIELDS or not bot.db:
@@ -74,7 +76,7 @@ async def _update_item(
 
 
 async def _update_menu(
-    bot: Zync, guild_id: int, menu_id: int, field: str, value: object
+    bot: Lucent, guild_id: int, menu_id: int, field: str, value: object
 ) -> bool:
     """Update one role-menu setting, scoped to the caller's guild."""
     if field not in _UPDATE_MENU_FIELDS or not bot.db:
@@ -106,14 +108,10 @@ async def _resolve_menu(ctx: Context, menu_id: int) -> Optional[dict]:
 class RoleMenus(Cog, emoji=1268853457855709255):
     """Self-assignable role menus — buttons and selects."""
 
-    def __init__(self, bot: Zync):
+    def __init__(self, bot: Lucent):
         self.bot = bot
 
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # HUB / LIST
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    @commands.hybrid_group(name="rolemenu", fallback="list")
+    @commands.hybrid_group(name="rolemenu", fallback="list", with_app_command=False)
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     async def rolemenu(self, ctx: Context):
@@ -136,8 +134,8 @@ class RoleMenus(Cog, emoji=1268853457855709255):
                 embed=orange_embed(
                     description=(
                         f"No role menus yet.\n\n"
-                        f"**Create one:** `/rolemenu create <name> [button|select]`\n"
-                        f'Example: `/rolemenu create "Game Roles" button`'
+                        f"**Create one:** `@Lucent rolemenu create <name> [button|select]`\n"
+                        f'Example: `@Lucent rolemenu create "Game Roles" button`'
                     )
                 )
             )
@@ -160,10 +158,6 @@ class RoleMenus(Cog, emoji=1268853457855709255):
             ),
         )
         await ctx.send(embed=em)
-
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # CREATE / DELETE / TOGGLE
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     @rolemenu.command(name="create")
     @commands.guild_only()
@@ -226,8 +220,8 @@ class RoleMenus(Cog, emoji=1268853457855709255):
                     f"{self.bot.yes} Created role menu `#{row['id']}` — **{name}**\n"
                     f"Type: `{type_}` · Mode: `{mode}`\n\n"
                     f"Next:\n"
-                    f"• `/rolemenu add {row['id']} @role` — add roles\n"
-                    f"• `/rolemenu post {row['id']} #channel` — post it"
+                    f"• `@Lucent rolemenu add {row['id']} @role` — add roles\n"
+                    f"• `@Lucent rolemenu post {row['id']} #channel` — post it"
                 )
             )
         )
@@ -372,10 +366,6 @@ class RoleMenus(Cog, emoji=1268853457855709255):
             em.add_field(name="Roles", value="None yet", inline=False)
 
         await ctx.send(embed=em)
-
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # ITEMS
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     @rolemenu.command(name="add")
     @commands.guild_only()
@@ -573,10 +563,6 @@ class RoleMenus(Cog, emoji=1268853457855709255):
             )
         )
 
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # MENU-LEVEL CONFIG
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     @rolemenu.command(name="mode")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
@@ -725,7 +711,11 @@ class RoleMenus(Cog, emoji=1268853457855709255):
             return
 
         if not await _update_menu(
-            self.bot, ctx.guild.id, menu_id, "required_role_id", role.id if role else None
+            self.bot,
+            ctx.guild.id,
+            menu_id,
+            "required_role_id",
+            role.id if role else None,
         ):
             return await ctx.send(
                 embed=red_embed(
@@ -738,10 +728,6 @@ class RoleMenus(Cog, emoji=1268853457855709255):
         else:
             msg = f"Cleared required role on `#{menu_id}`."
         await ctx.send(embed=green_embed(description=f"{self.bot.yes} {msg}"))
-
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # POST / REFRESH
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     @rolemenu.command(name="post")
     @commands.guild_only()
@@ -765,12 +751,11 @@ class RoleMenus(Cog, emoji=1268853457855709255):
                 embed=red_embed(
                     description=(
                         f"{self.bot.no} Add at least one role first: "
-                        f"`/rolemenu add {menu_id} @role`"
+                        f"`@Lucent rolemenu add {menu_id} @role`"
                     )
                 )
             )
 
-        # If already posted, try to delete the old message
         if menu["channel_id"] and menu["message_id"]:
             old_ch = ctx.guild.get_channel(menu["channel_id"])
             if isinstance(old_ch, (discord.TextChannel, discord.Thread)):
@@ -817,7 +802,7 @@ class RoleMenus(Cog, emoji=1268853457855709255):
                 embed=orange_embed(
                     description=(
                         f"Couldn't refresh `#{menu_id}` — has it been posted yet? "
-                        f"Use `/rolemenu post {menu_id} #channel`."
+                        f"Use `@Lucent rolemenu post {menu_id} #channel`."
                     )
                 )
             )
@@ -826,5 +811,5 @@ class RoleMenus(Cog, emoji=1268853457855709255):
         )
 
 
-async def setup(bot: Zync) -> None:
+async def setup(bot: Lucent) -> None:
     await bot.add_cog(RoleMenus(bot))
