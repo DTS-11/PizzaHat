@@ -30,7 +30,7 @@ _MAX_RENDER = 2000
 class ActionResult:
     index: int
     type: str
-    status: str  # success | skipped | failed
+    status: str
     detail: str = ""
 
     def to_dict(self) -> dict[str, Any]:
@@ -51,7 +51,9 @@ def render(text: str, variables: dict[str, str]) -> str:
     return out[:_MAX_RENDER]
 
 
-def build_variables(ctx: WorkflowContext, config: dict[str, Any] | None = None) -> dict[str, str]:
+def build_variables(
+    ctx: WorkflowContext, config: dict[str, Any] | None = None
+) -> dict[str, str]:
     """Build the small, fixed set of template variables available to actions."""
 
     config = config or {}
@@ -85,7 +87,9 @@ def build_variables(ctx: WorkflowContext, config: dict[str, Any] | None = None) 
             for key in ("source", "module", "action_type", "reason", "thread_id"):
                 if key in source:
                     variables[key] = str(source[key])[:200]
-    variables.update({key: str(value) for key, value in ctx.extra.items() if isinstance(key, str)})
+    variables.update(
+        {key: str(value) for key, value in ctx.extra.items() if isinstance(key, str)}
+    )
     return variables
 
 
@@ -108,7 +112,9 @@ class ActionRegistry:
         channel_id = action.get("channel_id")
         channel: Any = None
         if channel_id:
-            channel = ctx.guild.get_channel(channel_id) or ctx.guild.get_thread(channel_id)
+            channel = ctx.guild.get_channel(channel_id) or ctx.guild.get_thread(
+                channel_id
+            )
         else:
             channel = ctx.channel
         if not isinstance(channel, (discord.TextChannel, discord.Thread)):
@@ -117,7 +123,9 @@ class ActionRegistry:
         if me is None:
             return None
         permissions = channel.permissions_for(me)
-        if not permissions.send_messages or (embed_links and not permissions.embed_links):
+        if not permissions.send_messages or (
+            embed_links and not permissions.embed_links
+        ):
             return None
         return channel
 
@@ -138,7 +146,11 @@ class ActionRegistry:
             result = handler(action, ctx, variables, workflow or {}, index)
             if hasattr(result, "__await__"):
                 result = await result
-            return result if isinstance(result, ActionResult) else ActionResult(index, kind, "success")
+            return (
+                result
+                if isinstance(result, ActionResult)
+                else ActionResult(index, kind, "success")
+            )
         except discord.HTTPException as exc:
             # Rate limits are retried by the engine with the server's delay.
             if exc.status == 429:
@@ -151,8 +163,6 @@ class ActionRegistry:
         except Exception as exc:
             logger.warning("Workflow action %s failed: %s", kind, exc, exc_info=True)
             return ActionResult(index, kind, "failed", f"{type(exc).__name__}: {exc}")
-
-    # ── role and member actions ──────────────────────────────────────────────
 
     def _role_target(
         self, ctx: WorkflowContext, role_id: int
@@ -195,7 +205,6 @@ class ActionRegistry:
             await member.remove_roles(role, reason=f"Workflow: {ctx.trigger_type}")
         return ActionResult(index, kind, "success", role.name)
 
-    # Both role actions share the same hierarchy/idempotency guard.
     _action_remove_role = _action_add_role
 
     async def _action_timeout_member(
@@ -211,15 +220,21 @@ class ActionRegistry:
         if member is None or me is None or member == me:
             return ActionResult(index, "timeout_member", "skipped", "no target")
         if not me.guild_permissions.moderate_members:
-            return ActionResult(index, "timeout_member", "skipped", "missing permission")
+            return ActionResult(
+                index, "timeout_member", "skipped", "missing permission"
+            )
         if member.top_role >= me.top_role:
             return ActionResult(index, "timeout_member", "skipped", "hierarchy")
-        until = discord.utils.utcnow() + datetime.timedelta(minutes=int(action["minutes"]))
+        until = discord.utils.utcnow() + datetime.timedelta(
+            minutes=int(action["minutes"])
+        )
         is_timed_out = getattr(member, "is_timed_out", None)
         if callable(is_timed_out) and is_timed_out():
             current = getattr(member, "timed_out_until", None)
             if current is not None and current >= until:
-                return ActionResult(index, "timeout_member", "skipped", "already timed out")
+                return ActionResult(
+                    index, "timeout_member", "skipped", "already timed out"
+                )
         await member.timeout(until, reason=f"Workflow: {ctx.trigger_type}")
         return ActionResult(index, "timeout_member", "success", until.isoformat())
 
@@ -236,8 +251,6 @@ class ActionRegistry:
             return ActionResult(index, "send_dm", "skipped", "no user")
         await user.send(render(action["message"], variables))
         return ActionResult(index, "send_dm", "success", str(user.id))
-
-    # ── message actions ──────────────────────────────────────────────────────
 
     async def _action_send_message(
         self,
@@ -266,7 +279,9 @@ class ActionRegistry:
                 color=int(action.get("color", 0x456DD4)),
                 timestamp=source.created_at,
             )
-            em.set_author(name=str(source.author), icon_url=source.author.display_avatar.url)
+            em.set_author(
+                name=str(source.author), icon_url=source.author.display_avatar.url
+            )
             em.add_field(name="Source", value=f"[Jump to message]({source.jump_url})")
             if source.attachments:
                 em.set_image(url=source.attachments[0].url)
@@ -299,7 +314,9 @@ class ActionRegistry:
                 try:
                     existing = await channel.fetch_message(bot_msg_id)
                     await existing.edit(content=content, embed=em)
-                    return ActionResult(index, "send_embed", "success", f"updated {bot_msg_id}")
+                    return ActionResult(
+                        index, "send_embed", "success", f"updated {bot_msg_id}"
+                    )
                 except discord.NotFound:
                     pass
         sent = await channel.send(content=content, embed=em)
@@ -321,7 +338,8 @@ class ActionRegistry:
             target = ctx.guild.get_channel(int(channel))
         elif self.repo.pool is not None:
             channel_id = await self.repo.pool.fetchval(
-                "SELECT log_channel_id FROM guild_config WHERE guild_id=$1", ctx.guild.id
+                "SELECT log_channel_id FROM guild_config WHERE guild_id=$1",
+                ctx.guild.id,
             )
             if channel_id:
                 target = ctx.guild.get_channel(int(channel_id))
@@ -359,8 +377,12 @@ class ActionRegistry:
         if not isinstance(channel, discord.TextChannel) or member is None or me is None:
             return ActionResult(index, "open_ticket", "skipped", "no channel or member")
         permissions = channel.permissions_for(me)
-        if not (me.guild_permissions.manage_threads or permissions.create_private_threads):
-            return ActionResult(index, "open_ticket", "skipped", "missing thread permission")
+        if not (
+            me.guild_permissions.manage_threads or permissions.create_private_threads
+        ):
+            return ActionResult(
+                index, "open_ticket", "skipped", "missing thread permission"
+            )
 
         if self.repo.pool is not None:
             existing = await self.repo.pool.fetchval(
@@ -372,7 +394,9 @@ class ActionRegistry:
             if existing:
                 thread = ctx.guild.get_thread(int(existing))
                 if thread is not None:
-                    return ActionResult(index, "open_ticket", "skipped", f"existing {thread.id}")
+                    return ActionResult(
+                        index, "open_ticket", "skipped", f"existing {thread.id}"
+                    )
 
         thread = await channel.create_thread(
             name=f"ticket-{member.display_name}"[:90],
@@ -403,12 +427,12 @@ class ActionRegistry:
             ),
             color=0x57F287,
         )
-        from utils.ui import TicketSettings  # local import keeps startup light
+        from utils.ui import TicketSettings
 
-        await thread.send(content=content, embed=em, view=TicketSettings(thread.id, self.bot))
+        await thread.send(
+            content=content, embed=em, view=TicketSettings(thread.id, self.bot)
+        )
         return ActionResult(index, "open_ticket", "success", str(thread.id))
-
-    # ── service-backed actions ───────────────────────────────────────────────
 
     async def _action_create_moderation_case(
         self,
@@ -437,7 +461,9 @@ class ActionRegistry:
         }.get(action_type)
         if needed and (me is None or not getattr(me.guild_permissions, needed, False)):
             return ActionResult(index, kind, "skipped", "missing permission")
-        moderator_id = int(action.get("moderator_user_id") or getattr(self.bot.user, "id", 0))
+        moderator_id = int(
+            action.get("moderator_user_id") or getattr(self.bot.user, "id", 0)
+        )
         reason = render(action.get("reason", "Workflow action"), variables)
         digest_source = (
             f"{workflow.get('id', 0)}:{ctx.trigger_type}:{target_id}:{action_type}:"
