@@ -13,7 +13,7 @@ import discord
 from discord.utils import escape_markdown
 from humanfriendly import format_timespan
 
-from core.bot import Zync
+from core.bot import Lucent
 from core.cog import Cog
 from utils.embed import green_embed, guild_embed, orange_embed, red_embed
 from utils.formats import format_date
@@ -22,11 +22,13 @@ from utils.formats import format_date
 class GuildLogs(Cog):
     """Log everything in your server!"""
 
-    def __init__(self, bot: Zync):
-        self.bot: Zync = bot
+    def __init__(self, bot: Lucent):
+        self.bot: Lucent = bot
         self.recent_kicks = defaultdict(set)
         self.lock = asyncio.Lock()
-        self._config_cache: dict[int, tuple[discord.TextChannel | None, frozenset[str]]] = {}
+        self._config_cache: dict[
+            int, tuple[discord.TextChannel | None, frozenset[str]]
+        ] = {}
 
     def clear_config_cache(self, guild_id: int | None = None) -> None:
         """Invalidate the cached guild log configuration.
@@ -80,8 +82,6 @@ class GuildLogs(Cog):
         """Return whether ``module_type`` or ``all`` logging is enabled."""
         _, modules = await self._guild_log_config(guild_id)
         return "all" in modules or module_type.lower() in modules
-
-    # ====== MESSAGE LOGS ======
 
     @Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
@@ -189,8 +189,6 @@ class GuildLogs(Cog):
             em.set_footer(text=f"User ID: {msgs[0].author.id}")
 
             await self.bot.send_log(channel, embed=em)
-
-    # ====== MEMBER LOGS ======
 
     @Cog.listener()
     async def on_member_ban(self, guild: discord.Guild, user: discord.User):
@@ -354,7 +352,7 @@ class GuildLogs(Cog):
             )
 
     async def remove_from_recent_kicks(self, guild_id: int, member_id: int):
-        await asyncio.sleep(10)  # Wait for 10 seconds
+        await asyncio.sleep(10)
         async with self.lock:
             self.recent_kicks[guild_id].discard(member_id)
 
@@ -471,8 +469,6 @@ class GuildLogs(Cog):
 
             await self.bot.send_log(channel, embed=em)
 
-    # ====== VOICE CHANNEL LOGS ======
-
     @Cog.listener()
     async def on_voice_state_update(
         self,
@@ -516,8 +512,6 @@ class GuildLogs(Cog):
                 em.color = 0xFAA61A
 
             await self.bot.send_log(channel, embed=em)
-
-    # ====== GUILD ROLE LOGS ======
 
     @Cog.listener()
     async def on_guild_role_create(self, role: discord.Role):
@@ -630,8 +624,6 @@ class GuildLogs(Cog):
 
             em.set_footer(text=f"Role ID: {before.id}")
             await self.bot.send_log(channel, embed=em)
-
-    # ===== GUILD LOGS =====
 
     @Cog.listener(name="on_guild_update")
     async def guild_update_log(self, before: discord.Guild, after: discord.Guild):
@@ -858,8 +850,6 @@ class GuildLogs(Cog):
                         )
             await self.bot.send_log(channel, embed=em)
 
-    # ====== GUILD CHANNEL UPDATES  ======
-
     @Cog.listener()
     async def on_guild_channel_create(self, channel: discord.abc.GuildChannel):
         log_channel = await self.get_logs_channel(channel.guild.id)
@@ -1009,8 +999,6 @@ class GuildLogs(Cog):
             if em.fields:
                 await self.bot.send_log(channel, embed=em)
 
-    # ====== GUILD INTEGRATION EVENTS ======
-
     @Cog.listener()
     async def on_integration_create(self, integration: discord.Integration):
         channel = await self.get_logs_channel(integration.guild.id)
@@ -1116,8 +1104,6 @@ class GuildLogs(Cog):
                 )
 
             await self.bot.send_log(channel, embed=em)
-
-    # ====== GUILD AUTOMOD LOGS ======
 
     @Cog.listener()
     async def on_automod_rule_create(self, rule: discord.AutoModRule):
@@ -1232,8 +1218,6 @@ class GuildLogs(Cog):
             )
             await self.bot.send_log(channel, embed=em)
 
-    # ====== GUILD INVITE LOGS ======
-
     @Cog.listener()
     async def on_invite_create(self, invite: discord.Invite):
         if invite.guild is None:
@@ -1303,5 +1287,5 @@ class GuildLogs(Cog):
             await self.bot.send_log(channel, embed=em)
 
 
-async def setup(bot: Zync) -> None:
+async def setup(bot: Lucent) -> None:
     await bot.add_cog(GuildLogs(bot))
