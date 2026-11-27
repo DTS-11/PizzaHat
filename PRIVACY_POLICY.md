@@ -1,8 +1,8 @@
 # Privacy Policy
 
-This Privacy Policy ("Policy") explains how information about You is collected, used, and disclosed by Your access or use of this Site or otherwise as a result of Your interactions with Us. By using our bot, You accept the terms and conditions of this Policy. Zync Bot ("Zync bot", "Bot") is the Discord portion of our service.
+This Privacy Policy ("Policy") explains how information about You is collected, used, and disclosed by Your access or use of this Site or otherwise as a result of Your interactions with Us. By using our bot, You accept the terms and conditions of this Policy. Lucent Bot ("Lucent bot", "Bot") is the Discord portion of our service.
 
-## Zync Bot
+## Lucent Bot
 
 By using the Bot you understand that we can collect data about you or your servers from Discord:
 - Message content and total messages sent for moderation and message logging
