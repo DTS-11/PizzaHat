@@ -1,6 +1,6 @@
 """Embed template commands.
 
-Contains the ``/template`` command group for creating, editing, previewing,
+Contains the ``@Lucent template`` command group for creating, editing, previewing,
 listing, and linking reusable embed templates.
 """
 
@@ -12,7 +12,7 @@ from typing import Optional
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from core.bot import Zync
+from core.bot import Lucent
 from core.cog import Cog
 from utils.embed import (
     ctx_embed,
@@ -37,10 +37,10 @@ def _strip_codeblock(text: str) -> str:
 class Templates(Cog, emoji=1497265635183431770):
     """Embed templates — store reusable rich embeds and link them to any module."""
 
-    def __init__(self, bot: Zync):
+    def __init__(self, bot: Lucent):
         self.bot = bot
 
-    @commands.hybrid_group(name="template", fallback="list")
+    @commands.hybrid_group(name="template", fallback="list", with_app_command=False)
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def template(self, ctx: Context):
@@ -59,13 +59,13 @@ class Templates(Cog, emoji=1497265635183431770):
                     description=(
                         f"No embed templates yet.\n\n"
                         f"**Create one:**\n"
-                        f'`/template create "My Template" {{"title":"Hello","description":"World","color":5793266}}`\n\n'
+                        f'`@Lucent template create "My Template" {{"title":"Hello","description":"World","color":5793266}}`\n\n'
                         f"**Supported fields:** `title` `description` `color` (int or `#hex`) "
                         f"`url` `footer` `author` `image` `thumbnail` `fields`\n\n"
                         f"**Template variables:** `{{user}}` `{{user.mention}}` `{{user.name}}` `{{user.id}}` `{{guild}}`\n\n"
                         f"**Link to a module:**\n"
-                        f"`/template link rolemenu <menu_id> <template_id>`\n"
-                        f"`/template link ticket <panel_id> <template_id>`"
+                        f"`@Lucent template link rolemenu <menu_id> <template_id>`\n"
+                        f"`@Lucent template link ticket <panel_id> <template_id>`"
                     )
                 )
             )
@@ -80,7 +80,7 @@ class Templates(Cog, emoji=1497265635183431770):
             description=(
                 f"**{len(rows)}** template(s)\n\n"
                 + "\n".join(lines)
-                + f"\n\nUse `/template preview <id>` to preview."
+                + f"\n\nUse `@Lucent template preview <id>` to preview."
             ),
         )
         await ctx.send(embed=em)
@@ -130,8 +130,8 @@ class Templates(Cog, emoji=1497265635183431770):
             embed=green_embed(
                 description=(
                     f"{self.bot.yes} Template `#{row['id']}` **{name}** created!\n\n"
-                    f"Preview: `/template preview {row['id']}`\n"
-                    f"Link it: `/template link <module> ... {row['id']}`"
+                    f"Preview: `@Lucent template preview {row['id']}`\n"
+                    f"Link it: `@Lucent template link <module> ... {row['id']}`"
                 )
             )
         )
@@ -256,8 +256,6 @@ class Templates(Cog, emoji=1497265635183431770):
             embed=em,
         )
 
-    # ── Link subgroup ─────────────────────────────────────────────────────────
-
     @template.group(name="link", fallback="list")
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
@@ -267,8 +265,8 @@ class Templates(Cog, emoji=1497265635183431770):
             ctx,
             title="📋  Template Linking",
             description=(
-                f"`/template link rolemenu <menu_id> [template_id]`\n"
-                f"`/template link ticket <panel_id> [template_id]`\n\n"
+                f"`@Lucent template link rolemenu <menu_id> [template_id]`\n"
+                f"`@Lucent template link ticket <panel_id> [template_id]`\n\n"
                 f"Omit `template_id` to unlink."
             ),
         )
@@ -361,5 +359,5 @@ class Templates(Cog, emoji=1497265635183431770):
         )
 
 
-async def setup(bot: Zync) -> None:
+async def setup(bot: Lucent) -> None:
     await bot.add_cog(Templates(bot))
