@@ -6,11 +6,11 @@ extension path and Cog name stable for ``core.bot``.
 
 from __future__ import annotations
 
-from core.bot import Zync
+from core.bot import Lucent
 from workflows.runner import WorkflowRunner
 
 __all__ = ["WorkflowRunner", "setup"]
 
 
-async def setup(bot: Zync) -> None:
+async def setup(bot: Lucent) -> None:
     await bot.add_cog(WorkflowRunner(bot))
