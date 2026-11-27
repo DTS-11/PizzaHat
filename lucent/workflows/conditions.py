@@ -113,9 +113,7 @@ class ConditionEvaluator:
                 kind, condition, ctx, workflow_id, guild_id, cooldown_checker, negate
             )
             passed = base != negate
-            evaluation.results.append(
-                ConditionResult(kind, passed, negate, detail)
-            )
+            evaluation.results.append(ConditionResult(kind, passed, negate, detail))
             if not passed:
                 break
         return evaluation
@@ -182,7 +180,9 @@ class ConditionEvaluator:
             if reactor is None:
                 reactor = ctx.extra.get("user_id")
             author = getattr(ctx.message.author, "id", None) if ctx.message else None
-            return author is not None and reactor is not None and int(author) != int(reactor), "reactor"
+            return author is not None and reactor is not None and int(author) != int(
+                reactor
+            ), "reactor"
 
         if kind == "safety_source":
             source = str(self._source(ctx).get("source", ""))
