@@ -1,6 +1,6 @@
 """PostgreSQL connection management and ordered schema migrations.
 
-Schema changes live in ``Zync/migrations/*.sql``. Each migration is applied once,
+Schema changes live in ``lucent/migrations/*.sql``. Each migration is applied once,
 inside a transaction, and recorded in ``schema_migrations``. Startup does not
 silently create or alter tables outside that ledger.
 """
@@ -29,7 +29,7 @@ async def create_db_pool() -> asyncpg.Pool:
         min_size=1,
         max_size=10,
         command_timeout=30,
-        server_settings={"application_name": "zync"},
+        server_settings={"application_name": "lucent"},
     )
 
 
@@ -60,8 +60,6 @@ async def applied_versions(pool: Any) -> set[int]:
 async def run_migrations(pool: Any) -> list[int]:
     """Apply pending migrations in order and return the versions applied."""
 
-    # The ledger may not exist on a fresh database. Creating it outside a
-    # migration is safe and idempotent.
     await pool.execute(
         """CREATE TABLE IF NOT EXISTS schema_migrations (
             version INTEGER PRIMARY KEY,
@@ -92,6 +90,5 @@ async def run_migrations(pool: Any) -> list[int]:
     return newly_applied
 
 
-# Backwards-compatible import used by existing tooling and tests.
 async def bootstrap_database(pool: Any) -> None:
     await run_migrations(pool)
