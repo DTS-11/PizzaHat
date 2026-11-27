@@ -14,7 +14,7 @@ from typing import Any
 import discord
 from discord.ext import tasks
 
-from core.bot import Zync
+from core.bot import Lucent
 from core.cog import Cog
 from workflows.engine import WorkflowEngine, active_context
 from workflows.triggers import TRIGGERS, WorkflowContext
@@ -25,7 +25,7 @@ logger = logging.getLogger("bot")
 class WorkflowRunner(Cog):
     """Bridge Discord gateway events into the workflow engine."""
 
-    def __init__(self, bot: Zync):
+    def __init__(self, bot: Lucent):
         self.bot = bot
         self.engine = WorkflowEngine(bot)
         self._schedules_ready = False
@@ -49,9 +49,9 @@ class WorkflowRunner(Cog):
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            logger.exception("Workflow dispatch failed for %s: %s", ctx.trigger_type, exc)
-
-    # ── gateway listeners ────────────────────────────────────────────────────
+            logger.exception(
+                "Workflow dispatch failed for %s: %s", ctx.trigger_type, exc
+            )
 
     @Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
@@ -74,13 +74,17 @@ class WorkflowRunner(Cog):
         await self._dispatch(TRIGGERS.from_member(member, "member_leave"))
 
     @Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
+    async def on_raw_reaction_add(
+        self, payload: discord.RawReactionActionEvent
+    ) -> None:
         if payload.guild_id is None:
             return
         guild = self.bot.get_guild(payload.guild_id)
         if guild is None:
             return
-        channel = guild.get_channel(payload.channel_id) or guild.get_thread(payload.channel_id)
+        channel = guild.get_channel(payload.channel_id) or guild.get_thread(
+            payload.channel_id
+        )
         if not isinstance(channel, (discord.TextChannel, discord.Thread)):
             return
         try:
@@ -106,13 +110,9 @@ class WorkflowRunner(Cog):
         before_ids = {role.id for role in before.roles}
         after_ids = {role.id for role in after.roles}
         for role_id in after_ids - before_ids:
-            await self._dispatch(
-                TRIGGERS.from_role_update(after, role_id, "added")
-            )
+            await self._dispatch(TRIGGERS.from_role_update(after, role_id, "added"))
         for role_id in before_ids - after_ids:
-            await self._dispatch(
-                TRIGGERS.from_role_update(after, role_id, "removed")
-            )
+            await self._dispatch(TRIGGERS.from_role_update(after, role_id, "removed"))
 
     @Cog.listener()
     async def on_safety_alert(self, *args: Any) -> None:
@@ -147,8 +147,6 @@ class WorkflowRunner(Cog):
             return
         payload = args[1] if len(args) > 1 else None
         await self.engine.dispatch_custom(name, guild, payload)
-
-    # ── helpers ──────────────────────────────────────────────────────────────
 
     def _coerce_guild(self, value: Any) -> discord.Guild | None:
         if isinstance(value, discord.Guild):
@@ -201,8 +199,6 @@ class WorkflowRunner(Cog):
                 data.pop(key, None)
         return TRIGGERS.from_event(guild, trigger, data)
 
-    # ── schedule loop ────────────────────────────────────────────────────────
-
     @tasks.loop(minutes=1)
     async def _scheduled_workflows(self) -> None:
         if not self._schedules_ready:
@@ -216,5 +212,5 @@ class WorkflowRunner(Cog):
         await self.bot.wait_until_ready()
 
 
-async def setup(bot: Zync) -> None:
+async def setup(bot: Lucent) -> None:
     await bot.add_cog(WorkflowRunner(bot))
