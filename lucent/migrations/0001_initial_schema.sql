@@ -1,5 +1,3 @@
--- Zync initial schema.
---
 -- This is the first managed migration. The Discord engine is a new deployment:
 -- no legacy data is imported. Repeatable bootstrap SQL has been replaced by an
 -- ordered migration ledger so future schema changes are explicit and reviewable.
@@ -10,11 +8,10 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
     applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Start from a clean schema. No production data is preserved by design.
 -- Object names overlap between the legacy tables and the new views, and
 -- PostgreSQL raises WrongObjectTypeError when DROP TABLE targets a view (or
 -- vice versa). Inspect pg_class and drop whatever type is actually present.
-DO $zync_drop$
+DO $lucent_drop$
 DECLARE
     object_name TEXT;
     object_kind "char";
@@ -41,9 +38,8 @@ BEGIN
         END IF;
     END LOOP;
 END
-$zync_drop$;
+$lucent_drop$;
 
--- Server configuration -------------------------------------------------------
 
 CREATE TABLE guild_config (
     guild_id BIGINT PRIMARY KEY,
@@ -63,7 +59,6 @@ CREATE TABLE automation_config (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Entitlements ---------------------------------------------------------------
 
 CREATE TABLE subscriptions (
     guild_id BIGINT PRIMARY KEY,
@@ -100,7 +95,6 @@ CREATE INDEX subscriptions_status_period_idx
     ON subscriptions (status, current_period_end)
     WHERE status = 'active';
 
--- User preferences -----------------------------------------------------------
 
 CREATE TABLE user_preferences (
     user_id BIGINT PRIMARY KEY,
@@ -112,7 +106,6 @@ CREATE TABLE user_preferences (
 CREATE VIEW user_timezone AS
 SELECT user_id, timezone FROM user_preferences;
 
--- Embed templates ------------------------------------------------------------
 
 CREATE TABLE embed_templates (
     id SERIAL PRIMARY KEY,
@@ -127,7 +120,6 @@ CREATE TABLE embed_templates (
 
 CREATE INDEX embed_templates_guild_id_idx ON embed_templates (guild_id);
 
--- Tags -----------------------------------------------------------------------
 
 CREATE TABLE tags (
     guild_id BIGINT NOT NULL,
@@ -140,7 +132,6 @@ CREATE TABLE tags (
     PRIMARY KEY (guild_id, tag_name)
 );
 
--- Moderation casefiles -------------------------------------------------------
 
 CREATE TABLE moderation_cases (
     case_id UUID PRIMARY KEY,
@@ -180,7 +171,6 @@ CREATE TABLE moderation_case_edits (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Tickets --------------------------------------------------------------------
 
 CREATE TABLE ticket_panels (
     id SERIAL PRIMARY KEY,
@@ -217,7 +207,6 @@ CREATE UNIQUE INDEX tickets_one_open_per_creator_idx
     ON tickets (guild_id, creator_id)
     WHERE status = 'open';
 
--- Role menus -----------------------------------------------------------------
 
 CREATE TABLE role_menus (
     id SERIAL PRIMARY KEY,
@@ -251,7 +240,6 @@ CREATE TABLE role_menu_items (
     PRIMARY KEY (menu_id, role_id)
 );
 
--- Workflow definitions and execution ----------------------------------------
 
 CREATE TABLE workflow_definitions (
     id SERIAL PRIMARY KEY,
@@ -329,7 +317,6 @@ CREATE TABLE workflow_run_state (
     UNIQUE (workflow_id, scope_key)
 );
 
--- Durable background work (temp bans, raid lockdown restore, schedule slots).
 CREATE TABLE scheduled_tasks (
     task_id UUID PRIMARY KEY,
     guild_id BIGINT NOT NULL,
@@ -359,7 +346,6 @@ CREATE VIEW star_info AS
 SELECT guild_id, source_message_id AS user_msg_id, bot_message_id AS bot_msg_id
 FROM workflow_dedupe;
 
--- Auditable moderation word lists.
 CREATE TABLE wordlists (
     id BIGSERIAL PRIMARY KEY,
     guild_id BIGINT NOT NULL,
