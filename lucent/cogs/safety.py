@@ -1294,7 +1294,7 @@ class AutoModeration(Cog, emoji=1268880500248936491):
         `@Lucent automod settings default_avatar action kick`
 
         Content-reading modules such as `all_caps`, `emoji_spam` and `invites`
-        are unavailable because Lucent does not enable the Message Content intent.
+        work when the Message Content intent is enabled for this application.
         """
 
         if not ctx.guild:

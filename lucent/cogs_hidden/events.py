@@ -11,7 +11,7 @@ import discord
 from core.bot import Lucent
 from core.cog import Cog
 from services import get_logs, get_protection
-from utils.config import LOG_CHANNEL_ID
+from utils.config import LOGS_CHANNEL
 from utils.embed import green_embed, guild_embed, red_embed
 
 
@@ -24,12 +24,12 @@ class Events(Cog):
     async def _get_bot_logs_channel(self) -> discord.TextChannel | None:
         """Resolve the optional deployment-wide log channel, if configured."""
 
-        if not LOG_CHANNEL_ID:
+        if not LOGS_CHANNEL:
             return None
-        channel = self.bot.get_channel(LOG_CHANNEL_ID)
+        channel = self.bot.get_channel(LOGS_CHANNEL)
         if channel is None:
             try:
-                channel = await self.bot.fetch_channel(LOG_CHANNEL_ID)
+                channel = await self.bot.fetch_channel(LOGS_CHANNEL)
             except (discord.Forbidden, discord.HTTPException, discord.NotFound):
                 return None
         return channel if isinstance(channel, discord.TextChannel) else None
@@ -53,8 +53,10 @@ class Events(Cog):
             msg.guild.id if msg.guild else 0,
             "Hello! <a:wave_animated:783393435242463324>",
             (
-                f"I'm {self.bot.user.name} — a deterministic Discord operations "
-                "engine. Use `/help` to get started, or mention me for text commands."
+                f"I'm {self.bot.user.name} — your server, on autopilot. "
+                "Automate the boring parts of Discord with custom rules, welcome "
+                "flows, and built-in anti-alt & automod protection. Fast, reliable, "
+                "and zero bloat. Use `/help` to get started, or mention me for text commands."
             ),
         )
         await msg.channel.send(embed=em)

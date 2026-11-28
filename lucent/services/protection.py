@@ -254,7 +254,7 @@ class ProtectionService:
         if self.db is None:
             return Tier.FREE
         row = await self.db.fetchrow(
-            "SELECT tier, status FROM premium WHERE guild_id=$1", guild_id
+            "SELECT tier, status FROM subscriptions WHERE guild_id=$1", guild_id
         )
         if row is None or row["status"] != "active":
             return Tier.FREE

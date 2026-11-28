@@ -172,15 +172,17 @@ class SetupHubView(SetupView):
         self.guild_id = guild_id
         self.workflow = WorkflowBuilder(guild_id)
 
-    @staticmethod
-    def embed() -> discord.Embed:
+    def embed(self) -> discord.Embed:
         em = green_embed(title="Lucent Setup", timestamp=True)
         em.description = (
             "Bring your server operations together in one place. "
-            "Use `@Lucent help` for the full command guide. "
-            "Text-based automod and content workflow triggers are unavailable because "
-            "this bot does not request the Message Content intent."
+            "Use `@Lucent help` for the full command guide."
         )
+        if not self.cog.bot.can_read_message_content:
+            em.description += (
+                " Text-based automod and content workflow triggers are unavailable "
+                "because the Message Content intent is off."
+            )
         em.add_field(
             name="🛡️  Safety",
             value="Configure Anti-Alt and metadata-based AutoMod protection.",
@@ -280,7 +282,7 @@ class SetupSafetyView(SetupView):
     @ui.button(label="Back", style=ButtonStyle.gray)
     async def back(self, interaction: Interaction, button: ui.Button) -> None:
         await interaction.response.edit_message(
-            embed=SetupHubView.embed(), view=self.parent
+            embed=self.parent.embed(), view=self.parent
         )
 
 
@@ -375,7 +377,7 @@ class WorkflowTypeView(SetupView):
     @ui.button(label="Back", style=ButtonStyle.gray)
     async def back(self, interaction: Interaction, button: ui.Button) -> None:
         await interaction.response.edit_message(
-            embed=SetupHubView.embed(), view=self.parent
+            embed=self.parent.embed(), view=self.parent
         )
 
 
@@ -460,7 +462,7 @@ class SetupChannelsView(SetupView):
     @ui.button(label="Back", style=ButtonStyle.gray)
     async def back(self, interaction: Interaction, button: ui.Button) -> None:
         await interaction.response.edit_message(
-            embed=SetupHubView.embed(), view=self.parent
+            embed=self.parent.embed(), view=self.parent
         )
 
 
@@ -495,6 +497,7 @@ class SetupCategorySelect(ui.Select):
         )
 
     async def callback(self, interaction: Interaction) -> None:
+        await interaction.response.defer()
         value = self.values[0]
         if value == "safety":
             embed = await self.cog.safety_embed(self.guild_id)
@@ -504,7 +507,7 @@ class SetupCategorySelect(ui.Select):
             embed = await self.cog.channels_embed(self.guild_id)
         else:
             embed = await self.cog.tickets_embed(self.guild_id)
-        await interaction.response.edit_message(embed=embed, view=self.view)
+        await interaction.edit_original_response(embed=embed, view=self.view)
 
 
 class ViewSetupView(SetupView):
@@ -516,7 +519,8 @@ class ViewSetupView(SetupView):
 
     @ui.button(label="Refresh", style=ButtonStyle.secondary)
     async def refresh(self, interaction: Interaction, button: ui.Button) -> None:
-        await interaction.response.edit_message(
+        await interaction.response.defer()
+        await interaction.edit_original_response(
             embed=await self.cog.overview_embed(self.guild_id), view=self
         )
 
@@ -671,9 +675,10 @@ class Setup(Cog, emoji="\N{GEAR}"):
                 ephemeral=True,
             )
             return
+        view = SetupHubView(self, interaction.guild.id, interaction.user.id)
         await interaction.response.send_message(
-            embed=SetupHubView.embed(),
-            view=SetupHubView(self, interaction.guild.id, interaction.user.id),
+            embed=view.embed(),
+            view=view,
             ephemeral=True,
         )
 
@@ -694,7 +699,8 @@ class Setup(Cog, emoji="\N{GEAR}"):
                 ephemeral=True,
             )
             return
-        await interaction.response.send_message(
+        await interaction.response.defer(ephemeral=True)
+        await interaction.followup.send(
             embed=await self.overview_embed(interaction.guild.id),
             view=ViewSetupView(self, interaction.guild.id, interaction.user.id),
             ephemeral=True,
@@ -706,10 +712,8 @@ class Setup(Cog, emoji="\N{GEAR}"):
     async def setup_prefix(self, ctx: Context) -> None:
         """Open the same setup hub from a mention command."""
         assert ctx.guild is not None
-        await ctx.send(
-            embed=SetupHubView.embed(),
-            view=SetupHubView(self, ctx.guild.id, ctx.author.id),
-        )
+        view = SetupHubView(self, ctx.guild.id, ctx.author.id)
+        await ctx.send(embed=view.embed(), view=view)
 
     @commands.command(name="view_setup", hidden=True)
     @commands.guild_only()

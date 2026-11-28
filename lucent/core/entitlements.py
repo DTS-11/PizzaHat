@@ -40,7 +40,7 @@ class EntitlementService:
         tier = Tier.FREE
         if self.pool is not None:
             row = await self.pool.fetchrow(
-                "SELECT tier, status, current_period_end FROM premium "
+                "SELECT tier, status, current_period_end FROM subscriptions "
                 "WHERE guild_id=$1",
                 guild_id,
             )

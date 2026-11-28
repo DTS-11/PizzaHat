@@ -1085,7 +1085,9 @@ async def resolve_tier(
     fetchrow = getattr(source, "fetchrow", None)
     if fetchrow is None:
         return Tier.FREE
-    row = await fetchrow("SELECT tier, status FROM premium WHERE guild_id=$1", guild_id)
+    row = await fetchrow(
+        "SELECT tier, status FROM subscriptions WHERE guild_id=$1", guild_id
+    )
     if row is None or row["status"] != "active":
         return Tier.FREE
     try:

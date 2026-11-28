@@ -73,6 +73,11 @@ def test_second_migration_drops_all_orphan_tables() -> None:
         assert f"'{name}'" in sql
 
 
+def test_third_migration_drops_the_compatibility_premium_view() -> None:
+    sql = (MIGRATIONS_DIR / "0003_drop_premium_view.sql").read_text(encoding="utf-8")
+    assert "DROP VIEW IF EXISTS premium;" in sql
+
+
 def test_no_legacy_table_is_left_for_fresh_deployments() -> None:
     combined = "\n".join(
         path.read_text(encoding="utf-8") for _, _, path in _migration_files()
@@ -84,6 +89,7 @@ def test_no_legacy_table_is_left_for_fresh_deployments() -> None:
         "logs_config",
         "automod",
         "antialt",
+        "premium",
         "afk",
         "auto_responders",
         "guild_themes",

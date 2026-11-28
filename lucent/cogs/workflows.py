@@ -129,7 +129,7 @@ STARTER_TEMPLATES: dict[str, tuple[str, str, Builder]] = {
 }
 
 UNAVAILABLE_TEMPLATES = {
-    "auto_responder": "requires the Message Content intent",
+    "auto_responder": "is not included in this build",
 }
 
 _TRIGGER_LABELS = {
@@ -379,9 +379,9 @@ class Workflows(Cog, emoji="\N{GEAR}"):
             for key, (name, description, _builder) in STARTER_TEMPLATES.items():
                 em.add_field(name=f"`{key}` — {name}", value=description, inline=False)
             em.add_field(
-                name="Unavailable",
+                name="Not included",
                 value=(
-                    "Text-based templates require the Message Content intent: "
+                    "Starter templates not included in this build: "
                     + ", ".join(UNAVAILABLE_TEMPLATES)
                 ),
                 inline=False,

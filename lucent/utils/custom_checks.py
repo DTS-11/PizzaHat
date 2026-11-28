@@ -55,7 +55,7 @@ async def is_premium_guild(pool, guild_id: int) -> bool:
     """
 
     row = await pool.fetchrow(
-        "SELECT tier, status, current_period_end FROM premium WHERE guild_id=$1",
+        "SELECT tier, status, current_period_end FROM subscriptions WHERE guild_id=$1",
         guild_id,
     )
     if row is None or row["status"] != "active":

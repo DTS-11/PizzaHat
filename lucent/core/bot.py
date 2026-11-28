@@ -49,8 +49,10 @@ SUB_EXTENSIONS = [
 ]
 
 description = f"""
-Lucent is a deterministic Discord operations engine: Trigger → Condition → Action.
-Automate staff operations, moderation, protection and server events from one place.
+Your server, on autopilot.
+
+Automate the boring parts of Discord with custom rules, welcome flows, and
+built-in anti-alt & automod protection. Fast, reliable, and zero bloat.
 
 Source: [GitHub]({REPO_LINK})
 """
@@ -70,6 +72,7 @@ class Lucent(commands.Bot):
             invites=True,
             members=True,
             messages=True,
+            message_content=True,
             reactions=True,
             moderation=True,
             integrations=True,

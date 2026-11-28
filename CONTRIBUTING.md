@@ -41,8 +41,8 @@ opening a pull request.
 - Reusable components live in `lucent/utils/`.
 - New daily commands belong in the mention command tree; keep the slash picker limited to discovery
   and setup entry points.
-- The bot does not request the Message Content privileged intent. Avoid features that require reading
-  raw guild message content unless the change explicitly addresses that limitation.
+- The bot requests the Message Content privileged intent. Gate content-reading features on
+  `bot.can_read_message_content` and keep them safe when the portal toggle is unavailable.
 - Workflow payloads must pass through `utils/workflow_schema.py`. Do not bypass validation or tier
   limits in the runner or command layer.
 - Database schema is defined only in `core/database.py`:

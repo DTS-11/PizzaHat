@@ -427,7 +427,9 @@ async def _home_help_embed(
     emojis = emojis or _category_emojis(categories)
     embed = await ctx_embed(ctx, title="Lucent \u2014 Command Help", timestamp=True)
     embed.description = (
-        "Lucent is a deterministic Discord operations engine.\n\n"
+        "**Your server, on autopilot.**\n"
+        "Automate the boring parts of Discord with custom rules, welcome flows, "
+        "and built-in anti-alt & automod protection. Fast, reliable, and zero bloat.\n\n"
         "**Quick guide:**\n"
         "• Mention (`@Lucent ban @user spam`) for daily commands and arguments.\n"
         "• Slash (`/help`, `/setup`, `/view_setup`, `/status`) for discovery and setup.\n"
@@ -1032,7 +1034,7 @@ class Help(Cog, emoji="\N{GEAR}"):
         if self.bot.db is not None:
             row = await self.bot.db.fetchrow(
                 "SELECT tier, status, current_period_end, cancel_at_period_end "
-                "FROM premium WHERE guild_id=$1",
+                "FROM subscriptions WHERE guild_id=$1",
                 ctx.guild.id,
             )
 

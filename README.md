@@ -3,7 +3,8 @@
   Lucent
 </h1>
 
-<p align="center"><strong>Clearer moderation. Smarter server operations. Reliable automation.</strong></p>
+<p align="center"><strong>Your server, on autopilot.</strong></p>
+<p align="center">Automate the boring parts of Discord with custom rules, welcome flows, and built-in anti-alt &amp; automod protection. Fast, reliable, and zero bloat.</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/discord.py-2.7.1-blue?style=flat" alt="discord.py 2.7.1">
@@ -61,9 +62,9 @@ Use `@Lucent premium` to check the tier enabled for your server.
 
 ## • Discord permission note
 
-- 🔒 Lucent does not request the privileged Message Content intent.
-- ✅ Mention commands and metadata-based automations work without it.
-- ⚠️ Text-scanning AutoMod checks and workflow conditions that inspect message content are unavailable.
+- 🔓 Lucent requests the privileged Message Content intent for text-based protection and workflows.
+- ✅ Enable it for the application in the Discord Developer Portal.
+- ⚠️ Without the portal toggle, the bot cannot connect; text-scanning AutoMod and content workflows need it.
 
 ## • Run locally
 

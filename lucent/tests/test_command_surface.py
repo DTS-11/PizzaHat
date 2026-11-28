@@ -51,12 +51,22 @@ def test_application_tree_is_minimal() -> None:
         asyncio.run(bot.close())
 
 
-def test_message_content_intent_is_not_enabled() -> None:
+def test_message_content_intent_is_enabled() -> None:
     bot = Lucent()
     try:
-        assert bot.can_read_message_content is False
+        assert bot.can_read_message_content is True
     finally:
         asyncio.run(bot.close())
+
+
+def test_content_workflows_are_allowed_with_intent() -> None:
+    text_workflow = {
+        "trigger_type": "message_create",
+        "trigger_config": {"contains_text": "!hello"},
+        "conditions": [],
+        "actions": [{"type": "send_message", "message": "hi"}],
+    }
+    validate_supported_workflow(text_workflow, can_read_message_content=True)
 
 
 def test_content_workflows_are_rejected_without_intent() -> None:
